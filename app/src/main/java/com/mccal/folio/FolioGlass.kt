@@ -113,7 +113,7 @@ internal data class TintOptions(val notifications: Boolean = false, val media: B
 internal val LocalTintOptions = androidx.compose.runtime.staticCompositionLocalOf { TintOptions() }
 
 /** How strong Home's glass is: widget frost and the outline around widgets and Side Bar capsules (Settings › Glass). */
-internal data class GlassLook(val widget: Float = .26f, val outline: Float = .16f, val liquid: Boolean = false) {
+internal data class GlassLook(val widget: Float = .26f, val outline: Float = .16f, val liquid: Boolean = false, val backdropBlur: Boolean = false) {
     val outlineColor get() = androidx.compose.ui.graphics.Color.White.copy(alpha = outline)
 }
 internal val LocalGlassLook = androidx.compose.runtime.staticCompositionLocalOf { GlassLook() }
@@ -234,10 +234,61 @@ internal data class GlassSpec(val bodyStart: Color, val bodyEnd: Color, val ligh
     val rimLead: Color, val rimSide: Color, val rimTrail: Color, val lift: Float)
 
 internal const val LIQUID_FROST = .30f
-internal const val LIQUID_TILE_FROST = .34f
 internal const val LIBRARY_PANEL_FROST = .48f
 internal const val SEARCH_FIELD_FROST = .12f
 internal const val LIQUID_OVERLAY_FROST = .72f
+internal const val LIBRARY_TILE_FROST = .22f
+internal const val LIBRARY_FIELD_FROST = .2f
+internal const val LIBRARY_BLUR_DP = 40
+internal const val LIBRARY_BLUR_STEPS = 10
+private const val BLUR_LAYER_ALPHA = .001f
+internal const val LIBRARY_WASH_BLURRED = .3f
+internal const val LIBRARY_WASH_FLAT = .42f
+
+internal val LibraryShown = androidx.compose.runtime.mutableFloatStateOf(0f)
+
+internal fun libraryShown(pagerPosition: Float, libraryPage: Int): Float =
+    (1f - kotlin.math.abs(pagerPosition - libraryPage)).coerceIn(0f, 1f)
+
+internal fun libraryBlurPx(shown: Float, maxPx: Int): Int {
+    val step = kotlin.math.round(shown.coerceIn(0f, 1f) * LIBRARY_BLUR_STEPS)
+    return (maxPx * step / LIBRARY_BLUR_STEPS).toInt()
+}
+
+internal fun libraryWash(inkIsDark: Boolean, blurred: Boolean): Color =
+    (if (inkIsDark) Color.White else Color.Black).copy(alpha = if (blurred) LIBRARY_WASH_BLURRED else LIBRARY_WASH_FLAT)
+
+@androidx.compose.runtime.Composable
+internal fun LibraryBackdropBlur(window: android.view.Window, on: Boolean) {
+    val maxPx = with(androidx.compose.ui.platform.LocalDensity.current) { LIBRARY_BLUR_DP.dp.roundToPx() }
+    androidx.compose.runtime.LaunchedEffect(window, on, maxPx) {
+        if (!on) return@LaunchedEffect
+        try {
+            androidx.compose.runtime.snapshotFlow { libraryBlurPx(LibraryShown.floatValue, maxPx) }.collect { window.blurBehind(it) }
+        } finally {
+            window.blurBehind(0)
+        }
+    }
+}
+
+private fun android.view.Window.blurBehind(px: Int) {
+    val flags = android.view.WindowManager.LayoutParams.FLAG_BLUR_BEHIND or android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND
+    if (px > 0) addFlags(flags) else clearFlags(flags)
+    attributes = attributes.apply { blurBehindRadius = px; dimAmount = BLUR_LAYER_ALPHA }
+}
+
+@androidx.compose.runtime.Composable
+internal fun rememberCrossWindowBlur(): Boolean {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val manager = androidx.compose.runtime.remember(context) { context.getSystemService(android.view.WindowManager::class.java) }
+    val enabled = androidx.compose.runtime.remember(manager) { androidx.compose.runtime.mutableStateOf(manager?.isCrossWindowBlurEnabled == true) }
+    androidx.compose.runtime.DisposableEffect(manager) {
+        val listener = java.util.function.Consumer<Boolean> { enabled.value = it }
+        manager?.addCrossWindowBlurEnabledListener(context.mainExecutor, listener)
+        onDispose { manager?.removeCrossWindowBlurEnabledListener(listener) }
+    }
+    return enabled.value
+}
 
 internal object LiquidGlass {
     const val TONE_MIX = .22f

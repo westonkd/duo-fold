@@ -90,7 +90,7 @@ internal fun CategoryCard(title: String, apps: List<AppEntry>, modifier: Modifie
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         val tileShape = RoundedCornerShape(FolioRadius.PANEL.dp)
         BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(1f).clip(tileShape)
-            .liquidGlassOr(tileShape, LIQUID_TILE_FROST, GlassRole.TILE) { background(FolioGlass.card).border(FolioGlass.edge, tileShape) }
+            .liquidGlassOr(tileShape, LIBRARY_TILE_FROST, GlassRole.TILE) { background(FolioGlass.card).border(FolioGlass.edge, tileShape) }
             .padding(FolioSpace.MEDIUM.dp)) {
             val gap = 10.dp
             val cell = (maxWidth - gap) / 2

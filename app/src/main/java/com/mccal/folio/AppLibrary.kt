@@ -52,8 +52,9 @@ internal fun AppLibrary(
 ) {
     val appOptionsLabel = stringResource(R.string.app_options)
     val glass = !editing
+    val liquid = glass && liquidGlassOn()
     val palette = LocalDuoPalette.current
-    val ink = if (glass) Ink else MaterialTheme.colorScheme.onSurface
+    val ink = if (liquid) LocalHomeInk.current.primary else if (glass) Ink else MaterialTheme.colorScheme.onSurface
     val pinned = remember(state.homeSlots, state.leadingSlots) {
         (state.homeSlots.asSequence() + state.leadingSlots.asSequence()).filterNotNull().toSet()
     }
@@ -127,8 +128,7 @@ internal fun AppLibrary(
             onLaunch = { openCategory = null; onLaunchFrom(it, null) }, onActions = { openCategory = null; onActions(it) })
     }
     val panelShape = RoundedCornerShape(FolioRadius.PANEL.dp)
-    val liquid = glass && liquidGlassOn()
-    Surface(if (liquid) modifier.clip(panelShape).liquidGlass(panelShape, LIBRARY_PANEL_FROST, GlassRole.PANEL) else modifier, shape = panelShape,
+    Surface(modifier, shape = panelShape,
         color = if (liquid) Color.Transparent else if (glass) Glass.copy(alpha = LIBRARY_PANEL_FROST) else MaterialTheme.colorScheme.surface,
         contentColor = ink,
         border = if (glass && !liquid) BorderStroke(1.dp, Color.White.copy(alpha = .38f)) else null) {

@@ -276,6 +276,14 @@ fun LauncherScreen(
     val pageCount = visibleHomePages + 1
     val nativePager = rememberPagerState(initialPage = savedPage.coerceIn(-firstHome, pageCount - 1) + firstHome, pageCount = { pageCount + firstHome })
     val pager = remember(nativePager) { LauncherPager(nativePager, firstHome) }
+    LaunchedEffect(nativePager, firstHome, visibleHomePages) {
+        try {
+            snapshotFlow { libraryShown(nativePager.currentPage + nativePager.currentPageOffsetFraction, firstHome + visibleHomePages) }
+                .collect { LibraryShown.floatValue = it }
+        } finally {
+            LibraryShown.floatValue = 0f
+        }
+    }
     LaunchedEffect(pager) {
         var swiping = false
         try { snapshotFlow { pager.state.isScrollInProgress }.collect { now ->
@@ -768,6 +776,10 @@ fun LauncherScreen(
             if (scrim.draws) Box(Modifier.fillMaxSize().homeScrim(scrim))
         }
         if (dim > 0f) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = dim)))
+        if (liquidGlassOn()) {
+            val wash = libraryWash(homeInk.dark, LocalGlassLook.current.backdropBlur)
+            Box(Modifier.fillMaxSize().graphicsLayer { alpha = LibraryShown.floatValue }.background(wash))
+        }
         // Home never moves for the keyboard: including IME insets here re-measured the whole grid on every
         // frame of the keyboard animation (Spotlight/search jank). Sheets that need it use imePadding themselves.
         var homeBoxTop by remember { mutableFloatStateOf(0f) }

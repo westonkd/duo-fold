@@ -68,4 +68,25 @@ class LiquidGlassTest {
     @Test fun `Reduce Transparency keeps the chosen material so turning it off brings Liquid back`() {
         assertEquals(GlassMaterial.LIQUID, LauncherState(glassMaterial = GlassMaterial.LIQUID).withSolidGlass().glassMaterial)
     }
+
+    @Test fun `the library backdrop follows the swipe and is gone a page away`() {
+        assertEquals(1f, libraryShown(3f, 3), 0f)
+        assertEquals(.25f, libraryShown(2.25f, 3), .001f)
+        assertEquals(0f, libraryShown(2f, 3), 0f)
+        assertEquals(0f, libraryShown(0f, 3), 0f)
+    }
+
+    @Test fun `the window blur moves in a few steps rather than every frame`() {
+        assertEquals(0, libraryBlurPx(0f, 100))
+        assertEquals(100, libraryBlurPx(1f, 100))
+        assertEquals(libraryBlurPx(.51f, 100), libraryBlurPx(.54f, 100))
+        val distinct = (0..100).map { libraryBlurPx(it / 100f, 100) }.toSet()
+        assertEquals(LIBRARY_BLUR_STEPS + 1, distinct.size)
+    }
+
+    @Test fun `the wash backs the library's text and is stronger without a real blur`() {
+        assertEquals(Color.White.red, libraryWash(inkIsDark = true, blurred = true).red, 0f)
+        assertEquals(Color.Black.red, libraryWash(inkIsDark = false, blurred = true).red, 0f)
+        assertTrue(libraryWash(false, blurred = false).alpha > libraryWash(false, blurred = true).alpha)
+    }
 }

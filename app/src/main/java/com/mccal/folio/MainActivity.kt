@@ -281,9 +281,13 @@ class MainActivity : ComponentActivity() {
             // Folio's own Reduce Motion, or Android's Remove animations: the same flag to every screen.
             val reduceMotion = reduceMotionState.value || state.reduceMotion
             val iconTint = if (state.iconTintFromWallpaper) wallpaperIconTint(wallpaperTone)?.toLong()?.and(0xFFFFFFFFL) ?: state.iconTint else state.iconTint
+            val liquidGlass = usesLiquidGlass(state.glassMaterial, liquidGlassGate, solidGlass)
+            val crossWindowBlur = rememberCrossWindowBlur()
+            val libraryBlur = liquidGlass && crossWindowBlur && state.systemWallpaper && showsWallpaper
+            LibraryBackdropBlur(window, libraryBlur)
             androidx.compose.runtime.CompositionLocalProvider(
                 LocalWallpaperTone provides wallpaperTone,
-                LocalGlassLook provides GlassLook(state.widgetGlass, state.glassOutline, usesLiquidGlass(state.glassMaterial, liquidGlassGate, solidGlass)),
+                LocalGlassLook provides GlassLook(state.widgetGlass, state.glassOutline, liquidGlass, libraryBlur),
                 LocalSolidGlass provides solidGlass,
                 LocalFolderLook provides FolderLook(state.folderColumns, state.folderBackground),
                 LocalLabelSize provides state.labelSize,
