@@ -970,7 +970,7 @@
     <string name="show_welcome_again">Show Welcome Again</string>
     <string name="for_sharing_your_setup_folio_shows_9_41">For sharing your setup: Folio shows 9:41 with full battery and signal, and hides notifications, music, messages, device names, calendar events and alarms. Android\'s own status bar and apps aren\'t changed. Turns off by itself after 30 minutes.</string>
     <string name="if_folio_closes_unexpectedly_twice_right">If Folio closes unexpectedly twice right after starting, it starts in Safe Mode with optional features paused. Your settings are never changed.</string>
-    <string name="features_inspired_by_ios_jailbreak_tweak">Features inspired by iOS jailbreak tweaks, re-created for Folio. Get the ones you want from the Tweak Library; they show up here.</string>
+    <string name="features_inspired_by_ios_jailbreak_tweak">Features inspired by iOS jailbreak tweaks, re-created for Folio.</string>
     <string name="close_customization">Close customization</string>
     <string name="edit_home">Edit Home</string>
     <string name="hold_an_app_for_its_menu_or_move_while_h">Hold an app for its menu, or move while holding to start jiggle mode. Long-press empty space for widgets and pages.</string>
