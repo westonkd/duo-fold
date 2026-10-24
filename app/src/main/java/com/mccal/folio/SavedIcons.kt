@@ -87,7 +87,7 @@ internal class SavedIcons(private val dir: File) {
 
     companion object {
         /** Bump when [launcherIcon] draws icons differently, so the ones saved before are drawn again. */
-        const val FORMAT = 1
+        const val FORMAT = 2
         private const val FINGERPRINT = "fingerprint"
         private const val SUFFIX = ".icon"
         /** A 144-pixel icon is a few kilobytes; anything near this is a damaged file, not an icon. */

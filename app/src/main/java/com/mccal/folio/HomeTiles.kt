@@ -231,7 +231,7 @@ internal fun DockAppColumn(
                             // Grow toward the screen, away from the edge the dock sits on.
                             transformOrigin = if (horizontal) androidx.compose.ui.graphics.TransformOrigin(.5f, 1f)
                                 else androidx.compose.ui.graphics.TransformOrigin(if (leftHanded) 0f else 1f, .5f)
-                        }, shape = RoundedCornerShape(11.dp))
+                        }, shape = IconContinuousShape)
                         if (edit.active && savedIndex >= 0) JiggleRemoveButton(stringResource(R.string.remove_from_dock, app.label), inset = 6.dp) { edit.onRemove(DropTarget.Dock(savedIndex)) }
                     }
                     // Recent-app dot (Beta): below the icon in a horizontal dock, on the screen side of a side dock.
@@ -275,13 +275,13 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
         Box(Modifier.size(size.dp).graphicsLayer { scaleX = lift; scaleY = lift
                 if (FolioMotion.v2) alpha = FolderOpening.tileAlpha(folder.id, FolderOpening.id, FolderOpening.progress) }
             .onGloballyPositioned { bounds.set(it.boundsInWindow().toAndroidBounds()); IconBounds.update(folder.id, bounds) }
-            .jiggle(folder.id).foldMotionIcon().pressFeedback(pressed || opening, lifted, size * .24f, kind = PressFeedback.Kind.FOLDER)) {
+            .jiggle(folder.id).foldMotionIcon().pressFeedback(pressed || opening, lifted, size * ICON_CORNER_FRACTION, kind = PressFeedback.Kind.FOLDER)) {
             // Like iOS: a folder's badge is the total of its apps' badges (each app counted once).
             val look = LocalIconLook.current
             val counts = LocalBadgeCounts.current
             val total = if (look.badges == BadgeStyle.OFF) 0
                 else folder.appIds.mapNotNull { apps[it]?.packageName }.distinct().sumOf { counts[it] ?: 0 }
-            val tileShape = RoundedCornerShape((size * .24f).dp)
+            val tileShape = IconContinuousShape
             Box(Modifier.fillMaxSize().clip(tileShape)
                 .liquidGlassOr(tileShape, if (tint != null) .78f else .72f, GlassRole.TILE, tint ?: Glass) {
                     background(tint?.copy(alpha = .78f) ?: Glass.copy(alpha = .72f)).border(1.dp, Color.White.copy(alpha = .55f), tileShape) }
@@ -290,7 +290,7 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
                 apps[id]?.let { app ->
                     AppIcon(app, null, Modifier.align(when (index) {
                         0 -> Alignment.TopStart; 1 -> Alignment.TopEnd; 2 -> Alignment.BottomStart; else -> Alignment.BottomEnd
-                    }).padding(5.dp).size((size * .38f).dp).clip(RoundedCornerShape(6.dp)))
+                    }).padding(5.dp).size((size * .38f).dp))
                 }
             }
             }
@@ -342,12 +342,12 @@ internal fun AppTile(app: AppEntry, size: Float, labels: Boolean, modifier: Modi
                 val p = plate()
                 alpha = if (still) p else if (p > .001f) 1f else 0f
                 val grown = 1f + FolderOrRoom.PLATE_GROWTH * (if (still) 1f else p); scaleX = grown; scaleY = grown
-            }.liquidGlassOr(RoundedCornerShape((size * .24f).dp), .72f, GlassRole.TILE) {
-                background(Glass.copy(alpha = .72f), RoundedCornerShape((size * .24f).dp)).border(1.dp, Color.White.copy(alpha = .55f), RoundedCornerShape((size * .24f).dp)) })
+            }.liquidGlassOr(IconContinuousShape, .72f, GlassRole.TILE) {
+                background(Glass.copy(alpha = .72f), IconContinuousShape).border(1.dp, Color.White.copy(alpha = .55f), IconContinuousShape) })
             if (app.id in LocalStackedApps.current) StackPeek(iconSize)
             AppIcon(app, null, Modifier.fillMaxSize()
                 .graphicsLayer { if (plate != null && !still) { val inside = 1f - (1f - FolderOrRoom.ICON_INSIDE) * plate(); scaleX = inside; scaleY = inside } }
-                .pressFeedback(pressed || launching, lifted, size * .24f, kind = PressFeedback.Kind.APP), shape = RoundedCornerShape((size * .24f).dp))
+                .pressFeedback(pressed || launching, lifted, size * ICON_CORNER_FRACTION, kind = PressFeedback.Kind.APP), shape = IconContinuousShape)
             if (onRemove != null) JiggleRemoveButton(stringResource(R.string.remove_from_home_2, app.label), onRemove = onRemove)
         }
         val ink = LocalHomeInk.current
