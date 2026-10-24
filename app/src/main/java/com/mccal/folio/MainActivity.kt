@@ -393,15 +393,16 @@ class MainActivity : ComponentActivity() {
                     IslandListenerService.open(this@MainActivity, it)
                 }
                 val basePalette = LocalDuoPalette.current
-                val panelPalette = androidx.compose.runtime.remember(basePalette, wallpaperTone, state.glassTintAmount, solidGlass, state.homeInk) {
-                    homePalette(basePalette, wallpaperTone.primary, state.glassTintAmount, solidGlass, homeInkFor(state.homeInk, wallpaperTone.prefersDarkText).dark) }
+                val panelInk = homeInkFor(state.homeInk, wallpaperTone.prefersDarkText)
+                val panelPalette = androidx.compose.runtime.remember(basePalette, wallpaperTone, state.glassTintAmount, solidGlass, panelInk.dark) {
+                    homePalette(basePalette, wallpaperTone.primary, state.glassTintAmount, solidGlass, panelInk.dark) }
                 androidx.compose.runtime.CompositionLocalProvider(LocalDuoPalette provides panelPalette) {
                 TopPanels(topPanel.value, { OverlayBack.shown(overlayProgress, OverlayBack.swipe.value) }, deviceStatus, onClose = { topPanel.value = null },
                     onSystemPanel = { openAndroidShade(it) }, showClock = state.notificationClock, grouped = state.groupNotifications, sections = state.notificationSections,
                     ccControls = state.ccControls, onCcControls = model::setCcControls,
                     ccSize = state.ccSize, ccCentered = state.ccCentered, ncLayout = state.ncLayout,
                     focusModes = state.focusModes, activeFocus = state.activeFocus, onFocus = model::setFocus)
-                }
+                androidx.compose.runtime.CompositionLocalProvider(LocalHomeInk provides panelInk) {
                 SpotlightOverlay(spotlightVisible.value, { OverlayBack.shown(overlayProgress, OverlayBack.swipe.value) }, state, onClose = { spotlightVisible.value = false },
                     onLaunch = { launchApp(it) },
                     onAddToHome = { app ->
@@ -409,6 +410,8 @@ class MainActivity : ComponentActivity() {
                         model.setPinned(app.id, true)
                         IslandEvents.notice(this@MainActivity, getString(R.string.added_to_home, app.label), app.icon)
                     })
+                }
+                }
                 // Last, so the corners sit above everything in Home's window.
                 if (state.roundedCorners) RoundedScreenCorners(state.cornerRadius.dp)
             } } }
