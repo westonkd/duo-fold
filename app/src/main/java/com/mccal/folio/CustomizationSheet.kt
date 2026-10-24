@@ -2180,11 +2180,13 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
                     if (sideBar && state.verticalStatus) StatusRail(LocalDeviceStatus.current,
                         Modifier.align(railAlign).then(railEdge).offset(y = geometry.statusTop.dp).width(preset.dockWidth.dp),
                         iconSize = dockIconSize(iconSize).dp, style = state.statusStyle)
+                    val barShape = RoundedCornerShape(dockCornerRadius(geometry.dockBarHeight, dockIconSize(iconSize), state.iconShape).dp)
+                    val railShape = RoundedCornerShape(dockCornerRadius(preset.dockWidth, dockIconSize(iconSize), state.iconShape).dp)
                     // A bottom dock bar: beside the status Side Bar, or the whole width when there is none (Full-Width Home).
                     if (sideBar && geometry.horizontalDock) Box(Modifier.align(if (!geometry.dockBesideRail) Alignment.BottomCenter else if (left) Alignment.BottomEnd else Alignment.BottomStart)
                         .width((if (geometry.dockBesideRail) refW - preset.dockWidth - 28f else refW).dp).padding(bottom = 58.dp), contentAlignment = Alignment.Center) { Row(Modifier
-                        .height(geometry.dockBarHeight.dp).background(glass.copy(alpha = state.statusStyle.railGlass), RoundedCornerShape(FolioRadius.RAIL.dp))
-                        .border(1.dp, LocalGlassLook.current.outlineColor, RoundedCornerShape(FolioRadius.RAIL.dp)).padding(horizontal = FolioSpace.SMALL.dp), verticalAlignment = Alignment.CenterVertically) {
+                        .height(geometry.dockBarHeight.dp).background(glass.copy(alpha = state.statusStyle.railGlass), barShape)
+                        .border(1.dp, LocalGlassLook.current.outlineColor, barShape).padding(horizontal = FolioSpace.SMALL.dp), verticalAlignment = Alignment.CenterVertically) {
                         state.dock.forEach { id ->
                             Box(Modifier.width(geometry.dockPitch.dp), contentAlignment = Alignment.Center) {
                                 id?.let(apps::get)?.let { AppIcon(it, null, Modifier.size(dockIconSize(iconSize).dp), shape = RoundedCornerShape(11.dp)) }
@@ -2192,8 +2194,8 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
                         }
                     } }
                     else if (sideBar) Column(Modifier.align(railAlign).then(railEdge).offset(y = geometry.dockTop.dp).width(preset.dockWidth.dp)
-                        .height(geometry.dockHeight.dp).background(glass.copy(alpha = state.statusStyle.railGlass), RoundedCornerShape(FolioRadius.RAIL.dp))
-                        .border(1.dp, LocalGlassLook.current.outlineColor, RoundedCornerShape(FolioRadius.RAIL.dp)).padding(vertical = FolioSpace.SMALL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        .height(geometry.dockHeight.dp).background(glass.copy(alpha = state.statusStyle.railGlass), railShape)
+                        .border(1.dp, LocalGlassLook.current.outlineColor, railShape).padding(vertical = FolioSpace.SMALL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         state.dock.forEach { id ->
                             Box(Modifier.fillMaxWidth().height(geometry.dockRowHeight.dp), contentAlignment = Alignment.Center) {
                                 id?.let(apps::get)?.let { AppIcon(it, null, Modifier.size(dockIconSize(iconSize).dp), shape = RoundedCornerShape(11.dp)) }
