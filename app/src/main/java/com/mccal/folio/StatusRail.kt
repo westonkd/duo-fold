@@ -157,6 +157,22 @@ private const val GAUGE_READING_PAD = .055f
 private const val GAUGE_FAN_ORIGIN = .56f
 private const val GAUGE_SEARCH_ORIGIN = .60f
 
+internal const val STATUS_RING_DOTS = 5
+internal const val STATUS_RING_DOT_PITCH = 17f
+internal const val STATUS_RING_DOT_SCALE = .75f
+internal const val STATUS_RING_FAN_APEX = .62f
+
+internal data class RingArc(val start: Float, val sweep: Float)
+
+internal fun statusRingArc(dots: Int): RingArc {
+    if (dots <= 0) return RingArc(-90f, 360f)
+    val gap = STATUS_RING_DOT_PITCH * (dots + 1)
+    return RingArc(90f + gap / 2f, 360f - gap)
+}
+
+internal fun statusRingDotAngles(dots: Int): List<Float> =
+    List(dots.coerceAtLeast(0)) { i -> 90f + ((dots - 1) / 2f - i) * STATUS_RING_DOT_PITCH }
+
 /** Shared capsule look for the side rail (status, dock, island). */
 
 @Composable
@@ -302,20 +318,25 @@ fun StatusRail(
                         Canvas(Modifier.fillMaxSize()) {
                             val w = size.width
                             val center = Offset(w / 2, w / 2)
-                            // Battery: one thin full ring, filled clockwise from the top.
                             val radius = w * .44f
-                            drawCircle(ink.copy(alpha = faint(look.trackAlpha)), radius, center, style = Stroke(w * .06f * look.strokeScale))
+                            val ringStroke = w * .06f * look.strokeScale
+                            val dots = if (style.glyph == StatusGlyph.RING && wifiVisual is WifiSignalVisual.Connected &&
+                                cellularVisual is CellularSignalVisual.Available) STATUS_RING_DOTS else 0
+                            val arc = statusRingArc(dots)
+                            val ringTopLeft = Offset(center.x - radius, center.y - radius)
+                            drawArc(ink.copy(alpha = faint(look.trackAlpha)), arc.start, arc.sweep, false, ringTopLeft, Size(radius * 2, radius * 2),
+                                style = Stroke(ringStroke, cap = StrokeCap.Round))
                             status.battery?.let { level ->
-                                drawArc(batteryColor, -90f, 360f * level / 100, false, Offset(center.x - radius, center.y - radius),
-                                    Size(radius * 2, radius * 2), style = Stroke(width = w * .06f * look.strokeScale, cap = StrokeCap.Round))
+                                drawArc(batteryColor, arc.start, arc.sweep * level / 100, false, ringTopLeft,
+                                    Size(radius * 2, radius * 2), style = Stroke(width = ringStroke, cap = StrokeCap.Round))
+                            }
+                            statusRingDotAngles(dots).forEachIndexed { i, angle ->
+                                val rad = Math.toRadians(angle.toDouble())
+                                drawCircle(ink.copy(alpha = if (i < activeDots) 1f else faint(.28f)), ringStroke * STATUS_RING_DOT_SCALE,
+                                    Offset(center.x + radius * kotlin.math.cos(rad).toFloat(), center.y + radius * kotlin.math.sin(rad).toFloat()))
                             }
                             if (style.glyph == StatusGlyph.RING) when {
-                                wifiVisual is WifiSignalVisual.Connected -> {
-                                    drawWifiFan(w, wifiVisual, ink = ink, onLight = onLight)
-                                    // Cellular: a short row of dots under the fan.
-                                    for (i in 0..4) drawCircle(ink.copy(alpha = if (i < activeDots) 1f else faint(.28f)), w * .026f,
-                                        Offset(center.x + (i - 2) * w * .085f, w * .74f))
-                                }
+                                wifiVisual is WifiSignalVisual.Connected -> drawWifiFan(w, wifiVisual, ink = ink, onLight = onLight, apex = STATUS_RING_FAN_APEX)
                                 cellularVisual is CellularSignalVisual.Available -> drawCellBars(w, activeDots, ink, onLight)
                                 status.airplane -> Unit // the airplane icon draws on top
                                 else -> drawSearchingFan(w, sweep?.value ?: -1f, ink, onLight)
@@ -448,9 +469,10 @@ internal fun statusRailInk(home: HomeInk, pill: Boolean, frost: Float, glassLumi
     return HomeInk(dark = capsule.coerceIn(0f, 1f) > .5f, automatic = true)
 }
 
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWifiFan(w: Float, wifiVisual: WifiSignalVisual, centered: Boolean = false, ink: Color = Color.White, onLight: Boolean = false) {
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawWifiFan(w: Float, wifiVisual: WifiSignalVisual, centered: Boolean = false, ink: Color = Color.White, onLight: Boolean = false,
+    apex: Float = .56f) {
     val cx = size.width / 2
-    val fanY = if (centered) size.height * .95f else w * .56f
+    val fanY = if (centered) size.height * .95f else w * apex
     val scale = if (centered) size.height / (w * .325f + w * .04f) * .9f else 1f
     if (wifiVisual is WifiSignalVisual.Connected) {
         for (i in 1..3) {
