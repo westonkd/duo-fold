@@ -237,8 +237,8 @@ fun StatusRail(
             // Same frosted capsule as the dock so status and dock read as one side rail.
             val tight = style.tight
             if (hasContent) Column(Modifier.fillMaxWidth()
-                .then(if (style.background) Modifier.background(Glass.copy(alpha = style.railGlass), capsule)
-                    .border(1.dp, LocalGlassLook.current.outlineColor, capsule) else Modifier)
+                .then(if (style.background) Modifier.liquidGlassOr(capsule, style.railGlass, GlassRole.CAPSULE) {
+                    background(Glass.copy(alpha = style.railGlass), capsule).border(1.dp, LocalGlassLook.current.outlineColor, capsule) } else Modifier)
                 // Standard (4) and Compact (0) keep their old padding; the slider moves between and past them.
                 .padding(vertical = if (compact) FolioSpace.SMALL.dp else (8f + style.spacing).coerceAtMost(12f).dp),
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(style.spacing.dp)) {

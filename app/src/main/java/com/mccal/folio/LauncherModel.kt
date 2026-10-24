@@ -263,6 +263,7 @@ data class LauncherState(
     val packagedEffectId: String? = null,
     /** Strength of the thin light outline around widgets and Side Bar capsules (0 = none). */
     val glassOutline: Float = .16f,
+    val glassMaterial: GlassMaterial = GlassMaterial.CLASSIC,
     /** Darken the wallpaper while Folio's dark appearance is on. */
     val dimWallpaperDark: Boolean = true,
     /**
@@ -1246,8 +1247,8 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
     fun setPackagedEffect(id: String) = updateSettings(soon = false) { it.withPackagedEffect(id) }
     fun setGlassOutline(value: Float) = updateSettings(soon = true) { it.copy(glassOutline = value.coerceIn(0f, 1f)) }
     /** One tap for the whole glass look: widgets and Side Bar together. */
-    fun setGlassPreset(frost: Float) = updateSettings(soon = false) {
-        it.copy(widgetGlass = frost, statusStyle = it.statusStyle.copy(railGlass = frost)) }
+    fun setGlassPreset(frost: Float, material: GlassMaterial = GlassMaterial.CLASSIC) = updateSettings(soon = false) {
+        it.copy(widgetGlass = frost, glassMaterial = material, statusStyle = it.statusStyle.copy(railGlass = frost)) }
     fun setDimWallpaperDark(value: Boolean) = updateSettings(soon = false) { it.copy(dimWallpaperDark = value) }
     fun setHomeScrim(value: Boolean) = updateSettings(soon = false) { it.copy(homeScrim = value) }
     fun setIconTintFromWallpaper(value: Boolean) = updateSettings(soon = false) { it.copy(iconTintFromWallpaper = value) }
@@ -1649,6 +1650,7 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
             .put("packagedEffects", JSONArray().apply { s.packagedEffects.forEach { put(it.toJson()) } })
             .put("packagedEffectId", s.packagedEffectId ?: JSONObject.NULL)
             .put("widgetGlass", s.widgetGlass.toDouble()).put("glassOutline", s.glassOutline.toDouble())
+            .put("glassMaterial", s.glassMaterial.name)
             .put("focusModes", focusModesToJson(s.focusModes))
             .put("activeFocus", s.activeFocus ?: "").put("leftPage", s.leftPage).put("todayUnfolded", s.todayUnfolded).put("todaySuggestions", s.todaySuggestions).put("systemWallpaper", s.systemWallpaper).put("homeInk", s.homeInk).put("tintedGlass", s.tintedGlass).put("glassTint", s.glassTint.toDouble()).put("reduceTransparency", s.reduceTransparency)
             .put("roundedCorners", s.roundedCorners).put("cornerRadius", s.cornerRadius.toDouble())
@@ -1941,6 +1943,7 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         packagedEffects = j.optJSONArray("packagedEffects")?.let { a -> (0 until a.length()).mapNotNull { PackagedPageEffect.from(a.optJSONObject(it)) } }.orEmpty(),
         packagedEffectId = j.optString("packagedEffectId").takeIf { it.isNotBlank() && it != "null" },
         widgetGlass = j.optDouble("widgetGlass", .26).toFloat().coerceIn(0f, 1f), glassOutline = j.optDouble("glassOutline", .16).toFloat().coerceIn(0f, 1f),
+        glassMaterial = runCatching { GlassMaterial.valueOf(j.optString("glassMaterial")) }.getOrDefault(GlassMaterial.CLASSIC),
         focusModes = focusModesFromJson(j.optJSONArray("focusModes")),
         activeFocus = j.optString("activeFocus").takeIf { it.isNotEmpty() },
         leftPage = j.optString("leftPage", "TODAY").takeIf { it in setOf("TODAY", "DISCOVER", "NONE") } ?: "TODAY",

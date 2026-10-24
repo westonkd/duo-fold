@@ -123,7 +123,8 @@ internal fun JigglePill(label: String, icon: ImageVector? = null, description: S
 @Composable
 internal fun HomeSearchPill(onClick: () -> Unit) {
     val ink = LocalHomeInk.current
-    Row(Modifier.heightIn(min = 30.dp).clip(CircleShape).background(if (ink.dark) Color.White.copy(alpha = .45f) else Color.White.copy(alpha = .2f))
+    val frost = if (ink.dark) .45f else .2f
+    Row(Modifier.heightIn(min = 30.dp).clip(CircleShape).liquidGlassOr(CircleShape, frost, GlassRole.CAPSULE, Color.White) { background(Color.White.copy(alpha = frost)) }
         .clickable(role = Role.Button, onClickLabel = stringResource(R.string.search), onClick = onClick)
         .padding(horizontal = FolioSpace.COMFY.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.Rounded.Search, null, tint = ink.primary, modifier = Modifier.size(15.dp))

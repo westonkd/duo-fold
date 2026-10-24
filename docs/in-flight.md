@@ -22,6 +22,7 @@ lock: the real state is `gh pr list` and `git worktree list`. Keep it honest rat
 
 | Branch | What it changes | Files it holds |
 |---|---|---|
+| `dev/liquid-glass` | A Liquid glass style for Home surfaces, behind a beta gate | `FolioGlass.kt`, `LauncherScreen.kt`, `LauncherModel.kt`, `CustomizationSheet.kt`, `MainActivity.kt`, `FeatureGate.kt`, `strings.xml`, `CHANGELOG.md` |
 
 Dependabot's open bumps are left out: they touch only `gradle/libs` or `build.gradle.kts`, and
 [REL-27](standards/releases.md) says when to take them.

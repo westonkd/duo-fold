@@ -52,8 +52,9 @@ internal fun AppLibrary(
 ) {
     val appOptionsLabel = stringResource(R.string.app_options)
     val glass = !editing
+    val liquid = glass && liquidGlassOn()
     val palette = LocalDuoPalette.current
-    val ink = if (glass) Ink else MaterialTheme.colorScheme.onSurface
+    val ink = if (liquid) LocalHomeInk.current.primary else if (glass) Ink else MaterialTheme.colorScheme.onSurface
     val pinned = remember(state.homeSlots, state.leadingSlots) {
         (state.homeSlots.asSequence() + state.leadingSlots.asSequence()).filterNotNull().toSet()
     }
@@ -126,11 +127,12 @@ internal fun AppLibrary(
         CategoryFolder(stringResource(category.title), categorized[category].orEmpty(), onDismiss = { openCategory = null },
             onLaunch = { openCategory = null; onLaunchFrom(it, null) }, onActions = { openCategory = null; onActions(it) })
     }
-    Surface(modifier, shape = RoundedCornerShape(FolioRadius.PANEL.dp),
-        color = if (glass) Glass.copy(alpha = .48f) else MaterialTheme.colorScheme.surface,
+    val panelShape = RoundedCornerShape(FolioRadius.PANEL.dp)
+    Surface(modifier, shape = panelShape,
+        color = if (liquid) Color.Transparent else if (glass) Glass.copy(alpha = LIBRARY_PANEL_FROST) else MaterialTheme.colorScheme.surface,
         contentColor = ink,
-        border = if (glass) BorderStroke(1.dp, Color.White.copy(alpha = .38f)) else null) {
-        Column(Modifier.background(Brush.verticalGradient(if (glass)
+        border = if (glass && !liquid) BorderStroke(1.dp, Color.White.copy(alpha = .38f)) else null) {
+        Column(Modifier.background(Brush.verticalGradient(if (glass && !liquid)
             listOf(Color.White.copy(alpha = .09f), Color.Transparent) else listOf(Color.Transparent, Color.Transparent)))
             .padding(horizontal = FolioSpace.LARGE.dp).padding(top = 18.dp)) {
             // iOS App Library has no title bar, just its search field; choosing Home apps keeps a title and count.
@@ -144,7 +146,7 @@ internal fun AppLibrary(
             }
             IosSearchField(query, onQuery, if (editing) stringResource(R.string.search_apps) else stringResource(R.string.app_library), Modifier.padding(vertical = FolioSpace.MEDIUM.dp),
                 fieldModifier = (if (editing) Modifier else Modifier.focusRequester(searchFocus)).testTag(if (editing) "pin-search" else "library-search"),
-                ink = ink, onSearch = {
+                ink = ink, glass = liquid, onSearch = {
                     if (!editing && query.isNotBlank()) openEnterSearch(context, state, query)
                 })
             var libraryWidth by remember { mutableStateOf(360.dp) }

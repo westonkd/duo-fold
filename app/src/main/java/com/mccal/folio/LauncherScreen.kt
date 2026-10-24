@@ -276,6 +276,14 @@ fun LauncherScreen(
     val pageCount = visibleHomePages + 1
     val nativePager = rememberPagerState(initialPage = savedPage.coerceIn(-firstHome, pageCount - 1) + firstHome, pageCount = { pageCount + firstHome })
     val pager = remember(nativePager) { LauncherPager(nativePager, firstHome) }
+    LaunchedEffect(nativePager, firstHome, visibleHomePages) {
+        try {
+            snapshotFlow { libraryShown(nativePager.currentPage + nativePager.currentPageOffsetFraction, firstHome + visibleHomePages) }
+                .collect { LibraryShown.floatValue = it }
+        } finally {
+            LibraryShown.floatValue = 0f
+        }
+    }
     LaunchedEffect(pager) {
         var swiping = false
         try { snapshotFlow { pager.state.isScrollInProgress }.collect { now ->
@@ -768,6 +776,10 @@ fun LauncherScreen(
             if (scrim.draws) Box(Modifier.fillMaxSize().homeScrim(scrim))
         }
         if (dim > 0f) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = dim)))
+        if (liquidGlassOn()) {
+            val wash = libraryWash(homeInk.dark, LocalGlassLook.current.backdropBlur)
+            Box(Modifier.fillMaxSize().graphicsLayer { alpha = LibraryShown.floatValue }.background(wash))
+        }
         // Home never moves for the keyboard: including IME insets here re-measured the whole grid on every
         // frame of the keyboard animation (Spotlight/search jank). Sheets that need it use imePadding themselves.
         var homeBoxTop by remember { mutableFloatStateOf(0f) }
@@ -1148,8 +1160,9 @@ fun LauncherScreen(
                     // Composite the stationary dock independently of the shared pager layer (not while magnifying: it would clip).
                     compositingStrategy = if (state.dockMagnify) androidx.compose.ui.graphics.CompositingStrategy.Auto
                         else androidx.compose.ui.graphics.CompositingStrategy.Offscreen
-                }.background(Glass.copy(alpha = state.statusStyle.railGlass), RoundedCornerShape(FolioRadius.RAIL.dp))
-                .border(1.dp, LocalGlassLook.current.outlineColor, RoundedCornerShape(FolioRadius.RAIL.dp)).testTag("dock")) {
+                }.liquidGlassOr(RoundedCornerShape(FolioRadius.RAIL.dp), state.statusStyle.railGlass, GlassRole.CAPSULE) {
+                    background(Glass.copy(alpha = state.statusStyle.railGlass), RoundedCornerShape(FolioRadius.RAIL.dp))
+                        .border(1.dp, LocalGlassLook.current.outlineColor, RoundedCornerShape(FolioRadius.RAIL.dp)) }.testTag("dock")) {
                 Column(if (geometry.horizontalDock) (if (dockBarScrolls) Modifier.fillMaxHeight().horizontalScroll(dockBarScroll) else Modifier.fillMaxSize()).padding(horizontal = FolioSpace.SMALL.dp) else Modifier.padding(vertical = FolioSpace.SMALL.dp).verticalScroll(dockScroll)) {
                     DockAppColumn(shownDock, previewLayout.dock, appsById, dockPitchShown,
                         dockIconSize(geometry.iconSize), drag, insertionTarget,

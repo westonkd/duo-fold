@@ -561,6 +561,7 @@
     <string name="glass">글래스</string>
     <string name="light">밝게</string>
     <string name="frosted">반투명</string>
+    <string name="liquid">리퀴드</string>
     <string name="solid">불투명</string>
     <string name="outline">윤곽선</string>
     <string name="wallpaper_tint">배경화면 색조</string>

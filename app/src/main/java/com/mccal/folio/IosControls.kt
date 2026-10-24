@@ -90,10 +90,12 @@ internal fun IosSlider(value: Float, onValueChange: (Float) -> Unit, valueRange:
 /** iOS search field: frosted rounded capsule, magnifier, placeholder and a clear button. */
 @Composable
 internal fun IosSearchField(query: String, onQuery: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier,
-    fieldModifier: Modifier = Modifier, ink: Color = Color.White, onSearch: (() -> Unit)? = null) {
+    fieldModifier: Modifier = Modifier, ink: Color = Color.White, glass: Boolean = false, onSearch: (() -> Unit)? = null) {
     // 40 dp at the normal text size, taller only when larger text needs it (A11Y-12). The row is as tall as its
     // content (IntrinsicSize.Min), so the clear button's fillMaxHeight fills the field, not the space around it.
-    Row(modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.ROW.dp)).background(ink.copy(alpha = .12f))
+    val fieldShape = RoundedCornerShape(FolioRadius.ROW.dp)
+    Row(modifier.fillMaxWidth().clip(fieldShape).then(if (glass) Modifier.liquidGlass(fieldShape, LIBRARY_FIELD_FROST, GlassRole.CAPSULE)
+            else Modifier.background(ink.copy(alpha = SEARCH_FIELD_FROST)))
         .heightIn(min = 40.dp).height(IntrinsicSize.Min).padding(start = FolioSpace.COMPACT.dp, end = FolioSpace.HAIR.dp), verticalAlignment = Alignment.CenterVertically) {
         androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Search, null, tint = ink.copy(alpha = .55f), modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))

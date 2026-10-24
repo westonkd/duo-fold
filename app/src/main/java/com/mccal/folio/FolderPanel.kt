@@ -286,7 +286,11 @@ internal fun FolderPanel(
             return androidx.compose.ui.geometry.Offset((onScreen[0] - inWindow[0]).toFloat(), (onScreen[1] - inWindow[1]).toFloat()) +
                 windowPoint - latestHomeOrigin()
         }
+        val cardShape = RoundedCornerShape(38.dp)
+        val liquidCard = folderLook.background == FolderBackground.GLASS && liquidGlassOn()
+        RegisterOpenWindow(LauncherSheets, active = liquidCard)
         Surface(Modifier.width(folderW.dp).height(folderH.dp)
+            .then(if (liquidCard) Modifier.liquidGlass(cardShape, LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.SurfaceCard) else Modifier)
             .onGloballyPositioned { cardBounds = it.boundsInWindow() }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -295,11 +299,11 @@ internal fun FolderPanel(
             )
             .testTag("folder-panel-content"),
             color = when (folderLook.background) {
-                FolderBackground.GLASS -> FolioGlass.card
+                FolderBackground.GLASS -> if (liquidCard) Color.Transparent else FolioGlass.card
                 FolderBackground.SOLID -> FolioColors.SecondaryBackground
                 FolderBackground.CLEAR -> Color.Transparent
-            }, contentColor = Color.White, shape = RoundedCornerShape(38.dp),
-            border = if (folderLook.background == FolderBackground.CLEAR) null else FolioGlass.edge) {
+            }, contentColor = Color.White, shape = cardShape,
+            border = if (folderLook.background == FolderBackground.CLEAR || liquidCard) null else FolioGlass.edge) {
             Column(Modifier.padding(FolioSpace.XL.dp)) {
                 val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
                 LazyVerticalGrid(if (folderLook.columns > 0) FolderColumns(folderLook.columns) else GridCells.Adaptive(84.dp), Modifier.fillMaxWidth().weight(1f).edgeFade(gridState), state = gridState,

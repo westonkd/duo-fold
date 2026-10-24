@@ -11,6 +11,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.addOutline
 
 /**
  * One glass language for every Folio overlay (Control Center, Notification Center, Spotlight,
@@ -105,7 +113,7 @@ internal data class TintOptions(val notifications: Boolean = false, val media: B
 internal val LocalTintOptions = androidx.compose.runtime.staticCompositionLocalOf { TintOptions() }
 
 /** How strong Home's glass is: widget frost and the outline around widgets and Side Bar capsules (Settings › Glass). */
-internal data class GlassLook(val widget: Float = .26f, val outline: Float = .16f) {
+internal data class GlassLook(val widget: Float = .26f, val outline: Float = .16f, val liquid: Boolean = false, val backdropBlur: Boolean = false) {
     val outlineColor get() = androidx.compose.ui.graphics.Color.White.copy(alpha = outline)
 }
 internal val LocalGlassLook = androidx.compose.runtime.staticCompositionLocalOf { GlassLook() }
@@ -210,4 +218,174 @@ internal fun rememberSystemHighContrast(): Boolean {
     }
     // Android's levels are 0 (standard), 0.5 (medium) and 1 (high).
     return contrast.floatValue >= .5f
+}
+
+enum class GlassMaterial { CLASSIC, LIQUID }
+
+internal fun usesLiquidGlass(material: GlassMaterial, gateOpen: Boolean, solid: Boolean): Boolean =
+    material == GlassMaterial.LIQUID && gateOpen && !solid
+
+internal enum class GlassRole(val rim: Float, val light: Float, val inset: Boolean = false, val lift: Float = 0f) {
+    PANEL(1f, 1f), TILE(.9f, .8f), CAPSULE(1f, .9f), FIELD(.7f, 0f, inset = true), FLOATING(1f, .7f, lift = 1f)
+}
+
+@androidx.compose.runtime.Immutable
+internal data class GlassSpec(val bodyStart: Color, val bodyEnd: Color, val light: Float, val grain: Float,
+    val rimLead: Color, val rimSide: Color, val rimTrail: Color, val lift: Float)
+
+internal const val LIQUID_FROST = .30f
+internal const val LIBRARY_PANEL_FROST = .48f
+internal const val SEARCH_FIELD_FROST = .12f
+internal const val LIQUID_OVERLAY_FROST = .72f
+internal const val LIBRARY_TILE_FROST = .22f
+internal const val LIBRARY_FIELD_FROST = .2f
+internal const val LIBRARY_BLUR_DP = 40
+internal const val LIBRARY_BLUR_STEPS = 10
+private const val BLUR_LAYER_ALPHA = .001f
+internal const val LIBRARY_WASH_BLURRED = .3f
+internal const val LIBRARY_WASH_FLAT = .42f
+
+internal val LibraryShown = androidx.compose.runtime.mutableFloatStateOf(0f)
+
+internal fun libraryShown(pagerPosition: Float, libraryPage: Int): Float =
+    (1f - kotlin.math.abs(pagerPosition - libraryPage)).coerceIn(0f, 1f)
+
+internal fun libraryBlurPx(shown: Float, maxPx: Int): Int {
+    val step = kotlin.math.round(shown.coerceIn(0f, 1f) * LIBRARY_BLUR_STEPS)
+    return (maxPx * step / LIBRARY_BLUR_STEPS).toInt()
+}
+
+internal fun libraryWash(inkIsDark: Boolean, blurred: Boolean): Color =
+    (if (inkIsDark) Color.White else Color.Black).copy(alpha = if (blurred) LIBRARY_WASH_BLURRED else LIBRARY_WASH_FLAT)
+
+@androidx.compose.runtime.Composable
+internal fun LibraryBackdropBlur(window: android.view.Window, on: Boolean) {
+    val maxPx = with(androidx.compose.ui.platform.LocalDensity.current) { LIBRARY_BLUR_DP.dp.roundToPx() }
+    androidx.compose.runtime.LaunchedEffect(window, on, maxPx) {
+        if (!on) return@LaunchedEffect
+        try {
+            androidx.compose.runtime.snapshotFlow { libraryBlurPx(LibraryShown.floatValue, maxPx) }.collect { window.blurBehind(it) }
+        } finally {
+            window.blurBehind(0)
+        }
+    }
+}
+
+private fun android.view.Window.blurBehind(px: Int) {
+    val flags = android.view.WindowManager.LayoutParams.FLAG_BLUR_BEHIND or android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND
+    if (px > 0) addFlags(flags) else clearFlags(flags)
+    attributes = attributes.apply { blurBehindRadius = px; dimAmount = BLUR_LAYER_ALPHA }
+}
+
+@androidx.compose.runtime.Composable
+internal fun rememberCrossWindowBlur(): Boolean {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val manager = androidx.compose.runtime.remember(context) { context.getSystemService(android.view.WindowManager::class.java) }
+    val enabled = androidx.compose.runtime.remember(manager) { androidx.compose.runtime.mutableStateOf(manager?.isCrossWindowBlurEnabled == true) }
+    androidx.compose.runtime.DisposableEffect(manager) {
+        val listener = java.util.function.Consumer<Boolean> { enabled.value = it }
+        manager?.addCrossWindowBlurEnabledListener(context.mainExecutor, listener)
+        onDispose { manager?.removeCrossWindowBlurEnabledListener(listener) }
+    }
+    return enabled.value
+}
+
+internal object LiquidGlass {
+    const val TONE_MIX = .22f
+    const val END_FROST = .78f
+    const val LIGHT = .14f
+    const val GRAIN = .045f
+    const val RIM_BRIGHT = .62f
+    const val RIM_SIDE = .10f
+    const val RIM_FAINT = .26f
+    const val LIFT = .22f
+}
+
+internal fun liquidGlassSpec(base: Color, frost: Float, role: GlassRole, outline: Float, primary: Int? = null, secondary: Int? = null): GlassSpec {
+    val alpha = frost.coerceIn(0f, 1f)
+    val start = tintedGlass(base, primary, LiquidGlass.TONE_MIX).copy(alpha = alpha)
+    val end = tintedGlass(base, secondary ?: primary, LiquidGlass.TONE_MIX).copy(alpha = alpha * LiquidGlass.END_FROST)
+    val edge = (outline / GlassLook().outline).coerceIn(0f, 2f)
+    val bright = Color.White.copy(alpha = (LiquidGlass.RIM_BRIGHT * role.rim * edge).coerceIn(0f, 1f))
+    val faint = Color.White.copy(alpha = (LiquidGlass.RIM_FAINT * role.rim * edge).coerceIn(0f, 1f))
+    val side = Color.White.copy(alpha = (LiquidGlass.RIM_SIDE * edge).coerceIn(0f, 1f))
+    return GlassSpec(start, end, LiquidGlass.LIGHT * role.light, LiquidGlass.GRAIN,
+        if (role.inset) faint else bright, side, if (role.inset) bright else faint, LiquidGlass.LIFT * role.lift)
+}
+
+private object GlassGrain {
+    val brush: androidx.compose.ui.graphics.ShaderBrush by lazy {
+        val size = 64
+        val random = java.util.Random(7)
+        val pixels = IntArray(size * size) {
+            val v = random.nextInt(256)
+            android.graphics.Color.argb(random.nextInt(256), v, v, v)
+        }
+        val bitmap = android.graphics.Bitmap.createBitmap(pixels, size, size, android.graphics.Bitmap.Config.ARGB_8888)
+        androidx.compose.ui.graphics.ShaderBrush(androidx.compose.ui.graphics.ImageShader(bitmap.asImageBitmap(),
+            androidx.compose.ui.graphics.TileMode.Repeated, androidx.compose.ui.graphics.TileMode.Repeated))
+    }
+}
+
+@androidx.compose.runtime.Composable
+internal fun liquidGlassOn(): Boolean = LocalGlassLook.current.liquid && !LocalSolidGlass.current
+
+@androidx.compose.runtime.Composable
+internal fun androidx.compose.ui.Modifier.liquidGlassOr(shape: androidx.compose.ui.graphics.Shape, frost: Float, role: GlassRole,
+    base: Color = Glass, classic: @androidx.compose.runtime.Composable androidx.compose.ui.Modifier.() -> androidx.compose.ui.Modifier): androidx.compose.ui.Modifier =
+    if (liquidGlassOn()) liquidGlass(shape, frost, role, base) else classic()
+
+@androidx.compose.runtime.Composable
+internal fun androidx.compose.ui.Modifier.liquidGlass(shape: androidx.compose.ui.graphics.Shape, frost: Float, role: GlassRole,
+    base: Color = Glass): androidx.compose.ui.Modifier {
+    val tone = LocalWallpaperTone.current
+    val outline = LocalGlassLook.current.outline
+    val spec = androidx.compose.runtime.remember(base, frost, role, outline, tone.primary, tone.secondary) {
+        liquidGlassSpec(base, frost, role, outline, tone.primary, tone.secondary)
+    }
+    return drawLiquidGlass(shape, spec)
+}
+
+internal fun androidx.compose.ui.Modifier.drawLiquidGlass(shape: androidx.compose.ui.graphics.Shape, spec: GlassSpec): androidx.compose.ui.Modifier =
+    drawWithCache {
+        val outline = shape.createOutline(size, layoutDirection, this)
+        val rimWidth = 1.2.dp.toPx()
+        val rimOutline = shape.createOutline(androidx.compose.ui.geometry.Size(size.width - rimWidth, size.height - rimWidth), layoutDirection, this)
+        val body = androidx.compose.ui.graphics.Brush.linearGradient(listOf(spec.bodyStart, spec.bodyEnd),
+            androidx.compose.ui.geometry.Offset.Zero, androidx.compose.ui.geometry.Offset(size.width, size.height))
+        val light = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.White.copy(alpha = spec.light), Color.Transparent),
+            startY = 0f, endY = size.height * .55f)
+        val bloom = androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color.White.copy(alpha = spec.light * .6f), Color.Transparent),
+            center = androidx.compose.ui.geometry.Offset(size.width * .18f, 0f), radius = maxOf(size.width, size.height) * .6f)
+        val rim = androidx.compose.ui.graphics.Brush.linearGradient(
+            0f to spec.rimLead, .35f to spec.rimSide, .65f to spec.rimSide, 1f to spec.rimTrail,
+            start = androidx.compose.ui.geometry.Offset.Zero, end = androidx.compose.ui.geometry.Offset(size.width, size.height))
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(rimWidth)
+        val shadow = if (spec.lift > 0f) liftShadow(outline, spec.lift, 18.dp.toPx(), 6.dp.toPx()) else null
+        onDrawBehind {
+            shadow?.let { (path, paint) ->
+                drawContext.canvas.nativeCanvas.let { canvas ->
+                    canvas.save()
+                    canvas.clipOutPath(path)
+                    canvas.drawPath(path, paint)
+                    canvas.restore()
+                }
+            }
+            drawOutline(outline, body)
+            if (spec.light > 0f) {
+                drawOutline(outline, light)
+                drawOutline(outline, bloom)
+            }
+            drawOutline(outline, GlassGrain.brush, alpha = spec.grain)
+            translate(rimWidth / 2f, rimWidth / 2f) { drawOutline(rimOutline, rim, style = stroke) }
+        }
+    }
+
+private fun liftShadow(outline: androidx.compose.ui.graphics.Outline, lift: Float, blur: Float, drop: Float): Pair<android.graphics.Path, android.graphics.Paint> {
+    val path = androidx.compose.ui.graphics.Path().apply { addOutline(outline) }.asAndroidPath()
+    val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.BLACK
+        setShadowLayer(blur, 0f, drop, Color.Black.copy(alpha = lift).toArgb())
+    }
+    return path to paint
 }

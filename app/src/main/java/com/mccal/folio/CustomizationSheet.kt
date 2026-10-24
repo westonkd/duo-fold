@@ -2737,14 +2737,19 @@ internal fun layoutSnapshotsShown(layoutHistory: Boolean, layoutDamaged: Boolean
 
 /** Settings › Wallpaper & Appearance › Glass: one style menu for most people, sliders to fine-tune. */
 @Composable private fun GlassCardSettings(state: LauncherState, model: LauncherModel) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val liquidOpen = remember(context) { FeatureGate.LIQUID_GLASS.isOpen(context) }
     val presets = listOf("CLEAR" to .08f, "LIGHT" to .16f, "FROSTED" to .26f, "SOLID" to .55f)
     val rail = state.statusStyle.railGlass
-    val current = presets.firstOrNull { (_, v) -> kotlin.math.abs(state.widgetGlass - v) < .005f && kotlin.math.abs(rail - v) < .005f }?.first ?: "CUSTOM"
+    val current = if (liquidOpen && state.glassMaterial == GlassMaterial.LIQUID) "LIQUID"
+        else presets.firstOrNull { (_, v) -> kotlin.math.abs(state.widgetGlass - v) < .005f && kotlin.math.abs(rail - v) < .005f }?.first ?: "CUSTOM"
     val solid = LocalSolidGlass.current
     SettingsCard(stringResource(R.string.glass)) {
         if (!solid) IosMenuRow(stringResource(R.string.style), listOf("CLEAR" to stringResource(R.string.clear), "LIGHT" to stringResource(R.string.light), "FROSTED" to stringResource(R.string.frosted), "SOLID" to stringResource(R.string.solid)) +
+            (if (liquidOpen) listOf("LIQUID" to stringResource(R.string.liquid)) else emptyList()) +
             (if (current == "CUSTOM") listOf("CUSTOM" to stringResource(R.string.custom)) else emptyList()), current,
-            { key -> presets.firstOrNull { it.first == key }?.let { model.setGlassPreset(it.second) } }, tag = "glass-style")
+            { key -> if (key == "LIQUID") model.setGlassPreset(LIQUID_FROST, GlassMaterial.LIQUID)
+                else presets.firstOrNull { it.first == key }?.let { model.setGlassPreset(it.second) } }, tag = "glass-style")
         if (!solid) {
             CustomizationSlider(stringResource(R.string.widgets), "${(state.widgetGlass * 100).toInt()}%", state.widgetGlass, 0f..0.8f, onChange = model::setWidgetGlass)
             CustomizationSlider(stringResource(R.string.side_rail), "${(rail * 100).toInt()}%", rail, 0f..0.8f) { model.setStatusStyle(state.statusStyle.copy(railGlass = it)) }
