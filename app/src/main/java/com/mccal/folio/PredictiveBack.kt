@@ -47,23 +47,11 @@ internal object OverlayBack {
 }
 
 /**
- * [androidx.activity.compose.BackHandler] where there may be no Back to hear: Folio's panels over other apps draw in a service
- * window with no activity behind it, where a plain BackHandler throws "No OnBackPressedDispatcherOwner was provided". Anything
- * a panel can reach uses this (or [OverlayBackHandler]), never BackHandler itself.
- */
-@androidx.compose.runtime.Composable
-internal fun SafeBackHandler(enabled: Boolean, onBack: () -> Unit) {
-    if (androidx.activity.compose.LocalOnBackPressedDispatcherOwner.current == null) return
-    androidx.activity.compose.BackHandler(enabled, onBack)
-}
-
-/**
- * Back on Spotlight or a top panel: with Reduce Motion off it previews through [OverlayBack]; otherwise it is a plain
+ * Back on Spotlight: with Reduce Motion off it previews through [OverlayBack]; otherwise it is a plain
  * back handler.
  */
 @Composable
 internal fun OverlayBackHandler(open: Boolean, onClose: () -> Unit) {
-    // Panels drawn over other apps live in a service window with no activity behind them, so there is no Back to hear there.
     if (androidx.activity.compose.LocalOnBackPressedDispatcherOwner.current == null) return
     val pass = !LocalReduceMotion.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()

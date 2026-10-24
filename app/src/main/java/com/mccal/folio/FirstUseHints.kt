@@ -4,7 +4,7 @@ import android.content.Context
 
 /**
  * Hints that teach in place, once: the first time Home is up after setup, and the first time the unfolded screen is.
- * Each is shown in Home's island, never twice, and never again once the person has done the thing it teaches (which
+ * Each is shown once, never twice, and never again once the person has done the thing it teaches (which
  * counts the same as having seen it). Kept in a file of their own so nothing else has to know.
  */
 internal enum class FirstUseHint(val key: String) {
@@ -29,10 +29,10 @@ internal object FirstUseHints {
     /** The person did the thing, or has seen the hint: it is not shown again. */
     fun done(context: Context, hint: FirstUseHint) { prefs(context).edit().putBoolean(hint.key, true).apply() }
 
-    /** Shows [hint] in the island if it is still pending and the island is there to show it; marks it seen only when it was shown. */
+    /** Shows [hint] if it is still pending, and marks it seen. */
     fun show(context: Context, hint: FirstUseHint) {
         if (!pending(context, hint)) return
-        val text = context.getString(when (hint) { FirstUseHint.HOLD -> R.string.hint_hold; FirstUseHint.UNFOLD -> R.string.hint_unfold })
-        if (IslandEvents.notice(context, text, toastFallback = false)) done(context, hint)
+        FolioNotice.show(context, context.getString(when (hint) { FirstUseHint.HOLD -> R.string.hint_hold; FirstUseHint.UNFOLD -> R.string.hint_unfold }))
+        done(context, hint)
     }
 }

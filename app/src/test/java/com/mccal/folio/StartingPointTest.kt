@@ -5,14 +5,14 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class StartingPointTest {
-    @Test fun `iPhone is Folio's own panels with the usual icons`() {
+    @Test fun `iPhone is Spotlight on a swipe down with the usual icons`() {
         val s = LauncherState().withStartingPoint(StartingPoint.IPHONE)
         assertEquals(ExperienceProfile.FOLIO, s.profile())
         assertEquals(IconShape.DEFAULT, s.iconShape)
         assertEquals(StartingPoint.IPHONE, s.startingPoint())
     }
 
-    @Test fun `Android is Android's own panels with round icons`() {
+    @Test fun `Android is Android's shade on a swipe down with round icons`() {
         val s = LauncherState().withStartingPoint(StartingPoint.ANDROID)
         assertEquals(ExperienceProfile.ANDROID_STYLE, s.profile())
         assertEquals(IconShape.CIRCLE, s.iconShape)

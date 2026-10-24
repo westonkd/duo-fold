@@ -24,7 +24,7 @@ Every new piece of state gets a row here (or in its feature's KDoc) before it's 
 | Market packages | Market repository | `filesDir/market` + records in layout JSON | Backup keeps records, reapplies changes |
 | Hinge posture, window size | WindowManager (`LocalHinge`) | None | Recomputed |
 | Battery, signal, ringer | `DeviceStatus` | None | Recomputed on start |
-| Island activity | `Island` / `IslandEvents` | None | Recomputed |
+| Now playing, notifications | `NotificationListener` | None | Recomputed |
 | Crash reports | `CrashLog` | `filesDir/crashes`, last 5 | Until shared or rotated |
 
 ## Rules

@@ -36,7 +36,7 @@ class SettingsSearchCoverageTest {
     private val onTweakPages = setOf("enabled", "intensity", "preview", "duet_tilt", "duet_frost", "duet_shade")
 
     /** Shown only in the moment they apply (a dialog button, an undo, the Set as home banner). */
-    private val onDemand = setOf("cancel", "undo_last_layout_change", "use_island", "set_as_home_app", "duet_reset_style", "add_widget_to_this_page_2", "clear", "set")
+    private val onDemand = setOf("cancel", "undo_last_layout_change", "set_as_home_app", "duet_reset_style", "add_widget_to_this_page_2", "clear", "set")
 
     @Test fun `every row has an entry of its own, so a result can scroll to it`() {
         val own = SettingsRows.map { it.first }.toSet() + SettingsIndex.map { it.first }.toSet()

@@ -160,8 +160,8 @@ internal fun FolderPanel(
         )
         .testTag("folder-panel"),
         contentAlignment = Alignment.Center) {
-        // The scrim above stays full-bleed under the island/camera; only the centered content needs to clear it -
-        // same split TopPanels.kt uses. Without this, a short folder centers high enough to land under the island.
+        // The scrim above stays full-bleed under the camera; only the centered content needs to clear it.
+        // Without this, a short folder centers high enough to land under the camera.
         // imePadding lives here too, not on the scrim above: it was shrinking the scrim's own painted bounds on
         // some OEM builds (Samsung's inset reporting folds the status bar into the ime-adjacent region while a
         // text field exists in the tree, even unfocused), leaving a lighter, un-scrimmed strip at the very top.

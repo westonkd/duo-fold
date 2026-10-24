@@ -14,7 +14,7 @@ widget", "pick up this icon" or "open Spotlight". This standard keeps those mean
   | Tap | The obvious action (open, toggle, select) |
   | Long press | More about this object: its context menu, then pickup if the finger moves |
   | Horizontal swipe on Home | Exactly one page (Discover and Today View at the leading edge) |
-  | Swipe down on Home | Notifications (top left), Control Center (top right), Spotlight (elsewhere); configurable |
+  | Swipe down on Home | Android's notifications (top left), Android's Quick Settings (top right), Spotlight (elsewhere); configurable |
   | Swipe up | App Library, or an icon's panel where enabled |
   | Back / predictive back | Close the top-most transient surface, then leave editing |
 

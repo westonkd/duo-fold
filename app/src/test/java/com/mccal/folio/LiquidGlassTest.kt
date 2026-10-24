@@ -65,4 +65,11 @@ class LiquidGlassTest {
         assertEquals(Color.Black.red, libraryWash(inkIsDark = false, blurred = true).red, 0f)
         assertTrue(libraryWash(false, blurred = false).alpha > libraryWash(false, blurred = true).alpha)
     }
+
+    @Test fun `Spotlight's glass is Home's glass, tinted the same way`() {
+        val wallpaper = 0xFFC08060.toInt()
+        val home = homePalette(LightDuoPalette, wallpaper)
+        assertEquals(tintedGlass(LightDuoPalette.glass, wallpaper, GLASS_TINT), home.glass)
+        assertEquals(LightDuoPalette, homePalette(LightDuoPalette, null))
+    }
 }

@@ -133,7 +133,7 @@ internal object SafeMode {
 
     /** Settings as they apply while in Safe Mode; saved settings are untouched. */
     fun effective(state: LauncherState): LauncherState = if (!active) state else state.copy(
-        appPanels = false, dockMagnify = false, tintNotifications = false, tintMedia = false, triggerActions = emptyMap(),
-        foldEffect = false, lockCover = false, islandEverywhere = false, dockEverywhere = false, widgetStacks = state.widgetStacks,
-        stackRotate = false, notificationAppRow = false, pageEffect = PageEffect.NONE)
+        appPanels = false, dockMagnify = false, triggerActions = emptyMap(),
+        foldEffect = false, lockCover = false, dockEverywhere = false, widgetStacks = state.widgetStacks,
+        stackRotate = false, pageEffect = PageEffect.NONE)
 }

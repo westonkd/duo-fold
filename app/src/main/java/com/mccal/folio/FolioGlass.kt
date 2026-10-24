@@ -21,23 +21,17 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.addOutline
 
 /**
- * One glass language for every Folio overlay (Control Center, Notification Center, Spotlight,
+ * One glass language for every Folio overlay (Spotlight,
  * pickers): a darker, more solid frost than the Home rail, so busy blurred icons behind never
  * compete with the content, plus a hairline light edge like iOS materials.
  */
 internal object FolioGlass {
     /** Dim over the blurred Home behind an overlay. */
     val scrim = Color.Black.copy(alpha = .42f)
-    /** Large tiles (Control Center modules). */
-    val module = FolioColors.SecondaryBackground.copy(alpha = .76f)
-    /** Cards and rows (notifications, Spotlight sections, search field). */
+    /** Cards and rows (Spotlight sections, search field). */
     val card = FolioColors.SurfaceCard.copy(alpha = .82f)
-    /** Controls sitting on a card (inactive toggles, pills, chips). */
-    val raised = Color.White.copy(alpha = .14f)
     /** Hairline edge that separates glass from glass. */
     val edge = BorderStroke(1.dp, Color.White.copy(alpha = .08f))
-    /** Secondary text on glass. */
-    val secondary = FolioColors.SecondaryLabel
 }
 
 /** Dark, iOS-like colors for Folio's sheets (settings, app options, setup). */
@@ -68,7 +62,6 @@ internal class OpenWindows {
     fun close(entry: Entry) { entries.remove(entry) }
     fun closeAllOf(owner: Any?) { entries.removeAll { it.owner === owner } }
     fun isOpen(owner: Any?): Boolean = entries.any { it.owner === owner }
-    fun anyOpen(): Boolean = entries.isNotEmpty()
 }
 
 /** Open while any launcher sheet is up, so Home blurs behind it like the other overlays. */
@@ -106,11 +99,6 @@ internal val WindowInsets.Companion.folioSafeTop: WindowInsets
 
 /** Per-folder tint colors, provided from saved settings. */
 internal val LocalFolderColors = androidx.compose.runtime.compositionLocalOf { emptyMap<String, Long>() }
-
-/** Velvet/ColorFlow tint options, provided from settings. */
-@androidx.compose.runtime.Immutable
-internal data class TintOptions(val notifications: Boolean = false, val media: Boolean = true, val notificationAppRow: Boolean = true, val mediaIsland: Boolean = true)
-internal val LocalTintOptions = androidx.compose.runtime.staticCompositionLocalOf { TintOptions() }
 
 internal data class GlassLook(val backdropBlur: Boolean = false)
 internal val LocalGlassLook = androidx.compose.runtime.staticCompositionLocalOf { GlassLook() }

@@ -46,15 +46,6 @@ internal val TweakFeatures = listOf(
     TweakFeature("dockMagnify", "Harborline", "Harbor by Evan Swick", // english-only
         R.string.tweak_harborline_detail,
         androidx.compose.material.icons.Icons.Rounded.Add, FolioColors.Value.Indigo, { it.dockMagnify }, { m, v -> m.setDockMagnify(v) }, false),
-    TweakFeature("notificationAppRow", "Roll Call", "Axon by Nepeta", // english-only
-        R.string.tweak_roll_call_detail,
-        androidx.compose.material.icons.Icons.Rounded.Notifications, FolioColors.Value.RedLight, { it.notificationAppRow }, { m, v -> m.setNotificationAppRow(v) }, true),
-    TweakFeature("tintNotifications", "Palette", "Velvet by NoisyFlake & HiMyNameisUbik", // english-only
-        R.string.tweak_palette_detail,
-        androidx.compose.material.icons.Icons.Rounded.Star, FolioColors.Value.Orange, { it.tintNotifications }, { m, v -> m.setTintNotifications(v) }, false),
-    TweakFeature("tintMedia", "Afterglow", "ColorFlow by David Goldman", // english-only
-        R.string.tweak_colored_albums_detail,
-        androidx.compose.material.icons.Icons.Rounded.MusicNote, FolioColors.Value.Pink, { it.tintMedia }, { m, v -> m.setTintMedia(v) }, true, keywords = R.string.settings_keywords_afterglow),
     // The switch is on or off, and which effect it is lives on Flipbook's own page. Turning it on brings back the last
     // one chosen; the cube the first time, since that is the one Barrel was known for.
     TweakFeature("pageEffects", "Flipbook", "Barrel by Aaron Ash, Cylinder by Reed Weichler", // english-only

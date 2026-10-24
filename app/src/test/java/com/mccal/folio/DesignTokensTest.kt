@@ -70,7 +70,7 @@ class DesignTokensTest {
         // The segmented control's corners are concentric: its thumb is the track's radius minus the 2 dp inset (DES-8).
         assertEquals(FolioRadius.SEGMENT - FolioSpace.HAIR, FolioRadius.SEGMENT_THUMB)
         assertEquals(listOf(14, 16, 20, 11), listOf(FolioType.COMPACT, FolioType.CALLOUT, FolioType.TITLE3, FolioType.CAPTION))
-        assertEquals(listOf(12, 18, 22, 30), listOf(FolioRadius.ROW, FolioRadius.FLOATING, FolioRadius.NOTIFICATION, FolioRadius.RAIL))
+        assertEquals(listOf(12, 18, 30), listOf(FolioRadius.ROW, FolioRadius.FLOATING, FolioRadius.RAIL))
         // The sheet scheme's colors are named once, and the glass card is the surface card at 82%.
         assertEquals(FolioColors.SurfaceCard.copy(alpha = .82f), FolioGlass.card)
         assertEquals(FolioColors.SurfaceCard, FolioSheetColors.surfaceContainer)

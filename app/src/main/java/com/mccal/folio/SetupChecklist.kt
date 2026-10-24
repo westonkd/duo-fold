@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -56,8 +55,8 @@ internal fun rememberSetupSteps(isDefaultHome: Boolean, onMakeDefault: () -> Uni
             SetupStep(Icons.Rounded.Home, context.getString(R.string.make_folio_your_home_app), context.getString(R.string.so_home_gestures_and_the_fold_effect_are),
                 isDefaultHome, true, context.getString(R.string.set)) { onMakeDefault() },
             SetupStep(Icons.Rounded.Notifications, context.getString(R.string.notification_access),
-                context.getString(R.string.powers_the_dynamic_island_and_notificati),
-                IslandListenerService.hasAccess(context), true, context.getString(R.string.allow)) { open(IslandListenerService.accessSettingsIntent(context)) },
+                context.getString(R.string.powers_badges_lock_cover_and_now_playing),
+                NotificationListener.hasAccess(context), true, context.getString(R.string.allow)) { open(NotificationListener.accessSettingsIntent(context)) },
             SetupStep(Icons.Rounded.Accessibility, context.getString(R.string.folio_gestures_service),
                 context.getString(R.string.lets_pull_downs_open_system_panels_and_s),
                 SystemShadeAccessibilityService.isConnected(), true, context.getString(R.string.turn_on)) { onShadeSetup() },
@@ -65,12 +64,7 @@ internal fun rememberSetupSteps(isDefaultHome: Boolean, onMakeDefault: () -> Uni
             if (foldLockSetting(context) != null) SetupStep(Icons.Rounded.Devices, context.getString(R.string.continue_apps_on_cover_screen_always),
                 context.getString(R.string.keeps_the_cover_screen_on_when_you_fold),
                 foldStaysAwake(context), true, context.getString(R.string.open)) { open(Intent(Settings.ACTION_DISPLAY_SETTINGS)) } else null,
-            SetupStep(Icons.Rounded.LightMode, context.getString(R.string.modify_system_settings),
-                context.getString(R.string.lets_control_center_change_brightness_an),
-                Settings.System.canWrite(context), false, context.getString(R.string.allow)) {
-                open(Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:${context.packageName}")))
-            },
-            SetupStep(Icons.Rounded.DarkMode, context.getString(R.string.do_not_disturb_access), context.getString(R.string.lets_control_center_turn_do_not_disturb),
+            SetupStep(Icons.Rounded.DarkMode, context.getString(R.string.do_not_disturb_access), context.getString(R.string.lets_focus_and_actions_turn_do_not_distu),
                 notifications.isNotificationPolicyAccessGranted, false, context.getString(R.string.allow)) { open(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) },
             SetupStep(Icons.Rounded.Wallpaper, context.getString(R.string.keep_your_wallpaper),
                 context.getString(R.string.coming_from_samsung_s_or_another_launche),

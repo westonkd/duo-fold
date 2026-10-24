@@ -13,6 +13,5 @@ class SafetyFixesTest {
         val actions = source("ActionRegistry.kt")
         assertTrue(actions.contains("needs_accessibility_service"))
         assertTrue(actions.contains("needs_dnd_access"))
-        assertTrue(source("TopPanels.kt").contains("needs_accessibility_service"))
     }
 }

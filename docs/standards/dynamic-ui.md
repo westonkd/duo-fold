@@ -55,7 +55,7 @@ Animation owner: HomeTiles dock row
 ### State
 
 - **DYN-1 MUST** model dynamic states as a sealed type or enum when there are more than two, not as a set of booleans
-  that allow impossible combinations. `IslandActivity` and `IslandContent` are the model.
+  that allow impossible combinations.
 - **DYN-2 MUST NOT** change source state from an animation callback, frame count or animation end. Animations read
   state; they don't write it.
 - **DYN-3 MUST** give every dynamic element a static, understandable form: what the user sees with animations off, with
@@ -128,7 +128,7 @@ Animation owner: HomeTiles dock row
 
 Good:
 
-- Sealed state for the island (`Island.kt:80`, `:116`, `CutoutIsland.kt:69`), exposed as `StateFlow`s.
+- Now playing and notifications are exposed as `StateFlow`s (`NotificationListener.kt`).
 - `DeviceStatus` is callbacks only, registered on start and removed on stop (`DeviceStatus.kt:68-97`).
 - `Ticker` is one shared clock with `WhileSubscribed(0)`; install rings come from `PackageInstaller.SessionCallback`.
 - Jiggle is one shared infinite transition read in `graphicsLayer` (`Jiggle.kt:69-88`); dock magnification scales in

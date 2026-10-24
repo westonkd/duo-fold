@@ -70,7 +70,7 @@ way of bringing that back:
 
 - **Badges that match the app.** Badges can take the color of each app's icon, like the ColorBadges tweak. It was more
   complex than I expected, but it's neat, so check it out (Settings › Icons & Side Bar › Badge color).
-- **The iPhone Duo Side Bar.** The status bar, Dynamic Island and dock live on the right edge. Thanks to
+- **The iPhone Duo Side Bar.** The status bar and dock live on the right edge. Thanks to
   [DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher), whose dev made it possible for me to build on top of their work.
 - **Left-handed mode and Spotlight.** Flip the Side Bar to the left, and search everything from Spotlight.
 - **Page Effects,** inspired by Barrel.
@@ -102,9 +102,6 @@ There's a lot to this launcher, and it's fun. I hope you have as much fun with i
     <th colspan="3">Unfolded</th>
   </tr>
   <tr>
-    <td align="center" colspan="3"><img src="docs/images/folio-inner-cc.webp" width="640" alt="Control Center on the unfolded screen: connectivity toggles, a music player, Focus, brightness and volume sliders, and quick controls"><br><sub>Control Center</sub></td>
-  </tr>
-  <tr>
     <td align="center" colspan="3"><img src="docs/images/folio-inner-settings.webp" width="640" alt="Settings in split view on the unfolded screen: the sidebar on the left and the Icons &amp; Side Bar page with a live Home preview on the right"><br><sub>Settings in split view, like iPad</sub></td>
   </tr>
 </table>
@@ -123,8 +120,8 @@ There's a lot to this launcher, and it's fun. I hope you have as much fun with i
 - Bigger screens draw everything bigger, like iPad, instead of a tiny phone layout in the middle.
 
 **The iOS stuff**
-- Side Bar with the status bar, a Dynamic Island that wraps the camera, and the dock.
-- Notification Center, Control Center, Spotlight, Today View, Smart Stacks and the widget gallery.
+- Side Bar with the status bar and the dock.
+- Spotlight, Today View, Smart Stacks and the widget gallery.
 - Jiggle mode, folders, Icon Stacks, per-page icon size and labels, and App Library search.
 - Clear Badge from an app's long-press menu.
 - Focus modes with schedules and the Home pages you want to see.
@@ -165,8 +162,8 @@ There's a lot to this launcher, and it's fun. I hope you have as much fun with i
 Android doesn't allow everything iOS does, so a few things work differently:
 
 - **Lock screen:** Folio can't replace Android's lock screen. The Lock Cover shows after you unlock.
-- **Status Bar in other apps:** Android doesn't let an app reserve space inside other apps, so the Side Bar status stays on Home. The Dynamic Island and dock can float over other apps with the gestures service.
-- **Pull-down panels:** opening Notification Center and Control Center from the top corners needs Folio's accessibility (gestures) service.
+- **Status Bar in other apps:** Android doesn't let an app reserve space inside other apps, so the Side Bar status stays on Home. The dock can float over other apps with the gestures service.
+- **Pull-downs:** opening Android's notifications and Quick Settings from the top corners of Home needs Folio's accessibility (gestures) service.
 - **Folding from Home on Samsung:** set Settings › Display › Continue apps on cover screen to Always, or the phone locks when you fold.
 - **Google Discover** needs the Google app and depends on your phone supporting it.
 
@@ -208,8 +205,8 @@ Tests: `./gradlew :app:testDebugUnitTest`
 **Does it need root?** No. Folio is a normal Android launcher.
 
 **Why does it ask for so many permissions?** It doesn't need most of them. Only being your Home app is required. The
-rest are optional and asked for where they're used, like notification access for the Dynamic Island, or the gestures
-service for pull-down panels. Every permission is listed with what it's for in Settings › Privacy & Permissions, in
+rest are optional and asked for where they're used, like notification access for badges, or the gestures
+service for pull-downs. Every permission is listed with what it's for in Settings › Privacy & Permissions, in
 [PERMISSIONS.md](PERMISSIONS.md) (all 14, with what breaks if you say no) and in [PRIVACY.md](PRIVACY.md).
 
 **Does Folio send my data anywhere?** No. No accounts, no ads, no analytics. Crash reports stay on your phone unless you
@@ -226,7 +223,7 @@ Settings › General › Advanced › Share Diagnostics hands you the details to
 - `app/src/main/java/com/mccal/folio/`: the launcher (Kotlin, Jetpack Compose, Jetpack WindowManager)
   - `LayoutModel.kt`: screen sizes, Home layout and big-screen scaling
   - `LauncherScreen.kt`, `HomeWorkspace.kt`: Home, pages and editing
-  - `StatusRail.kt`, `CutoutIsland.kt`: the Side Bar status bar and Dynamic Island
+  - `StatusRail.kt`: the Side Bar status bar
   - `CustomizationSheet.kt`, `IosControls.kt`, `FolioSheet.kt`: Settings and the iOS controls
 - `app/src/test/`: unit tests, including the screen size tests
 - `docs/`: [user guide](docs/user-guide.md), [troubleshooting](docs/troubleshooting.md), [architecture](docs/architecture.md)

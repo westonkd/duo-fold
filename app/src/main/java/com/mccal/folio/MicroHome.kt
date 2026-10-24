@@ -70,8 +70,8 @@ internal fun MicroHome(apps: List<AppEntry>, status: DeviceStatus, width: Dp, he
     // The shared minute tick rather than a loop of its own (DYN-14).
     val now by rememberMinuteTick()
     val roomy = minOf(width, height) >= 300.dp
-    val media = IslandListenerService.activity.collectAsStateWithLifecycle().value as? IslandActivity.Media
-    val notifications = IslandListenerService.notifications.collectAsStateWithLifecycle().value.size
+    val media = NotificationListener.media.collectAsStateWithLifecycle().value
+    val notifications = NotificationListener.notifications.collectAsStateWithLifecycle().value.size
     // Like the iOS Lock Screen: no AM/PM, so the time always fits one line.
     val time = android.text.format.DateFormat.format(
         if (android.text.format.DateFormat.is24HourFormat(context)) "H:mm" else "h:mm", now).toString()
@@ -83,7 +83,7 @@ internal fun MicroHome(apps: List<AppEntry>, status: DeviceStatus, width: Dp, he
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
         // Tap the time for Notification Center; hold it for Folio's settings.
         Column(Modifier.clip(RoundedCornerShape(FolioRadius.GROUP.dp))
-            .combinedClickable(onClickLabel = stringResource(R.string.notification_center), onLongClickLabel = stringResource(R.string.folio_settings),
+            .combinedClickable(onClickLabel = stringResource(R.string.notifications_title), onLongClickLabel = stringResource(R.string.folio_settings),
                 onLongClick = onSettings, onClick = onNotifications)
             .padding(horizontal = FolioSpace.COMPACT.dp, vertical = FolioSpace.HAIR.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(time, color = Color.White, fontSize = timeSize.sp, fontWeight = FontWeight.SemiBold,
@@ -106,7 +106,7 @@ internal fun MicroHome(apps: List<AppEntry>, status: DeviceStatus, width: Dp, he
 }
 
 @Composable
-private fun MicroNowPlaying(media: IslandActivity.Media) {
+private fun MicroNowPlaying(media: NowPlaying) {
     val controls = runCatching { media.controller.transportControls }.getOrNull()
     val open = runCatching { media.controller.sessionActivity }.getOrNull()
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(FolioRadius.PANEL.dp)).background(Color.White.copy(alpha = .14f))

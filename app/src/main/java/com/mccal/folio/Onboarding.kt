@@ -308,13 +308,13 @@ private fun StartingPointPage(state: LauncherState, model: LauncherModel, tick: 
 
 /**
  * What setup used to ask on pages of its own, now offered when it is done and asked again where it is used: notification
- * access for the island and the accessibility service for the pull-down panels, only while they are still off, and the
+ * access for badges and the accessibility service for the pull-downs, only while they are still off, and the
  * wallpaper. Nothing is blocked on any of it.
  */
 @Composable
 private fun FinishSettingUp(tick: Int, systemWallpaper: Boolean, onWallpaper: (Boolean) -> Unit, onShadeSetup: () -> Unit, open: (Intent?) -> Unit) {
     val context = LocalContext.current
-    val notifications = remember(tick) { IslandListenerService.hasAccess(context) }
+    val notifications = remember(tick) { NotificationListener.hasAccess(context) }
     val panels = remember(tick) { SystemShadeAccessibilityService.isConnected() }
     val total = 2
     val done = listOf(notifications, panels).count { it }
@@ -325,7 +325,7 @@ private fun FinishSettingUp(tick: Int, systemWallpaper: Boolean, onWallpaper: (B
             fontSize = FolioType.SUBHEAD.sp, modifier = Modifier.testTag("finish-progress"))
     }
     SheetGroup {
-        FinishRow(Icons.Rounded.Notifications, stringResource(R.string.notifications_title), stringResource(R.string.finish_notifications_detail), "finish-notifications", notifications) { open(IslandListenerService.accessSettingsIntent(context)) }
+        FinishRow(Icons.Rounded.Notifications, stringResource(R.string.notifications_title), stringResource(R.string.finish_notifications_detail), "finish-notifications", notifications) { open(NotificationListener.accessSettingsIntent(context)) }
         MenuDivider()
         FinishRow(Icons.Rounded.SwipeDown, stringResource(R.string.pull_down_for_more), stringResource(R.string.finish_panels_detail), "finish-panels", panels) { onShadeSetup() }
         MenuDivider()

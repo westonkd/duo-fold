@@ -7,6 +7,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -44,12 +45,12 @@ class DiscoverModelTest {
         model(discoverStore, LauncherModel.readOnlyFactory)
         discoverStore.clear() // Discover closes
 
-        // The Island tile, then any later change on Home that saves.
-        FolioSettingsBridge.set(context, SettingKeys.ISLAND_EVERYWHERE, true) { model, value -> model.setIslandEverywhere(value) }
-        home.setDockEverywhere(true)
+        // The Dock tile, then any later change on Home that saves.
+        FolioSettingsBridge.set(context, SettingKeys.DOCK_EVERYWHERE, true) { model, value -> model.setDockEverywhere(value) }
+        home.setStandBy(false)
 
-        assertTrue(saved().getBoolean(SettingKeys.ISLAND_EVERYWHERE))
         assertTrue(saved().getBoolean(SettingKeys.DOCK_EVERYWHERE))
+        assertFalse(saved().getBoolean("standBy"))
         assertSame("Home stays the model tiles and Focus go through", home, FolioSettingsBridge.liveModel?.get())
     }
 

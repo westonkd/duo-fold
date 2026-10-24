@@ -145,9 +145,9 @@ internal object ActionRunner {
         source: ActionSource = ActionSource.DIRECT,
         registry: ActionRegistry = ActionRegistry.standard,
         env: ActionEnv = ActionEnv.live(context),
-        notice: (Int) -> Unit = { IslandEvents.notice(context, context.getString(it)) },
+        notice: (Int) -> Unit = { FolioNotice.show(context, context.getString(it)) },
         trail: (String) -> Unit = Diagnostics::event,
-        unavailable: (String) -> Unit = { IslandEvents.notice(context, context.getString(R.string.app_is_unavailable, it)) },
+        unavailable: (String) -> Unit = { FolioNotice.show(context, context.getString(R.string.app_is_unavailable, it)) },
     ): Boolean {
         val spec = registry.spec(ref.id)
         val verdict = registry.verdict(ref, env, source)

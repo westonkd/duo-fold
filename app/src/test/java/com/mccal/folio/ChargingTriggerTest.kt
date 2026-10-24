@@ -5,8 +5,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** The charging island comes up when the cable goes in, whatever the battery says at a charge limit. */
-class ChargingIslandTest {
+/** The Charging trigger fires when the cable goes in, whatever the battery says at a charge limit. */
+class ChargingTriggerTest {
     private val usb = BatteryManager.BATTERY_PLUGGED_USB
 
     @Test fun `plugging in at a charge limit starts charging`() {

@@ -203,7 +203,7 @@ internal fun StandByOverlay(way: StandByWay?, ready: Boolean, pose: FoldingFeatu
         onDispose { if (turn && before != null) activity.requestedOrientation = before }
     }
     BackHandler(active) { active = false; dismissed = true }
-    // Home keeps everything else off StandBy while it's up (MainActivity: the island, the headphones card, the setup reminder).
+    // Home keeps everything else off StandBy while it's up (MainActivity: the setup reminder).
     DisposableEffect(active) { onShowing(active); onDispose { if (active) onShowing(false) } }
 
     AnimatedVisibility(active, enter = fadeIn(tween(500)), exit = fadeOut(tween(300))) {
@@ -273,7 +273,7 @@ private fun StandByInfo(status: DeviceStatus, ink: Color, soft: Color, night: Bo
     val context = LocalContext.current
     val tick by rememberMinuteTick()
     val alarm = remember(tick) { UpNext.nextAlarm(context) }
-    val media = IslandListenerService.activity.collectAsState().value as? IslandActivity.Media
+    val media = NotificationListener.media.collectAsState().value
     Column(modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally) {
         Row(horizontalArrangement = Arrangement.spacedBy(28.dp), verticalAlignment = Alignment.CenterVertically) {

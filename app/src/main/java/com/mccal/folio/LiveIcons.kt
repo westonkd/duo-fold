@@ -588,21 +588,6 @@ internal fun dominantAccent(pixels: IntArray): Int? {
     return (0xFF shl 24) or (channel(rs[best]) shl 16) or (channel(gs[best]) shl 8) or channel(bs[best])
 }
 
-/** Main color of an icon or album art (cached), for Velvet/ColorFlow-style tinting; null until known or for gray images. */
-@Composable
-internal fun rememberAccent(bitmap: android.graphics.Bitmap?): Color? {
-    if (bitmap == null) return null
-    val accent by produceState(BadgeAccents.cached(bitmap), bitmap) {
-        if (value == null) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { BadgeAccents.of(bitmap) }
-    }
-    return accent?.let { Color(it) }
-}
-
-/** [base] mixed toward [accent] by [amount], keeping [base]'s alpha. */
-internal fun mixColor(base: Color, accent: Color?, amount: Float): Color = if (accent == null) base else
-    Color(base.red + (accent.red - base.red) * amount, base.green + (accent.green - base.green) * amount,
-        base.blue + (accent.blue - base.blue) * amount, base.alpha)
-
 /**
  * Clear Badge (in an app's long-press menu): hides the badge for the notifications showing now, without dismissing
  * them. A notification posted later brings the badge back, like iOS. Kept in memory only.

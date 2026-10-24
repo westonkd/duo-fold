@@ -36,7 +36,7 @@ class SettingsRegroupTest {
     }
 
     @Test fun searchForSideBarLandsOnTheStatusPageWhereItsCardIs() {
-        assertTrue(sheet.contains("if (page == CustomizationPage.STATUS) SettingsCard(stringResource(R.string.side_rail)) {"))
+        assertTrue(between("CustomizationPage.STATUS -> {", "CustomizationPage.FOLD -> {").contains("SettingsCard(stringResource(R.string.side_rail)) {"))
         assertTrue(sheet.contains("R.string.side_rail to CustomizationPage.STATUS"))
         assertFalse(sheet.contains("R.string.side_rail to CustomizationPage.HOME"))
     }

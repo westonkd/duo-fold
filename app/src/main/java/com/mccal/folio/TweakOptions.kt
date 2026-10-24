@@ -41,11 +41,6 @@ internal object TweakOptions {
                 "subtle" to R.string.tweak_opt_subtle, "standard" to R.string.standard, "strong" to R.string.tweak_opt_strong), "standard"),
             TweakOption.Toggle("tick", R.string.tweak_opt_tick, on = true),
         ),
-        // ColorFlow's two places: the Now Playing card, and the sound bars in the island. Both on is what it always did.
-        "tintMedia" to listOf(
-            TweakOption.Toggle("card", R.string.tweak_opt_music_card, on = true),
-            TweakOption.Toggle("island", R.string.tweak_opt_island_bars, on = true),
-        ),
     )
 
     fun of(tweakId: String): List<TweakOption> = table[tweakId].orEmpty()

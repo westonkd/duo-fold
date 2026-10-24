@@ -80,7 +80,7 @@ internal fun loadQuickActions(context: android.content.Context, app: AppEntry, l
  */
 internal fun startQuickAction(context: android.content.Context, app: AppEntry, action: QuickAction) {
     runCatching { context.getSystemService(LauncherApps::class.java).startShortcut(action.info, null, null) }
-        .onFailure { IslandEvents.notice(context, context.getString(R.string.app_is_unavailable, action.label.ifBlank { app.label }), app.icon) }
+        .onFailure { FolioNotice.show(context, context.getString(R.string.app_is_unavailable, action.label.ifBlank { app.label })) }
 }
 
 /**

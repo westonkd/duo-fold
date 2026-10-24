@@ -7,7 +7,6 @@
     <!-- Unlock before listing hidden apps (Settings › Search & App Library). -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
     <!-- Granted only by the owner, from a computer (adb shell pm grant). Nothing uses it yet. -->
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
@@ -77,36 +76,12 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-        <!-- The shade as an app a phone's own button or gesture action can open: see ShadeShortcutActivity. -->
-        <activity android:name=".ShadeReplyActivity" android:exported="false"
-            android:theme="@style/Theme.Folio.FoldBridge" android:excludeFromRecents="true" android:noHistory="true"
-            android:taskAffinity="com.mccal.folio.reply" android:launchMode="singleTask"
-            android:windowSoftInputMode="adjustResize|stateVisible" />
-        <activity android:name=".ShadeShortcutActivity" android:exported="false"
-            android:theme="@style/Theme.Folio.FoldBridge" android:excludeFromRecents="true" android:noHistory="true"
-            android:taskAffinity="com.mccal.folio.shade" android:launchMode="singleInstance" />
-        <activity-alias android:name=".ShadeShortcutNotifications" android:targetActivity=".ShadeShortcutActivity"
-            android:exported="true" android:label="@string/shade_shortcut_notifications" android:icon="@mipmap/ic_launcher">
-            <meta-data android:name="folio.shade.panel" android:value="NOTIFICATIONS" />
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-        <activity-alias android:name=".ShadeShortcutQuickSettings" android:targetActivity=".ShadeShortcutActivity"
-            android:exported="true" android:label="@string/shade_shortcut_quick_settings" android:icon="@mipmap/ic_launcher">
-            <meta-data android:name="folio.shade.panel" android:value="QUICK_SETTINGS" />
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
         <activity android:name=".FoldBridgeActivity" android:exported="false"
             android:theme="@style/Theme.Folio.FoldBridge"
             android:taskAffinity="com.mccal.folio.foldbridge" android:excludeFromRecents="true"
             android:noHistory="true" android:resizeableActivity="true"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|density" />
-        <service android:name=".IslandListenerService" android:label="@string/label_island_listener"
+        <service android:name=".NotificationListener" android:label="@string/label_notification_listener"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:exported="true">
             <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>
         </service>
@@ -199,11 +174,6 @@
         <service android:name=".SpotlightTileService" android:exported="true" android:label="@string/spotlight"
             android:icon="@drawable/ic_tile_search" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
-        </service>
-        <service android:name=".IslandTileService" android:exported="true" android:label="@string/island"
-            android:icon="@drawable/ic_tile_island" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
-            <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
-            <meta-data android:name="android.service.quicksettings.TOGGLEABLE_TILE" android:value="true" />
         </service>
         <service android:name=".DockTileService" android:exported="true" android:label="@string/label_dock_tile"
             android:icon="@drawable/ic_tile_dock" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">

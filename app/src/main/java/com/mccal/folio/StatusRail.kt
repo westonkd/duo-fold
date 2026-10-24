@@ -169,7 +169,7 @@ internal fun statusRingArc(dots: Int): RingArc {
 internal fun statusRingDotAngles(dots: Int): List<Float> =
     List(dots.coerceAtLeast(0)) { i -> 90f + ((dots - 1) / 2f - i) * STATUS_RING_DOT_PITCH }
 
-/** Shared capsule look for the side rail (status, dock, island). */
+/** Shared capsule look for the side rail (status, dock). */
 
 @Composable
 fun StatusRail(
@@ -178,7 +178,6 @@ fun StatusRail(
     compact: Boolean = false,
     iconSize: Dp = 40.dp,
     locationInUse: Boolean = false,
-    island: (@Composable () -> Unit)? = null,
     style: StatusStyle = StatusStyle(),
     /** The Focus that's on: its icon sits above the time, as iPhone shows it beside the clock. */
     focus: FocusMode? = null,
@@ -228,7 +227,7 @@ fun StatusRail(
         else -> ink
     }
     val capsule = RoundedCornerShape(FolioRadius.RAIL.dp)
-    val openLabel = stringResource(R.string.control_center)
+    val openLabel = stringResource(R.string.quick_settings)
     BoxWithConstraints(modifier.testTag("status-rail").semantics(mergeDescendants = true) { contentDescription = description }
         .then(if (onClick == null) Modifier else Modifier.clickable(remember { MutableInteractionSource() }, indication = null,
             onClickLabel = openLabel, role = Role.Button, onClick = onClick))) {
@@ -453,7 +452,6 @@ fun StatusRail(
                     fontSize = detailSize, fontWeight = FontWeight.Medium, style = LocalTextStyle.current.copy(shadow = textShadow),
                     maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
             }
-            if (island != null) { Spacer(Modifier.height(8.dp)); island() }
         }
     }
 }

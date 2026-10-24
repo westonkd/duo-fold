@@ -30,10 +30,10 @@ class FirstUseHintsTest {
         assertTrue(FirstUseHints.pending(context, FirstUseHint.UNFOLD))
     }
 
-    @Test fun `with no island to show it in, a hint is not used up`() {
+    @Test fun `a hint that was shown is not shown again`() {
         context.getSharedPreferences("first_use_hints", Context.MODE_PRIVATE).edit().clear().commit()
         FirstUseHints.arm(context)
         FirstUseHints.show(context, FirstUseHint.UNFOLD)
-        assertTrue("nothing showed it, so it is still to come", FirstUseHints.pending(context, FirstUseHint.UNFOLD))
+        assertFalse(FirstUseHints.pending(context, FirstUseHint.UNFOLD))
     }
 }

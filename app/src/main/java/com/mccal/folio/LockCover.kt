@@ -64,7 +64,7 @@ internal fun LockCover(visible: Boolean, onDismiss: () -> Unit) {
                 .format(DateTimeFormatter.ofPattern(if (is24) "EEE HH:mm" else "EEE h:mm a")) // english-only
         }
     }
-    val notifications = IslandListenerService.notifications.collectAsStateWithLifecycle().value.take(4)
+    val notifications = NotificationListener.notifications.collectAsStateWithLifecycle().value.take(4)
 
     Box(Modifier.fillMaxSize().graphicsLayer {
         translationY = offset.value
@@ -118,7 +118,7 @@ internal fun LockCover(visible: Boolean, onDismiss: () -> Unit) {
             Spacer(Modifier.height(24.dp))
             notifications.take(room).forEach { item ->
                 Row(Modifier.fillMaxWidth().padding(vertical = FolioSpace.TINY.dp).clip(RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)).background(FolioColors.PopoverSurface.copy(alpha = .8f))
-                    .clickable { onDismiss(); IslandListenerService.openNotification(context, item) }.padding(FolioSpace.MEDIUM.dp),
+                    .clickable { onDismiss(); NotificationListener.openNotification(context, item) }.padding(FolioSpace.MEDIUM.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     item.icon?.let { Image(it.asImageBitmap(), null, Modifier.size(34.dp).clip(RoundedCornerShape(8.dp))) }
                     Spacer(Modifier.width(10.dp))

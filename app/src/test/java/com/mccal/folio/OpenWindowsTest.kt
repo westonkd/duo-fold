@@ -5,7 +5,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -32,7 +31,6 @@ class OpenWindowsTest {
         windows.open(homeA)
         assertTrue(windows.isOpen(homeA))
         assertFalse(windows.isOpen(homeB))
-        assertTrue(windows.anyOpen())
     }
 
     @Test fun `a stopped Home's sheet does not blur the Home in front`() {
@@ -71,7 +69,6 @@ class OpenWindowsTest {
         shown = false
         compose.waitForIdle()
         assertFalse(windows.isOpen(compose.activity))
-        assertEquals(false, windows.anyOpen())
     }
 
     @Test fun `a page counts only once it covers Home, and stops when it no longer does`() {

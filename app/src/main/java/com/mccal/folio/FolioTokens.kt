@@ -166,8 +166,6 @@ internal object FolioRadius {
     const val ROW = 12
     /** Floating menus and action sheets. */
     const val FLOATING = 18
-    /** Notification cards and the stack behind them. */
-    const val NOTIFICATION = 22
     /** The dock and the side rail: a capsule. */
     const val RAIL = 30
     /** A segmented control's track. */

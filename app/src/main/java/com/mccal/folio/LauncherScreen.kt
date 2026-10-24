@@ -2,7 +2,6 @@
 
 package com.mccal.folio
 
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.stringResource
 import android.appwidget.AppWidgetProviderInfo
 import android.os.UserManager
@@ -174,9 +173,9 @@ fun LauncherScreen(
         val pkg = deletingPackage
         deleting = null; deletingPackage = null
         when (deleteOutcome(result.resultCode, installResultOf(result.data), pkg == null || isInstalled(launcherActivity, pkg))) {
-            DeleteOutcome.DELETED -> IslandEvents.notice(launcherActivity, launcherActivity.getString(R.string.app_deleted, label))
+            DeleteOutcome.DELETED -> FolioNotice.show(launcherActivity, launcherActivity.getString(R.string.app_deleted, label))
             DeleteOutcome.CANCELED -> Unit
-            DeleteOutcome.FAILED -> IslandEvents.notice(launcherActivity, launcherActivity.getString(R.string.app_not_deleted, label))
+            DeleteOutcome.FAILED -> FolioNotice.show(launcherActivity, launcherActivity.getString(R.string.app_not_deleted, label))
         }
     }
     val deleteApp: (AppEntry) -> Unit = { app ->
@@ -184,7 +183,7 @@ fun LauncherScreen(
         deletingPackage = app.packageName
         runCatching { uninstall.launch(uninstallIntent(app.packageName)) }.onFailure {
             deleting = null; deletingPackage = null
-            IslandEvents.notice(launcherActivity, launcherActivity.getString(R.string.app_not_deleted, app.label))
+            FolioNotice.show(launcherActivity, launcherActivity.getString(R.string.app_not_deleted, app.label))
         }
     }
     // The setting says Android's wallpaper but the window was built without it: rebuild it once to match.
@@ -408,14 +407,14 @@ fun LauncherScreen(
         }
     }
     BackHandler(enabled = sheet == "widgets") { widgetPickerBack() }
-    // Off while Spotlight or a top panel is open, so Back always closes those first, whatever order the handlers registered in.
+    // Off while Spotlight is open, so Back always closes it first, whatever order the handlers registered in.
     // App Library, predictive back: the library eases back as you swipe and returns to Home when you let go.
     var libraryBack by remember { mutableFloatStateOf(0f) }
-    val libraryBackActive = sheet.isEmpty() && !launcherActivity.spotlightVisible.value && launcherActivity.topPanel.value == null &&
+    val libraryBackActive = sheet.isEmpty() && !launcherActivity.spotlightVisible.value &&
         pager.currentPage == visibleHomePages && !resize.active && !drag.active && overlays.menu == null && !homeEdit.active
     PredictiveBack(enabled = libraryBackActive, onProgress = { libraryBack = it }, onCancel = { libraryBack = 0f },
         onBack = { focus.clearFocus(); scope.launch { pager.animateScrollToPage(0); libraryBack = 0f } })
-    BackHandler(enabled = sheet.isEmpty() && !launcherActivity.spotlightVisible.value && launcherActivity.topPanel.value == null && !libraryBackActive) { if (resize.active) resize.stop() else if (drag.active) {
+    BackHandler(enabled = sheet.isEmpty() && !launcherActivity.spotlightVisible.value && !libraryBackActive) { if (resize.active) resize.stop() else if (drag.active) {
         val destination = if (drag.source?.target is DropTarget.Library) homePages else drag.originPage.coerceAtMost(homePages - 1)
         drag.clear(); scope.launch { pager.scrollToPage(destination) }
     } else if (overlays.menu != null) overlays.menu = null else if (homeEdit.active) homeEdit.stop()
@@ -726,11 +725,7 @@ fun LauncherScreen(
         var homeBoxTop by remember { mutableFloatStateOf(0f) }
         val hinge = LocalHinge.current
         BoxWithConstraints(Modifier.fillMaxSize().onGloballyPositioned { homeBoxTop = it.positionInWindow().y }
-            .windowInsetsPadding(WindowInsets.safeDrawing.exclude(WindowInsets.ime).union(rememberHiddenCameraInsets())
-            // Short windows run the rail the full height, so keep the upright island's strip clear there. Regular-size
-            // windows (unfolded portrait) keep Home centered: the island sits below the status and beside the dock bar.
-            .union(rememberSideIslandInsets(state.island && androidx.compose.ui.platform.LocalConfiguration.current.let {
-                !it.fitsRegularHomeLayout() })))) {
+            .windowInsetsPadding(WindowInsets.safeDrawing.exclude(WindowInsets.ime).union(rememberHiddenCameraInsets()))) {
             // Tier C: a tiny cover screen gets the focused Home instead of a full page shrunk past tappable sizes.
             // Settings and first-run setup still open over the regular screen below.
             if (isMicroWindow(maxWidth.value, maxHeight.value) && sheet.isEmpty() && !showFirstRun) {
@@ -738,7 +733,7 @@ fun LauncherScreen(
                     (state.dock + state.homeSlots).filterNotNull().distinct().mapNotNull(appsById::get)
                 }
                 MicroHome(microApps, deviceStatus, maxWidth, maxHeight, onLaunch = onLaunch,
-                    onNotifications = { launcherActivity.openSystemShade(ShadePanel.NOTIFICATIONS) },
+                    onNotifications = { launcherActivity.openAndroidShade(ShadePanel.NOTIFICATIONS) },
                     onSearch = { launcherActivity.openSpotlight() }, onSettings = { sheet = "settings" })
                 return@BoxWithConstraints
             }
@@ -885,11 +880,10 @@ fun LauncherScreen(
                     if (panel == ShadePanel.SEARCH) {
                         if (pager.currentPage != visibleHomePages) when (state.swipeDownHome) {
                             "SPOTLIGHT" -> launcherActivity.openSpotlight()
-                            // Notification Center, or Android's own shade when Folio's panels are off.
-                            "NOTIFICATIONS" -> launcherActivity.openSystemShade(ShadePanel.NOTIFICATIONS)
+                            "NOTIFICATIONS" -> launcherActivity.openAndroidShade(ShadePanel.NOTIFICATIONS)
                         }
                     }
-                    else launcherActivity.openSystemShade(panel)
+                    else launcherActivity.openAndroidShade(panel)
                 },
                 onLeadingOverscroll = if (firstHome == 0 && discoverMode) onDiscover else null,
             )) {
@@ -1008,12 +1002,7 @@ fun LauncherScreen(
                     },
                 compact = contentHeight < COMPACT_DOCK_MAX_HEIGHT_DP.dp, iconSize = dockIconSize(geometry.iconSize).dp, style = state.statusStyle,
                 focus = state.focusModes.firstOrNull { it.id == state.activeFocus },
-                onClick = { launcherActivity.openSystemShade(ShadePanel.QUICK_SETTINGS) },
-                // Live activities grow the rail under the status; the dock below moves with the measured height.
-                island = if (state.island && state.railActivities) ({
-                    RailLiveActivity(IslandListenerService.activity.collectAsStateWithLifecycle().value
-                        ?.takeUnless { it is IslandActivity.Call && "CALL" in state.islandEventsOff }, preset.dockWidth.dp)
-                }) else null)
+                onClick = { launcherActivity.openAndroidShade(ShadePanel.QUICK_SETTINGS) })
             // Background and border without clipping, so Harbor-style magnified icons can grow past the rail.
             // Portrait unfolded (iPhone Duo): a horizontal dock bar centered along the bottom, above the page controls.
             val dockPitch = geometry.dockPitch
@@ -1202,7 +1191,7 @@ fun LauncherScreen(
             }
             androidx.compose.animation.AnimatedVisibility(homeEdit.active && sheet.isEmpty(),
                 // Unfolded, the bar sits in the free strip at the bottom of the Home half beside the page dots, so it neither
-                // covers the widget row nor pushes the grid; folded, it's at the top, clear of the Dynamic Island.
+                // covers the widget row nor pushes the grid; folded, it's at the top.
                 Modifier.align(when {
                     geometry.expanded -> if (state.leftHanded) Alignment.BottomStart else Alignment.BottomEnd
                     state.leftHanded -> Alignment.TopEnd
@@ -1211,7 +1200,7 @@ fun LauncherScreen(
                 enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { if (geometry.expanded) it / 2 else -it / 2 },
                 exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { if (geometry.expanded) it / 2 else -it / 2 }) {
                 Row(Modifier.fillMaxWidth().padding(start = FolioSpace.COMFY.dp, end = FolioSpace.COMFY.dp,
-                    top = if (geometry.expanded) 0.dp else if (state.island) JIGGLE_BAR_ISLAND_GAP else FolioSpace.HAIR.dp).testTag("jiggle-bar"),
+                    top = if (geometry.expanded) 0.dp else FolioSpace.HAIR.dp).testTag("jiggle-bar"),
                     horizontalArrangement = if (geometry.expanded) Arrangement.spacedBy(FolioSpace.SMALL.dp, Alignment.End) else Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically) {
                     val editPage = pager.currentPage.coerceIn(0, homePages - 1)
@@ -1340,8 +1329,6 @@ fun LauncherScreen(
             LaunchedEffect(wide, showFirstRun) {
                 if (wide && !showFirstRun && FirstUseHints.pending(launcherActivity, FirstUseHint.UNFOLD)) {
                     kotlinx.coroutines.delay(2_500)
-                    // The island holds one notice, so the unfold hint waits out the hold hint instead of replacing it.
-                    if (FirstUseHints.pending(launcherActivity, FirstUseHint.HOLD)) kotlinx.coroutines.delay(IslandEvents.NOTICE_SHOW_MS + 1_000)
                     FirstUseHints.show(launcherActivity, FirstUseHint.UNFOLD)
                 }
             }
@@ -1948,10 +1935,10 @@ fun LauncherScreen(
                 modifier = Modifier.testTag("background-picker-resume")) { Text(stringResource(R.string.resume)) } },
             dismissButton = { TextButton(onClick = launcherActivity.backgrounds::cancelPendingSelection,
                 modifier = Modifier.testTag("background-picker-cancel")) { Text(stringResource(R.string.cancel)) } })
-        // A short confirmation ("Layout backup saved.") is a notice in Home's island, which nothing has to dismiss; a problem,
+        // A short confirmation ("Layout backup saved.") is a toast, which nothing has to dismiss; a problem,
         // or a long message the person has to read (what a restore did, which widgets to reconnect), keeps its dialog.
         launcherActivity.backups.successMessage?.takeIf { launcherActivity.backups.errorMessage == null && it.length <= SHORT_CONFIRMATION }?.let { message ->
-            LaunchedEffect(message) { IslandEvents.notice(launcherActivity, message); launcherActivity.backups.clearMessage() }
+            LaunchedEffect(message) { FolioNotice.show(launcherActivity, message); launcherActivity.backups.clearMessage() }
         }
         (launcherActivity.backups.errorMessage ?: launcherActivity.backups.successMessage)?.takeIf { it.length > SHORT_CONFIRMATION || launcherActivity.backups.errorMessage != null }?.let { message ->
             AlertDialog(onDismissRequest = launcherActivity.backups::clearMessage,
@@ -2017,7 +2004,7 @@ private fun PreviewBar(onUseAsHome: () -> Unit, onExit: () -> Unit) {
     }
 }
 
-/** A backup message this short is shown as an island notice; longer ones stay a dialog, because they have to be read. */
+/** A backup message this short is shown as a toast; longer ones stay a dialog, because they have to be read. */
 private const val SHORT_CONFIRMATION = 48
 
 /**

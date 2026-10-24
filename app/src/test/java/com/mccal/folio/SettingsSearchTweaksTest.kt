@@ -23,7 +23,7 @@ class SettingsSearchTweaksTest {
 
     @Test fun `a tweak is found by its name`() {
         assertEquals(listOf("Cabinet"), found("cabinet"))
-        assertEquals(listOf("Roll Call"), found("roll call"))
+        assertEquals(listOf("Harborline"), found("harborline"))
     }
 
     @Test fun `a tweak is found by the tweak it's based on, and by what it does`() {

@@ -1,5 +1,6 @@
 package com.mccal.folio
 
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -83,6 +84,14 @@ class IconActionsTest {
         assertEquals(9, stateSchemaFor(LauncherState()))
         assertEquals(10, stateSchemaFor(LauncherState(iconActions = mapOf("a" to IconActions(up = ActionRef("TORCH"))))))
         assertEquals("the newest schema this build reads", 11, STATE_SCHEMA)
+    }
+
+    @Test fun `a schema 11 save from the removed island switch still loads, and saves back as schema 9`() {
+        val empty = JSONArray().apply { repeat(HOME_CELLS) { put(JSONObject.NULL) } }
+        val saved = JSONObject().put("schema", 11).put("pinned", JSONArray()).put("homeSlots", empty).put("leadingSlots", empty)
+            .put("dock", JSONArray()).put("widgets", JSONArray()).put("folders", JSONArray())
+            .put("islandHideLandscapeInner", true)
+        assertEquals(9, stateSchemaFor(decodeLauncherState(saved.toString(), legacyRaw = null)))
     }
 
     @Test fun `icon actions load from a save, and a schema newer than this build reads is still refused`() {

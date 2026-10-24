@@ -18,8 +18,6 @@ class TweakOptionsTest {
         assertEquals("standard", TweakOptions.value(none, "dockMagnify", "amount"))
         assertEquals(.38f, TweakOptions.magnifyAmount(none), 0f)
         assertTrue(TweakOptions.on(none, "dockMagnify", "tick"))
-        assertTrue(TweakOptions.on(none, "tintMedia", "card"))
-        assertTrue(TweakOptions.on(none, "tintMedia", "island"))
     }
 
     @Test fun `a changed option is read back, and the amounts are ordered`() {
@@ -27,7 +25,7 @@ class TweakOptionsTest {
         val strong = TweakOptions.set(none, "dockMagnify", "amount", "strong")
         assertTrue(TweakOptions.magnifyAmount(subtle) < TweakOptions.magnifyAmount(none))
         assertTrue(TweakOptions.magnifyAmount(none) < TweakOptions.magnifyAmount(strong))
-        assertFalse(TweakOptions.on(TweakOptions.set(none, "tintMedia", "island", TweakOptions.OFF), "tintMedia", "island"))
+        assertFalse(TweakOptions.on(TweakOptions.set(none, "dockMagnify", "tick", TweakOptions.OFF), "dockMagnify", "tick"))
     }
 
     @Test fun `setting the default stores nothing, so reset and never touched are the same`() {
@@ -53,7 +51,7 @@ class TweakOptionsTest {
     }
 
     @Test fun `every option has a default that is one of its own choices`() {
-        listOf("dockMagnify", "tintMedia").flatMap { TweakOptions.of(it) }.forEach { option ->
+        listOf("dockMagnify").flatMap { TweakOptions.of(it) }.forEach { option ->
             if (option is TweakOption.Choice) assertTrue("${option.id} default", option.choices.any { it.first == option.default })
             if (option is TweakOption.Toggle) assertTrue(option.default == TweakOptions.ON || option.default == TweakOptions.OFF)
         }

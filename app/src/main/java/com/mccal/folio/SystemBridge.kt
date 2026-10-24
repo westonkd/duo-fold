@@ -121,7 +121,7 @@ internal class HingeSensorProvider(private val context: Context) : CapabilityPro
 internal class NotificationAccessProvider(private val context: Context) : CapabilityProvider {
     override val tier = PrivilegeTier.NOTIFICATIONS
     override val capabilities = setOf(FolioCapability.NOTIFICATIONS_READ)
-    override fun status() = BackendStatus.of(IslandListenerService.hasAccess(context))
+    override fun status() = BackendStatus.of(NotificationListener.hasAccess(context))
 }
 
 /** A2: Folio's accessibility service, which opens the shade and runs Back, Home, Recents and the other global actions over other apps. */

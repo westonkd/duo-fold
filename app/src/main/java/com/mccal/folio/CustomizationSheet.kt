@@ -6,7 +6,6 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.platform.LocalDensity
-import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.alpha
@@ -91,14 +90,13 @@ internal class SettingsScroll(private var page: CustomizationPage, offset: Int) 
     }
 }
 
-internal enum class CustomizationPage { OVERVIEW, SETUP, WALLPAPER, HOME, STATUS, GESTURES, FOLD, BACKUP, HELP, SIDE_KEY, LOCK, CREDITS, TWEAKS, TWEAK, ADVANCED, NOTIFICATIONS, SEARCH, TODAY, ISLAND, PERMISSIONS, FOCUS, FOCUS_MODE, ISLAND_APPS, GENERAL, FOLD_TWEAK, ACCESSIBILITY, SYSTEM_BRIDGE, SCREENSHOT_SWAP;
+internal enum class CustomizationPage { OVERVIEW, SETUP, WALLPAPER, HOME, STATUS, GESTURES, FOLD, BACKUP, HELP, SIDE_KEY, LOCK, CREDITS, TWEAKS, TWEAK, ADVANCED, SEARCH, TODAY, PERMISSIONS, FOCUS, FOCUS_MODE, GENERAL, FOLD_TWEAK, ACCESSIBILITY, SYSTEM_BRIDGE, SCREENSHOT_SWAP;
 
     /** The page Back returns to: the nav bar button and the system Back gesture both use it. */
     val parent: CustomizationPage get() = when (this) {
         TWEAK -> TWEAKS
         FOLD_TWEAK -> FOLD // Duet opened from Fold & Displays goes back there
         FOCUS_MODE -> FOCUS
-        ISLAND_APPS -> ISLAND
         // The pages you open once live under General, as iOS keeps them under General › About.
         ADVANCED, BACKUP, HELP, CREDITS -> GENERAL
         SYSTEM_BRIDGE, SCREENSHOT_SWAP -> ADVANCED
@@ -128,11 +126,8 @@ internal enum class CustomizationPage { OVERVIEW, SETUP, WALLPAPER, HOME, STATUS
         ADVANCED -> R.string.advanced
         SYSTEM_BRIDGE -> R.string.system_bridge
         SCREENSHOT_SWAP -> R.string.screenshot_swap_apps
-        NOTIFICATIONS -> R.string.notifications_control_center
         SEARCH -> R.string.search_app_library
         TODAY -> R.string.today_view
-        ISLAND -> R.string.dynamic_island
-        ISLAND_APPS -> R.string.other_notifications
         PERMISSIONS -> R.string.privacy_permissions
         GENERAL -> R.string.general
         ACCESSIBILITY -> R.string.accessibility
@@ -221,10 +216,6 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         TweakRow(Icons.Rounded.Today, FolioColors.Value.Orange, stringResource(R.string.today_view), "customization-today", selected = pick(CustomizationPage.TODAY), chevron = !sidebar) { onPage(CustomizationPage.TODAY) }
                     }
                     SheetGroup {
-                        TweakRow(Icons.Rounded.Circle, FolioColors.Value.SecondaryBackground, stringResource(R.string.dynamic_island), "customization-island", selected = pick(CustomizationPage.ISLAND), chevron = !sidebar) { onPage(CustomizationPage.ISLAND) }
-                        MenuDivider()
-                        TweakRow(Icons.Rounded.Notifications, FolioColors.Value.RedLight, stringResource(R.string.notifications_control_center), "customization-notifications", selected = pick(CustomizationPage.NOTIFICATIONS), chevron = !sidebar) { onPage(CustomizationPage.NOTIFICATIONS) }
-                        MenuDivider()
                         TweakRow(Icons.Rounded.DarkMode, FolioColors.Value.Indigo, stringResource(R.string.focus), "customization-focus",
                             state.focusModes.firstOrNull { it.id == state.activeFocus }?.name, selected = pick(CustomizationPage.FOCUS), chevron = !sidebar) { onPage(CustomizationPage.FOCUS) }
                         MenuDivider()
@@ -357,6 +348,10 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         SettingsSwitch(stringResource(R.string.darken_behind_text), state.homeScrim, model::setHomeScrim, "home-scrim-switch")
                         CardNote(stringResource(R.string.labels_status_page_dots_and_widget_text))
                     }
+                    SettingsCard(null) {
+                        CustomizationSlider(stringResource(R.string.background_blur), "${(state.panelBlur * 100).toInt()}%", state.panelBlur, 0f..1f) { model.setPanelBlur(it) }
+                        CardNote(stringResource(R.string.background_blur_note))
+                    }
                     SettingsCard(stringResource(R.string.screen_corners)) {
                         SettingsSwitch(stringResource(R.string.rounded_corners), state.roundedCorners, model::setRoundedCorners, "rounded-corners-switch")
                         if (state.roundedCorners) CustomizationSlider(stringResource(R.string.size), stringResource(R.string.dp_value, state.cornerRadius.toInt()), state.cornerRadius, 16f..72f,
@@ -371,36 +366,16 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                     }
                     RecentDotsCard(state, model)
                 }
-                CustomizationPage.GESTURES, CustomizationPage.NOTIFICATIONS, CustomizationPage.SEARCH, CustomizationPage.TODAY -> {
+                CustomizationPage.GESTURES, CustomizationPage.SEARCH, CustomizationPage.TODAY -> {
                     if (page == CustomizationPage.GESTURES) SettingsCard(stringResource(R.string.gestures)) {
                         IosMenuRow(stringResource(R.string.animation_speed), MotionSpeed.entries.map { it to stringResource(it.label) }, state.motionSpeed, model::setMotionSpeed, tag = "motion-speed")
-                        IosMenuRow(stringResource(R.string.swipe_down_on_home), listOf("SPOTLIGHT" to stringResource(R.string.spotlight), "NOTIFICATIONS" to stringResource(R.string.notification_center), "OFF" to stringResource(R.string.nothing)),
+                        IosMenuRow(stringResource(R.string.swipe_down_on_home), listOf("SPOTLIGHT" to stringResource(R.string.spotlight), "NOTIFICATIONS" to stringResource(R.string.notifications_title), "OFF" to stringResource(R.string.nothing)),
                             state.swipeDownHome, model::setSwipeDownHome, tag = "swipe-down-home")
                         IosMenuRow(stringResource(R.string.touch_and_hold), HoldDelay.entries.map { it to stringResource(it.label) }, state.holdDelay, model::setHoldDelay, tag = "hold-delay")
                         SettingsSwitch(stringResource(R.string.drag_page_dots_to_flip_pages), state.pageScrub, model::setPageScrub, "page-scrub-switch")
                         SettingsSwitch(stringResource(R.string.haptic_feedback), state.haptics, model::setHaptics, "haptics-switch")
                         CardNote(stringResource(R.string.pull_down_from_the_top_left_for_notifica))
                         CardNote(stringResource(R.string.touch_and_hold_note))
-                    }
-                    // One page for the panels: the on/off switch and, when on, their options.
-                    if (page == CustomizationPage.NOTIFICATIONS) SettingsCard(stringResource(R.string.panels)) {
-                        SettingsSwitch(stringResource(R.string.iphone_style_control_center_and_notifica), state.folioPanels, model::setFolioPanels, "folio-panels-switch")
-                        if (state.folioPanels) {
-                        CustomizationSlider(stringResource(R.string.background_blur), "${(state.panelBlur * 100).toInt()}%", state.panelBlur, 0f..1f) { model.setPanelBlur(it) }
-                        SettingsSwitch(stringResource(R.string.shade_over_apps), state.shadeOverApps, model::setShadeOverApps, "shade-over-apps-switch")
-                        CardNote(stringResource(R.string.shade_over_apps_note))
-                        SettingsSwitch(stringResource(R.string.big_clock_in_notification_center), state.notificationClock, model::setNotificationClock, "notification-clock-switch")
-                        SettingsSwitch(stringResource(R.string.stack_notifications_by_app), state.groupNotifications, model::setGroupNotifications, "notification-group-switch")
-                        IosMenuRow(stringResource(R.string.nc_layout_title), NcLayout.entries.map { it to stringResource(it.label) }, state.ncLayout, model::setNcLayout, tag = "nc-layout")
-                        CardNote(stringResource(R.string.nc_layout_note))
-                        SettingsSwitch(stringResource(R.string.notification_sections), state.notificationSections, model::setNotificationSections, "notification-sections-switch")
-                        if (state.notificationSections) CardNote(stringResource(R.string.notification_sections_note))
-                        IosMenuRow(stringResource(R.string.control_center_size), PanelSize.entries.map { it to stringResource(it.label) }, state.ccSize, model::setCcSize, tag = "cc-size")
-                        // Side by side puts Control Center on the right itself, and a card sits under its own corner, so only Full screen can centre it.
-                        if (state.ncLayout == NcLayout.FULL_SCREEN) SettingsSwitch(stringResource(R.string.unfolded_control_center_in_the_middle), state.ccCentered, model::setCcCentered, "cc-centered-switch")
-                        CardNote(stringResource(R.string.tip_tap_at_the_top_of_control_center_to))
-                        CardNote(stringResource(R.string.to_restyle_samsungs_own_pull_down_colors))
-                        }
                     }
                     if (page == CustomizationPage.SEARCH) SettingsCard(stringResource(R.string.spotlight)) {
                         IosMenuRow(stringResource(R.string.search_with_enter),
@@ -473,11 +448,11 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         CardNote(stringResource(R.string.when_off_the_search_button_opens_spotlig))
                     }
                 }
-                CustomizationPage.STATUS, CustomizationPage.ISLAND -> {
-                    if (page == CustomizationPage.STATUS && !split) MiniHomePreview(backgrounds.previewBitmap, state, 210.dp)
+                CustomizationPage.STATUS -> {
+                    if (!split) MiniHomePreview(backgrounds.previewBitmap, state, 210.dp)
                     val st = state.statusStyle
-                    if (page == CustomizationPage.STATUS) AppIconCard(state, model, onChanged = { model.refresh() })
-                    if (page == CustomizationPage.STATUS) SettingsCard(stringResource(R.string.app_icons)) {
+                    AppIconCard(state, model, onChanged = { model.refresh() })
+                    SettingsCard(stringResource(R.string.app_icons)) {
                         val iconContext = androidx.compose.ui.platform.LocalContext.current
                         // Reading the installed icon packs asks Android about every pack, so it happens off the main thread.
                         val packs by androidx.compose.runtime.produceState(emptyList<IconPacks.Pack>(), iconContext) {
@@ -526,13 +501,13 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         CardAction(stringResource(R.string.refresh_icons), onClick = model::reloadIcons)
                         CardNote(stringResource(R.string.refresh_icons_note))
                     }
-                    if (page == CustomizationPage.STATUS) SettingsCard(stringResource(R.string.side_rail)) {
+                    SettingsCard(stringResource(R.string.side_rail)) {
                         SettingsSwitch(stringResource(R.string.left_handed_layout_rail_on_the_left), state.leftHanded, model::setLeftHanded, "left-handed-switch")
                         SettingsSwitch(stringResource(R.string.show_app_names), state.labels, model::setLabels, "label-switch")
                         if (state.labels) IosMenuRow(stringResource(R.string.name_size), LabelSize.entries.map { it to stringResource(it.label) }, state.labelSize, model::setLabelSize, tag = "label-size")
                         CardNote(stringResource(R.string.frost_and_outline_are_in_wallpaper_appea))
                     }
-                    if (page == CustomizationPage.STATUS) SettingsCard(stringResource(R.string.status)) {
+                    SettingsCard(stringResource(R.string.status)) {
                         SettingsSwitch(stringResource(R.string.show_status_in_the_rail), state.verticalStatus, model::setVerticalStatus, "status-switch")
                         if (state.verticalStatus) {
                             IosMenuRow(stringResource(R.string.icon_style), StatusGlyph.entries.map { it to stringResource(it.label) }, st.glyph, { model.setStatusStyle(st.copy(glyph = it)) }, tag = "status-glyph")
@@ -551,72 +526,6 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                             SettingsSwitch(stringResource(R.string.color_battery_when_charging_or_low), st.colorfulBattery, { model.setStatusStyle(st.copy(colorfulBattery = it)) }, "status-color")
                             CardNote(stringResource(R.string.status_colors_green_while_charging_orang))
                         }
-                    }
-                    if (page == CustomizationPage.ISLAND) {
-                        // Why the island is or is not showing over other apps, with the fix when there is one.
-                        val statusContext = androidx.compose.ui.platform.LocalContext.current
-                        IslandStatusCard(state) { reason ->
-                            fun open(action: String) { runCatching { statusContext.startActivity(android.content.Intent(action).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) } }
-                            when (reason) {
-                                IslandReason.DO_NOT_DISTURB -> open(android.provider.Settings.ACTION_ZEN_MODE_PRIORITY_SETTINGS)
-                                IslandReason.ANDROID_POPUP -> model.setMessagesAvoidDouble(false)
-                                IslandReason.GESTURES_SERVICE_OFF -> onShadeSetup()
-                                IslandReason.NOTIFICATION_ACCESS_OFF -> open(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                                else -> Unit
-                            }
-                        }
-                    }
-                    if (page == CustomizationPage.ISLAND) SettingsCard(stringResource(R.string.island)) {
-                        val islandContext = androidx.compose.ui.platform.LocalContext.current
-                        SettingsSwitch(stringResource(R.string.music_and_live_progress), state.island, { on ->
-                            model.setIsland(on)
-                            if (on && !IslandListenerService.hasAccess(islandContext))
-                                runCatching { islandContext.startActivity(IslandListenerService.accessSettingsIntent(islandContext)) }
-                        }, "island-switch")
-                        if (state.island && state.verticalStatus) SettingsSwitch(stringResource(R.string.live_activities_under_the_status_bar), state.railActivities, model::setRailActivities, "rail-activities-switch")
-                        if (state.island && !IslandListenerService.hasAccess(islandContext)) CardAction(stringResource(R.string.allow_notification_access), onClick = {
-                            runCatching { islandContext.startActivity(IslandListenerService.accessSettingsIntent(islandContext)) }
-                        })
-                        if (state.island) {
-                            CardAction(stringResource(R.string.put_the_island_back_at_the_camera), onClick = { IslandPosition.reset(islandContext) })
-                            CardNote(stringResource(R.string.long_press_and_drag_the_island_to_move_i))
-                        }
-                    }
-                    if (page == CustomizationPage.ISLAND) SettingsCard(stringResource(R.string.brief_pop_ups)) {
-                        if (state.island) {
-                            listOf("CHARGING" to stringResource(R.string.charging), "SILENT" to stringResource(R.string.silent_mode), "FOCUS" to stringResource(R.string.do_not_disturb), "BLUETOOTH" to stringResource(R.string.headphones_speakers), "MESSAGE" to stringResource(R.string.new_messages_with_quick_reply), "CALL" to stringResource(R.string.calls_answer_decline_end)).forEach { (kind, label) ->
-                                SettingsSwitch(label, kind !in state.islandEventsOff, { model.setIslandEvent(kind, it) }, "island-event-${kind.lowercase()}")
-                            }
-                            if ("MESSAGE" !in state.islandEventsOff) MessageBannerSettings(state.messagesAvoidDouble, model::setMessagesAvoidDouble)
-                            IslandAlertSettings(state.islandAlerts, state.islandAlertAppsOff, model::setIslandAlerts) { onPage(CustomizationPage.ISLAND_APPS) }
-                        } else {
-                            SettingsSwitch(stringResource(R.string.headphones_speakers), "BLUETOOTH" !in state.islandEventsOff, { model.setIslandEvent("BLUETOOTH", it) }, "island-event-bluetooth")
-                            if (state.messagesAvoidDouble) {
-                                // Apps that were switched to the island show no pop-up at all while the island is off.
-                                CardNote(stringResource(R.string.message_pop_ups_come_from_the_island_whi))
-                                MessageChannelList()
-                            }
-                        }
-                        CardNote(stringResource(R.string.reads_only_music_calls_timers_navigation))
-                    }
-                    if (page == CustomizationPage.ISLAND) SettingsCard(stringResource(R.string.in_every_app)) {
-                        SettingsSwitch(stringResource(R.string.dynamic_island), state.islandEverywhere, { on ->
-                            model.setIslandEverywhere(on); if (on && !SystemShadeAccessibilityService.isConnected()) onShadeSetup()
-                        }, "island-everywhere-switch")
-                        if (state.islandEverywhere) {
-                            // A pill over a full-screen film or game is in the way, so it steps aside by default.
-                            SettingsSwitch(stringResource(R.string.hide_in_full_screen), state.islandHideFullScreen, model::setIslandHideFullScreen, "island-hide-full-screen-switch")
-                            SettingsSwitch(stringResource(R.string.hide_in_landscape), state.islandHideLandscape, model::setIslandHideLandscape, "island-hide-landscape-switch")
-                            if (state.islandHideLandscape) {
-                                SettingsSwitch(stringResource(R.string.also_on_the_unfolded_screen), state.islandHideLandscapeInner, model::setIslandHideLandscapeInner, "island-hide-landscape-inner-switch")
-                                CardNote(stringResource(R.string.the_unfolded_screen_is_always_wider_than_tall))
-                            }
-                            CardNote(stringResource(R.string.the_island_comes_back_as_soon_as_the_app))
-                        }
-                        SettingsSwitch(stringResource(R.string.dock_handle_on_the_rail_edge), state.dockEverywhere, { on ->
-                            model.setDockEverywhere(on); if (on && !SystemShadeAccessibilityService.isConnected()) onShadeSetup()
-                        }, "dock-everywhere-switch")
-                        CardNote(stringResource(R.string.uses_folios_accessibility_service_the_sa))
                     }
                 }
                 CustomizationPage.FOLD -> {
@@ -714,6 +623,12 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                                 CardNote(stringResource(R.string.android_s_three_buttons_are_on_so_you_ll))
                         }
                     }
+                    SettingsCard(null) {
+                        SettingsSwitch(stringResource(R.string.dock_handle_on_the_rail_edge), state.dockEverywhere, { on ->
+                            model.setDockEverywhere(on); if (on && !SystemShadeAccessibilityService.isConnected()) onShadeSetup()
+                        }, "dock-everywhere-switch")
+                        CardNote(stringResource(R.string.uses_folios_accessibility_service_the_sa))
+                    }
                 }
                 CustomizationPage.SIDE_KEY -> SideKeyPage()
                 CustomizationPage.LOCK -> {
@@ -754,7 +669,6 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         TweakRow(Icons.Rounded.Favorite, FolioColors.Value.Red, stringResource(R.string.credits), "customization-credits") { onPage(CustomizationPage.CREDITS) }
                     }
                 }
-                CustomizationPage.ISLAND_APPS -> IslandAlertApps(state.islandAlertAppsOff, state.messagesAvoidDouble, model::setIslandAlertApp)
                 CustomizationPage.HELP -> {
                     // Getting help lives here rather than as more rows in the main list (fewer choices there).
                     SheetGroup {
@@ -967,9 +881,7 @@ private fun LauncherHelp(
         MenuDivider()
         HelpTip(Icons.Rounded.Widgets, FolioColors.Value.Indigo, stringResource(R.string.widgets_smart_stacks), stringResource(R.string.hold_a_widget_and_let_go_for_sizes_stack))
         MenuDivider()
-        HelpTip(Icons.Rounded.SwipeDown, FolioColors.Value.RedLight, stringResource(R.string.notifications_control_center), stringResource(R.string.pull_down_from_the_top_left_or_top_right))
-        MenuDivider()
-        HelpTip(Icons.Rounded.Circle, FolioColors.Value.SecondaryBackground, stringResource(R.string.dynamic_island), stringResource(R.string.tap_it_for_details_hold_and_drag_to_move))
+        HelpTip(Icons.Rounded.SwipeDown, FolioColors.Value.RedLight, stringResource(R.string.notifications_quick_settings), stringResource(R.string.pull_down_from_the_top_left_or_top_right))
         MenuDivider()
         HelpTip(Icons.Rounded.Devices, FolioColors.Value.Pink, stringResource(R.string.folding), stringResource(R.string.folio_fades_between_screens_and_keeps_th))
     }
@@ -1123,12 +1035,7 @@ internal val SettingsIndex: List<Triple<Int, Int, CustomizationPage>> = listOf(
     Triple(R.string.notification_badges, R.string.settings_keywords_notification_badges, CustomizationPage.STATUS),
     Triple(R.string.settings_live_clock_and_calendar_icons, R.string.settings_keywords_live_clock_and_calendar_icons, CustomizationPage.STATUS),
     Triple(R.string.settings_side_bar_status_bar, R.string.settings_keywords_side_bar_status_bar, CustomizationPage.STATUS),
-    Triple(R.string.dynamic_island, R.string.settings_keywords_dynamic_island, CustomizationPage.ISLAND),
-    Triple(R.string.settings_other_notifications_in_the_islan, R.string.settings_keywords_other_notifications_in_the_islan, CustomizationPage.ISLAND_APPS),
-    Triple(R.string.settings_island_and_dock_in_every_app, R.string.settings_keywords_island_and_dock_in_every_app, CustomizationPage.ISLAND),
-    Triple(R.string.settings_hide_the_island_in_full_screen, R.string.settings_keywords_hide_the_island_in_full_screen, CustomizationPage.ISLAND),
-    Triple(R.string.notification_center, R.string.settings_keywords_notification_center, CustomizationPage.NOTIFICATIONS),
-    Triple(R.string.control_center, R.string.settings_keywords_control_center, CustomizationPage.NOTIFICATIONS),
+    Triple(R.string.settings_dock_in_every_app, R.string.settings_keywords_dock_in_every_app, CustomizationPage.ACCESSIBILITY),
     Triple(R.string.spotlight, R.string.settings_keywords_spotlight, CustomizationPage.SEARCH),
     Triple(R.string.app_library, R.string.settings_keywords_app_library, CustomizationPage.SEARCH),
     Triple(R.string.settings_search_button_swipe_down, R.string.settings_keywords_search_button_swipe_down, CustomizationPage.SEARCH),
@@ -1166,14 +1073,7 @@ internal val SettingsRows: List<Pair<Int, CustomizationPage>> = listOf(
     R.string.separate_upright_layout to CustomizationPage.HOME,
     R.string.space_between_rows to CustomizationPage.HOME,
     R.string.status_height to CustomizationPage.HOME,
-    R.string.background_blur to CustomizationPage.NOTIFICATIONS,
-    R.string.big_clock_in_notification_center to CustomizationPage.NOTIFICATIONS,
-    R.string.iphone_style_control_center_and_notifica to CustomizationPage.NOTIFICATIONS,
-    R.string.stack_notifications_by_app to CustomizationPage.NOTIFICATIONS,
-    R.string.nc_layout_title to CustomizationPage.NOTIFICATIONS,
-    R.string.shade_over_apps to CustomizationPage.NOTIFICATIONS,
-    R.string.notification_sections to CustomizationPage.NOTIFICATIONS,
-    R.string.unfolded_control_center_in_the_middle to CustomizationPage.NOTIFICATIONS,
+    R.string.background_blur to CustomizationPage.WALLPAPER,
     R.string.badge_size to CustomizationPage.STATUS,
     R.string.battery_percentage to CustomizationPage.STATUS,
     R.string.clear_badges_when_opened to CustomizationPage.STATUS,
@@ -1183,11 +1083,7 @@ internal val SettingsRows: List<Pair<Int, CustomizationPage>> = listOf(
     R.string.show_app_names to CustomizationPage.STATUS,
     R.string.show_status_in_the_rail to CustomizationPage.STATUS,
     R.string.silent_mode_icon to CustomizationPage.STATUS,
-    R.string.dock_handle_on_the_rail_edge to CustomizationPage.ISLAND,
-    R.string.dont_double_up_with_android_pop_ups to CustomizationPage.ISLAND,
-    R.string.headphones_speakers to CustomizationPage.ISLAND,
-    R.string.live_activities_under_the_status_bar to CustomizationPage.ISLAND,
-    R.string.music_and_live_progress to CustomizationPage.ISLAND,
+    R.string.dock_handle_on_the_rail_edge to CustomizationPage.ACCESSIBILITY,
     R.string.fade_when_idle to CustomizationPage.ACCESSIBILITY,
     R.string.width to CustomizationPage.ACCESSIBILITY,
     R.string.drag_page_dots_to_flip_pages to CustomizationPage.GESTURES,
@@ -1244,11 +1140,6 @@ internal val SettingsRows: List<Pair<Int, CustomizationPage>> = listOf(
     R.string.look to CustomizationPage.ACCESSIBILITY,
     R.string.order to CustomizationPage.ACCESSIBILITY,
     R.string.size to CustomizationPage.ACCESSIBILITY,
-    R.string.control_center_size to CustomizationPage.NOTIFICATIONS,
-    R.string.hide_in_full_screen to CustomizationPage.ISLAND,
-    R.string.hide_in_landscape to CustomizationPage.ISLAND,
-    R.string.also_on_the_unfolded_screen to CustomizationPage.ISLAND,
-    R.string.other_notifications_2 to CustomizationPage.ISLAND,
     R.string.suggestions to CustomizationPage.TODAY,
     R.string.rounded_corners to CustomizationPage.WALLPAPER,
     R.string.screen_saver to CustomizationPage.FOLD,
@@ -1264,8 +1155,6 @@ internal val SettingsRows: List<Pair<Int, CustomizationPage>> = listOf(
     R.string.save_current_layout to CustomizationPage.BACKUP,
     R.string.show_welcome_again to CustomizationPage.HELP,
     R.string.allow_do_not_disturb_access to CustomizationPage.FOCUS,
-    R.string.allow_notification_access to CustomizationPage.ISLAND,
-    R.string.put_the_island_back_at_the_camera to CustomizationPage.ISLAND,
     R.string.also_set_as_phone_wallpaper to CustomizationPage.WALLPAPER,
     R.string.change_android_wallpaper to CustomizationPage.WALLPAPER,
     R.string.put_the_buttons_back_at_the_bottom to CustomizationPage.ACCESSIBILITY,
@@ -1352,7 +1241,7 @@ internal fun searchableTweaks(context: android.content.Context): List<Pair<Tweak
             val where = if (found.row) stringResource(found.page.title).takeIf { it != found.title } else null
             SettingsSearchRow(found.title, where) { onOpen(found.page, found.title.takeIf { found.row && where != null }) }
         }
-        // A tweak says it's a tweak, since its name alone ("Cabinet", "Palette") doesn't say where it lives.
+        // A tweak says it's a tweak, since its name alone ("Cabinet", "Harborline") doesn't say where it lives.
         tweakResults.forEachIndexed { index, tweak ->
             if (index > 0 || results.isNotEmpty()) MenuDivider()
             SettingsSearchRow(tweak.name, stringResource(R.string.tweaks)) { onOpenTweak(tweak) }
@@ -1380,15 +1269,13 @@ internal fun searchableTweaks(context: android.content.Context): List<Pair<Tweak
     data class Perm(val name: String, val usedBy: String, val allowed: Boolean, val action: () -> Unit)
     val perms = remember(tick, isDefaultHome) { listOf(
         Perm(context.getString(R.string.home_app), context.getString(R.string.home_button_folding_gestures), isDefaultHome, onMakeDefault),
-        Perm(context.getString(R.string.notification_access), context.getString(R.string.dynamic_island_notification_center_quick),
-            IslandListenerService.hasAccess(context)) { open(IslandListenerService.accessSettingsIntent(context)) },
-        Perm(context.getString(R.string.gestures_service_accessibility), context.getString(R.string.pull_down_panels_island_and_dock_in_othe),
+        Perm(context.getString(R.string.notification_access), context.getString(R.string.badges_cabinet_lock_cover_now_playing),
+            NotificationListener.hasAccess(context)) { open(NotificationListener.accessSettingsIntent(context)) },
+        Perm(context.getString(R.string.gestures_service_accessibility), context.getString(R.string.pull_downs_dock_and_big_buttons_in_other),
             SystemShadeAccessibilityService.isConnected(), onShadeSetup),
-        Perm(context.getString(R.string.do_not_disturb_access), context.getString(R.string.focus_control_center_actions),
+        Perm(context.getString(R.string.do_not_disturb_access), context.getString(R.string.focus_actions),
             context.getSystemService(android.app.NotificationManager::class.java).isNotificationPolicyAccessGranted) {
             open(android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) },
-        Perm(context.getString(R.string.modify_system_settings), context.getString(R.string.control_center_brightness_and_rotation_l), android.provider.Settings.System.canWrite(context)) {
-            open(android.content.Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS, android.net.Uri.parse("package:${context.packageName}"))) },
         Perm(context.getString(R.string.usage_access_optional), context.getString(R.string.better_suggestions_counts_apps_you_open), Suggestions.hasUsageAccess(context)) {
             open(Suggestions.usageAccessIntent(context)) },
         Perm(context.getString(R.string.calendar_optional), context.getString(R.string.up_next_widget), UpNext.hasCalendar(context)) { open(appSettings) },
@@ -1613,7 +1500,7 @@ private fun riskLabel(risk: OperationRisk) = when (risk) {
 /** Advanced › Diagnostics: what this phone and your permissions allow, and why a feature might be off (A0 to A2, see Capabilities). */
 @Composable private fun CapabilitiesCard() {
     val context = androidx.compose.ui.platform.LocalContext.current
-    fun read() = Capabilities.rows(IslandListenerService.hasAccess(context), SystemShadeAccessibilityService.isConnected())
+    fun read() = Capabilities.rows(NotificationListener.hasAccess(context), SystemShadeAccessibilityService.isConnected())
     var rows by remember { mutableStateOf(read()) }
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(lifecycle) { lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) { rows = read() } }
@@ -1636,7 +1523,7 @@ private fun riskLabel(risk: OperationRisk) = when (risk) {
         }
         if (Capabilities.needsPermission(rows).isNotEmpty()) CardAction(stringResource(R.string.capability_open_settings), onClick = {
             val tier = Capabilities.needsPermission(rows).first()
-            val intent = if (tier == CapabilityTier.NOTIFICATIONS) IslandListenerService.accessSettingsIntent(context)
+            val intent = if (tier == CapabilityTier.NOTIFICATIONS) NotificationListener.accessSettingsIntent(context)
                 else android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             runCatching { context.startActivity(intent) }
         }, modifier = Modifier.testTag("capability-open-settings"))
@@ -1682,7 +1569,7 @@ private fun riskLabel(risk: OperationRisk) = when (risk) {
         }, modifier = Modifier.testTag("share-diagnostics"))
         // Copy is the other half of Share (#239): the report on the clipboard, to paste into a form, with the same text a shared file has.
         CardAction(stringResource(R.string.copy_diagnostics), onClick = {
-            shareScope.launch { runCatching { Diagnostics.copy(context); IslandEvents.notice(context, context.getString(R.string.diagnostics_copied)) } }
+            shareScope.launch { runCatching { Diagnostics.copy(context); FolioNotice.show(context, context.getString(R.string.diagnostics_copied)) } }
         }, modifier = Modifier.testTag("copy-diagnostics"))
         CardNote(stringResource(R.string.diagnostics_file_note))
     }
@@ -2143,82 +2030,6 @@ private class DuetHome(val layer: androidx.compose.ui.graphics.layer.GraphicsLay
             MenuDivider()
         }
         IosActionRow(stringResource(R.string.add_widget_to_this_page), onClick = { onAddWidget(homePage) })
-    }
-}
-
-/** Keeps Android's pop-up and Folio's island message card from showing for the same message. */
-@Composable private fun MessageBannerSettings(avoidDouble: Boolean, onAvoidDouble: (Boolean) -> Unit) {
-    SettingsSwitch(stringResource(R.string.dont_double_up_with_android_pop_ups), avoidDouble, onAvoidDouble, "messages-avoid-double-switch")
-    CardNote(if (avoidDouble) stringResource(R.string.messages_that_android_already_pops_up_ar)
-        else stringResource(R.string.the_island_shows_every_new_message_even))
-    if (!avoidDouble) return
-    MessageChannelList()
-}
-
-/** Brief pop-ups › Other notifications: any app's new notifications in the island, like messages. Off until turned on. */
-@Composable private fun IslandAlertSettings(on: Boolean, appsOff: Set<String>, onOn: (Boolean) -> Unit, onChooseApps: () -> Unit) {
-    SettingsSwitch(stringResource(R.string.other_notifications_2), on, onOn, "island-alerts-switch")
-    if (on) {
-        val channels by IslandListenerService.messageChannels.collectAsState()
-        val seen = channels.values.filter { !it.isMessage }.map { it.packageName }.toSet() + appsOff
-        IosNavRow(stringResource(R.string.apps), if (seen.isEmpty()) null else stringResource(R.string.count_of_total, (seen - appsOff).size, seen.size), onChooseApps, "island-alert-apps")
-    }
-    CardNote(if (on) stringResource(R.string.new_notifications_from_the_apps_you_choo)
-        else stringResource(R.string.show_new_notifications_from_other_apps_i))
-}
-
-/** Dynamic Island › Other Notifications: which apps' notifications pop up in the island (apps appear once they've sent one). */
-@Composable private fun IslandAlertApps(appsOff: Set<String>, avoidDouble: Boolean, onApp: (String, Boolean) -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val channels by IslandListenerService.messageChannels.collectAsState()
-    val seen = channels.values.filter { !it.isMessage }.groupBy { it.packageName }
-    val pm = context.packageManager
-    fun label(pkg: String) = seen[pkg]?.first()?.appLabel
-        ?: runCatching { pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString() }.getOrDefault(pkg)
-    val apps = remember(seen.keys, appsOff) { (seen.keys + appsOff).map { it to label(it) }.sortedBy { it.second.lowercase() } }
-    SettingsCard(stringResource(R.string.show_in_the_island)) {
-        if (apps.isEmpty()) Text(stringResource(R.string.apps_show_up_here_after_they_send_a_noti),
-            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = FolioSpace.MEDIUM.dp))
-        apps.forEach { (pkg, name) -> key(pkg) {
-            val enabled = pkg !in appsOff
-            // With "don't double up" on, a channel Android pops up itself stays with Android; offer the same way over.
-            val android = seen[pkg].orEmpty().firstOrNull { it.popsUp }?.takeIf { avoidDouble && enabled }
-            val icon = remember(pkg) { runCatching { pm.getApplicationIcon(pkg).toBitmap(84, 84).asImageBitmap() }.getOrNull() }
-            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically) {
-                icon?.let { Image(it, null, Modifier.size(29.dp).clip(RoundedCornerShape(7.dp))) }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                    if (android != null) Text(stringResource(R.string.android_shows_its_own_pop_up), style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                if (android != null) CardAction(stringResource(R.string.use_island), onClick = { runCatching { context.startActivity(android.settingsIntent()) } })
-                IosSwitch(enabled, { onApp(pkg, it) }, Modifier.testTag("island-alert-$pkg"))
-            }
-        } }
-    }
-    CardNote(if (avoidDouble) stringResource(R.string.apps_that_android_already_pops_up_stay_w)
-        else stringResource(R.string.the_island_shows_these_apps_new_notifica), Modifier.padding(horizontal = FolioSpace.LARGE.dp))
-}
-
-/** Messaging apps Folio has seen, and whether each one pops up through Android or the island. */
-@Composable private fun MessageChannelList() {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val channels by IslandListenerService.messageChannels.collectAsState()
-    val list = channels.values.filter { it.isMessage }.sortedWith(compareBy({ !it.popsUp }, { it.appLabel }))
-    if (list.isEmpty()) CardNote(stringResource(R.string.messaging_apps_appear_here_after_they_po))
-    list.forEach { channel ->
-        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(channel.appLabel, style = MaterialTheme.typography.bodyLarge)
-                CardNote(listOfNotNull(channel.channelName, if (channel.popsUp) stringResource(R.string.android_pop_up) else stringResource(R.string.island)).joinToString(" · "))
-            }
-            // Both ways lead to the app's own notification settings: turn Android's pop-up off to use the island,
-            // or back on to get Android's pop-up again (the only way back once an app was switched over).
-            TextButton(onClick = { runCatching { context.startActivity(channel.settingsIntent()) } }) {
-                Text(if (channel.popsUp) stringResource(R.string.use_island) else stringResource(R.string.android_popup_title))
-            }
-        }
     }
 }
 

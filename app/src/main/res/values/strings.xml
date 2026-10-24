@@ -1,7 +1,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="dune_wallpaper_description">The background you chose in Folio, sized for your display.</string>
     <string name="shade_service_label">Folio gestures &amp; overlays</string>
-    <string name="shade_service_description">Lets Folio open the system notifications and Quick Settings panels from Home gestures, and, only if you turn them on, show Folio’s dock handle and Dynamic Island over other apps, launch your dock apps and go Home. It does not read screen content or observe what you do in other apps.</string>
+    <string name="shade_service_description">Lets Folio open the system notifications and Quick Settings panels from Home gestures, and, only if you turn them on, show Folio’s dock handle and Big Buttons over other apps, launch your dock apps and go Home. It does not read screen content or observe what you do in other apps.</string>
     <string name="personal">Personal</string>
     <string name="work">Work</string>
     <string name="turn_on_work_apps">Turn on work apps</string>
@@ -27,33 +27,7 @@
     <string name="opens_android_s_preview_to_use_folio_s_b">Opens Android’s preview to use Folio’s background as your phone’s wallpaper too (a live wallpaper), so it matches outside Folio.</string>
     <string name="preview_as_phone_wallpaper">Preview as phone wallpaper</string>
     <string name="gestures">Gestures</string>
-    <string name="pull_down_from_the_top_left_for_notifica">Pull down from the top-left for notifications, top-right for Control Center. Swipe sideways to change pages. A swipe down lower on Home does what you pick above: set it to Notification Center for the usual Android pull-down, from anywhere on the page.</string>
-    <string name="iphone_style_control_center_and_notifica">iPhone-style Control Center and notifications</string>
-    <string name="panels">Panels</string>
-    <string name="big_clock_in_notification_center">Big clock in Notification Center</string>
-    <string name="stack_notifications_by_app">Stack notifications by app</string>
-    <!-- Settings > Notifications > Panels: how Notification Center sits on a big (unfolded) screen. -->
-    <!-- Settings > Notifications > Panels: what a phone's own shade action (one-hand operation, a Routine) opens while another app is in front. -->
-    <string name="shade_over_apps">Folio\'s panels over other apps</string>
-    <string name="shade_over_apps_note">When a shortcut, a Routine or One UI\'s one-hand operation opens the notification shade or Quick Settings, Folio draws its own Notification Center or Control Center over the open app instead of the phone\'s. Needs Folio\'s gestures turned on. Swiping down from the top of an app still opens your phone\'s own shade. Over another app, Reply opens a small box to type in, and Options are on Home only. It never opens over the lock screen.</string>
-    <string name="nc_layout_title">Unfolded layout</string>
-    <string name="nc_layout_full">Full screen</string>
-    <string name="nc_layout_card">Card</string>
-    <string name="nc_layout_both">Side by side</string>
-    <string name="nc_layout_note">Full screen puts the clock beside the list. Card is a smaller panel under the corner you pulled from: Notification Center from the top left, Control Center from the top right. Side by side shows both together, and needs a wide screen. A phone always opens one panel at a time.</string>
-    <string name="notification_sections">Notification sections</string>
-    <string name="notification_sections_note">Notification Center shows what is happening now and conversations first, then the rest, with quiet notifications folded away under Quiet. Calls, alarms, timers and conversations are never put in Quiet.</string>
-    <string name="nc_section_now">Now</string>
-    <string name="nc_section_conversations">Conversations</string>
-    <string name="nc_section_quiet" tools:ignore="PluralsCandidate">Quiet · %1$d</string>
-    <string name="nc_section_quiet_open">Quiet</string>
-    <string name="clear_n_notifications" tools:ignore="PluralsCandidate">Clear %1$d</string>
-    <string name="show_quiet_notifications">Show quiet notifications</string>
-    <string name="unfolded_clock_beside_notifications">Unfolded: clock beside notifications</string>
-    <string name="control_center_size">Control Center size</string>
-    <string name="unfolded_control_center_in_the_middle">Unfolded: Control Center in the middle</string>
-    <string name="tip_tap_at_the_top_of_control_center_to">Tip: tap + at the top of Control Center to add or remove controls.</string>
-    <string name="to_restyle_samsungs_own_pull_down_colors">To restyle Samsung’s own pull-down (colors, transparency, layout), use Good Lock › QuickStar and Theme Park.</string>
+    <string name="pull_down_from_the_top_left_for_notifica">Pull down from the top-left for Android’s notifications, top-right for Quick Settings. Swipe sideways to change pages. A swipe down lower on Home does what you pick above: set it to Notifications for Android’s notification shade, from anywhere on the page.</string>
     <string name="search_with_enter">Search with Enter</string>
     <string name="message_contacts_with">Message contacts with</string>
     <string name="texting_app">Texting app</string>
@@ -87,17 +61,8 @@
     <string name="date">Date</string>
     <string name="battery_percentage">Battery percentage</string>
     <string name="color_battery_when_charging_or_low">Status colors</string>
-    <string name="in_every_app">In every app</string>
     <string name="dock_handle_on_the_rail_edge">Dock handle on the side bar edge</string>
-    <string name="dynamic_island">Dynamic Island</string>
     <string name="uses_folios_accessibility_service_the_sa">Uses Folio’s accessibility service (the same one as shade gestures). Tap or drag the handle to open your dock. If the handle fights the back gesture, lower the right-edge back sensitivity.</string>
-    <string name="island">Island</string>
-    <string name="music_and_live_progress">Music and live progress</string>
-    <string name="allow_notification_access">Allow notification access</string>
-    <string name="long_press_and_drag_the_island_to_move_i">Long-press and drag the island to move it. On the inner screen the camera sits under the display, so drag it onto the camera once.</string>
-    <string name="put_the_island_back_at_the_camera">Put the island back at the camera</string>
-    <string name="brief_pop_ups">Brief pop-ups</string>
-    <string name="reads_only_music_calls_timers_navigation">Reads music, calls, timers, navigation, progress, messages and the notifications you choose. Nothing leaves your phone.</string>
     <string name="your_fold_timing">Your fold timing</string>
     <string name="learned_from_your_last_folds_and_used_to">Learned from your last folds and used to pace the animation. Reset if someone else has been using the phone.</string>
     <string name="reset_fold_timing">Reset fold timing</string>
@@ -142,7 +107,7 @@
     <string name="capability_standard">Standard</string>
     <string name="capability_standard_uses">Home, folders and Focus. Needs nothing.</string>
     <string name="capability_notifications">Notification access</string>
-    <string name="capability_notifications_uses">The island, badges from notifications and quick reply.</string>
+    <string name="capability_notifications_uses">Badges from notifications, the Lock Cover and Now Playing.</string>
     <string name="capability_accessibility">Accessibility</string>
     <string name="capability_accessibility_uses">Pull-down panels, Big Buttons and the Notification Shade over other apps.</string>
     <string name="capability_off">Off</string>
@@ -163,14 +128,7 @@
     <string name="align_dock_with_app_rows">Align dock with app rows</string>
     <string name="reset_this_layout">Reset this layout</string>
     <string name="replace">Replace</string>
-    <string name="dont_double_up_with_android_pop_ups">Don’t double up with Android pop-ups</string>
-    <string name="messaging_apps_appear_here_after_they_po">Messaging apps appear here after they post a notification.</string>
-    <string name="use_island">Use island</string>
-    <string name="charging">Charging</string>
-    <string name="silent">Silent</string>
     <string name="focus">Focus</string>
-    <string name="reply">Reply</string>
-    <string name="tap_to_return_to_the_call">Tap to return to the call</string>
     <string name="discover">Discover</string>
     <string name="retry">Retry</string>
     <string name="open_google">Open Google</string>
@@ -244,10 +202,6 @@
     <string name="widget_shape_row">Row</string>
     <string name="widget_shape_column">Column</string>
     <string name="widget_unavailable">Widget unavailable</string>
-    <string name="notification_center">Notification Center</string>
-    <string name="no_notifications">No Notifications</string>
-    <string name="show_less">Show less</string>
-    <string name="mark_as_read">Mark as Read</string>
     <string name="widgets">Widgets</string>
     <string name="search_widgets">Search Widgets</string>
     <string name="turn_on">Turn on</string>
@@ -260,14 +214,9 @@
     <string name="choose_home_app">Choose Home App</string>
     <string name="notifications_title">Notifications</string>
     <string name="onboarding_notifications_detail">Folio reads notifications only to show them on your phone. Nothing is sent anywhere.</string>
-    <string name="onboarding_use_island">Dynamic Island: music, calls, timers</string>
-    <string name="onboarding_use_quick_reply">Notification Center and quick reply</string>
     <string name="onboarding_use_badges">App icon badges</string>
     <string name="allow_access">Allow Access</string>
     <string name="pull_down_for_more">Pull Down for More</string>
-    <string name="onboarding_gestures_detail">Folio\'s gestures service opens Notification Center and Control Center from the top corners. It can\'t read your screen.</string>
-    <string name="onboarding_use_panels">Notification Center and Control Center</string>
-    <string name="onboarding_use_everywhere">Dynamic Island and dock in other apps</string>
     <string name="turn_on_button">Turn On</string>
     <string name="choose_a_look">Choose a Look</string>
     <string name="onboarding_look_detail">Keep the wallpaper you already use, or pick a picture in Folio. Text on Home adjusts to light and dark backgrounds.</string>
@@ -277,8 +226,6 @@
     <string name="try_folio_first">Try Folio First</string>
     <string name="set_up_later_in_settings">Set Up Later in Settings</string>
     <string name="onboarding_tip_hold_app">Hold an app for its menu</string>
-    <string name="onboarding_tip_pull_down">Pull down from the top corners for Notification Center and Control Center</string>
-    <string name="onboarding_tip_turn_on_gestures">Turn on gestures in Settings to pull down Notification Center and Control Center</string>
     <string name="onboarding_tip_settings">Everything else, including optional permissions, is in Folio Settings</string>
     <string name="setup_checklist">Setup Checklist</string>
     <string name="wallpaper_appearance">Wallpaper &amp; Appearance</string>
@@ -291,10 +238,9 @@
     <string name="credits">Credits</string>
     <string name="tweaks">Tweaks</string>
     <string name="advanced">Advanced</string>
-    <string name="notifications_control_center">Notifications &amp; Control Center</string>
+    <string name="notifications_quick_settings">Notifications &amp; Quick Settings</string>
     <string name="search_app_library">Search &amp; App Library</string>
     <string name="today_view">Today View</string>
-    <string name="other_notifications">Other Notifications</string>
     <string name="privacy_permissions">Privacy &amp; Permissions</string>
     <string name="photo_ready">Photo ready</string>
     <string name="custom">Custom</string>
@@ -314,6 +260,7 @@
     <string name="swipe_down_on_home">Swipe Down on Home</string>
     <string name="nothing">Nothing</string>
     <string name="background_blur">Background blur</string>
+    <string name="background_blur_note">How much Home blurs behind Spotlight, sheets and the Lock Cover.</string>
     <string name="google_discover">Google Discover</string>
     <string name="nothing_to_the_left_of_home_swiping_righ">Nothing to the left of Home: swiping right on your first page does nothing.</string>
     <string name="no_today_view_while_unfolded_it_s_still">No Today View while unfolded; it\'s still there on the cover screen.</string>
@@ -335,11 +282,6 @@
     <string name="standard">Standard</string>
     <string name="silent_mode_icon">Silent mode icon</string>
     <string name="status_colors_green_while_charging_orang">Status colors: green while charging, orange when low, a red Silent bell, and colored Rings.</string>
-    <string name="hide_in_full_screen">Hide in Full Screen</string>
-    <string name="hide_in_landscape">Hide in Landscape</string>
-    <string name="also_on_the_unfolded_screen">Also on the Unfolded Screen</string>
-    <string name="the_unfolded_screen_is_always_wider_than_tall">The unfolded screen is always wider than tall, so the island stays visible there unless you turn this on.</string>
-    <string name="the_island_comes_back_as_soon_as_the_app">The island comes back as soon as the app shows the status bar again, or you turn the phone upright.</string>
     <string name="big_buttons">Big Buttons</string>
     <string name="extra_large">Extra Large</string>
     <string name="half_the_screen">Half the Screen</string>
@@ -350,13 +292,8 @@
     <string name="fade_when_idle">Fade When Idle</string>
     <string name="put_the_buttons_back_at_the_bottom">Put the buttons back at the bottom</string>
     <string name="long_press_and_drag_the_bar_to_move_it_u">Long-press and drag the bar to move it up the screen, out of the way of the keyboard or an app\'s own bottom bar.</string>
-    <string name="live_activities_under_the_status_bar">Live Activities Under the Status Bar</string>
     <string name="silent_mode">Silent mode</string>
     <string name="do_not_disturb">Do Not Disturb</string>
-    <string name="headphones_speakers">Headphones &amp; speakers</string>
-    <string name="new_messages_with_quick_reply">New messages (with quick reply)</string>
-    <string name="calls_answer_decline_end">Calls (answer, decline, end)</string>
-    <string name="message_pop_ups_come_from_the_island_whi">Message pop-ups come from the island, which is off. Turn it on above, or give an app Android’s own pop-up back:</string>
     <string name="intensity">Intensity</string>
     <string name="save_backup">Save Backup…</string>
     <string name="save_backup_to_files">Save Backup to Files…</string>
@@ -380,11 +317,11 @@
     <string name="home_app">Home app</string>
     <string name="home_button_folding_gestures">Home button, folding, gestures</string>
     <string name="notification_access">Notification access</string>
-    <string name="dynamic_island_notification_center_quick">Dynamic Island, Notification Center, quick reply, badges, Cabinet, Lock Cover</string>
+    <string name="badges_cabinet_lock_cover_now_playing">Badges, Cabinet, Lock Cover, Now Playing in StandBy</string>
     <string name="gestures_service_accessibility">Gestures service (accessibility)</string>
-    <string name="pull_down_panels_island_and_dock_in_othe">Pull-down panels, island and dock in other apps, Lock Screen and Screenshot actions</string>
+    <string name="pull_downs_dock_and_big_buttons_in_other">Pull-downs to Android’s notifications and Quick Settings, dock handle and Big Buttons in other apps, Lock Screen and Screenshot actions</string>
     <string name="do_not_disturb_access">Do Not Disturb access</string>
-    <string name="focus_control_center_actions">Focus, Control Center, Actions</string>
+    <string name="focus_actions">Focus, Actions</string>
     <string name="usage_access_optional">Usage access (optional)</string>
     <string name="better_suggestions_counts_apps_you_open">Better Suggestions: counts apps you open from anywhere, not just from Folio</string>
     <string name="calendar_optional">Calendar (optional)</string>
@@ -499,14 +436,6 @@
     <string name="hide">Hide</string>
     <string name="changes_how_icons_look_on_one_page_widge">Changes how icons look on one page. Widgets, the grid and the dock stay the same on every page.</string>
     <string name="unfolded_only_page">Unfolded-only page</string>
-    <string name="the_island_shows_every_new_message_even">The island shows every new message, even when Android also shows its own pop-up.</string>
-    <string name="other_notifications_2">Other notifications</string>
-    <string name="show_new_notifications_from_other_apps_i">Show new notifications from other apps in the island too, and choose which apps.</string>
-    <string name="show_in_the_island">Show in the Island</string>
-    <string name="apps_show_up_here_after_they_send_a_noti">Apps show up here after they send a notification.</string>
-    <string name="android_shows_its_own_pop_up">Android shows its own pop-up</string>
-    <string name="the_island_shows_these_apps_new_notifica">The island shows these apps\' new notifications even when Android shows its own pop-up too.</string>
-    <string name="android_pop_up">Android pop-up</string>
     <string name="exploring">Exploring</string>
     <string name="app_icon">App Icon</string>
     <string name="changes_folio_s_icon_in_the_app_library">Changes Folio\'s icon in the App Library and other launchers.</string>
@@ -554,7 +483,7 @@
     <string name="folio_gestures_are_starting_swipe_down_a">Folio gestures are starting. Swipe down again.</string>
     <string name="android_couldn_t_open_the_system_panel">Android couldn’t open the system panel.</string>
     <string name="turn_on_folio_gestures">Turn On Folio Gestures</string>
-    <string name="folio_uses_it_to_open_notification_cente">Folio uses it to open Notification Center and Control Center, and for the dock and island over other apps.\u0020</string>
+    <string name="folio_uses_it_to_open_notification_cente">Folio uses it to open Android’s notifications and Quick Settings, and for the dock handle and Big Buttons over other apps.\u0020</string>
     <string name="it_can_t_read_what_s_on_your_screen">It can\'t read what\'s on your screen.</string>
     <string name="app_info">App Info</string>
     <string name="open_settings">Open Settings</string>
@@ -565,30 +494,15 @@
     <string name="stay_on_home">Stay on Home</string>
     <string name="the_system_wallpaper_preview_is_unavaila">The system wallpaper preview is unavailable.</string>
     <string name="eeee_mmmm_d">EEEE, MMMM d</string>
-    <string name="allow_notification_access_to_see_notific">Allow notification access to see notifications here.</string>
     <string name="allow">Allow</string>
     <string name="options">Options</string>
-    <string name="notification_options">Notification options</string>
     <string name="large">Large</string>
-    <string name="rotation_lock">Rotation Lock</string>
     <string name="flashlight">Flashlight</string>
     <string name="camera">Camera</string>
-    <string name="timer">Timer</string>
-    <string name="alarm">Alarm</string>
     <string name="calculator">Calculator</string>
     <string name="screenshot">Screenshot</string>
     <string name="lock_screen">Lock Screen</string>
-    <string name="wallet">Wallet</string>
-    <string name="notes">Notes</string>
-    <string name="hotspot">Hotspot</string>
-    <string name="battery_saver">Battery Saver</string>
     <string name="settings">Settings</string>
-    <string name="android_quick_settings">Android Quick Settings</string>
-    <string name="show_connectivity_details">Show connectivity details</string>
-    <string name="volume">Volume</string>
-    <string name="all_controls_added">All controls added</string>
-    <string name="add_a_control">Add a Control</string>
-    <string name="not_playing">Not Playing</string>
     <string name="contacts">Contacts</string>
     <string name="search_the_web_ask_ai">Search the Web &amp; Ask AI</string>
     <string name="top_hit">Top Hit</string>
@@ -598,7 +512,6 @@
     <string name="mobile_network">Mobile network</string>
     <string name="airplane_mode">Airplane mode</string>
     <string name="airplane_mode_2">Airplane Mode</string>
-    <string name="cellular_data">Cellular Data</string>
     <string name="display_brightness">Display &amp; brightness</string>
     <string name="sounds_vibration">Sounds &amp; vibration</string>
     <string name="battery">Battery</string>
@@ -612,18 +525,15 @@
     <string name="nfc_payments">NFC &amp; payments</string>
     <string name="developer_options">Developer options</string>
     <string name="about_phone">About phone</string>
-    <string name="remove_control">Remove %1$s</string>
-    <string name="add_control">Add %1$s</string>
     <string name="folio">Folio</string>
-    <string name="powers_the_dynamic_island_and_notificati">Powers the Dynamic Island and Notification Center. Nothing leaves your phone.</string>
-    <string name="lets_pull_downs_open_system_panels_and_s">Lets pull-downs open system panels, and shows the dock handle and island in other apps.</string>
+    <string name="powers_badges_lock_cover_and_now_playing">Powers notification badges, the Lock Cover and Now Playing. Nothing leaves your phone.</string>
+    <string name="lets_pull_downs_open_system_panels_and_s">Lets pull-downs open Android’s notifications and Quick Settings, and shows the dock handle and Big Buttons in other apps.</string>
     <string name="keeps_the_cover_screen_on_when_you_fold">Keeps the cover screen on when you fold from Home. Settings › Display › Continue apps on cover screen.</string>
-    <string name="lets_control_center_change_brightness_an">Lets Control Center change brightness and rotation lock.</string>
     <string name="coming_from_samsung_s_or_another_launche">Coming from Samsung’s or another launcher? Show the same wallpaper behind Folio.</string>
     <string name="holding_the_side_key_opens_folio_s_picke">Holding the side key opens Folio’s picker: ChatGPT, Claude, Perplexity, Gemini, or Google without AI.</string>
     <string name="choose">Choose</string>
     <string name="samsung_side_button_press_and_hold_digit">Samsung: Side button › Press and hold › Digital assistant, so holding the key reaches Folio’s picker.</string>
-    <string name="message_contacts_from_spotlight_in_openb">Message contacts from Spotlight in OpenBubbles. New messages also pop out of the island with quick reply.</string>
+    <string name="message_contacts_from_spotlight_in_openb">Message contacts from Spotlight in OpenBubbles.</string>
     <string name="mmmm_d">MMMM d</string>
     <string name="mmm_d">MMM d</string>
     <string name="eee_mmm_d">EEE MMM d</string>
@@ -641,7 +551,7 @@
     <string name="charger_connected">Charger connected</string>
     <string name="bluetooth_headphones_or_speaker_connects">Bluetooth headphones or speaker connects</string>
     <string name="headphones_plugged_in">Headphones plugged in</string>
-    <string name="control_center">Control Center</string>
+    <string name="quick_settings">Quick Settings</string>
     <string name="do_not_disturb_on">Do Not Disturb On</string>
     <string name="do_not_disturb_off">Do Not Disturb Off</string>
     <string name="sleep_focus_on_off">Sleep Focus On/Off</string>
@@ -655,8 +565,6 @@
     <string name="rounded_square">Rounded square</string>
     <string name="off">Off</string>
     <string name="state_off">Off</string>
-    <string name="collapse">Collapse</string>
-    <string name="expand">Expand</string>
     <string name="close_folder">Close folder</string>
     <string name="no_folder_color">No folder color</string>
     <string name="folder_color">Folder color</string>
@@ -687,12 +595,10 @@
     <string name="white">White</string>
     <string name="weight">Weight</string>
     <string name="text_1_s_unavailable">%1$s unavailable</string>
-    <string name="headphones">Headphones</string>
     <string name="fixes_and_improvements">Fixes and Improvements</string>
     <string name="version_history">Version History</string>
     <string name="clear_search">Clear search</string>
     <string name="choose_1_s">Choose %1$s</string>
-    <string name="choose_a_focus">Choose a Focus</string>
     <string name="location_in_use">Location in use</string>
     <string name="battery_1_d_percent">Battery %1$d percent</string>
     <string name="battery_1_d_percent_charging">Battery %1$d percent, charging</string>
@@ -749,7 +655,7 @@
     <string name="olive">Olive</string>
     <string name="ios">iOS</string>
     <string name="classic">Classic</string>
-    <string name="banking_apps_note">Some banking apps refuse to open while any accessibility service is on, including Folio\'s gestures service. That is their check, not something Folio can change. Everything except the pull-down panels and the dock and island over other apps works without it, so you can turn it off in Android\'s Accessibility settings and keep using Folio.</string>
+    <string name="banking_apps_note">Some banking apps refuse to open while any accessibility service is on, including Folio\'s gestures service. That is their check, not something Folio can change. Everything except the pull-downs and the dock and Big Buttons over other apps works without it, so you can turn it off in Android\'s Accessibility settings and keep using Folio.</string>
     <string name="gauge">Gauge</string>
     <string name="this_device_can_t_show_discover_beside">This device can\'t show Discover beside the dock.</string>
     <string name="app_is_unavailable">%1$s is unavailable.</string>
@@ -776,7 +682,6 @@
     <string name="what_s_new_in_folio">What\'s New in Folio</string>
     <string name="version_1">Version %1$s</string>
     <string name="continue_choice">Continue</string>
-    <string name="connected">Connected</string>
     <string name="finish_setting_up_folio">Finish Setting Up Folio</string>
     <string name="search_1_with">Search “%1$s” with</string>
     <string name="stack_1">%1$s Stack</string>
@@ -791,18 +696,16 @@
     <string name="home_layout_saved_by_newer_folio">Saved by a Newer Folio</string>
     <string name="home_layout_saved_by_newer_folio_detail">Your Home layout was saved by a newer version of Folio. Update Folio to use it. Until then Folio keeps it untouched and shows a basic Home, or you can restore a backup.</string>
     <string name="home_layout_saved_by_newer_folio_short">Home layout saved by a newer Folio; update Folio to use it.</string>
-    <string name="folio_closed_unexpectedly_twice_so_opt">Folio closed unexpectedly twice, so optional features are paused: Cabinet, Actions, the fold animation, Lock Cover, the island and dock over other apps, and tinting. Your settings haven’t changed.</string>
+    <string name="folio_closed_unexpectedly_twice_so_opt">Folio closed unexpectedly twice, so optional features are paused: Cabinet, Actions, the fold animation, Lock Cover and the dock over other apps. Your settings haven’t changed.</string>
     <string name="all_day">All Day</string>
     <plurals name="widgets_keep_their_saved_space">
         <item quantity="one">%1$d widget will keep its saved space and ask to reconnect after restore.</item>
         <item quantity="other">%1$d widgets will keep their saved space and ask to reconnect after restore.</item>
     </plurals>
     <string name="choose_home_apps_title">Choose Home Apps</string>
-    <string name="next">Next</string>
     <string name="start">Start</string>
     <string name="next_step">Next step</string>
     <string name="text_1_s_is_on">%1$s is on</string>
-    <string name="open_1_s">Open %1$s</string>
     <string name="carousel">Carousel</string>
     <string name="on_this_phone">On this phone</string>
     <string name="installed_from_1_s">Installed from %1$s</string>
@@ -820,10 +723,6 @@
         <item quantity="one">%1$d pinned</item>
         <item quantity="other">%1$d pinned</item>
     </plurals>
-    <plurals name="more_from_app">
-        <item quantity="one">%1$d more from %2$s</item>
-        <item quantity="other">%1$d more from %2$s</item>
-    </plurals>
     <plurals name="restore_apps">
         <item quantity="one">%1$d app</item>
         <item quantity="other">%1$d apps</item>
@@ -835,20 +734,6 @@
     <plurals name="restore_widgets">
         <item quantity="one">%1$d widget</item>
         <item quantity="other">%1$d widgets</item>
-    </plurals>
-    <!-- On a notification, iPhone's short form for the last minute. -->
-    <string name="time_now">now</string>
-    <plurals name="minutes_ago">
-        <item quantity="one">%1$dm ago</item>
-        <item quantity="other">%1$dm ago</item>
-    </plurals>
-    <plurals name="hours_ago">
-        <item quantity="one">%1$dh ago</item>
-        <item quantity="other">%1$dh ago</item>
-    </plurals>
-    <plurals name="days_ago">
-        <item quantity="one">%1$dd ago</item>
-        <item quantity="other">%1$dd ago</item>
     </plurals>
     <string name="rename">Rename…</string>
     <string name="rename_app">Rename App</string>
@@ -893,9 +778,6 @@
     <string name="folio_settings">Folio Settings</string>
     <string name="search_your_contacts">Search your contacts</string>
     <string name="allow_contacts_access">Allow contacts access</string>
-    <string name="snooze_for_1_hour">Snooze for 1 Hour</string>
-    <string name="snooze_until_tomorrow">Snooze Until Tomorrow</string>
-    <string name="notification_settings">Notification Settings</string>
     <string name="update_channel">Update channel</string>
     <string name="diagnostics_file_note">Phone and screen settings, recent Folio events, crash, freeze and restart reports, and Folio\'s own log, as one file. You choose where it goes.</string>
     <string name="performance_log">Performance log</string>
@@ -934,15 +816,12 @@
     <string name="widgets_smart_stacks">Widgets &amp; Smart Stacks</string>
     <string name="hold_a_widget_and_let_go_for_sizes_stack">Hold a widget and let go for sizes, stacks and Smart Rotate. Swipe a stack up or down.</string>
     <string name="pull_down_from_the_top_left_or_top_right">Pull down from the top left or top right. Swipe down lower on Home for Spotlight.</string>
-    <string name="tap_it_for_details_hold_and_drag_to_move">Tap it for details, hold and drag to move it. On the inner screen, drag it onto the camera once.</string>
     <string name="folding">Folding</string>
     <string name="folio_fades_between_screens_and_keeps_th">Folio fades between screens and keeps the cover awake when you fold from Home.</string>
-    <string name="modify_system_settings">Modify system settings</string>
-    <string name="control_center_brightness_and_rotation_l">Control Center brightness and rotation lock</string>
     <string name="spotlight_contact_search">Spotlight contact search</string>
     <string name="everything_stays_on_your_phone_folio_has">Everything stays on your phone. Folio has no ads or analytics, and nothing is sent anywhere unless you share a crash report.</string>
     <string name="inspired_by_re_created_from_scratch_no_t">Inspired by %1$s. Re-created from scratch; no tweak code is included.</string>
-    <string name="focus_lets_you_silence_notifications_cha">Focus lets you silence notifications, change how the phone looks and bring Home to the page you need. Turn one on here or from Control Center.</string>
+    <string name="focus_lets_you_silence_notifications_cha">Focus lets you silence notifications, change how the phone looks and bring Home to the page you need. Turn one on here or with an action.</string>
     <string name="focus_trigger_order_note">If more than one Focus could turn on by itself at once, the one higher in this list wins. A Focus you turn on yourself stays on.</string>
     <string name="only_these_pages_show_while_is_on_editin">Only these pages show while %1$s is on. Editing Home is paused until it ends, so nothing moves on the hidden pages.</string>
     <string name="page_number">Page %1$s</string>
@@ -953,10 +832,6 @@
     <string name="automatic_rows_count">Automatic (%1$s)</string>
     <string name="automatic_adds_up_to_3_more_rows_of_apps">Automatic adds up to 3 more rows of apps where your screen has room. On a foldable, both screens use the same number, so your pages stay the same when you fold.</string>
     <string name="remove_widget_from_unfolded_only_page">Remove widget from Unfolded-only page</string>
-    <string name="messages_that_android_already_pops_up_ar">Messages that Android already pops up are left to Android. Turn off Android\u2019s pop-up for an app below and its messages use the island instead (sound, badges and the notification list stay the same).</string>
-    <string name="new_notifications_from_the_apps_you_choo">New notifications from the apps you choose show in the island for a moment. Swipe one up to hide it; it stays in Notification Center.</string>
-    <string name="apps_that_android_already_pops_up_stay_w">Apps that Android already pops up stay with Android so you don\'t get two banners. Use Island turns off Android\'s pop-up for that app, and its notifications show here instead.</string>
-    <string name="android_popup_title">Android Pop-up</string>
     <string name="preview_of_home_on_the_inner_screen">Preview of Home on the inner screen</string>
     <string name="preview_of_home">Preview of Home</string>
     <string name="before_restoring_a_backup_arrange_like_i">Before restoring a backup, Arrange Like iPhone or an older layout, Folio saves your Home here so you can go back. The last %1$s are kept on this phone.</string>
@@ -995,15 +870,8 @@
     <string name="settings_keywords_live_clock_and_calendar_icons">live clock calendar</string>
     <string name="settings_side_bar_status_bar">Side Bar &amp; Status Bar</string>
     <string name="settings_keywords_side_bar_status_bar">side bar rail status bar battery wifi time left-handed labels app names</string>
-    <string name="settings_keywords_dynamic_island">island pill camera pop-ups calls messages charging bluetooth</string>
-    <string name="settings_other_notifications_in_the_islan">Other notifications in the island</string>
-    <string name="settings_keywords_other_notifications_in_the_islan">island pop-ups banners notifications apps alerts permission warning</string>
-    <string name="settings_island_and_dock_in_every_app">Island and dock in every app</string>
-    <string name="settings_keywords_island_and_dock_in_every_app">overlay everywhere other apps handle</string>
-    <string name="settings_hide_the_island_in_full_screen">Hide the island in full screen</string>
-    <string name="settings_keywords_hide_the_island_in_full_screen">island full screen landscape video game immersive hide</string>
-    <string name="settings_keywords_notification_center">notifications clock stack group split blur panels iphone style</string>
-    <string name="settings_keywords_control_center">control center size centered toggles</string>
+    <string name="settings_dock_in_every_app">Dock in every app</string>
+    <string name="settings_keywords_dock_in_every_app">overlay everywhere other apps handle</string>
     <string name="settings_keywords_spotlight">search engine google duckduckgo contacts calculator sections messages openbubbles bing brave ecosia startpage qwant kagi custom url</string>
     <string name="settings_keywords_app_library">library categories hidden apps</string>
     <string name="settings_search_button_swipe_down">Search button &amp; swipe down</string>
@@ -1013,7 +881,7 @@
     <string name="settings_gestures_pull_downs">Gestures &amp; pull-downs</string>
     <string name="settings_keywords_gestures_pull_downs">gesture pull down swipe touch hold press delay long</string>
     <string name="settings_swipe_down_on_home">Swipe down on Home</string>
-    <string name="settings_keywords_swipe_down_on_home">swipe down home spotlight search notification center shade pull one finger</string>
+    <string name="settings_keywords_swipe_down_on_home">swipe down home spotlight search notifications shade pull one finger</string>
     <string name="settings_keywords_actions">activator double tap two finger charging bluetooth headphones trigger</string>
     <string name="settings_keywords_side_key">side key assistant chatgpt claude wallet double press hold</string>
     <string name="settings_keywords_lock_cover">lock screen unlock cover clock</string>
@@ -1046,7 +914,6 @@
     </plurals>
     <string name="rows_note_different" tools:ignore="PluralsCandidate">The cover screen fits %1$d and the inner screen fits %2$d, so Folio shows %3$d on both. Smaller icons or labels make room for another row.</string>
     <string name="rows_note_fixed_more" tools:ignore="PluralsCandidate">Fixed at %1$d rows on both screens. A screen that needs the room shows smaller icons, down to 48 dp, and then scrolls.</string>
-    <string name="count_of_total">%1$d of %2$d</string>
     <string name="home_page_1_d_of_2_d">Home page %1$d of %2$d</string>
     <string name="dp_value">%1$d dp</string>
     <plurals name="setup_steps_left_full">
@@ -1073,7 +940,7 @@
     <string name="set">Set</string>
     <string name="folio_gestures_service">Folio gestures service</string>
     <string name="continue_apps_on_cover_screen_always">Continue apps on cover screen: Always</string>
-    <string name="lets_control_center_turn_do_not_disturb">Lets Control Center turn Do Not Disturb on and off.</string>
+    <string name="lets_focus_and_actions_turn_do_not_distu">Lets Focus and actions turn Do Not Disturb on and off.</string>
     <string name="keep_your_wallpaper">Keep your wallpaper</string>
     <!-- Button on a setup step: starts using that wallpaper or messaging app. -->
     <string name="use">Use</string>
@@ -1084,8 +951,8 @@
     <string name="imessage_with_openbubbles">iMessage with OpenBubbles</string>
     <!-- Name of Folio's live wallpaper in Android's wallpaper picker. -->
     <string name="label_dune_wallpaper">Folio background</string>
-    <!-- Shown in Android Settings, Notification access, where people allow the Dynamic Island. -->
-    <string name="label_island_listener">Folio island</string>
+    <!-- Shown in Android Settings, Notification access. -->
+    <string name="label_notification_listener">Folio notifications</string>
     <string name="label_settings_shortcut">Folio settings</string>
     <!-- Quick Settings tile that shows or hides the dock over other apps. -->
     <string name="label_dock_tile">Folio Dock</string>
@@ -1129,20 +996,10 @@
     <string name="continue_widget_setup">Continue widget setup</string>
     <string name="cancel_widget_setup">Cancel widget setup</string>
     <string name="exit_preview">Exit Preview</string>
-    <string name="silent_mode_on">Silent mode on</string>
-    <string name="silent_mode_off">Silent mode off</string>
-    <string name="do_not_disturb_on_2">Do Not Disturb on</string>
-    <string name="do_not_disturb_off_2">Do Not Disturb off</string>
-    <string name="incoming_call">Incoming call</string>
-    <string name="previous">Previous</string>
     <string name="play">Play</string>
     <string name="pause">Pause</string>
     <string name="previous_track">Previous track</string>
     <string name="next_track">Next track</string>
-    <string name="decline">Decline</string>
-    <string name="accept">Accept</string>
-    <string name="mute">Mute</string>
-    <string name="speaker">Speaker</string>
     <string name="home_options">Home options</string>
     <string name="move_left">Move Left</string>
     <string name="move_right">Move Right</string>
@@ -1160,12 +1017,6 @@
     <string name="used_recently">Used recently</string>
     <string name="app_options">App options</string>
     <string name="remove_from_home_2">Remove %1$s from Home</string>
-    <string name="android_notifications">Android notifications</string>
-    <string name="clear_all">Clear all</string>
-    <string name="show_notifications">Show %1$s notifications</string>
-    <string name="edit_controls">Edit controls</string>
-    <string name="power_menu">Power menu</string>
-    <string name="brightness">Brightness</string>
     <string name="work_apps_are_paused">Work apps are paused</string>
     <string name="work_profile_is_unavailable">Work profile is unavailable</string>
     <!-- The line under a cloned app (Samsung's Dual Messenger, Android's App cloning) in the App Library and in folders. -->
@@ -1180,18 +1031,6 @@
     <string name="moved_down">Moved down</string>
     <string name="moved_to_next_page">Moved to Next Page</string>
     <string name="moved_to_previous_page">Moved to Previous Page</string>
-    <!-- What TalkBack reads for the Dynamic Island. -->
-    <plurals name="island_charging_percent">
-        <item quantity="one">Charging, %1$d percent</item>
-        <item quantity="other">Charging, %1$d percent</item>
-    </plurals>
-    <string name="island_connected_to">Connected to %1$s</string>
-    <!-- An app's alert: app name, then who it's from. -->
-    <string name="island_alert">%1$s: %2$s</string>
-    <string name="island_alert_text">%1$s: %2$s: %3$s</string>
-    <string name="island_message">Message from %1$s</string>
-    <string name="island_message_text">Message from %1$s: %2$s</string>
-    <string name="island_live_details">%1$s. Tap for details</string>
     <!-- What TalkBack reads for a folder on Home: its name and how many apps. -->
     <plurals name="folder_apps">
         <item quantity="one">Folder %1$s, %2$d app</item>
@@ -1218,9 +1057,6 @@
     <string name="no_background_behind_home">No background behind Home.</string>
     <string name="tweak_cabinet_detail">Swipe up on an app icon for a small panel with its shortcuts, latest notifications and music controls.</string>
     <string name="tweak_harborline_detail">Dock icons swell under your finger as you slide along the dock.</string>
-    <string name="tweak_roll_call_detail">A row of app icons above Notification Center. Tap one to show only that app.</string>
-    <string name="tweak_palette_detail">Notification cards take on a soft version of their app’s color.</string>
-    <string name="tweak_colored_albums_detail">The music card and the island’s sound bars take on the album art’s color.</string>
     <string name="tweak_flipbook_detail">Home pages move in 3D as you swipe, instead of sliding flat.</string>
     <string name="credit_duo_fold_live">joeconsorti and contributors · MIT · Duet\'s Classic Glass style and Plays When (code)</string>
     <string name="credit_hingewave">Ant-lib · MIT · Duet\'s Deep style: the perspective tilt and blur floor (code)</string>
@@ -1278,8 +1114,6 @@
     <string name="hold_longer">Longer</string>
     <string name="touch_and_hold">Touch and Hold</string>
     <string name="touch_and_hold_note">How long to hold an app or a widget on Home before its menu opens. Standard follows Android, including Samsung\'s Touch and hold delay in Accessibility.</string>
-    <string name="shade_shortcut_notifications">Folio Notification Shade</string>
-    <string name="shade_shortcut_quick_settings">Folio Quick Settings</string>
     <string name="how_should_folio_feel">How should Folio feel?</string>
     <string name="how_should_folio_feel_detail">Pick a starting point. Every piece can be changed later in Settings.</string>
     <string name="where_are_you_coming_from">Where are you coming from?</string>
@@ -1305,7 +1139,7 @@
     <string name="onboarding_keep_things_as_they_are">Keep Things as They Are</string>
     <string name="starting_point_detail">Folio can start looking like what you know. You can change it anytime in Settings.</string>
     <string name="starting_iphone">iPhone</string>
-    <string name="starting_iphone_detail">Dynamic Island, Folio\'s panels and rounded icons.</string>
+    <string name="starting_iphone_detail">Spotlight on a swipe down and rounded icons.</string>
     <string name="starting_android">Android</string>
     <string name="starting_android_detail">Android\'s own notification shade, round icons and familiar habits.</string>
     <string name="use_starting_point">Use %1$s</string>
@@ -1324,14 +1158,14 @@
     <string name="finish_setting_up">Finish setting up, whenever you like</string>
     <string name="hint_hold">Press and hold an icon to rearrange or edit Home</string>
     <string name="hint_unfold">Unfolded, it is the same Home with more room</string>
-    <string name="finish_notifications_detail">The island, badges from notifications and quick reply.</string>
-    <string name="finish_panels_detail">Notification Center and Control Center from the top corners.</string>
+    <string name="finish_notifications_detail">Badges from notifications, the Lock Cover and Now Playing.</string>
+    <string name="finish_panels_detail">Android’s notifications and Quick Settings from the top corners.</string>
     <string name="set_up">Set Up</string>
     <string name="profile_folio">Folio</string>
     <string name="profile_android_style">Android style</string>
     <string name="profile_custom">Custom</string>
-    <string name="profile_folio_detail">Dynamic Island, Folio\'s Notification Center and Control Center, and Spotlight when you swipe down on Home.</string>
-    <string name="profile_android_style_detail">Android\'s own notification shade and Quick Settings, no Dynamic Island, and the notification shade when you swipe down on Home.</string>
+    <string name="profile_folio_detail">Spotlight when you swipe down on Home.</string>
+    <string name="profile_android_style_detail">Android’s notification shade when you swipe down on Home.</string>
     <string name="profile_custom_detail">You have set these yourself. Pick one above to start from it.</string>
     <string name="add_apps">Add Apps</string>
     <string name="add_apps_to_1">Add Apps to “%1$s”</string>
@@ -1358,13 +1192,10 @@
     <string name="upright">Upright</string>
     <string name="full_width_home">Full-Width Home</string>
     <string name="full_width_home_note">The dock runs along the bottom and the status Side Bar goes away, so Home uses the whole width, like most phone launchers. The Side Bar setting is for both screens. Turning this off puts back the dock and Side Bar you had.</string>
-    <string name="settings_keywords_afterglow">colored albums album art music color colorflow now playing</string>
     <string name="tweak_opt_amount">Amount</string>
     <string name="tweak_opt_subtle">Subtle</string>
     <string name="tweak_opt_strong">Strong</string>
     <string name="tweak_opt_tick">Tick as you slide</string>
-    <string name="tweak_opt_music_card">Music card</string>
-    <string name="tweak_opt_island_bars">Island sound bars</string>
     <string name="look_stacked">Stacked</string>
     <string name="hours">Hours</string>
     <string name="hours_system">System</string>
@@ -1374,16 +1205,10 @@
     <string name="place_freely">Place Freely</string>
     <string name="snap_to_grid">Snap to Grid</string>
     <string name="taken_by_apps">Taken by apps</string>
-    <string name="turn_off_mode">Turn off %1$s</string>
     <string name="turn_on_mode">Turn on %1$s</string>
-    <string name="reply_sent">Sent</string>
-    <string name="reply_hint">Reply</string>
-    <string name="reply_to_name">Reply to %1$s</string>
-    <string name="send_action">Send</string>
     <string name="show_all_apps_in">Show all %1$d %2$s apps</string>
     <string name="home_label">Home</string>
     <string name="open_named">Open %1$s</string>
-    <string name="progress_of">%1$s of %2$s</string>
     <string name="new_badge">New</string>
     <string name="clear_text">Clear</string>
     <string name="focus_on_named">%1$s on</string>
@@ -1572,9 +1397,6 @@
     <string name="in_stack">In stack</string>
     <string name="not_in_stack">Not in stack</string>
     <string name="install_waiting">Waiting…</string>
-    <!-- The Dynamic Island's call, when the caller has no name; and its navigation, when the app gives no title. -->
-    <string name="island_call">Call</string>
-    <string name="island_navigating">Navigating</string>
     <string name="unavailable_app">Unavailable app</string>
     <!-- The status rail's battery line while Airplane mode is on. -->
     <string name="status_airplane">Airplane</string>
@@ -1593,10 +1415,6 @@
     <string name="clear_suggestions_history_q">Clear Suggestions History?</string>
     <string name="clear_suggestions_history_text">Folio forgets what it learned from your app use, including your recent apps. Android\'s own usage data is not changed.</string>
     <string name="suggestions_start_again_from_now">Spotlight, the App Library, the Suggestions widget and Smart Stack start learning again from now.</string>
-    <string name="island_expand">Show details</string>
-    <string name="island_collapse">Hide details</string>
-    <string name="island_state_expanded">Expanded</string>
-    <string name="island_state_collapsed">Collapsed</string>
     <string name="media_previous">Previous</string>
     <string name="media_next">Next</string>
     <string name="discover_no_fit">Discover couldn\'t fit beside the dock. Return home and try again.</string>
@@ -1609,26 +1427,4 @@
     <string name="layout_backup_is_too_large">That layout backup is larger than 2 MB, so Folio can\'t read it.</string>
     <string name="layout_backup_is_from_a_newer_folio">That layout backup is from a newer version of Folio. Update Folio to restore it.</string>
     <string name="document_picker_unavailable">The file picker isn\'t available right now.</string>
-    <string name="island_status_ready_title">Showing over other apps</string>
-    <string name="island_status_ready_body">Music, calls and timers appear in the island. Do Not Disturb limits message pop-ups.</string>
-    <string name="island_status_ready_live_body">Music, calls and timers appear in the island.</string>
-    <string name="island_status_dnd_title">Do Not Disturb is limiting message pop-ups</string>
-    <string name="island_status_dnd_body">Do Not Disturb is on, so it decides which message pop-ups appear. Music, calls and timers still show over other apps.</string>
-    <string name="island_status_dnd_action">Open Do Not Disturb</string>
-    <string name="island_status_popup_title">Android is showing these pop-ups itself</string>
-    <string name="island_status_popup_body">Don\'t double up with Android pop-ups is on, so the island stays out of the way of important notifications such as most messages.</string>
-    <string name="island_status_popup_note">Don\'t double up with Android pop-ups is on, so important notifications stay with Android\'s own pop-up.</string>
-    <string name="island_status_popup_action">Show them in the island too</string>
-    <string name="island_status_service_title">Not showing over other apps</string>
-    <string name="island_status_service_body">Folio\'s gestures service is off. Android only lets an app draw over other apps through it.</string>
-    <string name="island_status_service_action">Turn on the gestures service</string>
-    <string name="island_status_access_title">Nothing to show yet</string>
-    <string name="island_status_access_body">Notification access is off, so Folio can\'t see music, calls or messages.</string>
-    <string name="island_status_access_action">Open Notification access</string>
-    <string name="island_status_off_title">The island is off in other apps</string>
-    <string name="island_status_off_body">Turn on Dynamic Island under In every app to see it over other apps.</string>
-    <string name="island_status_live_off_title">Music and live progress is off</string>
-    <string name="island_status_live_off_body">Turn on Music and live progress to see music, calls and timers in the island.</string>
-    <string name="island_status_safe_title">Paused by Safe Mode</string>
-    <string name="island_status_safe_body">Safe Mode keeps the island and dock on Home only. Turn Safe Mode off to use them over other apps.</string>
 </resources>
