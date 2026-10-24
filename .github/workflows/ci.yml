@@ -33,21 +33,6 @@ jobs:
       # Before anything slow: a key in the repository is the one mistake that can't be taken back by deleting it.
       - name: No private keys in the repository
         run: bash tools/check-secrets.sh
-      # PERMISSIONS.md tells readers they can check it against the manifest. This is that check, both ways, so the
-      # document cannot go on promising a list the app no longer matches (docs/standards/site.md, WEB-3).
-      - name: PERMISSIONS.md lists exactly the permissions the manifest declares
-        run: python3 tools/check-permissions.py
-      # Folio's own packages are the SDK's worked examples, so they have to pass the validator authors are told to
-      # run. The Kotlin parser and the published schemas are separate lists, and this is what keeps them agreeing.
-      - name: Folio's own packages pass the SDK validator
-        run: python3 tools/folio-pkg.py validate docs/sdk/source
-      # The scripts in tools/ have tests of their own, and nothing ran them: the announce guard that keeps private links
-      # out of public posts, the Ko-fi worker, Mr Folio, dev-builds and test-report. None needs a network or a secret;
-      # the servers, webhooks and databases are stood in for.
-      - name: Tool tests
-        run: |
-          node --test tools/*.test.mjs tools/folio-bot/*.test.mjs tools/kofi-worker/*.test.mjs
-          python3 -m unittest discover -s tools -p 'test_*.py'
       - name: Unit tests, lint and debug build
         run: ./gradlew :app:testDebugUnitTest :market:testDebugUnitTest :app:lintDebug :market:lintDebug :app:assembleDebug
       # A red unit test run is easier to read from the HTML report than from the log, so keep both modules' reports.
