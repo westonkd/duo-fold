@@ -250,8 +250,10 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
             val fieldScope = rememberCoroutineScope()
             // iOS: the search capsule with Cancel beside it.
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(SpotGlass)
-                .border(FolioGlass.edge, RoundedCornerShape(18.dp))
+            val fieldShape = RoundedCornerShape(18.dp)
+            Row(Modifier.weight(1f).clip(fieldShape)
+                .liquidGlassOr(fieldShape, LIQUID_OVERLAY_FROST, GlassRole.CAPSULE, FolioColors.SurfaceCard) {
+                    background(SpotGlass).border(FolioGlass.edge, fieldShape) }
                 // The whole capsule is the tap target, not just the text line.
                 .clickable(remember { MutableInteractionSource() }, null) { fieldScope.launch { raiseKeyboard() } }
                 // Fixed height: the capsule doesn't grow or jump when the clear button appears.
@@ -354,8 +356,9 @@ private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) 
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
         Text(title, color = FolioGlass.secondary, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(start = FolioSpace.TINY.dp))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)).background(SpotGlass)
-            .border(FolioGlass.edge, RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)).padding(FolioSpace.COMPACT.dp),
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.GROUPED_CARD.dp))
+            .liquidGlassOr(RoundedCornerShape(FolioRadius.GROUPED_CARD.dp), LIQUID_OVERLAY_FROST, GlassRole.PANEL, FolioColors.SurfaceCard) {
+                background(SpotGlass).border(FolioGlass.edge, RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)) }.padding(FolioSpace.COMPACT.dp),
             verticalArrangement = Arrangement.spacedBy(FolioSpace.HAIR.dp), content = content)
     }
 }

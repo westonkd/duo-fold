@@ -115,7 +115,9 @@ internal enum class FeatureGate(
      * instead of the numbers each one picked for itself. A small change in feel, so it goes to supporters and Folio
      * Dev first to say whether it reads as smoother. Everyone gets it in 0.6.9: flip [OPEN_IN_0_6_9] to open it.
      */
-    MOTION_V2("motionV2", closedSince = "2026-10-08", opensIn = "0.6.9", { OPEN_IN_0_6_9 });
+    MOTION_V2("motionV2", closedSince = "2026-10-08", opensIn = "0.6.9", { OPEN_IN_0_6_9 }),
+
+    LIQUID_GLASS("liquidGlass", closedSince = "2026-10-24", opensIn = "0.7.0", { OPEN_IN_0_7_0 });
 
     /** True once the feature ships to everyone and the gate stops mattering. */
     val open: Boolean get() = openToEveryone()

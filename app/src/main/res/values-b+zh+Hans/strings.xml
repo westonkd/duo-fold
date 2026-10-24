@@ -562,6 +562,7 @@
     <string name="glass">玻璃</string>
     <string name="light">浅色</string>
     <string name="frosted">磨砂</string>
+    <string name="liquid">液态</string>
     <string name="solid">不透明</string>
     <string name="outline">描边</string>
     <string name="wallpaper_tint">墙纸着色</string>

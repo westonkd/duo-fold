@@ -380,8 +380,10 @@ private fun NotificationCard(item: NotificationItem, modifier: Modifier, extraCo
         val pressScale by androidx.compose.animation.core.animateFloatAsState(if (pressed) .97f else 1f,
             FolioMotion.spring(FolioMotion.Control), label = "notification press")
         Row(Modifier.fillMaxWidth().graphicsLayer { scaleX = pressScale; scaleY = pressScale }
-            .clip(RoundedCornerShape(FolioRadius.NOTIFICATION.dp)).background(mixColor(NotifGlass, cardAccent, .32f))
-            .border(FolioGlass.edge, RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(FolioRadius.NOTIFICATION.dp)).let { card ->
+                val body = mixColor(NotifGlass, cardAccent, .32f)
+                card.liquidGlassOr(RoundedCornerShape(FolioRadius.NOTIFICATION.dp), body.alpha, GlassRole.PANEL, body.copy(alpha = 1f)) {
+                    background(body).border(FolioGlass.edge, RoundedCornerShape(22.dp)) } }
             .combinedClickable(interactionSource = press, indication = null, onClick = { if (swipe.value < -1f) settle(0f) else onOpen() }, onLongClick = {
                 if (!overApps) { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); options = true }
             }, onLongClickLabel = stringResource(R.string.notification_options))
@@ -859,9 +861,12 @@ private fun MediaModule(media: IslandActivity.Media?, modifier: Modifier, cell: 
 }
 
 @Composable
-private fun Module(modifier: Modifier, color: Color = ModuleGlass, content: @Composable BoxScope.() -> Unit) =
-    Box(modifier.clip(RoundedCornerShape(26.dp)).background(color)
-        .border(FolioGlass.edge, RoundedCornerShape(26.dp)), content = content)
+private fun Module(modifier: Modifier, color: Color = ModuleGlass, content: @Composable BoxScope.() -> Unit) {
+    val shape = RoundedCornerShape(26.dp)
+    Box(modifier.clip(shape)
+        .liquidGlassOr(shape, color.alpha, GlassRole.TILE, color.copy(alpha = 1f)) {
+            background(color).border(FolioGlass.edge, shape) }, content = content)
+}
 
 @Composable
 private fun RoundToggle(icon: ImageVector, label: String, on: Boolean, accent: Color, size: Dp, onClick: () -> Unit) {

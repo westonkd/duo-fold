@@ -96,6 +96,7 @@ class MainActivity : ComponentActivity() {
      * since asking the gate reads preferences and a redeemed supporter code restarts Folio anyway (CMP-9).
      */
     private var badgesGateOpen = false
+    private var liquidGlassGate = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // The wallpaper theme must be chosen before the window exists (switching to it starts the screen again).
@@ -104,6 +105,7 @@ class MainActivity : ComponentActivity() {
         setupExperience = SetupExperience(this)
         Installs.start(this); NewApps.load(this)
         badgesGateOpen = FeatureGate.BADGES_WHEN_OPENED.isOpen(this)
+        liquidGlassGate = FeatureGate.LIQUID_GLASS.isOpen(this)
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { syncStandByScreenSaver(this@MainActivity) }
         FocusScheduler.run(this)
         // Focus triggers (folding, charging, headphones): listen only while some Focus uses one.
@@ -281,7 +283,7 @@ class MainActivity : ComponentActivity() {
             val iconTint = if (state.iconTintFromWallpaper) wallpaperIconTint(wallpaperTone)?.toLong()?.and(0xFFFFFFFFL) ?: state.iconTint else state.iconTint
             androidx.compose.runtime.CompositionLocalProvider(
                 LocalWallpaperTone provides wallpaperTone,
-                LocalGlassLook provides GlassLook(state.widgetGlass, state.glassOutline),
+                LocalGlassLook provides GlassLook(state.widgetGlass, state.glassOutline, usesLiquidGlass(state.glassMaterial, liquidGlassGate, solidGlass)),
                 LocalSolidGlass provides solidGlass,
                 LocalFolderLook provides FolderLook(state.folderColumns, state.folderBackground),
                 LocalLabelSize provides state.labelSize,
