@@ -5,7 +5,6 @@ import android.content.pm.ShortcutInfo
 import android.graphics.Bitmap
 import android.graphics.Rect
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -109,16 +108,15 @@ internal fun AppContextMenu(
     val density = LocalDensity.current
     val appear = remember { Animatable(0f) }
     var more by remember { mutableStateOf(false) }
-    // The 0.6.9 motion pass (MO5, the Lab's "Grow from the icon"): the menu opens on the Menu token instead of its own numbers,
-    // closes back into the icon instead of vanishing, and under Reduce Motion only fades. Without the pass it is as before.
-    val pass = FolioMotion.v2
-    val still = pass && LocalReduceMotion.current
+    // The 0.6.9 motion pass (MO5, the Lab's "Grow from the icon"): the menu opens on the Menu token, closes back into
+    // the icon instead of vanishing, and under Reduce Motion only fades.
+    val still = LocalReduceMotion.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var closing by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { appear.animateTo(1f, FolioMotion.spring(FolioMotion.pick(old = .72f to Spring.StiffnessMediumLow, new = FolioMotion.Menu))) }
-    /** Tapping outside or going back: with the pass the menu goes back into the icon first. An action closes it at once. */
+    LaunchedEffect(Unit) { appear.animateTo(1f, FolioMotion.spring(FolioMotion.Menu)) }
+    /** Tapping outside or going back: the menu goes back into the icon first. An action closes it at once. */
     val dismiss: () -> Unit = {
-        if (!pass) onDismiss() else if (!closing) {
+        if (!closing) {
             closing = true
             scope.launch {
                 appear.animateTo(0f, if (still) androidx.compose.animation.core.tween(MENU_FADE_MS) else FolioMotion.spring(FolioMotion.Firm))
@@ -191,8 +189,8 @@ internal fun AppContextMenu(
                 .graphicsLayer {
                     if (!still) { val s = .7f + .3f * appear.value; scaleX = s; scaleY = s }
                     transformOrigin = TransformOrigin(origX, if (below) 0f else 1f)
-                    // With the pass the menu fades as it grows and shrinks, so closing reads as going back into the icon.
-                    if (pass) alpha = (appear.value * 1.4f).coerceIn(0f, 1f)
+                    // The menu fades as it grows and shrinks, so closing reads as going back into the icon.
+                    alpha = (appear.value * 1.4f).coerceIn(0f, 1f)
                 }
                 .liquidGlassOr(RoundedCornerShape(FolioRadius.FLOATING.dp), LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.PopoverSurface) {
                     clip(RoundedCornerShape(FolioRadius.FLOATING.dp)).background(FolioColors.PopoverSurface.copy(alpha = .96f))
@@ -311,5 +309,5 @@ internal fun RenameAppAlert(app: AppEntry, onDismiss: () -> Unit, onRename: (Str
 // The buttons stay Material's TextButton: Folio's AlertDialog restyles them itself, the way its other alerts do.
 }
 
-/** Reduce Motion with the motion pass: the menu fades out over this long instead of going back into the icon. */
+/** Reduce Motion: the menu fades out over this long instead of going back into the icon. */
 private const val MENU_FADE_MS = 150

@@ -10,7 +10,7 @@ import kotlin.math.abs
 
 /**
  * Page Effects: the maths each effect turns a page position into, that None is the default everywhere, and that the
- * feature is switched off at its entry point rather than only hidden ([PageEffect], [FeatureGate.PAGE_EFFECTS]).
+ * feature is switched off at its entry point rather than only hidden ([PageEffect]).
  */
 class PageEffectsTest {
     private val root = generateSequence(java.io.File("").absoluteFile) { it.parentFile }.first { java.io.File(it, "CHANGELOG.md").exists() }
@@ -156,13 +156,11 @@ class PageEffectsTest {
         assertTrue("Safe Mode should turn Page Effects off", "pageEffect = PageEffect.NONE" in source("CrashLog.kt"))
     }
 
-    @Test fun `Home asks the gate and Reduce Motion before any of this runs`() {
+    @Test fun `Home asks Reduce Motion before any of this runs`() {
         val screen = source("LauncherScreen.kt")
-        // REL-4a: the gate is asked where the work starts, not only where the setting is drawn.
-        assertTrue("the effect itself should be gated", "FeatureGate.PAGE_EFFECTS.isOpen" in screen)
         // DYN-11 / A11Y-14: spatial motion goes away with Reduce Motion on, and it is read through the composition local.
         assertTrue("Reduce Motion should switch it off", "!LocalReduceMotion.current" in screen)
-        assertTrue("with the gate shut or Reduce Motion on it has to fall back to None", "else PageEffect.NONE" in screen)
+        assertTrue("with Reduce Motion on it has to fall back to None", "else PageEffect.NONE" in screen)
         // A drop lands by coordinates, so nothing may transform a page while an icon or widget is being moved.
         assertTrue("moving an icon has to switch it off", "!drag.active && !resize.active" in screen)
         assertTrue("the transform belongs on Home's pages", ".pageEffect(pageEffect, nativePager, physicalPage)" in screen)
@@ -197,11 +195,8 @@ class PageEffectsTest {
             """Row(Modifier.fillMaxSize().testTag("home-surface")""" in screen)
     }
 
-    // The choice is on Flipbook's own page, which exists only where the gate is open: Flipbook carries the gate and
-    // visibleTweaks leaves a gated tweak out. None isn't offered there; it is Flipbook switched off.
-    @Test fun `the effects are offered only where the gate is open, and every effect has its own name`() {
-        val flipbook = TweakFeatures.first { it.id == "pageEffects" }
-        assertEquals("Flipbook should carry the page-effects gate", FeatureGate.PAGE_EFFECTS, flipbook.gate)
+    // The choice is on Flipbook's own page. None isn't offered there; it is Flipbook switched off.
+    @Test fun `the effects are offered on Flipbook's page, and every effect has its own name`() {
         val sheet = source("CustomizationSheet.kt")
         assertTrue("Flipbook's page should list the effects",
             Regex("""tweak\.id\s*==\s*"pageEffects"\s*\)\s*FlipbookEffects\(""").containsMatchIn(sheet))

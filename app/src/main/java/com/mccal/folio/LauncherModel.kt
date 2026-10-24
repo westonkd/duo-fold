@@ -245,8 +245,6 @@ data class LauncherState(
     /** Frost behind Home's widgets (0 = clear, 1 = solid). The Side Bar's is statusStyle.railGlass. */
     val widgetGlass: Float = .26f,
     val folderColumns: Int = 0,
-    /** Tweaks the user has added from the Tweak Library; only these show in Settings › Tweaks. */
-    val installedTweaks: Set<String> = emptySet(),
     val folderBackground: FolderBackground = FolderBackground.GLASS,
     val labelSize: LabelSize = LabelSize.STANDARD,
     val motionSpeed: MotionSpeed = MotionSpeed.STANDARD,
@@ -257,10 +255,6 @@ data class LauncherState(
     val pageEffect: PageEffect = PageEffect.NONE,
     /** The effect Flipbook's switch turns back on: the last one chosen, so Carousel survives an off and on. */
     val lastPageEffect: PageEffect = PageEffect.CUBE,
-    /** Page effects installed from Market packages, by package id. Listed in the picker next to the built-ins. */
-    val packagedEffects: List<PackagedPageEffect> = emptyList(),
-    /** The packaged effect chosen in the picker, by package id; drawn only while [pageEffect] isn't None. */
-    val packagedEffectId: String? = null,
     /** Strength of the thin light outline around widgets and Side Bar capsules (0 = none). */
     val glassOutline: Float = .16f,
     val glassMaterial: GlassMaterial = GlassMaterial.CLASSIC,
@@ -276,11 +270,11 @@ data class LauncherState(
     /** Velvet-style: notification cards take on their app icon's color. */
     val tintNotifications: Boolean = false,
     /** ColorFlow-style: music cards and the island's sound bars take on the album art's color. */
-    val tintMedia: Boolean = true,
+    val tintMedia: Boolean = false,
     /** Harbor-style: dock icons magnify under your finger. */
     val dockMagnify: Boolean = false,
     /** Velox-style: swipe up on a Home app icon for its quick panel. */
-    val appPanels: Boolean = true,
+    val appPanels: Boolean = false,
     /** Activator-style trigger → action (names of [FolioTrigger] → [FolioAction]). */
     val triggerActions: Map<String, String> = emptyMap(),
     val haptics: Boolean = true,
@@ -291,7 +285,7 @@ data class LauncherState(
     /** Settings a tweak offers on its own page: tweak id → option id → value (see [TweakOptions]). Absent = the default. */
     val tweakOptions: Map<String, Map<String, String>> = emptyMap(),
     /** Axon-style app icon row above notifications. */
-    val notificationAppRow: Boolean = true,
+    val notificationAppRow: Boolean = false,
     /** Drag along the Search pill or page dots to scrub pages. */
     val pageScrub: Boolean = true,
     /** Android wallpaper shifts slightly as pages change. */
@@ -985,32 +979,27 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
     }
     fun folder(id: String) = mutable.value.layout.folder(id)
 
-    /**
-     * [before] is the Home the user had when they chose to restore. It differs from the current state when the Market
-     * has already taken this phone's packages off, and it is what Layout History and Undo should give back.
-     */
-    fun applyImportedLayout(preview: LayoutImportPreview, before: LauncherState? = null): Boolean {
+    fun applyImportedLayout(preview: LayoutImportPreview): Boolean {
         // Over a damaged layout this is the way back (the notice's Restore): the basic Home shown in its place is
         // nothing to undo to or keep in Layout History.
         val recovering = statePayloadInvalid
         // Before this phone's apps are listed, a backup reads every app as missing; leaving the damaged state then would save an empty Home.
         if (recovering && !appsListed) return false
         val old = mutable.value
-        val kept = before ?: old
         if (!recovering && old.layout == preview.layout && old.compact == preview.compact && old.expanded == preview.expanded &&
             old.portrait == preview.portrait && old.labels == preview.labels && old.googleSearch == preview.googleSearch && old.verticalStatus == preview.verticalStatus &&
             old.appNames + preview.appNames == old.appNames && old.appIconStyles + preview.appIconStyles == old.appIconStyles &&
             old.iconActions + preview.iconActions == old.iconActions) return false
         if (recovering) leaveDamagedLayout(restoring = true)
-        else if (old.layoutHistory && !old.loading) LayoutHistory.add(getApplication(), "Before restoring a backup", kept.layout)
+        else if (old.layoutHistory && !old.loading) LayoutHistory.add(getApplication(), "Before restoring a backup", old.layout)
         // The backup's widgets get slot numbers nothing here uses, so a stack or clock look kept for Undo stays on its own widget.
         val (restored, newSlots) = renumberRestoredWidgets(preview.layout,
-            maxOf(nextWidgetSlot(), kept.widgetPlacements.maxOfOrNull { it.slot + 1 } ?: 0))
+            maxOf(nextWidgetSlot(), old.widgetPlacements.maxOfOrNull { it.slot + 1 } ?: 0))
         val restoredSlots = restored.widgetPlacements.mapTo(mutableSetOf()) { it.slot }
-        undoLayout = (kept.layout to restored).takeUnless { recovering }
+        undoLayout = (old.layout to restored).takeUnless { recovering }
         // A stack on a number the restored layout still uses can't stay on Home, but Undo brings it back whole.
         setAsideStacks = (restored to old.widgetStacks.filterKeys { it in restoredSlots }).takeUnless { recovering }
-        undoImportSettings = UndoImportSettings(kept.compact, kept.expanded, kept.labels, kept.googleSearch, kept.verticalStatus, kept.portrait).takeUnless { recovering }
+        undoImportSettings = UndoImportSettings(old.compact, old.expanded, old.labels, old.googleSearch, old.verticalStatus, old.portrait).takeUnless { recovering }
         // A restored name replaces the one on this phone; names this backup says nothing about are left alone.
         val names = old.appNames + preview.appNames
         mutable.value = old.copy(appNames = names, appIconStyles = old.appIconStyles + preview.appIconStyles, iconActions = old.iconActions + preview.iconActions, apps = old.apps.withAppNames(names),
@@ -1240,11 +1229,6 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
     fun setPageEffect(value: PageEffect) = updateSettings(soon = false) { it.withPageEffect(value) }
     fun setPageEffectOn(on: Boolean) = updateSettings(soon = false) { it.withPageEffectOn(on) }
     /** A package installed an effect (or an update replaced it): one entry per package id. */
-    fun addPackagedEffect(effect: PackagedPageEffect) = updateSettings(soon = false) { s ->
-        s.copy(packagedEffects = s.packagedEffects.filterNot { it.id == effect.id } + effect)
-    }
-    fun removePackagedEffect(id: String) = updateSettings(soon = false) { it.withoutPackagedEffect(id) }
-    fun setPackagedEffect(id: String) = updateSettings(soon = false) { it.withPackagedEffect(id) }
     fun setGlassOutline(value: Float) = updateSettings(soon = true) { it.copy(glassOutline = value.coerceIn(0f, 1f)) }
     /** One tap for the whole glass look: widgets and Side Bar together. */
     fun setGlassPreset(frost: Float, material: GlassMaterial = GlassMaterial.CLASSIC) = updateSettings(soon = false) {
@@ -1258,24 +1242,10 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
     fun setAppPanels(value: Boolean) = updateSettings(soon = false) { it.copy(appPanels = value) }
     fun setHaptics(value: Boolean) = updateSettings(soon = false) { it.copy(haptics = value) }
     fun setLockCover(value: Boolean) = updateSettings(soon = false) { it.copy(lockCover = value) }
-    fun setTweakOptions(tweakId: String, values: Map<String, String>) =
-        updateSettings(soon = false) { it.copy(tweakOptions = TweakOptions.replace(it.tweakOptions, tweakId, values)) }
     fun setTweakOption(tweakId: String, optionId: String, value: String) =
         updateSettings(soon = false) { it.copy(tweakOptions = TweakOptions.set(it.tweakOptions, tweakId, optionId, value)) }
     fun setFeatureScope(id: String, screen: FolioScreen, value: ScopeValue) =
         updateSettings(soon = false) { it.copy(featureScopes = FeatureScopes.set(it.featureScopes, id, screen, value)) }
-    /** Tweak Library "Get": adds the tweak to Settings and turns it on. */
-    internal fun installTweak(feature: TweakFeature) {
-        updateSettings(soon = false) { it.copy(installedTweaks = it.installedTweaks + feature.id) }
-        feature.set(this, true)
-    }
-
-    /** "Remove": turns the tweak off, clears its per-screen settings and takes it out of Settings. */
-    internal fun removeTweak(feature: TweakFeature) {
-        feature.set(this, false)
-        updateSettings(soon = false) { it.copy(installedTweaks = it.installedTweaks - feature.id, featureScopes = it.featureScopes - feature.id, tweakOptions = it.tweakOptions - feature.id) }
-    }
-
     internal fun resetTweak(feature: TweakFeature) {
         feature.set(this, feature.default)
         updateSettings(soon = false) { it.copy(featureScopes = it.featureScopes - feature.id, tweakOptions = it.tweakOptions - feature.id) }
@@ -1434,9 +1404,6 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
     fun setFoldEffect(value: Boolean) = updateSettings(soon = false) { it.copy(foldEffect = value) }
     fun setFoldIntensity(value: Float) = updateSettings(soon = true) { it.copy(foldIntensity = value) }
     internal fun setDuet(value: com.mccal.folio.duet.DuetOptions) = updateSettings(soon = true) { it.copy(duet = value) }
-    /** A package's Duet options and intensity, in one save. */
-    internal fun setDuet(value: com.mccal.folio.duet.DuetOptions, intensity: Float) =
-        updateSettings(soon = false) { it.copy(duet = value, foldIntensity = intensity.coerceIn(.3f, 1.5f)) }
     fun setStayAwakeOnFold(value: Boolean) = updateSettings(soon = false) { it.copy(stayAwakeOnFold = value) }
     fun setStatusStyle(style: StatusStyle) = updateSettings(soon = true) { it.copy(statusStyle = style) }
     fun setFolioPanels(value: Boolean) = updateSettings(soon = false) { it.copy(folioPanels = value) }
@@ -1605,7 +1572,7 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
         fun preset(p: LayoutPreset) = JSONObject().put("iconSize", p.iconSize).put("rowGap", p.rowGap)
             .put("dockWidth", p.dockWidth).put("dockPosition", p.dockPosition).put("dockAlignToGrid", p.dockAlignToGrid)
             .put("dockPlacement", p.dockPlacement.name).put("statusAlignToGrid", p.statusAlignToGrid).put("statusPosition", p.statusPosition)
-            .put("columnGap", p.columnGap).put("dockSpacing", p.dockSpacing).put("widgetScale", p.widgetScale).put("pageTop", p.pageTop)
+            .put("columnGap", p.columnGap).put("dockSpacing", p.dockSpacing).put("pageTop", p.pageTop)
         val widgets = JSONArray().also { array -> s.widgetPlacements.forEach { w -> array.put(JSONObject()
             .put("slot", w.slot).put("id", w.id).put("page", w.page).put("column", w.column).put("row", w.row)
             .put("spanX", w.spanX).put("spanY", w.spanY)
@@ -1643,12 +1610,9 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
             .put("widgetStacks", JSONObject().apply { s.widgetStacks.forEach { (slot, ids) -> put(slot.toString(), JSONArray(ids)) } })
             .put("stackRotate", s.stackRotate).put("railActivitiesUnderStatus", s.railActivities).put("addNewAppsToHome", s.addNewAppsToHome)
             .put("layoutHistory", s.layoutHistory).put("dockRecentDots", s.dockRecentDots)
-            .put("installedTweaks", JSONArray(s.installedTweaks.toList()))
             .put("folderColumns", s.folderColumns).put("folderBackground", s.folderBackground.name)
             .put("labelSize", s.labelSize.name).put("motionSpeed", s.motionSpeed.name).put("holdDelay", s.holdDelay.name).put("pageEffect", s.pageEffect.name)
             .put("lastPageEffect", s.lastPageEffect.name)
-            .put("packagedEffects", JSONArray().apply { s.packagedEffects.forEach { put(it.toJson()) } })
-            .put("packagedEffectId", s.packagedEffectId ?: JSONObject.NULL)
             .put("widgetGlass", s.widgetGlass.toDouble()).put("glassOutline", s.glassOutline.toDouble())
             .put("glassMaterial", s.glassMaterial.name)
             .put("focusModes", focusModesToJson(s.focusModes))
@@ -1760,7 +1724,7 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
             p.optBoolean("statusAlignToGrid", !p.optBoolean("statusTop", false)),
             p.optDouble("statusPosition", 0.0).toFloat(),
             p.optDouble("columnGap", DEFAULT_COLUMN_GAP.toDouble()).toFloat(), p.optDouble("dockSpacing", 0.0).toFloat(),
-            p.optDouble("widgetScale", 1.0).toFloat(), p.optBoolean("pageTop", false)).sanitized()
+            p.optBoolean("pageTop", false)).sanitized()
         return upgradePreset(loaded, j.optInt("schema", 1), key == "expanded")
     }
     val order = j.optJSONArray(if (j.optInt("schema", 1) >= 2) "pinned" else "order") ?: JSONArray()
@@ -1943,8 +1907,6 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         pageEffect = PageEffect.of(j.optString("pageEffect")),
         // Before 0.6.7.2 this wasn't saved: the effect in use, else the cube.
         lastPageEffect = PageEffect.of(j.optString("lastPageEffect", j.optString("pageEffect"))).takeIf { it != PageEffect.NONE } ?: PageEffect.CUBE,
-        packagedEffects = j.optJSONArray("packagedEffects")?.let { a -> (0 until a.length()).mapNotNull { PackagedPageEffect.from(a.optJSONObject(it)) } }.orEmpty(),
-        packagedEffectId = j.optString("packagedEffectId").takeIf { it.isNotBlank() && it != "null" },
         widgetGlass = j.optDouble("widgetGlass", .26).toFloat().coerceIn(0f, 1f), glassOutline = j.optDouble("glassOutline", .16).toFloat().coerceIn(0f, 1f),
         glassMaterial = runCatching { GlassMaterial.valueOf(j.optString("glassMaterial")) }.getOrDefault(GlassMaterial.CLASSIC),
         focusModes = focusModesFromJson(j.optJSONArray("focusModes")),
@@ -1960,15 +1922,15 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         roundedCorners = j.optBoolean("roundedCorners", false), cornerRadius = j.optDouble("cornerRadius", 40.0).toFloat().coerceIn(16f, 72f), dimWallpaperDark = j.optBoolean("dimWallpaperDark", true),
         homeScrim = j.optBoolean("homeScrim", true),
         iconTintFromWallpaper = j.optBoolean("iconTintFromWallpaper", false),
-        tintNotifications = j.optBoolean("tintNotifications", false), tintMedia = j.optBoolean("tintMedia", true),
-        dockMagnify = j.optBoolean("dockMagnify", false), appPanels = j.optBoolean("appPanels", true), haptics = j.optBoolean("haptics", true), lockCover = j.optBoolean("lockCover", true),
+        tintNotifications = j.optBoolean("tintNotifications", false), tintMedia = j.optBoolean("tintMedia", false),
+        dockMagnify = j.optBoolean("dockMagnify", false), appPanels = j.optBoolean("appPanels", false), haptics = j.optBoolean("haptics", true), lockCover = j.optBoolean("lockCover", true),
         featureScopes = j.optJSONObject("featureScopes")?.let { o -> o.keys().asSequence().associateWith { id ->
             o.optJSONObject(id)?.let { inner -> inner.keys().asSequence().associateWith { inner.getString(it) } }.orEmpty()
         } } ?: emptyMap(),
         tweakOptions = TweakOptions.cleaned(j.optJSONObject("tweakOptions")?.let { o -> o.keys().asSequence().associateWith { id ->
             o.optJSONObject(id)?.let { inner -> inner.keys().asSequence().associateWith { inner.optString(it) } }.orEmpty()
         } } ?: emptyMap()),
-        notificationAppRow = j.optBoolean("notificationAppRow", true), pageScrub = j.optBoolean("pageScrub", true), reduceMotion = j.optBoolean("reduceMotion", false),
+        notificationAppRow = j.optBoolean("notificationAppRow", false), pageScrub = j.optBoolean("pageScrub", true), reduceMotion = j.optBoolean("reduceMotion", false),
         wallpaperMotion = j.optBoolean("wallpaperMotion", true), liveIcons = j.optBoolean("liveIcons", true),
         liveIconLook = j.optString("liveIconLook", "AUTO").takeIf { it in setOf("AUTO", "LIGHT", "DARK") } ?: "AUTO",
         triggerActions = j.optJSONObject("triggerActions")?.let { o -> o.keys().asSequence().associateWith { o.getString(it) } } ?: emptyMap(),
@@ -2025,50 +1987,15 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         homeFitCompact = j.optInt("homeFitCompact", 0).takeIf { it in BASE_APP_ROWS..MAX_APP_ROWS } ?: 0,
         homeFitExpanded = j.optInt("homeFitExpanded", 0).takeIf { it in BASE_APP_ROWS..MAX_APP_ROWS } ?: 0,
         homeFitUpright = j.optInt("homeFitUpright", 0).takeIf { it in BASE_APP_ROWS..MAX_APP_ROWS } ?: 0)
-        .let { st ->
-            val saved = j.optJSONArray("installedTweaks")
-            when {
-                saved != null -> st.copy(installedTweaks = (0 until saved.length()).mapNotNull { saved.optString(it).takeIf(String::isNotBlank) }.toSet())
-                // Updating from before the Tweak Library: every tweak that's on counts as installed, so nothing changes.
-                legacyRaw != null -> st.copy(installedTweaks = TweakFeatures.filter { it.get(st) || it.id in st.featureScopes }.mapTo(mutableSetOf()) { it.id })
-                // A new install starts clean: tweaks are added from the Tweak Library when wanted.
-                else -> st.copy(installedTweaks = emptySet(), appPanels = false, dockMagnify = false, notificationAppRow = false,
-                    tintNotifications = false, tintMedia = false)
-            }
-        }
-        // The fold animation was built in before it became Duet, and on by default. A save from before Duet keeps it
-        // exactly as it was: installed when it was on.
-        .let { st -> if (!j.has("duet") && st.foldEffect) st.copy(installedTweaks = st.installedTweaks + DUET_ID) else st }
 }
 
 /** How strongly glass takes the wallpaper color: none when tinting is off; half the slider is the original .28. */
 val LauncherState.glassTintAmount: Float get() = if (tintedGlass) .56f * glassTint else 0f
 
 /** Reduce Transparency: nearly solid widgets, Side Bar and dock, with a clearer edge (the saved values stay as they are). */
-/**
- * Choosing an effect also remembers it, unless it's None, so Flipbook's switch has something to bring back. Choosing a
- * built-in one sets aside any packaged effect; choosing None keeps it, so turning Flipbook back on returns to it.
- */
+/** Choosing an effect also remembers it, unless it's None, so Flipbook's switch has something to bring back. */
 internal fun LauncherState.withPageEffect(value: PageEffect): LauncherState =
-    copy(pageEffect = value, lastPageEffect = if (value == PageEffect.NONE) lastPageEffect else value,
-        packagedEffectId = if (value == PageEffect.NONE) packagedEffectId else null)
-
-/** Chooses an installed packaged effect; also turns effects on if they were off. Unknown ids change nothing. */
-internal fun LauncherState.withPackagedEffect(id: String): LauncherState =
-    if (packagedEffects.none { it.id == id }) this
-    else copy(packagedEffectId = id, pageEffect = if (pageEffect == PageEffect.NONE) lastPageEffect else pageEffect)
-
-/** A package with an effect was removed: drop it, and if it was the chosen one, fall back to the built-in choice. */
-internal fun LauncherState.withoutPackagedEffect(id: String): LauncherState =
-    copy(packagedEffects = packagedEffects.filterNot { it.id == id }, packagedEffectId = packagedEffectId?.takeIf { it != id })
-
-/** The packaged effect Home is drawing: none while effects are off, and none once its package has gone. */
-internal val LauncherState.activePackagedEffect: PackagedPageEffect?
-    get() = if (pageEffect == PageEffect.NONE) null else packagedEffects.firstOrNull { it.id == packagedEffectId }
-
-/** What Home draws: nothing when effects are off, else the chosen packaged effect if it's still installed, else the built-in. */
-internal fun LauncherState.pageEffectSpec(): PageEffectSpec? =
-    if (pageEffect == PageEffect.NONE) null else activePackagedEffect?.spec ?: pageEffect.spec
+    copy(pageEffect = value, lastPageEffect = if (value == PageEffect.NONE) lastPageEffect else value)
 
 /** Flipbook's switch: on brings back the last effect chosen, off is the flat swipe. */
 internal fun LauncherState.withPageEffectOn(on: Boolean): LauncherState =

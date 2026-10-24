@@ -85,10 +85,10 @@ class ScreenCoverageTest {
         val presets = listOf(LayoutPreset(dockPlacement = DockPlacement.BOTTOM), LayoutPreset(dockPlacement = DockPlacement.SIDE),
             LayoutPreset(statusAlignToGrid = false, statusPosition = 1f), LayoutPreset(pageTop = true), LayoutPreset(dockAlignToGrid = false, dockPosition = 1f),
             LayoutPreset(iconSize = 40f, rowGap = 28f), LayoutPreset(iconSize = 68f, rowGap = 28f, dockWidth = 84f),
-            // Space between columns, Widget size and Space between dock apps at both ends.
-            LayoutPreset(columnGap = 8f), LayoutPreset(columnGap = 40f), LayoutPreset(widgetScale = .8f), LayoutPreset(widgetScale = 1.25f),
+            // Space between columns and Space between dock apps at both ends.
+            LayoutPreset(columnGap = 8f), LayoutPreset(columnGap = 40f),
             LayoutPreset(dockSpacing = 24f), LayoutPreset(dockSpacing = 24f, dockAlignToGrid = false, dockPosition = 1f),
-            LayoutPreset(dockSpacing = 24f, dockPlacement = DockPlacement.BOTTOM, iconSize = 68f, columnGap = 8f, widgetScale = 1.25f))
+            LayoutPreset(dockSpacing = 24f, dockPlacement = DockPlacement.BOTTOM, iconSize = 68f, columnGap = 8f))
         for (w in 320..1600 step 24) for (h in 320..1200 step 24) {
             for (p in presets) yield(Triple(w.toFloat(), h.toFloat()) { problems(w.toFloat(), h.toFloat(), p) })
             // Hidden labels, and label text at 1.3×, 1.5× and 2× font scale.
@@ -185,20 +185,19 @@ class ScreenCoverageTest {
         org.junit.Assert.assertEquals(base.iconSize, short.iconSize)
     }
 
-    /** Default Space between columns, Widget size and dock spacing lay the Fold8 out as before those settings. */
+    /** Default Space between columns and dock spacing lay the Fold8 out as before those settings. */
     @Test fun `new spacing settings at their defaults keep the fold8 layout`() {
         val cover = homeGeometry(475f, 751f, LayoutPreset(), true, statusHeight = 160f)
-        org.junit.Assert.assertEquals(listOf(363f, 90.75f, 66f, 176f, 0f), listOf(cover.gridWidth, cover.cellWidth, cover.iconSize, cover.widgetHeight, cover.columnsInset))
+        org.junit.Assert.assertEquals(listOf(363f, 90.75f, 66f, 170f, 0f), listOf(cover.gridWidth, cover.cellWidth, cover.iconSize, cover.widgetHeight, cover.columnsInset))
         val inner = homeGeometry(932f, 704f, LayoutPreset(), true, statusHeight = 160f)
-        org.junit.Assert.assertEquals(listOf(348f, 87f, 66f, 169f, 0f), listOf(inner.gridWidth, inner.cellWidth, inner.iconSize, inner.widgetHeight, inner.columnsInset))
+        org.junit.Assert.assertEquals(listOf(348f, 87f, 66f, 170f, 0f), listOf(inner.gridWidth, inner.cellWidth, inner.iconSize, inner.widgetHeight, inner.columnsInset))
         org.junit.Assert.assertEquals(dockIconSize(66f) + 22f, homeGeometry(704f, 932f, LayoutPreset(), true, statusHeight = 160f).dockPitch)
         // Closer columns narrow the cells (the grid area stays put); wider ones shrink the icons.
         val closer = homeGeometry(475f, 751f, LayoutPreset(columnGap = 8f), true, statusHeight = 160f)
         org.junit.Assert.assertEquals(listOf(363f, 82.75f, 66f), listOf(closer.gridWidth, closer.cellWidth, closer.iconSize))
         val apart = homeGeometry(475f, 751f, LayoutPreset(columnGap = 40f), true, statusHeight = 160f)
         org.junit.Assert.assertEquals(listOf(90.75f, 42f), listOf(apart.cellWidth, apart.iconSize))
-        // Widget size scales the widget rows; dock spacing makes a free-standing dock taller.
-        org.junit.Assert.assertEquals(140.8f, homeGeometry(475f, 751f, LayoutPreset(widgetScale = .8f), true, statusHeight = 160f).widgetHeight, .01f)
+        // Dock spacing makes a free-standing dock taller.
         val loose = LayoutPreset(dockAlignToGrid = false)
         org.junit.Assert.assertTrue(homeGeometry(475f, 751f, loose.copy(dockSpacing = 12f), true, statusHeight = 160f).dockHeight >
             homeGeometry(475f, 751f, loose, true, statusHeight = 160f).dockHeight)

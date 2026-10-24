@@ -1,7 +1,5 @@
 package com.mccal.folio
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
@@ -26,34 +24,17 @@ internal object PressFeedback {
     /** The longest an icon stays dipped after a tap; the app is normally up well before this. */
     const val HOLD_MS = 600L
 
-    /** Which kind of icon is pressed: what it did before this pass differs, and the old feel must stay when the motion gate is shut. */
-    enum class Kind { APP, DOCK, FOLDER }
-
-    /**
-     * How far the icon shrinks. With the motion pass off ([v2] false) every kind keeps what it did before: an app dips to .88,
-     * a dock icon to .92, a folder not at all, and nothing lifts.
-     */
-    fun scale(pressed: Boolean, lifted: Boolean, reduceMotion: Boolean, kind: Kind = Kind.APP, v2: Boolean = true): Float = when {
-        !v2 -> if (!pressed) 1f else when (kind) { Kind.APP -> .88f; Kind.DOCK -> .92f; Kind.FOLDER -> 1f }
+    /** How far the icon shrinks. */
+    fun scale(pressed: Boolean, lifted: Boolean, reduceMotion: Boolean): Float = when {
         reduceMotion -> 1f
         lifted -> LIFT
         pressed -> DIP
         else -> 1f
     }
 
-    fun alpha(pressed: Boolean, lifted: Boolean, kind: Kind = Kind.APP, v2: Boolean = true): Float = when {
-        !v2 -> if (pressed && kind == Kind.APP) .82f else 1f
-        else -> if (!lifted && pressed) DIP_ALPHA else 1f
-    }
+    fun alpha(pressed: Boolean, lifted: Boolean): Float = if (!lifted && pressed) DIP_ALPHA else 1f
 
-    fun shadowDp(lifted: Boolean, reduceMotion: Boolean, v2: Boolean = true): Float = if (v2 && lifted && !reduceMotion) LIFT_SHADOW_DP else 0f
-
-    /** The spring token: the new pass follows the finger on Quick; the old feel kept an app's bounce (.55) and a dock icon's plain settle. */
-    fun springFor(kind: Kind, v2: Boolean): Pair<Float, Float> = when {
-        v2 -> FolioMotion.Quick
-        kind == Kind.APP -> .55f to 1500f
-        else -> FolioMotion.Snap
-    }
+    fun shadowDp(lifted: Boolean, reduceMotion: Boolean): Float = if (lifted && !reduceMotion) LIFT_SHADOW_DP else 0f
 }
 
 /** The id of the app or folder whose menu is open, so its icon can lift while the menu is up. */
@@ -61,13 +42,12 @@ internal val LocalOpenMenuId = compositionLocalOf<String?> { null }
 
 /** Dip, lift and shadow for one icon. [cornerDp] is the icon's corner radius, so the shadow follows its shape. */
 @Composable
-internal fun Modifier.pressFeedback(pressed: Boolean, lifted: Boolean = false, cornerDp: Float = 0f, dimOnly: Boolean = false, kind: PressFeedback.Kind = PressFeedback.Kind.APP): Modifier {
+internal fun Modifier.pressFeedback(pressed: Boolean, lifted: Boolean = false, cornerDp: Float = 0f, dimOnly: Boolean = false): Modifier {
     val reduce = LocalReduceMotion.current
-    val v2 = FolioMotion.v2
-    val spec = FolioMotion.spring<Float>(PressFeedback.springFor(kind, v2))
-    val scale = animateFloatAsState(PressFeedback.scale(pressed, lifted, reduce || dimOnly, kind, v2), spec, label = "icon press scale")
-    val alpha = animateFloatAsState(PressFeedback.alpha(pressed, lifted, kind, v2), spec, label = "icon press alpha")
-    val shadow = animateFloatAsState(PressFeedback.shadowDp(lifted, reduce || dimOnly, v2), spec, label = "icon lift shadow")
+    val spec = FolioMotion.spring<Float>(FolioMotion.Quick)
+    val scale = animateFloatAsState(PressFeedback.scale(pressed, lifted, reduce || dimOnly), spec, label = "icon press scale")
+    val alpha = animateFloatAsState(PressFeedback.alpha(pressed, lifted), spec, label = "icon press alpha")
+    val shadow = animateFloatAsState(PressFeedback.shadowDp(lifted, reduce || dimOnly), spec, label = "icon lift shadow")
     return graphicsLayer {
         scaleX = scale.value; scaleY = scale.value; this.alpha = alpha.value
         shadowElevation = shadow.value * density

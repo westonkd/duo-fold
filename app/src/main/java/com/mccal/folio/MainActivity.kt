@@ -91,12 +91,6 @@ class MainActivity : ComponentActivity() {
     private var shadeSetupWaiting = false
     // The gestures dialog is up (or waiting to be): the setup reminder card holds back until it's gone.
     private val shadeSetupUp = mutableStateOf(false)
-    /**
-     * Whether this phone sees Clear Badges When Opened ([FeatureGate.BADGES_WHEN_OPENED]). Read once in `onCreate`,
-     * since asking the gate reads preferences and a redeemed supporter code restarts Folio anyway (CMP-9).
-     */
-    private var badgesGateOpen = false
-    private var liquidGlassGate = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // The wallpaper theme must be chosen before the window exists (switching to it starts the screen again).
@@ -104,21 +98,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setupExperience = SetupExperience(this)
         Installs.start(this); NewApps.load(this)
-        badgesGateOpen = FeatureGate.BADGES_WHEN_OPENED.isOpen(this)
-        liquidGlassGate = FeatureGate.LIQUID_GLASS.isOpen(this)
-        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { syncStandByScreenSaver(this@MainActivity) }
         FocusScheduler.run(this)
         // Focus triggers (folding, charging, headphones): listen only while some Focus uses one.
-        // Gated (FeatureGate.FOCUS_TRIGGERS): a phone the feature is shut for never registers a listener.
-        if (FeatureGate.FOCUS_TRIGGERS.isOpen(this)) lifecycleScope.launch {
+        lifecycleScope.launch {
             model.state.map { st -> st.focusModes.any { it.triggers.any } }.distinctUntilChanged().collectLatest { listening ->
                 if (listening) focusSignals(this@MainActivity).collect { model.onFocusSignals(it) }
             }
-        }
-        // Updates staged by the daily refresh while Folio was not running go in a little after start, once Home is up.
-        if (MarketAutoUpdate.enabled(this)) lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            kotlinx.coroutines.delay(20_000)
-            runCatching { MarketAutoUpdate.applyStaged(applicationContext, MarketSession(applicationContext, ModelLauncher(model, applicationContext))) }
         }
         // USER_PRESENT is a protected system broadcast delivered to runtime receivers.
         androidx.core.content.ContextCompat.registerReceiver(this, unlockReceiver, android.content.IntentFilter(Intent.ACTION_USER_PRESENT),
@@ -148,8 +133,7 @@ class MainActivity : ComponentActivity() {
         lifecycle.addObserver(IslandEvents.Observer(this))
         updateDefaultHome()
         if (savedInstanceState == null && intent.getStringExtra("duo_destination") == "search") searchRequests.intValue++
-        if (savedInstanceState == null && opensSettings(intent)) { SoftwareUpdate.openRequested = intent.getBooleanExtra(SoftwareUpdate.EXTRA_OPEN_UPDATE, false); settingsRequests.intValue++ }
-        if (savedInstanceState == null && takeMarketLink(intent)) settingsRequests.intValue++
+        if (savedInstanceState == null && opensSettings(intent)) settingsRequests.intValue++
         intent.removeExtra("duo_destination")
         // A recreated activity (rotation, fold, process restart) keeps the pending alert; the launch intent is used once.
         if (savedInstanceState == null) takeSharedTheme(intent)
@@ -172,28 +156,6 @@ class MainActivity : ComponentActivity() {
                     androidx.compose.material3.Text(getString(R.string.restart_normally)) } },
                 dismissButton = { androidx.compose.material3.TextButton(onClick = { safeAcknowledged.value = true }) {
                     androidx.compose.material3.Text(getString(R.string.continue_in_safe_mode)) } })
-            // After a crash or a freeze, offer to report it once, on the next launch. Safe Mode already has its own
-            // alert for repeated crashes, so this waits until that one is answered rather than stacking on top of it.
-            val unreported = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<java.io.File?>(null) }
-            androidx.compose.runtime.LaunchedEffect(Unit) {
-                unreported.value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { Diagnostics.unaskedFailure(this@MainActivity) }
-            }
-            val reportScope = androidx.compose.runtime.rememberCoroutineScope()
-            if (unreported.value != null && (!safeMode.value || safeAcknowledged.value)) AlertDialog(
-                onDismissRequest = { unreported.value?.let { Diagnostics.markAsked(this@MainActivity, it) }; unreported.value = null },
-                title = { androidx.compose.material3.Text(stringResource(R.string.folio_closed_unexpectedly)) },
-                text = { androidx.compose.material3.Text(stringResource(R.string.send_a_report_to_help_fix_it)) },
-                confirmButton = { androidx.compose.material3.TextButton(onClick = {
-                    val report = unreported.value
-                    unreported.value = null
-                    reportScope.launch {
-                        if (Diagnostics.send(this@MainActivity, email = true)) report?.let { Diagnostics.markAsked(this@MainActivity, it) }
-                        else IslandEvents.notice(this@MainActivity, getString(R.string.the_report_couldn_t_be_opened))
-                    }
-                }) { androidx.compose.material3.Text(stringResource(R.string.send_report)) } },
-                dismissButton = { androidx.compose.material3.TextButton(onClick = {
-                    unreported.value?.let { Diagnostics.markAsked(this@MainActivity, it) }; unreported.value = null
-                }) { androidx.compose.material3.Text(stringResource(R.string.not_now)) } })
             val deviceStatus = ScreenshotMode.status(status.state.collectAsStateWithLifecycle().value, ScreenshotMode.on.collectAsStateWithLifecycle().value)
             // Folio shows its own status in the rail, so hide Android's status bar on Home (it
             // stays in apps, and a swipe from the very top edge reveals it briefly).
@@ -268,11 +230,10 @@ class MainActivity : ComponentActivity() {
             }
             val postedBadges = androidx.compose.runtime.remember(notificationItems, clearedBadges) { BadgeClears.counts(notificationItems, clearedBadges) }
             // Clear Badges When Opened: the counts already seen are hidden, and a seen count follows its app down when
-            // notifications go away elsewhere. Nothing of this runs while the switch is off or the gate is shut.
-            val clearsBadgesWhenOpened = clearsBadgesWhenOpened(state.badgesWhenOpened)
-            val seenBadges = if (clearsBadgesWhenOpened) state.badgesSeen else emptyMap()
+            // notifications go away elsewhere. Nothing of this runs while the switch is off.
+            val seenBadges = if (state.badgesWhenOpened) state.badgesSeen else emptyMap()
             val badgeCounts = androidx.compose.runtime.remember(postedBadges, seenBadges) { BadgesWhenOpened.visible(postedBadges, seenBadges) }
-            if (clearsBadgesWhenOpened) androidx.compose.runtime.LaunchedEffect(postedBadges) { model.trimBadgesSeen(postedBadges) }
+            if (state.badgesWhenOpened) androidx.compose.runtime.LaunchedEffect(postedBadges) { model.trimBadgesSeen(postedBadges) }
             androidx.compose.runtime.SideEffect { latestNotifications = notificationItems }
             val wallpaperTone = rememberWallpaperTone(state.systemWallpaper)
             // Re-read on every resume so turning Remove animations on/off applies without restarting.
@@ -281,7 +242,7 @@ class MainActivity : ComponentActivity() {
             // Folio's own Reduce Motion, or Android's Remove animations: the same flag to every screen.
             val reduceMotion = reduceMotionState.value || state.reduceMotion
             val iconTint = if (state.iconTintFromWallpaper) wallpaperIconTint(wallpaperTone)?.toLong()?.and(0xFFFFFFFFL) ?: state.iconTint else state.iconTint
-            val liquidGlass = usesLiquidGlass(state.glassMaterial, liquidGlassGate, solidGlass)
+            val liquidGlass = usesLiquidGlass(state.glassMaterial, solidGlass)
             val crossWindowBlur = rememberCrossWindowBlur()
             val libraryBlur = liquidGlass && crossWindowBlur && state.systemWallpaper && showsWallpaper
             LibraryBackdropBlur(window, libraryBlur)
@@ -345,13 +306,11 @@ class MainActivity : ComponentActivity() {
                     onFinishFirstRun = ::finishFirstRun,
                     onShadeSetup = ::showShadeSetup, onShowWelcome = { SetupReplay.active = true; showFirstRun.value = true }, onShowWhatsNew = { whatsNewRequested.value = true })
                 }
-                // StandBy's ways in (Settings › Fold & Displays): half-open as before, and behind the 0.6.8 gate,
-                // charging on its side and a tent on the cover.
-                val standByMore = androidx.compose.runtime.remember { FeatureGate.STANDBY_CHARGING.isOpen(this@MainActivity) }
+                // StandBy's ways in (Settings › Fold & Displays): half-open, charging on its side and a tent on the cover.
                 val standByShowing = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
                 val halfOpenPose = rememberHalfOpenPose(this@MainActivity)
                 val hinge = androidx.compose.runtime.remember { hasHinge(this@MainActivity) }
-                val standByWays = StandByWays(state.standBy && hinge, standByMore && state.standByCharging, standByMore && state.standByTent && hinge)
+                val standByWays = StandByWays(state.standBy && hinge, state.standByCharging, state.standByTent && hinge)
                 val standBySignals = rememberStandBySignals(this@MainActivity, standByWays, deviceStatus.charging, halfOpenPose != null)
                 StandByOverlay(standByWay(standByWays, standBySignals), standByWay(standByWays, standBySignals.copy(still = true)) != null,
                     halfOpenPose, blocked = overlayOpen, status = deviceStatus, onShowing = { standByShowing.value = it })
@@ -380,12 +339,7 @@ class MainActivity : ComponentActivity() {
                     val before = androidx.compose.runtime.remember { DevBuild.seen(this@MainActivity) }
                     DevBuildSheet(dev, before) { showDevBuild.value = false; DevBuild.reopen.intValue = 0; DevBuild.markSeen(this@MainActivity, dev) }
                 }
-                if (showWhatsNew.value || whatsNewRequested.value) WhatsNewSheet(
-                    // A beta build offers the testers' list from here; it closes this sheet and opens Settings on that page.
-                    onWhatToTest = if (WhatToTest.available(SoftwareUpdate.installedVersion(this@MainActivity), packageName)) ({
-                        showWhatsNew.value = false; whatsNewRequested.value = false; WhatsNew.markSeen(this@MainActivity)
-                        SettingsLink.page = CustomizationPage.WHAT_TO_TEST; settingsRequests.intValue++
-                    }) else null) { showWhatsNew.value = false; whatsNewRequested.value = false; WhatsNew.markSeen(this@MainActivity) }
+                if (showWhatsNew.value || whatsNewRequested.value) WhatsNewSheet { showWhatsNew.value = false; whatsNewRequested.value = false; WhatsNew.markSeen(this@MainActivity) }
                 // With live activities in the side rail, the camera island on Home keeps only its brief events.
                 if (state.island && !standByShowing.value) CutoutIsland(IslandListenerService.activity.collectAsStateWithLifecycle().value
                     ?.takeUnless { it is IslandActivity.Call && "CALL" in state.islandEventsOff }
@@ -460,8 +414,6 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         stoppedSinceHome = false
-        SoftwareUpdate.afterUpdate(this)
-        SoftwareUpdate.startCheckIfDue(this)
         FolioForeground.visible.value = true
         Diagnostics.event("Home shown (${Diagnostics.screenSummary(this).substringBefore(',')})")
         Diagnostics.checkpoint(this, visible = true)
@@ -599,20 +551,6 @@ class MainActivity : ComponentActivity() {
     }
     /** Android's "Home app settings" gear, or Folio's own app icon (the FolioSettingsApp alias). Until Folio is the
      * Home app, its icon opens Home instead, as a preview you can leave with Back or the Home gesture. */
-    /**
-     * A `folio://package/…` or `folio://source/…` link someone shared. Folio remembers what to open and asks for the
-     * Market; a link it doesn't understand is ignored rather than guessed at.
-     */
-    private fun takeMarketLink(intent: Intent): Boolean {
-        if (intent.action != Intent.ACTION_VIEW) return false
-        val link = MarketLink.parse(intent.data?.toString()) ?: return false
-        intent.data = null
-        // A supporter's code arrives as folio://redeem, which RedeemActivity handles and Settings answers.
-        if (!MarketAccess.isOpen(this)) return false
-        MarketLink.pending = link
-        return true
-    }
-
     private fun opensSettings(intent: Intent) = intent.action == Intent.ACTION_APPLICATION_PREFERENCES ||
         (fromAppIcon(intent) && defaultHome.value)
     private fun fromAppIcon(intent: Intent) = intent.component?.className?.startsWith("$FOLIO_CLASSES.${AppIconChoice.ALIAS_PREFIX}") == true
@@ -635,8 +573,7 @@ class MainActivity : ComponentActivity() {
         // From the Notification shade shortcut when the gestures service is off: explain how to turn it on.
         if (intent.getStringExtra("duo_destination") == "shade_setup") showShadeSetup()
         // One chain: tapping Folio's icon opens Settings *or* goes Home, never both.
-        if (opensSettings(intent)) { SoftwareUpdate.openRequested = intent.getBooleanExtra(SoftwareUpdate.EXTRA_OPEN_UPDATE, false); settingsRequests.intValue++ }
-        else if (takeMarketLink(intent)) settingsRequests.intValue++
+        if (opensSettings(intent)) settingsRequests.intValue++
         else if (intent.hasCategory(Intent.CATEGORY_HOME) || fromAppIcon(intent) || intent.getStringExtra("duo_destination") == "home") {
             // Pressing the Home button on Home goes to the first page; from an app (stopped, so true here) it keeps the page you left.
             val overlayOpen = spotlightVisible.value || topPanel.value != null || showFirstRun.value || lockCoverVisible.value
@@ -651,15 +588,9 @@ class MainActivity : ComponentActivity() {
         if (!widgets.onActivityResult(requestCode, resultCode)) super.onActivityResult(requestCode, resultCode, data)
     }
 
-    /**
-     * Whether Clear Badges When Opened is doing anything here: the switch on, and the gate open for this phone. Asked
-     * at both entry points, so a phone the gate is shut for hides no badge and remembers no counts (REL-4a).
-     */
-    private fun clearsBadgesWhenOpened(switchOn: Boolean): Boolean = switchOn && badgesGateOpen
-
     /** The badge showing on [packageName] now counts as seen, so it goes away until a new notification arrives. */
     private fun noteBadgeSeen(packageName: String) {
-        if (!clearsBadgesWhenOpened(model.state.value.badgesWhenOpened)) return
+        if (!model.state.value.badgesWhenOpened) return
         model.noteBadgeSeen(packageName, BadgeClears.counts(latestNotifications, BadgeClears.cleared.value)[packageName] ?: 0)
     }
 

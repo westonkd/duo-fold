@@ -129,7 +129,7 @@ class IslandEvents private constructor(private val context: Context) {
 
         /**
          * How long [event] stays up: the times above, or longer for someone who has asked Android for more time to
-         * read and act (A11Y-19), as the Market's banners do. A message can be opened or answered, and a notice with Undo
+         * read and act (A11Y-19). A message can be opened or answered, and a notice with Undo
          * has a button, so both count as having controls too.
          */
         fun showMs(context: Context, event: IslandEvent): Long {

@@ -1,9 +1,7 @@
 package com.mccal.folio
 
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -220,19 +218,5 @@ internal fun rememberFolioScreenSaverChosen(): Boolean {
 internal fun openScreenSaverSettings(context: Context) {
     listOf(Settings.ACTION_DREAM_SETTINGS, Settings.ACTION_DISPLAY_SETTINGS).firstOrNull { action ->
         runCatching { context.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
-    }
-}
-
-/**
- * Android lists Folio StandBy among its screen savers only once StandBy's charger ways are open (0.6.8, Folio Dev, or a
- * supporter's early access), so the list never offers what Folio's Settings doesn't show. The service is off in the
- * manifest; Home checks this as it starts, off the main thread, and writes only when it differs.
- */
-internal fun syncStandByScreenSaver(context: Context, open: Boolean = FeatureGate.STANDBY_CHARGING.isOpen(context)) {
-    val packages = context.packageManager
-    val component = ComponentName(context, StandByScreenSaver::class.java)
-    val want = if (open) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
-    if (packages.getComponentEnabledSetting(component) != want) {
-        runCatching { packages.setComponentEnabledSetting(component, want, PackageManager.DONT_KILL_APP) }
     }
 }

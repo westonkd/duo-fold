@@ -135,7 +135,7 @@ internal fun PagerState.pagePosition(page: Int): Float = page - (currentPage + c
  *
  * With [PageEffect.NONE] this adds nothing at all: no layer, no state read, not one instruction per frame. That is
  * the point of returning `this` rather than an identity transform, and it is where the feature is switched off for
- * Reduce Motion, for Safe Mode, and for a phone the gate is still shut on ([REL-4a]).
+ * Reduce Motion and for Safe Mode.
  *
  * It transforms how a page is drawn and never where it is: the pager still measures, places, snaps and reports the
  * same pages at the same positions. The caller keeps it off while an icon is being dragged, because a drop lands by
@@ -155,15 +155,7 @@ internal fun Modifier.pageEffect(effect: PageEffectSpec?, pager: PagerState, pag
         cameraDistance = effect.cameraDistance(size.width)
     }
 
-/**
- * A page effect as data: the four numbers the engine turns into a layer transform (ADR 0008: the engine lives in
- * Folio, the effect can come from a package). Built-in effects are specs too, so a packaged one is drawn by exactly
- * the same code.
- *
- * Nothing a package says is trusted: [of] clamps every number to the range the engine is known to draw well. Turning
- * past a quarter turn would show a page's back, shrinking past a third makes Home read as a thumbnail, and a camera
- * nearer than 1.5 page widths tears the perspective ([PageEffect.cameraWidths]).
- */
+/** A page effect as data: the four numbers the engine turns into a layer transform. */
 data class PageEffectSpec(
     /** Degrees around the vertical axis at one full page out. */
     val maxRotation: Float,
@@ -196,18 +188,6 @@ data class PageEffectSpec(
     companion object {
         /** Skia's `Sk3DView::setCameraLocation` works in points: an inch of camera distance is 72 pixels. */
         const val POINTS_PER_INCH = 72f
-        const val MAX_ROTATION = 90f
-        const val MAX_SHRINK = .3f
-        const val MIN_CAMERA = 1.5f
-        const val MAX_CAMERA = 4f
-
-        /** A spec from untrusted numbers (a package's manifest), each held to what the engine draws well. */
-        fun of(maxRotation: Float, pivot: Pivot, shrink: Float, cameraWidths: Float) = PageEffectSpec(
-            maxRotation.takeIf { it.isFinite() }?.coerceIn(-MAX_ROTATION, MAX_ROTATION) ?: 0f,
-            pivot,
-            shrink.takeIf { it.isFinite() }?.coerceIn(0f, MAX_SHRINK) ?: 0f,
-            cameraWidths.takeIf { it.isFinite() }?.coerceIn(MIN_CAMERA, MAX_CAMERA) ?: 3f,
-        )
     }
 }
 
@@ -218,25 +198,4 @@ internal val PageEffect.spec: PageEffectSpec? get() = when (this) {
     PageEffect.INSIDE_CUBE -> PageEffectSpec(-PageEffect.CUBE_DEGREES, PageEffectSpec.Pivot.SEAM, 0f, 2f)
     PageEffect.CAROUSEL -> PageEffectSpec(PageEffect.CAROUSEL_DEGREES, PageEffectSpec.Pivot.CENTER, PageEffect.CAROUSEL_SHRINK, 3f)
     PageEffect.STACK -> PageEffectSpec(0f, PageEffectSpec.Pivot.CENTER, PageEffect.STACK_SHRINK, 3f)
-}
-
-/** A page effect a Market package installed: its package id, the name the picker shows, and its clamped spec. */
-data class PackagedPageEffect(val id: String, val name: String, val spec: PageEffectSpec) {
-    fun toJson(): org.json.JSONObject = org.json.JSONObject().put("id", id).put("name", name)
-        .put("maxRotation", spec.maxRotation.toDouble()).put("pivot", spec.pivot.name)
-        .put("shrink", spec.shrink.toDouble()).put("cameraWidths", spec.cameraWidths.toDouble())
-
-    companion object {
-        /** From a package's untrusted numbers: [PageEffectSpec.of] clamps them. */
-        fun of(id: String, name: String, maxRotation: Float, pivot: String, shrink: Float, cameraWidths: Float) =
-            PackagedPageEffect(id, name, PageEffectSpec.of(maxRotation, if (pivot.equals("seam", true)) PageEffectSpec.Pivot.SEAM
-                else PageEffectSpec.Pivot.CENTER, shrink, cameraWidths))
-
-        fun from(json: org.json.JSONObject?): PackagedPageEffect? {
-            json ?: return null
-            val id = json.optString("id").takeIf { it.isNotBlank() } ?: return null
-            return of(id, json.optString("name", id), json.optDouble("maxRotation", 0.0).toFloat(), json.optString("pivot"),
-                json.optDouble("shrink", 0.0).toFloat(), json.optDouble("cameraWidths", 3.0).toFloat())
-        }
-    }
 }

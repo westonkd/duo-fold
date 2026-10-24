@@ -2,7 +2,6 @@ package com.mccal.folio
 
 import com.mccal.folio.duet.DuetOptions
 import com.mccal.folio.duet.DuetStyles
-import com.mccal.folio.market.TweakOptions
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -52,26 +51,11 @@ class DuetTest {
         assertEquals(DuetOptions(style = "iphone", frost = 2f, darkening = 1f, perspective = 0f), damaged)
     }
 
-    @Test fun `the Market, the picker and the renderer list the same styles`() {
-        val market = (TweakOptions.DUET.getValue("style") as TweakOptions.Choice).values
-        assertEquals(DuetStyles.all.map { it.id }, market)
-        for ((key, app) in mapOf("frost" to DuetOptions.FROST, "darkening" to DuetOptions.DARKENING, "perspective" to DuetOptions.PERSPECTIVE)) {
-            val range = (TweakOptions.DUET.getValue(key) as TweakOptions.Number).range
-            assertEquals(key, range.start, app.start.toDouble(), 1e-6)
-            assertEquals(key, range.endInclusive, app.endInclusive.toDouble(), 1e-6)
-        }
-    }
-
-    @Test fun `Duet is a tweak, and a save from before it keeps the animation exactly as it was`() {
+    @Test fun `Duet is a tweak, on by default as the fold animation always was`() {
         val duet = TweakFeatures.single { it.id == DUET_ID }
         assertTrue(duet.default)
-        assertTrue("the fold animation was on by default, so it still is", DUET_ID in decode("{}"))
-        assertTrue(DUET_ID in decode("""{"foldEffect":true,"installedTweaks":["appPanels"]}"""))
-        assertTrue("off stays off, and not installed", DUET_ID !in decode("""{"foldEffect":false,"installedTweaks":[]}"""))
-    }
-
-    @Test fun `once Duet has been saved, removing it sticks`() {
-        assertTrue(DUET_ID !in decode("""{"foldEffect":true,"installedTweaks":[],"duet":{"style":"duo"}}"""))
+        assertTrue(decodeLauncherState("{}", legacyRaw = null).foldEffect)
+        assertTrue(!decodeLauncherState("""{"foldEffect":false}""", legacyRaw = null).foldEffect)
     }
 
     @Test fun `Use On turns Duet off for one screen, and Back from Fold & Displays returns there`() {
@@ -91,8 +75,6 @@ class DuetTest {
         val mine = DuetOptions(direction = "closing")
         assertEquals(mine, DuetOptions.fromJson(mine.toJson()))
         assertEquals("both", DuetOptions.fromJson(JSONObject("""{"direction":"sideways"}""")).direction)
-        val market = (TweakOptions.DUET.getValue("direction") as TweakOptions.Choice).values
-        assertEquals(com.mccal.folio.duet.DuetDirection.entries.map { it.id }, market)
     }
 
     @Test fun `Classic Glass is Duo Fold Live's look, and its tilt follows the Tilt slider`() {
@@ -101,6 +83,4 @@ class DuetTest {
         assertEquals(.5f, classic.perspective)
         assertEquals(1.25f, classic.frost)
     }
-
-    private fun decode(raw: String) = decodeLauncherState(raw, legacyRaw = null).installedTweaks
 }

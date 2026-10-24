@@ -25,17 +25,13 @@ class HomeStripAndRingsTest {
     }
 
     @Test fun `the strip shows the dots away from rest, whatever was chosen`() {
-        HomeStrip.entries.forEach { assertEquals(StripView.DOTS, stripView(it, idle = false, nothingOpen = true)) }
+        HomeStrip.entries.forEach { assertEquals(StripView.DOTS, stripView(it, idle = false)) }
     }
 
     @Test fun `at rest the strip shows what was chosen`() {
-        assertEquals(StripView.PILL, stripView(HomeStrip.SEARCH, idle = true, nothingOpen = true))
-        assertEquals(StripView.DOTS, stripView(HomeStrip.DOTS, idle = true, nothingOpen = true))
-        assertEquals(StripView.EMPTY, stripView(HomeStrip.NOTHING, idle = true, nothingOpen = true))
-    }
-
-    @Test fun `Nothing falls back to the dots when the option is not open to this phone`() {
-        assertEquals(StripView.DOTS, stripView(HomeStrip.NOTHING, idle = true, nothingOpen = false))
+        assertEquals(StripView.PILL, stripView(HomeStrip.SEARCH, idle = true))
+        assertEquals(StripView.DOTS, stripView(HomeStrip.DOTS, idle = true))
+        assertEquals(StripView.EMPTY, stripView(HomeStrip.NOTHING, idle = true))
     }
 
     @Test fun `strong rings are thicker with a clearer track, and Bold text turns them on`() {

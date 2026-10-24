@@ -30,8 +30,6 @@ data class LayoutPreset(
     val columnGap: Float = DEFAULT_COLUMN_GAP,
     /** Extra space between dock apps, on the Side Bar and in the bottom bar. */
     val dockSpacing: Float = 0f,
-    /** Height of the widget rows, as a share of Folio's own for the screen. */
-    val widgetScale: Float = 1f,
     /** Home Screen & Dock › Position › Apps › Top: the page starts at the top instead of centered in the free space. */
     val pageTop: Boolean = false,
 ) {
@@ -43,7 +41,6 @@ data class LayoutPreset(
         statusPosition = statusPosition.coerceIn(0f, 1f),
         columnGap = columnGap.takeIf { it.isFinite() }?.coerceIn(8f, 40f) ?: DEFAULT_COLUMN_GAP,
         dockSpacing = dockSpacing.takeIf { it.isFinite() }?.coerceIn(0f, 24f) ?: 0f,
-        widgetScale = widgetScale.takeIf { it.isFinite() }?.coerceIn(.8f, 1.25f) ?: 1f,
     )
 }
 
@@ -230,12 +227,6 @@ fun homeGeometry(width: Float, height: Float, preset: LayoutPreset, labels: Bool
      */
     statusRail: Boolean = true,
     /**
-     * A widget fills exactly two app rows (`2 * row - 18`), so the top rows have the same pitch as every other row on a
-     * page with a widget or without one, and the dock, which starts where row 2 does, lines up on every page. Widget
-     * Size has no job then (the widget is as tall as two rows). Off: the widget keeps the height Widget Size gives it.
-     */
-    widgetsFillRows: Boolean = false,
-    /**
      * Rows were picked by hand (Rows › 5, 6 or 7): when the rows don't fit even with the space under labels tightened, the icons
      * get smaller (down to [MIN_ROWS_ICON]) instead of the page scrolling. Automatic and Rows › 4 never shrink icons for rows.
      */
@@ -274,7 +265,9 @@ fun homeGeometry(width: Float, height: Float, preset: LayoutPreset, labels: Bool
     // Keep the same icon rhythm when labels are hidden; allow larger system text to fit.
     val labelSpace = if (labels) maxOf(20f, labelHeight) else 20f
     fun rowFor(iconSize: Float, gap: Float) = maxOf(48f, iconSize + labelSpace) + gap
-    // With widgetsFillRows the widget block is two rows high whatever the gap and icon end up as (never under 88 dp).
+    // A widget fills exactly two app rows (`2 * row - 18`), so the top rows have the same pitch as every other row on a
+    // page with a widget or without one, and the dock, which starts where row 2 does, lines up on every page. Never
+    // under 88 dp.
     fun filledWidget(iconSize: Float, gap: Float) = (2f * rowFor(iconSize, gap) - 18f).coerceAtLeast(88f)
     // Icons take at most 80% of their column, so the space between apps grows with the screen instead of
     // shrinking to a sliver on narrow phones.
@@ -300,35 +293,26 @@ fun homeGeometry(width: Float, height: Float, preset: LayoutPreset, labels: Bool
     var splitCell = (gridWidth - zoneGap) / 8f
     val splitColumns = !expanded && width > height * 1.15f && splitCell >= 64f
     var cell = gridWidth / 4f
-    var widget: Float
     if (splitColumns) {
         icon = spacedIcon(minOf(p.iconSize, splitCell - 16f))
         splitCell = narrowed(splitCell)
         if (4f * rowFor(icon, gap) > fitHeight) gap = 0f
         if (4f * rowFor(icon, gap) > fitHeight) icon = minOf(icon, (fitHeight / 4f - labelSpace).coerceAtLeast(40f))
-        widget = (minOf(176f, 2f * splitCell - 10f) * p.widgetScale).coerceAtLeast(88f)
-        if (widgetsFillRows) widget = filledWidget(icon, gap)
-        // The left half holds the widget row over two app rows; shorten the widget before it runs under the controls.
-        else if (widget + 18f + 2f * rowFor(icon, gap) > fitHeight) widget = (fitHeight - 18f - 2f * rowFor(icon, gap)).coerceAtLeast(88f)
         // Narrower columns keep the two halves together, centered like the page itself.
         gridWidth = 8f * splitCell + zoneGap
     } else {
         icon = spacedIcon(icon)
         cell = narrowed(cell)
-        // The widget row is as wide as the four columns.
-        widget = (minOf(176f, 2f * cell - 5f) * p.widgetScale).coerceAtLeast(88f)
-        fun needed(n: Int = BASE_APP_ROWS, g: Float = gap) = (if (widgetsFillRows) filledWidget(icon, g) else widget) + 18f + n * rowFor(icon, g)
+        fun needed(n: Int = BASE_APP_ROWS, g: Float = gap) = filledWidget(icon, g) + 18f + n * rowFor(icon, g)
         // More rows: as many app rows as fit at full size, plus one if a tighter space under the labels makes room.
         val fitting = (BASE_APP_ROWS..MAX_APP_ROWS).lastOrNull { needed(it) <= fitHeight } ?: (BASE_APP_ROWS - 1)
         fitRows = (if (fitting < MAX_APP_ROWS && needed(fitting + 1, tightGap) <= fitHeight) fitting + 1 else fitting)
             .coerceAtLeast(BASE_APP_ROWS)
-        // Other short windows: tighten row spacing, then icons, then the widget row, so the four app rows fit the
+        // Other short windows: tighten row spacing, then icons, so the four app rows fit the
         // height instead of running under the controls. Rows stay at least 48dp tall.
         if (needed() > fitHeight) gap = 0f
-        // Filled widgets are two rows tall whatever Widget Size says, so the page is six rows and the old scale is left out of the fit.
-        if (needed() > fitHeight) icon = minOf(icon, (if (widgetsFillRows) fitHeight / (BASE_APP_ROWS + 2f) - labelSpace
-            else (fitHeight - widget - 18f) / 4f - labelSpace).coerceAtLeast(40f))
-        if (!widgetsFillRows && needed() > fitHeight) widget = minOf(widget, (fitHeight - 18f - 4f * rowFor(icon, gap)).coerceAtLeast(88f))
+        // Filled widgets are two rows tall, so the page is six rows.
+        if (needed() > fitHeight) icon = minOf(icon, (fitHeight / (BASE_APP_ROWS + 2f) - labelSpace).coerceAtLeast(40f))
         // Laid out for the rows shown, so Rows › 4 looks exactly like before; switching the setting re-centers the page.
         layoutRows = rows
         // Extra rows tighten the spacing only when that's what makes them fit; otherwise the page scrolls.
@@ -336,8 +320,8 @@ fun homeGeometry(width: Float, height: Float, preset: LayoutPreset, labels: Bool
             val tight = minOf(gap, tightGap)
             if (needed(layoutRows, tight) <= fitHeight) gap = tight
             else if (shrinkIconsForRows) {
-                // Both ways of spending the height: a filled widget is two rows tall, so everything shares (rows + 2) pitches.
-                val pitch = if (widgetsFillRows) fitHeight / (layoutRows + 2f) else (fitHeight - widget - 18f) / layoutRows
+                // A filled widget is two rows tall, so everything shares (rows + 2) pitches.
+                val pitch = fitHeight / (layoutRows + 2f)
                 gap = tight
                 icon = minOf(icon, (pitch - labelSpace - tight).coerceAtLeast(MIN_ROWS_ICON))
             }
@@ -348,11 +332,11 @@ fun homeGeometry(width: Float, height: Float, preset: LayoutPreset, labels: Bool
     // (Not in windows so short the spacing was already squeezed to fit.)
     if (fillSpace && !splitColumns && !p.pageTop && gap >= tightGap) {
         // Filled widgets grow with the gap too (two rows each), so the share is over the rows the page really has.
-        val taken = if (widgetsFillRows) (layoutRows + 2) * rowFor(icon, gap) else widget + 18f + layoutRows * rowFor(icon, gap)
+        val taken = (layoutRows + 2) * rowFor(icon, gap)
         val leftover = fitHeight - taken
-        if (leftover > 0f) gap += minOf(leftover / (layoutRows + if (widgetsFillRows) 3 else 1), 12f)
+        if (leftover > 0f) gap += minOf(leftover / (layoutRows + 3), 12f)
     }
-    if (widgetsFillRows) widget = filledWidget(icon, gap)
+    val widget = filledWidget(icon, gap)
     val row = rowFor(icon, gap)
     // Center the page vertically. Two columns: the left half (widget row plus two app rows) is the taller one; extra
     // rows continue in the right half and scroll, so they don't move the page either.

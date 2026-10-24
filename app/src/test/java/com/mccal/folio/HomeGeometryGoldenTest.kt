@@ -35,7 +35,7 @@ class HomeGeometryGoldenTest {
     private val presets = listOf(
         "defaults" to LayoutPreset(),
         "tweaked" to LayoutPreset(iconSize = 52f, rowGap = 6f, dockWidth = 64f, dockPosition = .3f, dockAlignToGrid = false, statusAlignToGrid = false,
-            statusPosition = .5f, columnGap = 24f, dockSpacing = 8f, widgetScale = 1.1f),
+            statusPosition = .5f, columnGap = 24f, dockSpacing = 8f),
     )
 
     private fun f(x: Float) = x.toBits().toString(16)

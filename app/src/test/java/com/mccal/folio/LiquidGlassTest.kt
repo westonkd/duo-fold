@@ -11,11 +11,10 @@ class LiquidGlassTest {
     private val glass = LightDuoPalette.glass
     private val outline = GlassLook().outline
 
-    @Test fun `Liquid draws only when chosen, its gate is open and Reduce Transparency is off`() {
-        assertTrue(usesLiquidGlass(GlassMaterial.LIQUID, gateOpen = true, solid = false))
-        assertFalse(usesLiquidGlass(GlassMaterial.CLASSIC, gateOpen = true, solid = false))
-        assertFalse(usesLiquidGlass(GlassMaterial.LIQUID, gateOpen = false, solid = false))
-        assertFalse(usesLiquidGlass(GlassMaterial.LIQUID, gateOpen = true, solid = true))
+    @Test fun `Liquid draws only when chosen and Reduce Transparency is off`() {
+        assertTrue(usesLiquidGlass(GlassMaterial.LIQUID, solid = false))
+        assertFalse(usesLiquidGlass(GlassMaterial.CLASSIC, solid = false))
+        assertFalse(usesLiquidGlass(GlassMaterial.LIQUID, solid = true))
     }
 
     @Test fun `the body keeps the surface's frost and thins toward the far corner`() {

@@ -1,8 +1,6 @@
 package com.mccal.folio
 
-import android.content.ComponentName
 import android.content.Context
-import android.content.pm.PackageManager
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
@@ -103,14 +101,6 @@ class StandByScreenSaverTest {
     /** The first test build crashed here: it reached for a context while being constructed, and took Home down with it. */
     @Test fun `the screen saver is built and created without a crash`() {
         Robolectric.buildService(StandByScreenSaver::class.java).create().destroy()
-    }
-
-    @Test fun `Android lists it only while StandBy's charger ways are open`() {
-        val component = ComponentName(context, StandByScreenSaver::class.java)
-        syncStandByScreenSaver(context, open = true)
-        assertEquals(PackageManager.COMPONENT_ENABLED_STATE_ENABLED, context.packageManager.getComponentEnabledSetting(component))
-        syncStandByScreenSaver(context, open = false)
-        assertEquals(PackageManager.COMPONENT_ENABLED_STATE_DEFAULT, context.packageManager.getComponentEnabledSetting(component))
     }
 
     @Test fun `Settings reads whether Folio StandBy is the chosen screen saver`() {

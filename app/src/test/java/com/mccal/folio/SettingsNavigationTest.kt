@@ -8,17 +8,16 @@ import org.junit.Test
 
 /**
  * Settings' Back: what it says, and where it lands. It used to know four parents by name, so a page under General said
- * "‹ Folio" and went to General, and in two columns the pages under General, Support Folio and Themes had no Back at
+ * "‹ Folio" and went to General, and in two columns the pages under General and Themes had no Back at
  * all. And one scroll served every page, reset on any move, so Back always landed at the top of the list.
  */
 class SettingsNavigationTest {
     @Before fun forget() = SettingsMemory.pageScroll.clear()
 
     @Test fun `Back names the page it returns to`() {
-        assertEquals(R.string.general, settingsBackLabel(CustomizationPage.SOFTWARE_UPDATE, columns = 1))
-        assertEquals(R.string.support_folio, settingsBackLabel(CustomizationPage.SUPPORTERS, columns = 1))
+        assertEquals(R.string.general, settingsBackLabel(CustomizationPage.CREDITS, columns = 1))
         assertEquals(R.string.wallpaper_appearance, settingsBackLabel(CustomizationPage.THEMES, columns = 1))
-        assertEquals(R.string.tweak_library, settingsBackLabel(CustomizationPage.LIBRARY_TWEAK, columns = 1))
+        assertEquals(R.string.tweaks, settingsBackLabel(CustomizationPage.TWEAK, columns = 1))
         assertEquals(R.string.folio, settingsBackLabel(CustomizationPage.GENERAL, columns = 1))
         assertNull("the list has nowhere to go back to", settingsBackLabel(CustomizationPage.OVERVIEW, columns = 1))
     }
@@ -32,15 +31,15 @@ class SettingsNavigationTest {
     }
 
     @Test fun `in three columns the page Back would return to is the middle one, so there is no Back`() {
-        assertNull(settingsBackLabel(CustomizationPage.SOFTWARE_UPDATE, columns = 3))
+        assertNull(settingsBackLabel(CustomizationPage.CREDITS, columns = 3))
         assertNull(settingsBackLabel(CustomizationPage.TWEAK, columns = 3))
     }
 
     @Test fun `Back lands where the page was left, and a page opened again starts at its top`() = runBlocking {
         val scroll = SettingsScroll(CustomizationPage.OVERVIEW, 0)
         scroll.state.scrollTo(900)                                      // down the list to General
-        scroll.show(CustomizationPage.GENERAL).scrollTo(240)            // and down General to Software Update
-        assertEquals(0, scroll.show(CustomizationPage.SOFTWARE_UPDATE).value)
+        scroll.show(CustomizationPage.GENERAL).scrollTo(240)            // and down General to Credits
+        assertEquals(0, scroll.show(CustomizationPage.CREDITS).value)
         assertEquals(240, scroll.show(CustomizationPage.GENERAL).value)  // Back
         assertEquals(900, scroll.show(CustomizationPage.OVERVIEW).value) // Back again
         assertEquals(0, scroll.show(CustomizationPage.GENERAL).value)    // opened anew from the list

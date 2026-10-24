@@ -18,11 +18,11 @@ class CapabilitiesInspectorTest {
     @Test fun `the trail is read newest first and failures are marked`() {
         val trail = """
             10:00:01.000  Folio started
-            10:00:02.500  Market refresh failed: IOException
+            10:00:02.500  Widget refresh failed: IOException
             10:00:03.100  Work turned on
         """.trimIndent()
         val e = Inspector.entries(trail)
-        assertEquals(listOf("Work turned on", "Market refresh failed: IOException", "Folio started"), e.map { it.text })
+        assertEquals(listOf("Work turned on", "Widget refresh failed: IOException", "Folio started"), e.map { it.text })
         assertEquals("10:00:03.100", e.first().time)
         assertEquals(listOf(false, true, false), e.map { it.failed })
     }

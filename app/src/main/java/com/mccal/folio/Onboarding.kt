@@ -352,7 +352,7 @@ private fun FinishRow(icon: ImageVector, title: String, detail: String, tag: Str
     }
 }
 
-/** What setup was opened for: the first run, or a replay from Settings or What to Test on a phone that is already set up. */
+/** What setup was opened for: the first run, or a replay from Settings on a phone that is already set up. */
 internal object SetupReplay { var active by androidx.compose.runtime.mutableStateOf(false) }
 
 internal enum class NavChoice { KEEP, BIG, SYSTEM }

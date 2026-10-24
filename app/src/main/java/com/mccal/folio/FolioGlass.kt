@@ -222,8 +222,8 @@ internal fun rememberSystemHighContrast(): Boolean {
 
 enum class GlassMaterial { CLASSIC, LIQUID }
 
-internal fun usesLiquidGlass(material: GlassMaterial, gateOpen: Boolean, solid: Boolean): Boolean =
-    material == GlassMaterial.LIQUID && gateOpen && !solid
+internal fun usesLiquidGlass(material: GlassMaterial, solid: Boolean): Boolean =
+    material == GlassMaterial.LIQUID && !solid
 
 internal enum class GlassRole(val rim: Float, val light: Float, val inset: Boolean = false, val lift: Float = 0f) {
     PANEL(1f, 1f), TILE(.9f, .8f), CAPSULE(1f, .9f), FIELD(.7f, 0f, inset = true), FLOATING(1f, .7f, lift = 1f)

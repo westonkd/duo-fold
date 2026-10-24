@@ -133,7 +133,7 @@ internal fun CategoryFolder(title: String, apps: List<AppEntry>, onDismiss: () -
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         FolioDialogWindow(dim = 0f, blurRadiusDp = 24)
-        val appear = rememberEntrance(FolioMotion.pick(old = .82f to 600f, new = FolioMotion.Menu), scenario = PerfScenario.MENU)
+        val appear = rememberEntrance(FolioMotion.Menu, scenario = PerfScenario.MENU)
         val fade = rememberReducedFade()
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = appear.value * fade.value }.background(Color.Black.copy(alpha = .45f)).clickable(androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null, onClick = onDismiss)
             .testTag("category-folder-scrim"))

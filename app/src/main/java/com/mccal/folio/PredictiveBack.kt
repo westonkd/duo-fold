@@ -58,14 +58,14 @@ internal fun SafeBackHandler(enabled: Boolean, onBack: () -> Unit) {
 }
 
 /**
- * Back on Spotlight or a top panel: with the motion pass on (and Reduce Motion off) it previews through [OverlayBack];
- * otherwise it is the plain back handler it always was.
+ * Back on Spotlight or a top panel: with Reduce Motion off it previews through [OverlayBack]; otherwise it is a plain
+ * back handler.
  */
 @Composable
 internal fun OverlayBackHandler(open: Boolean, onClose: () -> Unit) {
     // Panels drawn over other apps live in a service window with no activity behind them, so there is no Back to hear there.
     if (androidx.activity.compose.LocalOnBackPressedDispatcherOwner.current == null) return
-    val pass = FolioMotion.v2 && !LocalReduceMotion.current
+    val pass = !LocalReduceMotion.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     if (pass) PredictiveBack(enabled = open,
         onProgress = { p -> scope.launch { OverlayBack.swipe.snapTo(p) } },

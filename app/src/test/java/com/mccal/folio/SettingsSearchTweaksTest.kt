@@ -32,9 +32,8 @@ class SettingsSearchTweaksTest {
     }
 
     @Test fun `every tweak on offer can be searched for`() {
-        val offered = visibleTweaks(context)
-        assertTrue(offered.isNotEmpty())
-        offered.forEach { assertTrue("${it.name} isn't searchable", found(it.name).contains(it.name)) }
+        assertTrue(TweakFeatures.isNotEmpty())
+        TweakFeatures.forEach { assertTrue("${it.name} isn't searchable", found(it.name).contains(it.name)) }
     }
 
     // Page Effects moved from Settings › Gestures onto Flipbook's page in 0.6.8, so searching the old name finds it.

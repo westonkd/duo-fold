@@ -229,11 +229,11 @@ internal fun standByHoldsScreen(shown: StandByWay?, charging: Boolean): Boolean 
 internal fun hasHinge(context: android.content.Context): Boolean =
     context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_SENSOR_HINGE_ANGLE)
 
-/** The ways Settings offers, in its order: the fold's two only with a hinge, the charger's once its gate is open. */
-internal fun standByWaysOffered(hinge: Boolean, chargingOpen: Boolean): List<StandByWay> = buildList {
+/** The ways Settings offers, in its order: the fold's two only with a hinge, the charger's always. */
+internal fun standByWaysOffered(hinge: Boolean): List<StandByWay> = buildList {
     if (hinge) add(StandByWay.HALF_OPEN)
-    if (chargingOpen) add(StandByWay.CHARGING)
-    if (hinge && chargingOpen) add(StandByWay.TENT)
+    add(StandByWay.CHARGING)
+    if (hinge) add(StandByWay.TENT)
 }
 
 /** Red and dim from 10 PM to 6 AM. */

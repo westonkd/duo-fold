@@ -76,9 +76,6 @@ class DuoApplication : Application() {
         CrashLog.install(this)
         DiscoverEmbedding.initialize(this)
         DiscoverBounds.initialize(this)
-        FolioMotion.initialize(this)
-        // Matches the Market's background-refresh setting to reality, so turning it off really stops it.
-        MarketRefreshJob.schedule(this)
     }
 
     /**
@@ -221,7 +218,7 @@ class DiscoverActivity : DiscoverPageActivity() {
             DuoTheme(rememberSavedAppearance().dark) {
             // Discover is its own window, so it needs the Glass setting too (the Side Bar outline follows it).
             androidx.compose.runtime.CompositionLocalProvider(LocalGlassLook provides GlassLook(state.widgetGlass, state.glassOutline,
-                usesLiquidGlass(state.glassMaterial, androidx.compose.runtime.remember { FeatureGate.LIQUID_GLASS.isOpen(this) }, false))) {
+                usesLiquidGlass(state.glassMaterial, false))) {
                 BackHandler { DiscoverSession.requestHome(this) }
                 // The same swap as Home: Discover collects its own state, so it applies it here too.
                 DiscoverDock(rememberDisguised(if (state.loading) state.copy(apps = startupApps) else state), status, fullSize.value, onLaunch = ::launchApp,
@@ -423,9 +420,7 @@ private fun DiscoverDock(state: LauncherState, status: DeviceStatus, fullSize: S
                 homeBottomSpace = if (context.getSystemService(android.app.role.RoleManager::class.java)
                     .isRoleHeld(android.app.role.RoleManager.ROLE_HOME)) 44f else 88f, classScale = classScale, appRows = state.homeAppRows, shrinkIconsForRows = state.homeRows > BASE_APP_ROWS,
                 // Anchored like Home's dock, so it stays put when Discover opens.
-                homeRailControls = if (state.searchPill) 0 else 1,
-                // The same rows as Home, so the dock doesn't jump when Discover opens.
-                widgetsFillRows = FeatureGate.WIDGETS_FILL_ROWS.isOpen(context))
+                homeRailControls = if (state.searchPill) 0 else 1)
             if (state.verticalStatus) StatusRail(status, Modifier.align(Alignment.TopEnd).padding(end = FolioSpace.MEDIUM.dp)
                 .offset(y = geometry.statusTop.dp).width(preset.dockWidth.dp)
                 .onSizeChanged {

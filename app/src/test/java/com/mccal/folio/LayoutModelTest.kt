@@ -89,7 +89,7 @@ class LayoutModelTest {
         val hidden = homeGeometry(475f, 700f, LayoutPreset(), false)
         val largeText = homeGeometry(475f, 700f, LayoutPreset(), true, labelHeight = 34f)
         assertEquals(regular.rowHeight, hidden.rowHeight)
-        assertTrue(largeText.rowHeight >= regular.rowHeight + 14f)
+        assertTrue(largeText.rowHeight - largeText.rowGap >= regular.rowHeight - regular.rowGap + 14f)
         assertTrue(regular.iconSize / (regular.gridWidth / 4f) in .70f.. .77f)
     }
     @Test fun `new icon default preserves tuned presets and current schema values`() {
@@ -246,21 +246,21 @@ class LayoutModelTest {
         }
     }
 
-    // Issue #13, Option B: with widgetsFillRows a widget is two rows tall, so one pitch serves every row and the dock,
+    // Issue #13, Option B: a widget is two rows tall, so one pitch serves every row and the dock,
     // which starts where row 2 does, lines up on a page with a widget and on one without.
     private val windows = listOf(411f to 891f, 360f to 640f, 475f to 696f, 932f to 704f, 390f to 780f)
 
     @Test fun `filled widgets make the top pitch equal the row height in every window`() {
-        for ((w, h) in windows) for (fill in listOf(false, true)) {
-            val g = homeGeometry(w, h, LayoutPreset(), true, statusHeight = 160f, fillSpace = true, widgetsFillRows = fill)
+        for ((w, h) in windows) {
+            val g = homeGeometry(w, h, LayoutPreset(), true, statusHeight = 160f, fillSpace = true)
             val topPitch = (g.widgetHeight + 18f) / 2f
-            if (fill) assertEquals("window ${w}x$h: top pitch is the row height", g.rowHeight, topPitch, 0.01f)
+            assertEquals("window ${w}x$h: top pitch is the row height", g.rowHeight, topPitch, 0.01f)
         }
     }
 
     @Test fun `filled widgets keep the page inside the window, with and without more rows`() {
         for ((w, h) in windows) for (rows in listOf(4, 5)) {
-            val g = homeGeometry(w, h, LayoutPreset(), true, statusHeight = 160f, appRows = rows, fillSpace = true, widgetsFillRows = true)
+            val g = homeGeometry(w, h, LayoutPreset(), true, statusHeight = 160f, appRows = rows, fillSpace = true)
             val bottom = g.contentTop + g.widgetHeight + 18f + g.fitAppRows.coerceAtMost(rows) * g.rowHeight
             assertTrue("window ${w}x$h rows $rows: bottom $bottom of $h", bottom <= h + 0.5f)
         }
@@ -268,31 +268,9 @@ class LayoutModelTest {
 
     @Test fun `the dock starts at row 2 whichever pitch rules apply`() {
         for ((w, h) in windows) {
-            val g = homeGeometry(w, h, LayoutPreset(), true, widgetsFillRows = true)
+            val g = homeGeometry(w, h, LayoutPreset(), true)
             val row2 = g.contentTop + 2f * g.rowHeight
             assertEquals("window ${w}x$h: dock ${g.dockTop} vs row 2 $row2", row2, g.contentTop + g.widgetHeight + 18f, 0.01f)
-        }
-    }
-
-    @Test fun `with the option off the geometry is exactly what it was`() {
-        for ((w, h) in windows) {
-            val before = homeGeometry(w, h, LayoutPreset(), true, statusHeight = 160f, fillSpace = true)
-            val off = homeGeometry(w, h, LayoutPreset(), true, statusHeight = 160f, fillSpace = true, widgetsFillRows = false)
-            assertEquals(before, off)
-        }
-    }
-
-    @Test fun `Widget Size no longer changes the height of a filled widget`() {
-        val small = homeGeometry(411f, 891f, LayoutPreset(widgetScale = .8f), true, widgetsFillRows = true)
-        val large = homeGeometry(411f, 891f, LayoutPreset(widgetScale = 1.25f), true, widgetsFillRows = true)
-        assertEquals(small.widgetHeight, large.widgetHeight, 0.01f)
-    }
-
-    @Test fun `with filled widgets the old Widget Size does not change the icons in a short window`() {
-        for ((w, h) in listOf(360f to 560f, 411f to 640f, 475f to 600f)) {
-            val small = homeGeometry(w, h, LayoutPreset(widgetScale = .8f), true, widgetsFillRows = true)
-            val large = homeGeometry(w, h, LayoutPreset(widgetScale = 1.25f), true, widgetsFillRows = true)
-            assertEquals("icons at ${w}x$h", small.iconSize, large.iconSize, .001f)
         }
     }
 }

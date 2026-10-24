@@ -29,11 +29,11 @@ internal class IconActionHost(
 
 /**
  * Whether Home provides the actions host at all. When it does not, every icon keeps its normal gestures: while Home is
- * being edited (jiggle and drag win), in Safe Mode (a swipe is not taken only to be refused), with the gate shut, or with
- * no action saved anywhere.
+ * being edited (jiggle and drag win), in Safe Mode (a swipe is not taken only to be refused), or with no action saved
+ * anywhere.
  */
-internal fun iconActionsAvailable(editing: Boolean, safeMode: Boolean, anySaved: Boolean, gateOpen: Boolean) =
-    !editing && !safeMode && anySaved && gateOpen
+internal fun iconActionsAvailable(editing: Boolean, safeMode: Boolean, anySaved: Boolean) =
+    !editing && !safeMode && anySaved
 
 internal val LocalIconActions = staticCompositionLocalOf<IconActionHost?> { null }
 

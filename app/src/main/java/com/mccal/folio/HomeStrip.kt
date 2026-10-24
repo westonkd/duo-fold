@@ -28,15 +28,11 @@ internal enum class StripView { PILL, DOTS, EMPTY }
 
 /**
  * [idle] is true when Home is at rest on a page: not editing, dragging, scrubbing or mid swipe. Away from rest the dots
- * show. A phone that chose Nothing but can't use it (a supporter code that ran out while the option was still in
- * beta) shows the dots rather than a strip with no way to tell where you are.
+ * show.
  */
-internal fun stripView(strip: HomeStrip, idle: Boolean, nothingOpen: Boolean): StripView {
-    val chosen = if (strip == HomeStrip.NOTHING && !nothingOpen) HomeStrip.DOTS else strip
-    return when {
-        !idle -> StripView.DOTS
-        chosen == HomeStrip.SEARCH -> StripView.PILL
-        chosen == HomeStrip.NOTHING -> StripView.EMPTY
-        else -> StripView.DOTS
-    }
+internal fun stripView(strip: HomeStrip, idle: Boolean): StripView = when {
+    !idle -> StripView.DOTS
+    strip == HomeStrip.SEARCH -> StripView.PILL
+    strip == HomeStrip.NOTHING -> StripView.EMPTY
+    else -> StripView.DOTS
 }

@@ -71,12 +71,10 @@ class BadgesWhenOpenedTest {
         assertEquals(emptyMap<String, Int>(), state.badgesSeen)
     }
 
-    @Test fun `Home's badges go through the seen ones, and both entry points are gated`() {
+    @Test fun `Home's badges go through the seen ones`() {
         val root = generateSequence(java.io.File("").absoluteFile) { it.parentFile }.first { java.io.File(it, "CHANGELOG.md").exists() }
         val main = java.io.File(root, "app/src/main/java/com/mccal/folio/MainActivity.kt").readText()
         assertTrue("the badges Home draws should pass through BadgesWhenOpened.visible", "BadgesWhenOpened.visible(" in main)
         assertTrue("launching an app should remember the badge it was showing", "noteBadgeSeen(app.packageName)" in main)
-        // REL-4a: hidden work that still costs battery is wrong, so the gate is asked where the work starts.
-        assertTrue("the work itself should be gated, not only the switch", "FeatureGate.BADGES_WHEN_OPENED.isOpen" in main)
     }
 }

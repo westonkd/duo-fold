@@ -12,34 +12,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 
 /**
- * The little of Markdown a package's page is allowed to use.
- *
- * `format-v1.md` promises authors paragraphs, bold, italic, lists and links, and nothing else - no headings, no
- * HTML, no images, no tables. Folio drew the text raw until now, so an author following the documentation got
- * asterisks on the screen. This reads that subset and leaves everything else exactly as it was typed, which is the
- * safe way round: an author's stray asterisk shows up as an asterisk rather than swallowing the rest of a sentence.
- *
- * Deliberately not a Markdown parser. It is a few lines of rules over text a signed source published, and the only
- * thing it can produce is styled text and an https link, so there is nothing here for a page to escape into.
+ * The little of Markdown a changelog line uses: bold, italic and https links, and nothing else. Anything else is left
+ * exactly as it was typed, which is the safe way round: a stray asterisk shows up as an asterisk rather than
+ * swallowing the rest of a sentence.
  */
-internal object MarketText {
-
-    /** A paragraph of a page: [bullet] marks the lines that were written as a list. */
-    data class Para(val text: AnnotatedString, val bullet: Boolean)
-
-    /** Splits on blank lines, and turns each run of `- ` lines into its own bulleted paragraphs. */
-    fun paragraphs(source: String, link: Color = FolioColors.BlueOnDark): List<Para> = buildList {
-        for (chunk in source.split(Regex("\n\\s*\n"))) {
-            val lines = chunk.trim().lines().map { it.trim() }.filter { it.isNotEmpty() }
-            if (lines.isEmpty()) continue
-            // A list item is one paragraph each; anything else is joined back up, the way Markdown wraps.
-            if (lines.all { it.startsWith("- ") || it.startsWith("* ") }) {
-                lines.forEach { add(Para(inline(it.drop(2), link), bullet = true)) }
-            } else {
-                add(Para(inline(lines.joinToString(" "), link), bullet = false))
-            }
-        }
-    }
+internal object NoteText {
 
     /**
      * Bold, italic and links inside one paragraph.

@@ -52,23 +52,12 @@ internal object LauncherBackgroundCache {
 /** The one photo the user picked. Written by [LauncherBackgroundController] and nothing else. */
 internal fun launcherPhotoFile(context: Context) = File(context.filesDir, BACKGROUND_FILE)
 
-/**
- * The file behind Home right now, whichever kind of picture it is.
- *
- * Callers that want "the background" want this. Callers that want the picked photo specifically, which means the
- * picker staging a new one and the code that clears it, want [launcherPhotoFile].
- */
-internal fun launcherBackgroundFile(context: Context): File = when (val choice = backgroundChoice(context)) {
-    BackgroundChoice.None -> launcherPhotoFile(context)
-    BackgroundChoice.Photo -> launcherPhotoFile(context)
-    is BackgroundChoice.Art -> BackgroundLibrary.artFile(context, choice.id)
-}
 internal fun launcherBackgroundPreferences(context: Context) =
     context.getSharedPreferences(BACKGROUND_PREFS, Context.MODE_PRIVATE)
 internal fun launcherBackgroundEnabled(context: Context) = when (val choice = backgroundChoice(context)) {
     BackgroundChoice.None -> false
     BackgroundChoice.Photo -> launcherPhotoFile(context).isFile
-    is BackgroundChoice.Art -> BackgroundLibrary.exists(context, choice.id)
+    is BackgroundChoice.Art -> BackgroundLibrary.isBuiltIn(choice.id)
 }
 /**
  * What the cached bitmap is a picture of, so a stale copy is never mistaken for the current one.
@@ -105,13 +94,12 @@ internal fun launcherBackgroundIdentity(context: Context): String? {
  */
 internal fun loadLauncherBackground(context: Context): Bitmap? {
     if (!launcherBackgroundEnabled(context)) return null
-    val file = launcherBackgroundFile(context)
     val identity = launcherBackgroundIdentity(context)
     LauncherBackgroundCache.bitmap?.let {
         if (!it.isRecycled && LauncherBackgroundCache.identity == identity) return it
     }
     val startingRevision = LauncherBackgroundCache.revision.intValue
-    val decoded = decodeBackground(context, file) ?: return null
+    val decoded = decodeBackground(context) ?: return null
     if (LauncherBackgroundCache.revision.intValue == startingRevision &&
         launcherBackgroundIdentity(context) == identity
     ) LauncherBackgroundCache.changed(decoded, identity)
@@ -122,18 +110,18 @@ internal fun loadLauncherBackground(context: Context): Bitmap? {
  * Reads the picture, from wherever this one lives.
  *
  * Art that shipped with Folio is an asset inside the APK and has no path on the filesystem, so it cannot go through
- * [BitmapFactory.decodeFile] the way a photo or an installed piece does. Everything after this point is the same
- * bitmap either way, which is the whole reason art and photos share one path.
+ * [BitmapFactory.decodeFile] the way a photo does. Everything after this point is the same bitmap either way, which is
+ * the whole reason art and photos share one path.
  */
-private fun decodeBackground(context: Context, file: File): Bitmap? {
+private fun decodeBackground(context: Context): Bitmap? {
     val choice = backgroundChoice(context)
     if (choice is BackgroundChoice.Art && BackgroundLibrary.isBuiltIn(choice.id)) {
         return runCatching {
             context.assets.open(BackgroundLibrary.assetPath(choice.id)).use(BitmapFactory::decodeStream)
         }.getOrNull() ?: null.also { Diagnostics.backgroundUnreadable(choice) }
     }
-    // Sampled rather than trusted: an installed picture is checked for size when it goes on, and this keeps a file
-    // that got past that from being decoded at a size Android then refuses to draw.
+    // Sampled rather than trusted: this keeps a file from being decoded at a size Android then refuses to draw.
+    val file = launcherPhotoFile(context)
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeFile(file.absolutePath, bounds)
     val sample = BackgroundLibrary.sampleSize(bounds.outWidth, bounds.outHeight)

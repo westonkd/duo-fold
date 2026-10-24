@@ -52,12 +52,12 @@ internal class DragLanding {
     fun liftProgress() = ((scale.value - 1f) / (PressFeedback.LIFT - 1f)).coerceIn(0f, 1f)
 
     /**
-     * A drag started. Uses the pass only when it is on and the app's icon is on screen to start from (Home or the dock);
-     * anything else (a folder, a widget, an app pulled out of the Library or a folder) keeps the drag as it was.
+     * A drag started. Lifts only when the app's icon is on screen to start from (Home or the dock); anything else (a
+     * folder, a widget, an app pulled out of the Library or a folder) keeps the drag as it was.
      */
-    fun begin(scope: CoroutineScope, appId: String?, pointer: Offset, pass: Boolean, reduceMotion: Boolean) {
+    fun begin(scope: CoroutineScope, appId: String?, pointer: Offset, reduceMotion: Boolean) {
         flight?.cancel(); flyingId = null
-        val icon = if (pass && appId != null) iconTopLeft(appId) else null
+        val icon = if (appId != null) iconTopLeft(appId) else null
         lifted = icon != null
         if (icon == null) return
         reduced = reduceMotion

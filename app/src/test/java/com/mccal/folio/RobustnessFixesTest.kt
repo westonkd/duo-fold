@@ -31,10 +31,6 @@ class RobustnessFixesTest {
         assertTrue(model.substringAfter("override fun onCleared()").take(200).contains("flushPending()"))
     }
 
-    @Test fun `the update is only ready when the verified file was renamed`() {
-        assertTrue(source("SoftwareUpdate.kt").contains("check(apk.renameTo("))
-    }
-
     @Test fun `the installed icon packs are only asked for off the main thread`() {
         listOf("CustomizationSheet.kt", "LauncherModel.kt").forEach { file ->
             val lines = source(file).lines()

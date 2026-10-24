@@ -28,7 +28,7 @@ data class NoteItem(val title: String?, val detail: String)
 internal object WhatsNew {
     /**
      * "**Title:** detail" → title and detail; other lines keep their text, markers and all, because What's New
-     * renders them with [MarketText] now rather than showing them as typed.
+     * renders them with [NoteText] now rather than showing them as typed.
      */
     fun split(item: String): NoteItem {
         val m = Regex("""^\*\*(.+?):?\*\*:?\s*(.*)$""").find(item.trim())
@@ -122,7 +122,7 @@ internal object WhatsNew {
 /** iOS-style "What's New": the version's changes grouped under their headings, with a Continue button. */
 @androidx.compose.runtime.Composable
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-internal fun WhatsNewSheet(onWhatToTest: (() -> Unit)? = null, onDismiss: () -> Unit) {
+internal fun WhatsNewSheet(onDismiss: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val version = androidx.compose.runtime.remember { WhatsNew.releaseVersion(context) }
     val notes = androidx.compose.runtime.remember { WhatsNew.notes(context) }
@@ -155,10 +155,6 @@ internal fun WhatsNewSheet(onWhatToTest: (() -> Unit)? = null, onDismiss: () -> 
                                     modifier = androidx.compose.ui.Modifier.padding(start = FolioSpace.SMALL.dp)) }
                             }
                         }
-                        // On a beta build: the testers' list, one tap away.
-                        onWhatToTest?.let { open ->
-                            FolioButton(stringResource(R.string.what_to_test), open, modifier = androidx.compose.ui.Modifier.padding(top = FolioSpace.MEDIUM.dp).testTag("whats-new-what-to-test"))
-                        }
                     }
                 }
                 // Like a tweak's depiction in Sileo: new features first, each with a soft icon, a title and a line about it;
@@ -178,7 +174,7 @@ internal fun WhatsNewSheet(onWhatToTest: (() -> Unit)? = null, onDismiss: () -> 
                         DisclosureRow(stringResource(R.string.fixes_and_improvements), open = fixesOpen, count = others.size, tag = "whats-new-fixes") { fixesOpen = !fixesOpen }
                         if (fixesOpen) others.forEach { note ->
                             MenuDivider()
-                            androidx.compose.material3.Text(MarketText.inline(note.title?.let { "**$it:** ${note.detail}" } ?: note.detail, LocalAccent.current.ink),
+                            androidx.compose.material3.Text(NoteText.inline(note.title?.let { "**$it:** ${note.detail}" } ?: note.detail, LocalAccent.current.ink),
                                 color = androidx.compose.ui.graphics.Color.White.copy(alpha = .85f), fontSize = FolioType.SUBHEAD.sp,
                                 modifier = androidx.compose.ui.Modifier.fillMaxWidth().padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.COMPACT.dp))
                         }
@@ -204,7 +200,7 @@ internal fun WhatsNewSheet(onWhatToTest: (() -> Unit)? = null, onDismiss: () -> 
                                 if (heading.isNotEmpty()) androidx.compose.material3.Text(heading.uppercase(), color = androidx.compose.ui.graphics.Color.White.copy(alpha = .5f),
                                     fontSize = FolioType.GROUP_LABEL.sp, modifier = androidx.compose.ui.Modifier.padding(start = FolioSpace.LARGE.dp, top = FolioSpace.COMPACT.dp))
                                 items.forEach { text ->
-                                    androidx.compose.material3.Text(MarketText.inline("• $text", LocalAccent.current.ink), color = androidx.compose.ui.graphics.Color.White.copy(alpha = .85f), fontSize = FolioType.SUBHEAD.sp,
+                                    androidx.compose.material3.Text(NoteText.inline("• $text", LocalAccent.current.ink), color = androidx.compose.ui.graphics.Color.White.copy(alpha = .85f), fontSize = FolioType.SUBHEAD.sp,
                                         modifier = androidx.compose.ui.Modifier.fillMaxWidth().padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.SNUG.dp))
                                 }
                             }
@@ -238,7 +234,7 @@ private fun FeatureRow(note: NoteItem) {
         androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(start = FolioSpace.COMFY.dp).weight(1f)) {
             note.title?.let { androidx.compose.material3.Text(it, color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.BODY.sp,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) }
-            androidx.compose.material3.Text(MarketText.inline(note.detail, LocalAccent.current.ink), color = androidx.compose.ui.graphics.Color.White.copy(alpha = .68f), fontSize = FolioType.SUBHEAD.sp,
+            androidx.compose.material3.Text(NoteText.inline(note.detail, LocalAccent.current.ink), color = androidx.compose.ui.graphics.Color.White.copy(alpha = .68f), fontSize = FolioType.SUBHEAD.sp,
                 modifier = androidx.compose.ui.Modifier.padding(top = FolioSpace.HAIR.dp))
         }
     }

@@ -147,7 +147,7 @@ class NativeAppearanceLocationIntegrationTest {
         val originalLauncher = launcherPrefs.all.toMap()
         val originalAppearance = appearancePrefs.all.toMap()
         val originalBackground = backgroundPrefs.all.toMap()
-        val backgroundFile = launcherBackgroundFile(context)
+        val backgroundFile = launcherPhotoFile(context)
         val originalBackgroundBytes = backgroundFile.takeIf(File::isFile)?.readBytes()
         val originalAttachNativeFeed = LiveDiscover.attachNativeFeed
 

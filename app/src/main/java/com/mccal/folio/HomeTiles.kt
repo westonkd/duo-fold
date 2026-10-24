@@ -142,11 +142,11 @@ internal fun DockAppColumn(
     LaunchedEffect(launchingSlot) { if (launchingSlot >= 0) { delay(PressFeedback.HOLD_MS); launchingSlot = -1 } }
     val slotScales = savedDock.indices.map { index ->
         val pressed by interactions[index].collectIsPressedAsState()
-        animateFloatAsState(PressFeedback.scale(pressed || launchingSlot == index, false, reduceMotion, PressFeedback.Kind.DOCK, FolioMotion.v2), FolioMotion.spring(PressFeedback.springFor(PressFeedback.Kind.DOCK, FolioMotion.v2)), label = "dock press $index")
+        animateFloatAsState(PressFeedback.scale(pressed || launchingSlot == index, false, reduceMotion), FolioMotion.spring(FolioMotion.Quick), label = "dock press $index")
     }
     val slotAlphas = savedDock.indices.map { index ->
         val pressed by interactions[index].collectIsPressedAsState()
-        animateFloatAsState(PressFeedback.alpha(pressed || launchingSlot == index, false, PressFeedback.Kind.DOCK, FolioMotion.v2), FolioMotion.spring(PressFeedback.springFor(PressFeedback.Kind.DOCK, FolioMotion.v2)), label = "dock press alpha")
+        animateFloatAsState(PressFeedback.alpha(pressed || launchingSlot == index, false), FolioMotion.spring(FolioMotion.Quick), label = "dock press alpha")
     }
     val density = LocalDensity.current
     val rowHeightPx = with(density) { rowHeight.dp.toPx() }
@@ -187,7 +187,7 @@ internal fun DockAppColumn(
                     previewId == null -> Icon(Icons.Rounded.Add, null, tint = Color.White, modifier = Modifier.size(24.dp))
                 }
             }
-            val dockClick = { if (savedApp != null) { if (!edit.active) { if (FolioMotion.v2) launchingSlot = index; onLaunch(savedApp, launchBounds[index]) } } else onChoose(index) }
+            val dockClick = { if (savedApp != null) { if (!edit.active) { launchingSlot = index; onLaunch(savedApp, launchBounds[index]) } } else onChoose(index) }
             val indication = LocalIndication.current
             val dockGestures = rememberIconGestures(savedApp, interactions[index], indication, null, null, dockClick,
                 plain = Modifier.combinedClickable(interactionSource = interactions[index], indication = indication, role = Role.Button, onClick = dockClick, onLongClick = null))
@@ -261,7 +261,7 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
     var opening by remember { mutableStateOf(false) }
     LaunchedEffect(opening) { if (opening) { delay(PressFeedback.HOLD_MS / 2); opening = false } }
     val lifted = LocalOpenMenuId.current == folder.id
-    Column(modifier.clickable(interactionSource = interaction, indication = null, onClick = { if (FolioMotion.v2) opening = true; onClick() }).dropRegion(drag, DropTarget.Folder(folder.id), page = page, folderId = folder.id)
+    Column(modifier.clickable(interactionSource = interaction, indication = null, onClick = { opening = true; onClick() }).dropRegion(drag, DropTarget.Folder(folder.id), page = page, folderId = folder.id)
         .semantics(mergeDescendants = true) {
         contentDescription = folderLabel
     }, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -271,11 +271,11 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
         val hovered = drag.moved && drag.source?.appId?.let { !isFolderId(it) } == true &&
             drag.destination(drag.pointer, setOf(page))?.target == DropTarget.Folder(folder.id)
         val lift by animateFloatAsState(if (hovered) 1.12f else 1f, FolioMotion.spring(FolioMotion.Quick), label = "folder hover")
-        // With the motion pass, the tile hands over to the open folder's panel (FolderOpening).
+        // The tile hands over to the open folder's panel (FolderOpening).
         Box(Modifier.size(size.dp).graphicsLayer { scaleX = lift; scaleY = lift
-                if (FolioMotion.v2) alpha = FolderOpening.tileAlpha(folder.id, FolderOpening.id, FolderOpening.progress) }
+                alpha = FolderOpening.tileAlpha(folder.id, FolderOpening.id, FolderOpening.progress) }
             .onGloballyPositioned { bounds.set(it.boundsInWindow().toAndroidBounds()); IconBounds.update(folder.id, bounds) }
-            .jiggle(folder.id).foldMotionIcon().pressFeedback(pressed || opening, lifted, size * ICON_CORNER_FRACTION, kind = PressFeedback.Kind.FOLDER)) {
+            .jiggle(folder.id).foldMotionIcon().pressFeedback(pressed || opening, lifted, size * ICON_CORNER_FRACTION)) {
             // Like iOS: a folder's badge is the total of its apps' badges (each app counted once).
             val look = LocalIconLook.current
             val counts = LocalBadgeCounts.current
@@ -321,7 +321,7 @@ internal fun AppTile(app: AppEntry, size: Float, labels: Boolean, modifier: Modi
     // exactly the code it always did (see rememberIconGestures).
     val stack = if (app.id in LocalStackedApps.current) LocalIconStack.current else null
     // A tap holds the icon dipped while the app starts (press feedback), whichever path the tap takes.
-    val tap = { if (onRemove == null && FolioMotion.v2) launching = true; onClick(bounds) }
+    val tap = { if (onRemove == null) launching = true; onClick(bounds) }
     val gestures = rememberIconGestures(app, interaction, null, openPanel, stack, tap,
         plain = Modifier.iconSwipes(openPanel?.let { { it(app) } }, stack?.let { { it(app) } })
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = tap))
@@ -347,7 +347,7 @@ internal fun AppTile(app: AppEntry, size: Float, labels: Boolean, modifier: Modi
             if (app.id in LocalStackedApps.current) StackPeek(iconSize)
             AppIcon(app, null, Modifier.fillMaxSize()
                 .graphicsLayer { if (plate != null && !still) { val inside = 1f - (1f - FolderOrRoom.ICON_INSIDE) * plate(); scaleX = inside; scaleY = inside } }
-                .pressFeedback(pressed || launching, lifted, size * ICON_CORNER_FRACTION, kind = PressFeedback.Kind.APP), shape = IconContinuousShape)
+                .pressFeedback(pressed || launching, lifted, size * ICON_CORNER_FRACTION), shape = IconContinuousShape)
             if (onRemove != null) JiggleRemoveButton(stringResource(R.string.remove_from_home_2, app.label), onRemove = onRemove)
         }
         val ink = LocalHomeInk.current

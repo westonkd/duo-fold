@@ -471,7 +471,7 @@ internal fun androidx.compose.foundation.layout.BoxScope.IconBadge(count: Int, s
             contentAlignment = Alignment.Center) {
             if (style == BadgeStyle.COUNT) {
                 val size = with(density) { (h * .6f).toSp() }
-                // The count rolls when it changes (motion pass); otherwise it is the plain text it always was.
+                // The count rolls when it changes.
                 RollingCount(count, { if (it > 99) "99+" else it.toString() }, readable, size,
                     androidx.compose.ui.text.TextStyle(lineHeight = size,
                         platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
@@ -633,9 +633,8 @@ internal object BadgeClears {
  * The seen counts live in [LauncherState.badgesSeen], so they survive a restart; nothing is dismissed, and Folio's
  * notification list is left exactly as the phone reports it.
  *
- * Both functions take the seen counts rather than reading a setting, so the caller can gate them
- * ([FeatureGate.BADGES_WHEN_OPENED]) by passing an empty map: a phone the feature is shut for hides no badge, writes
- * nothing, and pays nothing for it.
+ * Both functions take the seen counts rather than reading a setting, so the caller turns them off by passing an empty
+ * map: with the switch off nothing is hidden, written, or paid for.
  */
 internal object BadgesWhenOpened {
     /** [counts] with the apps whose badge has already been seen left out. */

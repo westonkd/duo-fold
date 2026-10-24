@@ -29,6 +29,5 @@ class StringEdgeSpacesTest {
     @Test fun `the gestures note and the backup note keep their space`() {
         assertEquals(" ", EnglishStrings.get(R.string.folio_uses_it_to_open_notification_cente).takeLast(1))
         assertEquals(" ", EnglishStrings.get(R.string.save_the_current_home_layout_folders_wid).takeLast(1))
-        assertEquals(" ", EnglishStrings.get(R.string.save_the_current_home_layout_folders_wid_2).takeLast(1))
     }
 }

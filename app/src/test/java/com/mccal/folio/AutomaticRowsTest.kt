@@ -21,15 +21,17 @@ class AutomaticRowsTest {
             inLibrary = false, homeBottomSpace = 44f, railControls = 0, classScale = 1f,
             appRows = BASE_APP_ROWS, foldAtCenter = false, fillSpace = true).fitAppRows
 
+    // A widget fills two rows, so the cover fits a fifth row with the space under labels tightened; the inner screen
+    // fits four, and Automatic takes the smaller.
     @Test fun `the Fold8 fits four rows at the default icon size`() {
-        assertEquals(4, fit(cover, 20f))
+        assertEquals(5, fit(cover, 20f))
+        assertEquals(4, fit(inner, 20f))
         assertEquals(4, effectiveHomeRows(setting = 0, fitCompact = fit(cover, 20f), fitExpanded = fit(inner, 20f)))
     }
 
-    /** What Settings promises when it says smaller icons make room: at 60 dp the cover gains its fifth row. */
+    /** What Settings promises when it says smaller icons make room: at 52 dp the cover gains its sixth row. */
     @Test fun `smaller icons make room for another row`() {
-        assertEquals(5, fit(cover, 20f, icon = 60f))
-        assertEquals(5, fit(cover, 20f, icon = 52f))
+        assertEquals(6, fit(cover, 20f, icon = 52f))
     }
 
     @Test fun `a screen Folio hasn't measured doesn't drag the count down`() {

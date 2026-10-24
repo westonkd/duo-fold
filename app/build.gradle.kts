@@ -45,34 +45,6 @@ val bundleChangelog = tasks.register<Copy>("bundleChangelog") {
 }
 tasks.named("preBuild") { dependsOn(bundleChangelog) }
 
-// Bundle Folio's own source (docs/sdk/source) so the built-in themes and tweaks are real packages, read from the same
-// files the SDK documents and the tests check. One copy, not two.
-// Sync, not Copy: a file removed from the source (or newly excluded) has to leave the APK as well.
-val bundleFolioSource = tasks.register<Sync>("bundleFolioSource") {
-    from(rootProject.file("docs/sdk/source")) {
-        // The drawings and the script that rasterises them are build sources, not something the phone reads.
-        exclude("README.md", "**/*.svg", "**/generate.py")
-    }
-    into(layout.buildDirectory.dir("generated/market/market/source"))
-}
-// Write the list of files beside them: an APK's assets can't be listed reliably (and Robolectric can't at all), so the
-// source says what it contains instead of Folio guessing from folder names.
-val indexFolioSource = tasks.register("indexFolioSource") {
-    dependsOn(bundleFolioSource)
-    val sourceDir = layout.buildDirectory.dir("generated/market/market/source")
-    // Without this the task is "up to date" after a file is added to the source, and files.json quietly stops
-    // listing everything that's actually there.
-    inputs.dir(rootProject.file("docs/sdk/source")).withPathSensitivity(PathSensitivity.RELATIVE)
-    outputs.dir(sourceDir)
-    doLast {
-        val root = sourceDir.get().asFile
-        val paths = root.walkTopDown().filter { it.isFile && it.name != "files.json" }
-            .map { it.relativeTo(root).invariantSeparatorsPath }.sorted().toList()
-        File(root, "files.json").writeText(paths.joinToString(",", "[", "]") { "\"" + it + "\"" })
-    }
-}
-tasks.named("preBuild") { dependsOn(indexFolioSource) }
-
 /**
  * Folio Dev's "welcome back" page (docs/release-0.6.9-plan.md, G4). Writes dev-build.json for the debug and fast builds only:
  * the branch, commit, time, the last commits and, if the branch has one, the steps in docs/dev-notes.md. A release build
@@ -151,8 +123,7 @@ android {
         //   versionCode = (MAJOR * 10000 + MINOR * 100 + PATCH) * 10 + HOTFIX
         // The last digit is why a fix on top of a release can exist at all: 0.6.7 is 6070 and 0.6.7.1 is 6071, so a
         // fix never has to take the number the next feature release wanted, which is what went wrong on 23 Sep 2026.
-        // A pre-release (0.7.0-beta.1) shares its release's code, and the release installs over it because
-        // SoftwareUpdate.isNewer orders by the version name. Codes only ever rise, so the older formula's 607 is
+        // A pre-release (0.7.0-beta.1) shares its release's code. Codes only ever rise, so the older formula's 607 is
         // still below this one's 6070.
         versionName = folioVersion
         versionCode = folioVersion.substringBefore('-').split('.').map(String::toInt).let { parts ->
@@ -209,7 +180,6 @@ android {
         getByName("debug") { res.directories.add("src/dev/res") }
         getByName("main") {
             assets.srcDir(layout.buildDirectory.dir("generated/changelog").get().asFile)
-            assets.srcDir(layout.buildDirectory.dir("generated/market").get().asFile)
         }
     }
     buildFeatures { compose = true }
@@ -223,7 +193,6 @@ android {
     }
 }
 dependencies {
-    implementation(project(":market"))
     baselineProfile(project(":baselineprofile"))
     implementation("androidx.window:window:1.5.1")
     // Installs the baseline profiles that Compose and AndroidX ship, so hot paths are compiled ahead of time.
@@ -238,15 +207,11 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
-    // Images from sources the user added (Apache-2.0). Only coil3 core and the Compose binding: the bytes come from
-    // Folio's own HTTPS client, so there is no second network stack in the APK and no second set of rules.
-    implementation("io.coil-kt.coil3:coil-compose:3.2.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20260814") // real org.json for StatusStyle round-trip tests
     // Renders Compose on the JVM, so a screen can be checked without a phone attached.
     testImplementation("org.robolectric:robolectric:4.17")
-    // runTest, so the Market's network calls can be tested without a real dispatcher.
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation("androidx.compose.ui:ui-test-manifest")

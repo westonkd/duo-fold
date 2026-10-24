@@ -9,7 +9,7 @@ import kotlin.random.Random
 /**
  * A theme file comes from anywhere: a download, a share, a message. `FolioTheme.fromJson` must answer every one of
  * them quickly, with a theme or with null, and never with a theme outside what Folio can draw (PRV-15). This throws
- * thousands of damaged, oversized and hostile files at it, the way the Market's parsers are fuzzed.
+ * thousands of damaged, oversized and hostile files at it.
  */
 class ThemeImportFuzzTest {
     private val seeds = FolioTheme.PRESETS.map { it.toJson().toString() }

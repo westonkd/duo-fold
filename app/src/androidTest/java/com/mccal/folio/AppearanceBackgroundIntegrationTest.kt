@@ -51,7 +51,7 @@ class AppearanceBackgroundIntegrationTest {
         val backgroundPrefs = compose.activity.getSharedPreferences("launcher_background", Context.MODE_PRIVATE)
         val oldAppearance = appearancePrefs.all.toMap()
         val oldBackground = backgroundPrefs.all.toMap()
-        val file = launcherBackgroundFile(compose.activity)
+        val file = launcherPhotoFile(compose.activity)
         val oldPhoto = file.takeIf { it.isFile }?.readBytes()
         val oldStagedPhotos = stagedPhotoFiles(compose.activity)
         try {
@@ -122,7 +122,7 @@ class AppearanceBackgroundIntegrationTest {
         val appContext = compose.activity.applicationContext
         val backgroundPrefs = appContext.getSharedPreferences("launcher_background", Context.MODE_PRIVATE)
         val oldBackground = backgroundPrefs.all.toMap()
-        val privatePhoto = launcherBackgroundFile(appContext)
+        val privatePhoto = launcherPhotoFile(appContext)
         val oldPhoto = privatePhoto.takeIf(File::isFile)?.readBytes()
         val oldStagedPhotos = stagedPhotoFiles(appContext)
         val resolver = appContext.contentResolver
@@ -242,7 +242,7 @@ class AppearanceBackgroundIntegrationTest {
         val appContext = compose.activity.applicationContext
         val prefs = appContext.getSharedPreferences("launcher_background", Context.MODE_PRIVATE)
         val oldPrefs = prefs.all.toMap()
-        val committedFile = launcherBackgroundFile(appContext)
+        val committedFile = launcherPhotoFile(appContext)
         val oldPhoto = committedFile.takeIf(File::isFile)?.readBytes()
         val oldStagedPhotos = stagedPhotoFiles(appContext)
         val operation = "cancel-preview-${System.currentTimeMillis()}"
@@ -297,14 +297,14 @@ class AppearanceBackgroundIntegrationTest {
     }
 
     private fun stagedPhotoFiles(context: Context): Map<String, ByteArray> {
-        val committed = launcherBackgroundFile(context)
+        val committed = launcherPhotoFile(context)
         return committed.parentFile?.listFiles { file ->
             file.name.startsWith("${committed.name}.") && file.name.endsWith(".tmp")
         }?.associate { it.name to it.readBytes() }.orEmpty()
     }
 
     private fun restoreStagedPhotoFiles(context: Context, files: Map<String, ByteArray>) {
-        val committed = launcherBackgroundFile(context)
+        val committed = launcherPhotoFile(context)
         committed.parentFile?.listFiles { file ->
             file.name.startsWith("${committed.name}.") && file.name.endsWith(".tmp")
         }?.forEach(File::delete)

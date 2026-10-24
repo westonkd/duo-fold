@@ -57,8 +57,6 @@ internal fun FolderPanel(
     color: Long? = null, onColor: (Long?) -> Unit = {}, onAddApps: (() -> Unit)? = null,
     size: FolderSize? = null, onSize: (FolderSize?) -> Unit = {},
     onReorder: (String, Int) -> Unit = { _, _ -> }, onSortAlphabetically: (() -> Unit)? = null,
-    /** Resize, reorder by drag, drag out past the edge and Sort A to Z: [FeatureGate.FOLDER_EDITING]. */
-    editing: Boolean = true,
     /**
      * Carrying an app out of the folder, like iPhone: once it crosses the card's edge the folder steps aside and Home's own
      * drag takes over, so the icon can be put on any cell, page or dock slot, with the others making room. [homeRootOnScreen]
@@ -87,12 +85,11 @@ internal fun FolderPanel(
     val carryFade by androidx.compose.animation.core.animateFloatAsState(if (carrying) 0f else 1f,
         FolioMotion.spring(FolioMotion.Quick), label = "folder carry fade")
     // The 0.6.9 motion pass (MO5, the Lab's "Grow from the icon"): the apps settle in one after another and leave together.
-    val pass = FolioMotion.v2
-    val still = pass && LocalReduceMotion.current
+    val still = LocalReduceMotion.current
     val entrance = remember(folder.id) { mutableStateMapOf<String, androidx.compose.animation.core.Animatable<Float, androidx.compose.animation.core.AnimationVector1D>>() }
     val close: () -> Unit = {
         if (!closing) { closing = true; scope.launch {
-            if (pass) entrance.values.forEach { launch { it.animateTo(0f, FolioMotion.spring(FolioMotion.Firm)) } }
+            entrance.values.forEach { launch { it.animateTo(0f, FolioMotion.spring(FolioMotion.Firm)) } }
             appear.animateTo(0f, FolioMotion.spring(FolioMotion.Firm)); onDismiss()
         } }
     }
@@ -110,8 +107,7 @@ internal fun FolderPanel(
         onDispose { if (FolderOpening.id == folder.id) { FolderOpening.id = null; FolderOpening.progress = 0f } }
     }
     LaunchedEffect(folder.id) { snapshotFlow { appear.value }.collect { FolderOpening.progress = it } }
-    LaunchedEffect(folder.id, pass) {
-        if (!pass) return@LaunchedEffect
+    LaunchedEffect(folder.id) {
         folder.appIds.forEachIndexed { i, id ->
             val a = entrance.getOrPut(id) { androidx.compose.animation.core.Animatable(if (still) 1f else 0f) }
             if (!still) launch { kotlinx.coroutines.delay(FolderOpening.FIRST_APP_MS + i * FolderOpening.STAGGER_MS); a.animateTo(1f, FolioMotion.spring(FolioMotion.Quick)) }
@@ -189,15 +185,15 @@ internal fun FolderPanel(
             .graphicsLayer {
                 val p = appear.value
                 if (still) {
-                    // Reduce Motion with the pass: the folder fades in where it opens; nothing scales or moves.
+                    // Reduce Motion: the folder fades in where it opens; nothing scales or moves.
                     alpha = p.coerceIn(0f, 1f)
                 } else if (tile != null && panelBounds.width > 0f) {
                     val start = (tile.width() / panelBounds.width).coerceIn(.08f, 1f)
                     val s = start + (1f - start) * p; scaleX = s; scaleY = s
                     translationX = (tile.exactCenterX() - panelBounds.center.x) * (1f - p)
                     translationY = (tile.exactCenterY() - panelBounds.center.y) * (1f - p)
-                    // With the pass the tile cross-fades into the panel over the first fifth, then only the contents fade.
-                    alpha = if (pass) (p / FolderOpening.HANDOVER).coerceIn(0f, 1f) else (p * 1.8f).coerceIn(0f, 1f)
+                    // The tile cross-fades into the panel over the first fifth, then only the contents fade.
+                    alpha = (p / FolderOpening.HANDOVER).coerceIn(0f, 1f)
                 } else { val s = .86f + .14f * p; scaleX = s; scaleY = s }
             }) {
         // Just the title and a small options button: color and Add Apps used to sit inline below it always
@@ -207,7 +203,7 @@ internal fun FolderPanel(
         Row(verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(bottom = FolioSpace.COMFY.dp)
                 .onGloballyPositioned { headerHeightPx = it.size.height.toFloat() }
-                .graphicsLayer { if (pass) alpha = FolderOpening.contentAlpha(appear.value) }) {
+                .graphicsLayer { alpha = FolderOpening.contentAlpha(appear.value) }) {
             Spacer(Modifier.size(FolioTouch.MIN.dp))
             androidx.compose.foundation.text.BasicTextField(title, { title = it },
                 Modifier.weight(1f, fill = false).widthIn(max = 320.dp).testTag("folder-name"), singleLine = true,
@@ -235,7 +231,7 @@ internal fun FolderPanel(
                             }
                         }
                     }
-                    if (editing && onSortAlphabetically != null) {
+                    if (onSortAlphabetically != null) {
                         MenuDivider()
                         MenuRow(stringResource(R.string.sort_a_to_z), icon = Icons.Rounded.SortByAlpha, tag = "folder-sort") {
                             folderMenu = false; onSortAlphabetically()
@@ -312,7 +308,6 @@ internal fun FolderPanel(
                     items(order, key = { it }) { appId ->
                         apps[appId]?.let { app ->
                           Box(Modifier.graphicsLayer {
-                              if (!pass) return@graphicsLayer
                               // Each app settles in after the panel, a moment after the one before (scale only without Reduce Motion).
                               val q = if (still) FolderOpening.contentAlpha(appear.value) else entrance[appId]?.value ?: 1f
                               alpha = q.coerceIn(0f, 1f)
@@ -325,8 +320,7 @@ internal fun FolderPanel(
                                     .onGloballyPositioned { childBounds[appId] = it.boundsInWindow() }
                                     // The gesture is measured in the cell's own, untransformed space: if it came after the graphicsLayer below, the icon
                                     // moving to follow the finger would move the gesture's coordinates with it and swallow part of every move.
-                                    .pointerInput(appId, editing) {
-                                        if (!editing) return@pointerInput
+                                    .pointerInput(appId) {
                                         detectDragGesturesAfterLongPress(
                                             onDragStart = { draggingAppId = appId; dragOffset = androidx.compose.ui.geometry.Offset.Zero
                                                 dragStart = childBounds[appId]?.center ?: androidx.compose.ui.geometry.Offset.Zero
@@ -404,7 +398,7 @@ internal fun FolderPanel(
         // Resize, the same corner-drag gesture as a Home widget (LauncherScreen.kt's resize handle) - free-form
         // in dp rather than snapped to grid cells, since a folder doesn't live on Home's app grid. Committed once
         // on release, like the widget gesture, not on every frame; the box itself already tracks live during drag.
-        if (editing) Box(Modifier.align(Alignment.BottomEnd).size(FolioTouch.MIN.dp)
+        Box(Modifier.align(Alignment.BottomEnd).size(FolioTouch.MIN.dp)
             .pointerInput(folder.id, minFolderW, maxFolderW, minFolderH, maxFolderH) {
                 detectDragGestures(
                     onDragEnd = { onSize(FolderSize(folderW, folderH)) },

@@ -71,12 +71,4 @@ class DragLandingTest {
         val snappy = fly(BounceFlight(Offset.Zero, Offset.Zero), { Offset(100f, 0f) }, speed = MotionSpeed.SNAPPY.factor)
         assertEquals(true, snappy in 1 until standard)
     }
-
-    @Test fun `without the motion pass a drag keeps the old copy`() {
-        val landing = DragLanding()
-        landing.begin(kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), "gmail", Offset(10f, 10f), pass = false, reduceMotion = false)
-        assertEquals(false, landing.lifted)
-        landing.land(kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), "gmail", Offset(10f, 10f), Offset.Zero)
-        assertEquals(null, landing.flyingId)
-    }
 }

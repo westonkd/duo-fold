@@ -44,10 +44,4 @@ class ReduceMotionTest {
         val controls = source("IosControls.kt")
         assertEquals(2, Regex("FolioMotion\\.calm\\(FolioMotion\\.Control, LocalReduceMotion\\.current\\)").findAll(controls).count())
     }
-
-    @Test fun `the install check fades in instead of being skipped`() {
-        val pieces = source("MotionPieces.kt")
-        assertTrue("if (finished && FolioMotion.v2) {" in pieces)
-        assertTrue("Animatable(if (reduce) 1f else .2f)" in pieces)
-    }
 }

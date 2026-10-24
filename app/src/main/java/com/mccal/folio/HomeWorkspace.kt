@@ -526,9 +526,9 @@ internal fun SharedHomeGrid(
                 val localIndex = renderIndex - pageStart
                 val row = localIndex / GRID_COLUMNS
                 val place = with(density) { IntOffset(cellX(localIndex % GRID_COLUMNS, row).toPx().roundToInt(), rowTop(row).dp.toPx().roundToInt()) }
-                // With the motion pass, a folder pushed along by a drag slides with the apps around it, on the same stiff spring;
-                // without it, it jumps as it always did. Only while rearranging: a new screen size (folding) places it at once.
-                val slides = FolioMotion.v2 && (drag.active || edit.active || layoutSettling)
+                // A folder pushed along by a drag slides with the apps around it, on the same stiff spring. Only while
+                // rearranging: a new screen size (folding) places it at once.
+                val slides = drag.active || edit.active || layoutSettling
                 val placed by animateIntOffsetAsState(place,
                     animationSpec = if (slides) FolioMotion.spring<IntOffset>(FolioMotion.Snap) else androidx.compose.animation.core.snap(),
                     label = "folderSlide ${folder.id}")

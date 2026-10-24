@@ -54,12 +54,10 @@ internal fun rememberEntrance(stiffness: Float, dampingRatio: Float = 1f, from: 
     val entrance = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(if (reduceMotion) to else from) }
     // The animation runs in the composition, which is where the frame clock lives.
     androidx.compose.runtime.LaunchedEffect(Unit) {
-        // With the motion pass on, an entrance follows Settings › Gestures › Animation Speed like every other spring.
+        // An entrance follows Settings › Gestures › Animation Speed like every other spring.
         scenario?.let(PerfLog::begin)
         try {
-            entrance.animateTo(to, if (FolioMotion.v2) MotionSpeed.spring(dampingRatio, stiffness)
-                // motion-ratchet: the old entrance, kept as it was while the 0.6.9 motion pass is off.
-                else androidx.compose.animation.core.spring(dampingRatio = dampingRatio, stiffness = stiffness)) // motion-ratchet
+            entrance.animateTo(to, MotionSpeed.spring(dampingRatio, stiffness))
         } finally { scenario?.let(PerfLog::end) }
     }
     // The timeout must not depend on frames, so it runs on the main thread alone. Snapping cancels the animation.
@@ -175,7 +173,7 @@ private fun FullScreenPage(onDismissRequest: () -> Unit, content: @Composable Co
                 }
             }
         }
-        val slide = rememberEntrance(FolioMotion.pick(old = 1f to 500f, new = FolioMotion.Sheet), from = 1f, to = 0f, scenario = PerfScenario.SHEET)
+        val slide = rememberEntrance(FolioMotion.Sheet, from = 1f, to = 0f, scenario = PerfScenario.SHEET)
         val pageFade = rememberReducedFade()
         // Once the page covers Home, drawing and blurring Home is work nobody sees, and it shows up as stutter
         // while you're moving between Folio and Android's permission screens. It comes back the moment it's needed.
@@ -247,7 +245,7 @@ private fun FormSheet(onDismissRequest: () -> Unit, dismissOnBack: Boolean, widt
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false,
             dismissOnBackPress = dismissOnBack)) {
         FolioDialogWindow(dim = 0f)
-        val appear = rememberEntrance(FolioMotion.pick(old = 1f to 520f, new = FolioMotion.Sheet), scenario = PerfScenario.SHEET)
+        val appear = rememberEntrance(FolioMotion.Sheet, scenario = PerfScenario.SHEET)
         val fade = rememberReducedFade()
         MaterialTheme(colorScheme = FolioSheetColors, typography = MaterialTheme.typography) {
             Box(Modifier.fillMaxSize().graphicsLayer { alpha = appear.value * fade.value }.background(Color.Black.copy(alpha = .35f))
@@ -282,7 +280,7 @@ internal fun AlertDialog(onDismissRequest: () -> Unit, confirmButton: @Composabl
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismissRequest,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         FolioDialogWindow(dim = .3f)
-        val appear = rememberEntrance(FolioMotion.pick(old = .85f to 900f, new = FolioMotion.Menu), scenario = PerfScenario.MENU)
+        val appear = rememberEntrance(FolioMotion.Menu, scenario = PerfScenario.MENU)
         val fade = rememberReducedFade()
         val base = MaterialTheme.typography
         // The accent's ink, not its fill: the alert is always dark, and a fill-weight color on its grey fails
