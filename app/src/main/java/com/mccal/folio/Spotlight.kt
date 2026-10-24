@@ -35,13 +35,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,16 +47,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -132,14 +125,15 @@ internal fun SpotlightOverlay(visible: Boolean, progress: () -> Float, state: La
     }
     if (!composed) return
     val lift = with(androidx.compose.ui.platform.LocalDensity.current) { 24.dp.toPx() }
-    Box(Modifier.fillMaxSize().graphicsLayer { alpha = progress() }.background(FolioGlass.scrim)
+    val look = spotlightLook(liquidGlassOn(), LocalHomeInk.current, state.panelBlur > 0f)
+    Box(Modifier.fillMaxSize().graphicsLayer { alpha = progress() }.background(look.backdrop)
         .then(if (visible) Modifier.clickable(remember { MutableInteractionSource() }, null, onClick = onClose) else Modifier))
     Box(Modifier.fillMaxSize().graphicsLayer {
         val p = progress()
         // Moves with the back swipe's preview, fades only as it closes (OverlayBack).
         alpha = OverlayBack.unpreviewed(p); translationY = -lift * (1f - p); scaleX = .96f + .04f * p; scaleY = scaleX
         transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, 0f)
-    }) { SpotlightContent(state, active = visible, onClose, onLaunch, onAddToHome) }
+    }) { CompositionLocalProvider(LocalHomeInk provides look.ink) { SpotlightContent(state, active = visible, onClose, onLaunch, onAddToHome) } }
 }
 
 @Composable
@@ -213,6 +207,7 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
     var frecency by remember { mutableStateOf(emptyMap<String, Double>()) }
     LaunchedEffect(active) { if (active) frecency = withContext(Dispatchers.IO) { RecentApps.frecency(context) } }
     val wide = LocalConfiguration.current.fitsRegularHomeLayout()
+    val ink = LocalHomeInk.current
 
     val apps = remember(state.apps, state.hiddenApps) { state.apps.filter { it.id !in state.hiddenApps } }
     // Suggestions for this time of day first, then recent and dock apps to fill the row.
@@ -250,35 +245,17 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
             val fieldScope = rememberCoroutineScope()
             // iOS: the search capsule with Cancel beside it.
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            val fieldShape = RoundedCornerShape(18.dp)
-            Row(Modifier.weight(1f).clip(fieldShape)
-                .liquidGlassOr(fieldShape, LIQUID_OVERLAY_FROST, GlassRole.CAPSULE, FolioColors.SurfaceCard) {
-                    background(SpotGlass).border(FolioGlass.edge, fieldShape) }
+            IosSearchField(query, { query = it }, stringResource(R.string.search),
                 // The whole capsule is the tap target, not just the text line.
-                .clickable(remember { MutableInteractionSource() }, null) { fieldScope.launch { raiseKeyboard() } }
-                // Fixed height: the capsule doesn't grow or jump when the clear button appears.
-                .heightIn(min = 52.dp).padding(start = FolioSpace.COMFY.dp, end = FolioSpace.TINY.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.Search, null, tint = Color.White.copy(alpha = .75f), modifier = Modifier.size(22.dp))
-                Spacer(Modifier.width(10.dp))
-                Box(Modifier.weight(1f)) {
-                    if (query.isEmpty()) Text(stringResource(R.string.search), color = Color.White.copy(alpha = .55f), fontSize = 18.sp)
-                    BasicTextField(query, { query = it }, Modifier.fillMaxWidth().focusRequester(focus)
-                        .onFocusChanged { fieldFocused = it.isFocused }.testTag("spotlight-field"),
-                        singleLine = true, textStyle = TextStyle(color = Color.White, fontSize = 18.sp), cursorBrush = SolidColor(Color.White),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = {
-                            when {
-                                appHits.isNotEmpty() -> launch(appHits.first())
-                                q.isNotEmpty() -> { onClose(); openEnterSearch(context, state, q) }
-                            }
-                        }))
-                }
-                if (query.isNotEmpty()) Box(Modifier.minimumInteractiveComponentSize().size(44.dp).clip(CircleShape).clickable { query = "" }, contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Cancel, stringResource(R.string.clear_text), tint = Color.White.copy(alpha = .6f), modifier = Modifier.size(20.dp))
-                }
-            }
-            Text(stringResource(R.string.cancel), color = Color.White, fontSize = FolioType.BODY.sp,
+                Modifier.weight(1f).clickable(remember { MutableInteractionSource() }, null) { fieldScope.launch { raiseKeyboard() } },
+                fieldModifier = Modifier.focusRequester(focus).onFocusChanged { fieldFocused = it.isFocused }.testTag("spotlight-field"),
+                ink = ink.primary, glass = liquidGlassOn(), onSearch = {
+                    when {
+                        appHits.isNotEmpty() -> launch(appHits.first())
+                        q.isNotEmpty() -> { onClose(); openEnterSearch(context, state, q) }
+                    }
+                })
+            Text(stringResource(R.string.cancel), color = ink.primary, fontSize = FolioType.BODY.sp,
                 modifier = Modifier.padding(start = FolioSpace.HAIR.dp).heightIn(min = 48.dp).clip(RoundedCornerShape(FolioRadius.CONTROL.dp))
                     .clickable { focusManager.clearFocus(force = true); keyboard?.hide(); onClose() }
                     .padding(horizontal = FolioSpace.MEDIUM.dp, vertical = FolioSpace.COMFY.dp).testTag("spotlight-cancel"))
@@ -328,20 +305,20 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
                         Section(stringResource(R.string.search_the_web_ask_ai)) {
                             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
                                 WebSearchTarget.chips(state.searchEngine).forEach { target ->
-                                    Row(Modifier.clip(RoundedCornerShape(50)).background(SpotGlass)
+                                    Row(Modifier.clip(CircleShape).background(ink.primary.copy(alpha = SPOTLIGHT_CHIP))
                                         .clickable { onClose(); openWebSearch(context, target, q) }
                                         .padding(horizontal = FolioSpace.COMFY.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Icon(if (target.ai) Icons.Rounded.AutoAwesome else Icons.Rounded.Public, null,
-                                            tint = Color.White, modifier = Modifier.size(16.dp))
+                                            tint = ink.primary, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(6.dp))
-                                        Text(target.label, color = Color.White, fontSize = FolioType.COMPACT.sp)
+                                        Text(target.label, color = ink.primary, fontSize = FolioType.COMPACT.sp)
                                     }
                                 }
                             }
                         }
                     }
                     if (math == null && appHits.isEmpty() && contacts.isEmpty() && settingHits.isEmpty()) item("none") {
-                        Text(stringResource(R.string.no_results_on_this_phone), color = Color.White.copy(alpha = .6f), fontSize = FolioType.FOOTNOTE.sp,
+                        Text(stringResource(R.string.no_results_on_this_phone), color = ink.secondary, fontSize = FolioType.FOOTNOTE.sp,
                             textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                     }
                 }
@@ -354,11 +331,12 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
 @Composable
 private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
-        Text(title, color = FolioGlass.secondary, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold,
+        Text(title, color = LocalHomeInk.current.secondary, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(start = FolioSpace.TINY.dp))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.GROUPED_CARD.dp))
-            .liquidGlassOr(RoundedCornerShape(FolioRadius.GROUPED_CARD.dp), LIQUID_OVERLAY_FROST, GlassRole.PANEL, FolioColors.SurfaceCard) {
-                background(SpotGlass).border(FolioGlass.edge, RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)) }.padding(FolioSpace.COMPACT.dp),
+        val shape = RoundedCornerShape(FolioRadius.PANEL.dp)
+        Column(Modifier.fillMaxWidth().clip(shape)
+            .liquidGlassOr(shape, LIBRARY_TILE_FROST, GlassRole.TILE) { background(SpotGlass).border(FolioGlass.edge, shape) }
+            .padding(FolioSpace.MEDIUM.dp),
             verticalArrangement = Arrangement.spacedBy(FolioSpace.HAIR.dp), content = content)
     }
 }
@@ -367,7 +345,7 @@ private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) 
 private fun AppGrid(apps: List<AppEntry>, onLaunch: (AppEntry) -> Unit, fullRows: Boolean = false) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         // As many ~84dp app cells as fit (four on a phone, up to eight on a wide column).
-        val columns = evenColumnsOnHinge((maxWidth / 84.dp).toInt().coerceIn(4, 8), 4)
+        val columns = evenColumnsOnHinge((maxWidth / SPOTLIGHT_CELL_DP.dp).toInt().coerceIn(4, 8), 4)
         // Suggestions show whole rows only, like iOS, so a wide column doesn't end in a lonely pair.
         val shown = if (fullRows && apps.size > columns) apps.take(apps.size / columns * columns) else apps
         Column(verticalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
@@ -382,8 +360,8 @@ private fun AppGrid(apps: List<AppEntry>, onLaunch: (AppEntry) -> Unit, fullRows
                                 startSplitDrag(view, ctx, app.component, app.user, app.label, app.icon)
                             }).padding(vertical = FolioSpace.SNUG.dp),
                             horizontalAlignment = Alignment.CenterHorizontally) {
-                            AppIcon(app, app.label, Modifier.size(52.dp).clip(RoundedCornerShape(13.dp)))
-                            Text(app.label, color = Color.White, fontSize = FolioType.CAPTION.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            AppIcon(app, app.label, Modifier.size(SPOTLIGHT_ICON_DP.dp))
+                            Text(app.label, color = LocalHomeInk.current.primary, fontSize = FolioType.CAPTION.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.padding(top = FolioSpace.TINY.dp, start = FolioSpace.HAIR.dp, end = FolioSpace.HAIR.dp))
                         }
                     }
@@ -396,12 +374,13 @@ private fun AppGrid(apps: List<AppEntry>, onLaunch: (AppEntry) -> Unit, fullRows
 
 @Composable
 private fun TopHit(app: AppEntry, offer: HomeOffer, onAdd: () -> Unit, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.CARD.dp)).clickable(onClick = onClick).padding(FolioSpace.SMALL.dp),
+    val ink = LocalHomeInk.current
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.ROW.dp)).clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically) {
-        AppIcon(app, null, Modifier.size(56.dp).clip(RoundedCornerShape(FolioRadius.CARD.dp)))
+        AppIcon(app, null, Modifier.size(SPOTLIGHT_ICON_DP.dp))
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            Text(app.label, color = Color.White, fontSize = FolioType.BODY.sp, fontWeight = FontWeight.SemiBold)
+            Text(app.label, color = ink.primary, fontSize = FolioType.BODY.sp, fontWeight = FontWeight.SemiBold)
             val kind = if (app.profileLabel == stringResource(R.string.personal)) stringResource(R.string.application) else stringResource(R.string.profile_app, app.profileLabel)
             // Where the app already is, in words, instead of a button that could do nothing.
             val where = when (offer) {
@@ -415,7 +394,7 @@ private fun TopHit(app: AppEntry, offer: HomeOffer, onAdd: () -> Unit, onClick: 
                 transitionSpec = { androidx.compose.animation.ContentTransform(
                     androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(FolioMotion.FADE_MS)),
                     androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(FolioMotion.FADE_MS))) }) { text ->
-                Text(text, color = Color.White.copy(alpha = .6f), fontSize = FolioType.FOOTNOTE.sp)
+                Text(text, color = ink.secondary, fontSize = FolioType.FOOTNOTE.sp)
             }
         }
         val reduce = LocalReduceMotion.current
@@ -426,22 +405,23 @@ private fun TopHit(app: AppEntry, offer: HomeOffer, onAdd: () -> Unit, onClick: 
                 (if (reduce) androidx.compose.animation.ExitTransition.None else androidx.compose.animation.shrinkHorizontally(FolioMotion.spring(FolioMotion.Quick)))) {
             SpotlightRoundAction(Icons.Rounded.Add, stringResource(R.string.add_to_home), onAdd)
         }
-        Text(stringResource(R.string.open), color = Color.White, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = .18f)).padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.SNUG.dp))
+        Text(stringResource(R.string.open), color = ink.primary, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.clip(CircleShape).background(ink.primary.copy(alpha = SPOTLIGHT_CHIP)).padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.SNUG.dp))
     }
 }
 
 @Composable
 private fun ResultRow(icon: ImageVector, title: String, subtitle: String?, trailing: (@Composable RowScope.() -> Unit)? = null, onClick: () -> Unit) {
+    val ink = LocalHomeInk.current
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.ROW.dp)).clickable(onClick = onClick).padding(horizontal = FolioSpace.SMALL.dp, vertical = FolioSpace.COMPACT.dp),
         verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(34.dp).clip(RoundedCornerShape(9.dp)).background(Color.White.copy(alpha = .14f)), contentAlignment = Alignment.Center) {
-            Icon(icon, null, tint = Color.White, modifier = Modifier.size(20.dp))
+        Box(Modifier.size(34.dp).clip(RoundedCornerShape(FolioRadius.SEGMENT.dp)).background(ink.primary.copy(alpha = SPOTLIGHT_CHIP)), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = ink.primary, modifier = Modifier.size(20.dp))
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, color = Color.White, fontSize = FolioType.SUBHEAD.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            subtitle?.let { Text(it, color = Color.White.copy(alpha = .6f), fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            Text(title, color = ink.primary, fontSize = FolioType.SUBHEAD.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            subtitle?.let { Text(it, color = ink.secondary, fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         }
         trailing?.let { Row(horizontalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp), content = it) }
     }
@@ -451,8 +431,8 @@ private fun ResultRow(icon: ImageVector, title: String, subtitle: String?, trail
 private fun SpotlightRoundAction(icon: ImageVector, label: String, onClick: () -> Unit) {
     // The circle is still 36 dp; the tap is 48 (A11Y-1). The target is the box around it, not the circle.
     Box(Modifier.size(FolioTouch.MIN.dp).clickable(onClickLabel = label, onClick = onClick), contentAlignment = Alignment.Center) {
-        Box(Modifier.size(36.dp).clip(CircleShape).background(Color.White.copy(alpha = .16f)), contentAlignment = Alignment.Center) {
-            Icon(icon, label, tint = Color.White, modifier = Modifier.size(18.dp))
+        Box(Modifier.size(36.dp).clip(CircleShape).background(LocalHomeInk.current.primary.copy(alpha = SPOTLIGHT_CHIP)), contentAlignment = Alignment.Center) {
+            Icon(icon, label, tint = LocalHomeInk.current.primary, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -608,6 +588,16 @@ private fun settingShortcuts(context: android.content.Context) = listOf(
 )
 
 private val SpotGlass = FolioGlass.card
+
+internal const val SPOTLIGHT_ICON_DP = 60
+internal const val SPOTLIGHT_CELL_DP = 80
+internal const val SPOTLIGHT_CHIP = .14f
+
+@androidx.compose.runtime.Immutable
+internal data class SpotlightLook(val ink: HomeInk, val backdrop: Color)
+
+internal fun spotlightLook(liquid: Boolean, homeInk: HomeInk, blurred: Boolean): SpotlightLook =
+    if (liquid) SpotlightLook(homeInk, libraryWash(homeInk.dark, blurred)) else SpotlightLook(HomeInk(dark = false), FolioGlass.scrim)
 
 /** Whether the IME is actually on screen for [view]'s window. */
 private object WindowInsetsHolderIme {

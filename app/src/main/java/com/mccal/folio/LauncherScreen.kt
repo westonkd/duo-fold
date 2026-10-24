@@ -728,11 +728,11 @@ fun LauncherScreen(
         val homeInk = homeInkFor(state.homeInk, tone.prefersDarkText)
         val basePalette = LocalDuoPalette.current
         val tintAmount = state.glassTintAmount
-        val tinted = if (tintAmount > 0f) remember(basePalette, tone.primary, tintAmount) { basePalette.copy(glass = tintedGlass(basePalette.glass, tone.primary, tintAmount)) } else basePalette
+        val solidGlass = LocalSolidGlass.current
         // Reduce Transparency: nearly solid glass must still contrast with the text on it, so it's dark under white text
         // and light under dark text (whatever the appearance), keeping a little of the wallpaper tint.
-        val palette = if (LocalSolidGlass.current) tinted.copy(glass = tintedGlass(
-            if (homeInk.dark) FolioColors.LightBackground else FolioColors.SecondaryBackground, tone.primary, tintAmount * .5f)) else tinted
+        val palette = remember(basePalette, tone.primary, tintAmount, solidGlass, homeInk.dark) {
+            homePalette(basePalette, tone.primary, tintAmount, solidGlass, homeInk.dark) }
         val homeApps = remember(state.apps, state.hiddenApps) { HomeApps(state.apps.filter { it.id !in state.hiddenApps && it.available }) { onLaunchFrom(it, null) } }
         val bigClockStyles = remember(state.bigClockStyles) { BigClockStyles(state.bigClockStyles, model::setBigClockStyle) }
         // iOS "dark appearance dims wallpaper" and its legibility gradient over the background. They are worked out here, above
@@ -1069,6 +1069,7 @@ fun LauncherScreen(
                     },
                 compact = contentHeight < COMPACT_DOCK_MAX_HEIGHT_DP.dp, iconSize = dockIconSize(geometry.iconSize).dp, style = state.statusStyle,
                 focus = state.focusModes.firstOrNull { it.id == state.activeFocus },
+                onClick = { launcherActivity.openSystemShade(ShadePanel.QUICK_SETTINGS) },
                 // Live activities grow the rail under the status; the dock below moves with the measured height.
                 island = if (state.island && state.railActivities) ({
                     RailLiveActivity(IslandListenerService.activity.collectAsStateWithLifecycle().value
@@ -1137,6 +1138,8 @@ fun LauncherScreen(
                     }
                 }
             }
+            val dockShape = RoundedCornerShape(dockCornerRadius(if (geometry.horizontalDock) geometry.dockBarHeight else preset.dockWidth,
+                dockIconSize(geometry.iconSize), state.iconShape).dp)
             if (!dockAwayForToday) Box((if (geometry.horizontalDock) (if (hinge?.active == true && hinge.vertical)
                     // Half folded like a book: the bar sits centered on the trailing half, off the hinge.
                     Modifier.align(Alignment.BottomEnd).padding(end = ((contentWidth / 2 - dockBarWidthShown) / 2).coerceAtLeast(0.dp))
@@ -1160,9 +1163,9 @@ fun LauncherScreen(
                     // Composite the stationary dock independently of the shared pager layer (not while magnifying: it would clip).
                     compositingStrategy = if (state.dockMagnify) androidx.compose.ui.graphics.CompositingStrategy.Auto
                         else androidx.compose.ui.graphics.CompositingStrategy.Offscreen
-                }.liquidGlassOr(RoundedCornerShape(FolioRadius.RAIL.dp), state.statusStyle.railGlass, GlassRole.CAPSULE) {
-                    background(Glass.copy(alpha = state.statusStyle.railGlass), RoundedCornerShape(FolioRadius.RAIL.dp))
-                        .border(1.dp, LocalGlassLook.current.outlineColor, RoundedCornerShape(FolioRadius.RAIL.dp)) }.testTag("dock")) {
+                }.liquidGlassOr(dockShape, state.statusStyle.railGlass, GlassRole.CAPSULE) {
+                    background(Glass.copy(alpha = state.statusStyle.railGlass), dockShape)
+                        .border(1.dp, LocalGlassLook.current.outlineColor, dockShape) }.testTag("dock")) {
                 Column(if (geometry.horizontalDock) (if (dockBarScrolls) Modifier.fillMaxHeight().horizontalScroll(dockBarScroll) else Modifier.fillMaxSize()).padding(horizontal = FolioSpace.SMALL.dp) else Modifier.padding(vertical = FolioSpace.SMALL.dp).verticalScroll(dockScroll)) {
                     DockAppColumn(shownDock, previewLayout.dock, appsById, dockPitchShown,
                         dockIconSize(geometry.iconSize), drag, insertionTarget,

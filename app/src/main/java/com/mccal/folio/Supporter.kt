@@ -267,7 +267,7 @@ internal object BetaKeys {
      * The development key. Its private half lives in ~/.folio/folio-dev-key.pem and is never committed; codes signed
      * with it are accepted only by a build whose package id ends in ".dev", so a release build ignores them entirely.
      */
-    const val TEST = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE1ThekiCv9nsyGnrXe7tB/r/p2hQTy/J50m2vdz56roUKiD37LRV6JRyssSx2eB18n3k8CVlCOZt52CCDMr3dLg=="
+    const val TEST = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAESy0Bu4yvOrqWYeMvozXqR4r9EDHFWSHyCzyS0K5cc+R/nAmdWPaOC/8OGPDDrnVpZCa5Z2ymXSuaoTMLew7Uxg=="
 
     /**
      * Serial numbers of codes that no longer work: one that was posted publicly, or one a refund took back. A code is

@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -98,7 +99,11 @@ internal fun TopPanels(panel: ShadePanel?, progress: () -> Float, status: Device
     val shape = shadeShape(ncLayout, wide, config.screenWidthDp > config.screenHeightDp, config.screenWidthDp,
         LocalHinge.current?.active == true || LocalShadeOverApps.current, current)
     // A card or two cards leave Home visible, so the dim is lighter than for a panel that fills the screen.
-    val dim = if (shape == ShadeShape.CARD || shape == ShadeShape.BOTH) .6f else 1f
+    val dim = when {
+        shape == ShadeShape.CARD || shape == ShadeShape.BOTH -> .6f
+        current == ShadePanel.QUICK_SETTINGS && !LocalShadeOverApps.current -> controlCenterDim(LocalWallpaperTone.current.luminance)
+        else -> 1f
+    }
     // At most two thirds of the height: a card is as tall as its list, not the screen.
     val listMax = minOf(620.dp, (config.screenHeightDp * .62f).dp)
 
@@ -445,6 +450,26 @@ enum class NcLayout(@androidx.annotation.StringRes val label: Int) {
 }
 
 /** Control Center size choice (the largest a small control can be). */
+internal const val CC_HEADER_DP = 92
+internal const val CC_MODULE_CORNER = .16f
+internal const val CC_INSET = .095f
+internal const val CC_ART = .36f
+internal const val CC_BACKDROP_MAX = .3f
+internal const val CC_DIM_MIN = .5f
+
+internal data class CcGeometry(val cell: Float, val gap: Float) {
+    val module: Float get() = cell * 2 + gap
+    val inset: Float get() = module * CC_INSET
+    val moduleCorner: Float get() = module * CC_MODULE_CORNER
+    val toggle: Float get() = (module - inset * 3) / 2
+    val art: Float get() = module * CC_ART
+    val artCorner: Float get() = moduleCorner - inset
+    val capsuleToggle: Float get() = cell - inset * 2
+}
+
+internal fun controlCenterDim(wallpaperLuminance: Float, scrimAlpha: Float = FolioGlass.scrim.alpha): Float =
+    ((1f - CC_BACKDROP_MAX / wallpaperLuminance.coerceAtLeast(.01f)) / scrimAlpha).coerceIn(CC_DIM_MIN, 1f)
+
 enum class PanelSize(@androidx.annotation.StringRes val label: Int, val cell: Dp) { COMPACT(R.string.compact, 58.dp), STANDARD(R.string.standard, 66.dp), LARGE(R.string.large, 76.dp) }
 
 /** iPad-style clock and date for the split (unfolded) Notification Center. */
@@ -657,24 +682,27 @@ private fun ControlCenter(modifier: Modifier, status: DeviceStatus, controlNames
 
     BoxWithConstraints(modifier.testTag("control-center")) {
         val gap = 12.dp
-        // iPad-sized cells: a compact grid instead of stretching across the whole screen.
-        val rows = 5 + (if (focusModes.isNotEmpty()) 1 else 0) + (maxOf(0, chosen.size - 4) + 3) / 4
-        val byHeight = if (maxHeight == Dp.Infinity) Dp.Infinity else (maxHeight - 60.dp - gap * (rows - 1)) / rows
+        val leading = if (focusModes.isNotEmpty()) 2 else 4
+        val rows = 5 + (maxOf(0, chosen.size - leading) + 3) / 4
+        val byHeight = if (maxHeight == Dp.Infinity) Dp.Infinity else (maxHeight - CC_HEADER_DP.dp - gap * (rows - 1)) / rows
         val cell = minOf(size.cell + if (wide) 8.dp else 0.dp, (maxWidth - gap * 3) / 4, byHeight).coerceAtLeast(44.dp)
+        val geometry = CcGeometry(cell.value, gap.value)
         fun span(n: Int): Dp = cell * n + gap * (n - 1)
         val gridWidth = span(4)
+        val moduleShape = RoundedCornerShape(geometry.moduleCorner.dp)
         ProvideJiggle(edit) {
         // The fade draws in its own layer, which clips: pad it so edit mode's remove and add badges past the grid's edges stay whole.
         Column(Modifier.width(gridWidth + 32.dp).fadingVerticalScroll().padding(horizontal = FolioSpace.LARGE.dp), verticalArrangement = Arrangement.spacedBy(gap)) {
             // iOS 18 header: edit on the left, power on the right.
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                if (edit.active) PanelPill(stringResource(R.string.done)) { edit.stop() }
+                if (edit.active) CcPill(stringResource(R.string.done)) { edit.stop() }
                 else GlassIconButton(Icons.Rounded.Add, stringResource(R.string.edit_controls)) { edit.start() }
                 Spacer(Modifier.weight(1f))
                 GlassIconButton(Icons.Rounded.PowerSettingsNew, stringResource(R.string.power_menu)) {
                     onClose(); if (!SystemShadeAccessibilityService.global(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_POWER_DIALOG)) onSystem()
                 }
             }
+            CcStatusRow(status, Modifier.padding(horizontal = FolioSpace.SMALL.dp))
             // Row 1–2: connectivity (2×2, long-press to expand like iOS) and now playing (2×2)
             var connectivityOpen by remember { mutableStateOf(false) }
             val connectivity = listOf(
@@ -684,10 +712,10 @@ private fun ControlCenter(modifier: Modifier, status: DeviceStatus, controlNames
                 ConnectivityItem(Icons.Rounded.Bluetooth, stringResource(R.string.bluetooth), controls.bluetoothOn, AccentBlue) { open(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) },
             )
             val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-            if (connectivityOpen) Module(Modifier.width(span(4)).combinedClickable(onClick = { connectivityOpen = false }, onLongClick = { connectivityOpen = false })) {
-                Column(Modifier.fillMaxWidth().padding(vertical = FolioSpace.SMALL.dp)) {
+            if (connectivityOpen) Module(Modifier.width(span(4)).combinedClickable(onClick = { connectivityOpen = false }, onLongClick = { connectivityOpen = false }), moduleShape) {
+                Column(Modifier.fillMaxWidth().padding(vertical = geometry.inset.dp * .5f)) {
                     connectivity.forEach { item ->
-                        Row(Modifier.fillMaxWidth().clickable(onClick = item.onClick).padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.SMALL.dp),
+                        Row(Modifier.fillMaxWidth().clickable(onClick = item.onClick).padding(horizontal = geometry.inset.dp, vertical = FolioSpace.SMALL.dp),
                             verticalAlignment = Alignment.CenterVertically) {
                             RoundToggle(item.icon, item.label, item.on, item.accent, 44.dp, item.onClick)
                             Spacer(Modifier.width(12.dp))
@@ -702,54 +730,52 @@ private fun ControlCenter(modifier: Modifier, status: DeviceStatus, controlNames
             else Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
                 Module(Modifier.size(span(2)).combinedClickable(onClick = {}, onLongClick = {
                     haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); connectivityOpen = true
-                }, onLongClickLabel = stringResource(R.string.show_connectivity_details))) {
-                    Column(Modifier.fillMaxSize().padding(cell * .16f), verticalArrangement = Arrangement.SpaceBetween) {
+                }, onLongClickLabel = stringResource(R.string.show_connectivity_details)), moduleShape) {
+                    Column(Modifier.fillMaxSize().padding(geometry.inset.dp), verticalArrangement = Arrangement.SpaceBetween) {
                         connectivity.chunked(2).forEach { pair ->
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                pair.forEach { RoundToggle(it.icon, it.label, it.on, it.accent, cell * .7f, it.onClick) }
+                                pair.forEach { RoundToggle(it.icon, it.label, it.on, it.accent, geometry.toggle.dp, it.onClick) }
                             }
                         }
                     }
                 }
-                MediaModule(media, Modifier.size(span(2)), cell, onOpen = { media?.let { onClose(); IslandListenerService.open(context, it) } })
+                MediaModule(media, Modifier.size(span(2)), geometry, moduleShape, onOpen = { media?.let { onClose(); IslandListenerService.open(context, it) } })
             }
-            // Focus, like iOS: the Focus that's on (or "Focus"); the icon toggles it, the rest opens the list.
-            if (focusModes.isNotEmpty()) {
-                var focusOpen by remember { mutableStateOf(false) }
-                val current = focusModes.firstOrNull { it.id == activeFocus }
-                if (focusOpen) Module(Modifier.width(span(4))) {
-                    Column(Modifier.fillMaxWidth().padding(vertical = FolioSpace.SMALL.dp)) {
-                        focusModes.forEach { mode ->
-                            val on = mode.id == activeFocus
-                            Row(Modifier.fillMaxWidth().clickable { onFocus(if (on) null else mode.id); focusOpen = false }
-                                .padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.SMALL.dp).testTag("cc-focus-${mode.id}"), verticalAlignment = Alignment.CenterVertically) {
-                                RoundToggle(mode.icon(), mode.name, on, Color(mode.color), 40.dp) { onFocus(if (on) null else mode.id); focusOpen = false }
-                                Spacer(Modifier.width(12.dp))
-                                Text(mode.name, color = Color.White, fontSize = FolioType.SUBHEAD.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                                if (on) Text(stringResource(R.string.on), color = FolioGlass.secondary, fontSize = FolioType.FOOTNOTE.sp)
-                            }
-                        }
-                    }
-                } else Module(Modifier.width(span(4)).height(cell).clickable(onClickLabel = stringResource(R.string.choose_a_focus)) { focusOpen = true }.testTag("cc-focus")) {
-                    Row(Modifier.fillMaxSize().padding(horizontal = cell * .14f), verticalAlignment = Alignment.CenterVertically) {
-                        val mode = current ?: focusModes.first()
-                        RoundToggle(mode.icon(), mode.name, current != null, Color(mode.color), cell * .7f) {
-                            onFocus(if (current != null) null else mode.id)
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(current?.name ?: stringResource(R.string.focus), color = Color.White, fontSize = FolioType.SUBHEAD.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                            if (current != null) Text(stringResource(R.string.on), color = FolioGlass.secondary, fontSize = FolioType.FOOTNOTE.sp)
+            var focusOpen by remember { mutableStateOf(false) }
+            val current = focusModes.firstOrNull { it.id == activeFocus }
+            if (focusOpen) Module(Modifier.width(span(4)).clickable(onClickLabel = stringResource(R.string.close)) { focusOpen = false }, moduleShape) {
+                Column(Modifier.fillMaxWidth().padding(vertical = geometry.inset.dp * .5f)) {
+                    focusModes.forEach { mode ->
+                        val on = mode.id == activeFocus
+                        Row(Modifier.fillMaxWidth().clickable { onFocus(if (on) null else mode.id); focusOpen = false }
+                            .padding(horizontal = geometry.inset.dp, vertical = FolioSpace.SMALL.dp).testTag("cc-focus-${mode.id}"), verticalAlignment = Alignment.CenterVertically) {
+                            RoundToggle(mode.icon(), mode.name, on, Color(mode.color), 40.dp) { onFocus(if (on) null else mode.id); focusOpen = false }
+                            Spacer(Modifier.width(12.dp))
+                            Text(mode.name, color = Color.White, fontSize = FolioType.SUBHEAD.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                            if (on) Text(stringResource(R.string.on), color = FolioGlass.secondary, fontSize = FolioType.FOOTNOTE.sp)
                         }
                     }
                 }
-            }
-            // Row 3–4: the first four small controls (2×2) and brightness + volume sliders
-            Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+            } else Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
                 Column(Modifier.width(span(2)), verticalArrangement = Arrangement.spacedBy(gap)) {
-                    chosen.take(4).chunked(2).forEach { pair ->
+                    chosen.take(leading).chunked(2).forEach { pair ->
                         Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
                             pair.forEach { c -> EditableControl(c, isOn(c), accent(c), cell, edit, onRemove = { onControls(controlNames - c.name) }) { run(c) } }
+                        }
+                    }
+                    if (focusModes.isNotEmpty()) Module(Modifier.size(span(2), cell).clickable(onClickLabel = stringResource(R.string.choose_a_focus)) { focusOpen = true }.testTag("cc-focus"), CircleShape) {
+                        Row(Modifier.fillMaxSize().padding(horizontal = geometry.inset.dp), verticalAlignment = Alignment.CenterVertically) {
+                            val mode = current ?: focusModes.first()
+                            RoundToggle(mode.icon(), mode.name, current != null, Color(mode.color), geometry.capsuleToggle.dp) {
+                                onFocus(if (current != null) null else mode.id)
+                            }
+                            Spacer(Modifier.width(geometry.inset.dp * .7f))
+                            Column(Modifier.weight(1f)) {
+                                Text(current?.name ?: stringResource(R.string.focus), color = Color.White, fontSize = FolioType.SUBHEAD.sp, fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                if (current != null) Text(stringResource(R.string.on), color = FolioGlass.secondary, fontSize = FolioType.FOOTNOTE.sp)
+                            }
+                            Icon(Icons.Rounded.UnfoldMore, null, tint = FolioGlass.secondary, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -763,7 +789,7 @@ private fun ControlCenter(modifier: Modifier, status: DeviceStatus, controlNames
                 }, stringResource(R.string.volume), controls.volume, cell, span(2)) { controls.changeVolume(it) }
             }
             // The rest, four per row
-            chosen.drop(4).chunked(4).forEach { row ->
+            chosen.drop(leading).chunked(4).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
                     row.forEach { c -> EditableControl(c, isOn(c), accent(c), cell, edit, onRemove = { onControls(controlNames - c.name) }) { run(c) } }
                 }
@@ -778,8 +804,8 @@ private fun ControlCenter(modifier: Modifier, status: DeviceStatus, controlNames
                         row.forEach { c ->
                             Column(Modifier.width(cell), horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box {
-                                    SquareToggle(c.icon(), stringResource(R.string.add_control, stringResource(c.label)), false, Color.White, cell) { onControls(controlNames + c.name) }
-                                    Box(Modifier.align(Alignment.TopEnd).offset(6.dp, (-6).dp).size(20.dp).clip(CircleShape).background(AccentGreen),
+                                    ControlToggle(c.icon(), stringResource(R.string.add_control, stringResource(c.label)), false, Color.White, cell) { onControls(controlNames + c.name) }
+                                    Box(Modifier.align(Alignment.TopEnd).size(20.dp).clip(CircleShape).background(AccentGreen),
                                         contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Add, null, tint = Color.White, modifier = Modifier.size(14.dp)) }
                                 }
                                 Text(stringResource(c.label), color = Color.White, fontSize = 10.sp, maxLines = 2, lineHeight = 12.sp,
@@ -794,11 +820,27 @@ private fun ControlCenter(modifier: Modifier, status: DeviceStatus, controlNames
     }
 }
 
+@Composable
+private fun CcStatusRow(status: DeviceStatus, modifier: Modifier) {
+    val network = when {
+        status.airplane -> Icons.Rounded.AirplanemodeActive
+        status.wifiConnected -> Icons.Rounded.Wifi
+        (status.cellularLevel ?: 0) > 0 -> Icons.Rounded.SignalCellularAlt
+        else -> null
+    }
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        network?.let { Icon(it, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
+        Spacer(Modifier.weight(1f))
+        status.battery?.let { Text("$it%", color = Color.White, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold) }
+        if (status.charging) Icon(Icons.Rounded.Bolt, null, tint = Color.White, modifier = Modifier.size(14.dp))
+    }
+}
+
 /** A 1×1 control that wiggles with a "–" while editing. */
 @Composable
 private fun EditableControl(control: CcControl, on: Boolean, accent: Color, cell: Dp, edit: HomeEditMode, onRemove: () -> Unit, onRun: () -> Unit) {
     Box(Modifier.jiggle(control.name, .6f)) {
-        SquareToggle(control.icon(), stringResource(control.label), on, accent, cell) { if (!edit.active) onRun() }
+        ControlToggle(control.icon(), stringResource(control.label), on, accent, cell) { if (!edit.active) onRun() }
         if (edit.active) JiggleRemoveButton(stringResource(R.string.remove_control, stringResource(control.label)), onRemove = onRemove)
     }
 }
@@ -828,44 +870,50 @@ private fun MediaProgress(media: IslandActivity.Media) {
 
 /** Now Playing (2×2): album art, title and transport controls. */
 @Composable
-private fun MediaModule(media: IslandActivity.Media?, modifier: Modifier, cell: Dp, onOpen: () -> Unit) {
+private fun MediaModule(media: IslandActivity.Media?, modifier: Modifier, geometry: CcGeometry, shape: Shape, onOpen: () -> Unit) {
     val artAccent = if (LocalTintOptions.current.media) rememberAccent(media?.art) else null
-    val tint by androidx.compose.animation.animateColorAsState(mixColor(ModuleGlass, artAccent, .45f), label = "music tint")
-    Module(modifier.clickable(enabled = media != null, onClick = onOpen), color = tint) {
-        Column(Modifier.fillMaxSize().padding(cell * .16f), verticalArrangement = Arrangement.SpaceBetween) {
+    val tint by androidx.compose.animation.animateColorAsState(mixColor(ccGlass(), artAccent, .45f), label = "music tint")
+    val module = geometry.module.dp
+    Module(modifier.clickable(enabled = media != null, onClick = onOpen), shape, color = tint) {
+        Column(Modifier.fillMaxSize().padding(geometry.inset.dp), verticalArrangement = Arrangement.SpaceBetween) {
             Row(verticalAlignment = Alignment.Top) {
-                Box(Modifier.size(cell * .62f).clip(RoundedCornerShape(cell * .14f)).background(FolioGlass.raised), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(geometry.art.dp).clip(RoundedCornerShape(geometry.artCorner.dp)).background(FolioGlass.raised), contentAlignment = Alignment.Center) {
                     val image = media?.art ?: media?.icon
                     if (image != null) Image(image.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
-                    else Icon(Icons.Rounded.MusicNote, null, tint = FolioGlass.secondary, modifier = Modifier.size(cell * .3f))
+                    else Icon(Icons.Rounded.MusicNote, null, tint = FolioGlass.secondary, modifier = Modifier.size(geometry.art.dp * .42f))
                 }
                 Spacer(Modifier.weight(1f))
-                if (media?.art != null) media.icon?.let { Image(it.asImageBitmap(), null, Modifier.size(cell * .26f).clip(RoundedCornerShape(cell * .07f))) }
+                if (media?.art != null) media.icon?.let { Image(it.asImageBitmap(), null, Modifier.size(module * .16f).clip(RoundedCornerShape(module * .045f))) }
             }
             Column {
-                Text(media?.title ?: stringResource(R.string.not_playing), color = if (media != null) Color.White else FolioGlass.secondary,
-                    fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                media?.subtitle?.let { Text(it, color = FolioGlass.secondary, fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                Text(media?.title ?: stringResource(R.string.not_playing), color = Color.White,
+                    fontSize = FolioType.SUBHEAD.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                media?.subtitle?.let { Text(it, color = FolioGlass.secondary, fontSize = FolioType.FOOTNOTE.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                 media?.let { MediaProgress(it) }
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
                 val t = media?.controller?.transportControls
-                val tint = Color.White.copy(alpha = if (t != null) 1f else .35f)
-                Icon(Icons.Rounded.FastRewind, stringResource(R.string.previous), tint = tint, modifier = Modifier.size(cell * .34f).clip(CircleShape).clickable(t != null) { t?.skipToPrevious() })
+                val tint = Color.White.copy(alpha = if (t != null) 1f else .55f)
+                Icon(Icons.Rounded.FastRewind, stringResource(R.string.previous), tint = tint, modifier = Modifier.size(module * .17f).clip(CircleShape).clickable(t != null) { t?.skipToPrevious() })
                 Icon(if (media?.playing == true) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, stringResource(if (media?.playing == true) R.string.pause else R.string.play), tint = tint,
-                    modifier = Modifier.size(cell * .42f).clip(CircleShape).clickable(t != null) { if (media?.playing == true) t?.pause() else t?.play() })
-                Icon(Icons.Rounded.FastForward, stringResource(R.string.next), tint = tint, modifier = Modifier.size(cell * .34f).clip(CircleShape).clickable(t != null) { t?.skipToNext() })
+                    modifier = Modifier.size(module * .21f).clip(CircleShape).clickable(t != null) { if (media?.playing == true) t?.pause() else t?.play() })
+                Icon(Icons.Rounded.FastForward, stringResource(R.string.next), tint = tint, modifier = Modifier.size(module * .17f).clip(CircleShape).clickable(t != null) { t?.skipToNext() })
             }
         }
     }
 }
 
 @Composable
-private fun Module(modifier: Modifier, color: Color = ModuleGlass, content: @Composable BoxScope.() -> Unit) {
-    val shape = RoundedCornerShape(26.dp)
-    Box(modifier.clip(shape)
-        .liquidGlassOr(shape, color.alpha, GlassRole.TILE, color.copy(alpha = 1f)) {
-            background(color).border(FolioGlass.edge, shape) }, content = content)
+private fun ccGlass(): Color =
+    if (LocalShadeOverApps.current || LocalSolidGlass.current) ModuleGlass else Glass.copy(alpha = LocalGlassLook.current.widget)
+
+@Composable
+private fun Modifier.ccSurface(shape: Shape, role: GlassRole, color: Color = ccGlass()): Modifier =
+    clip(shape).liquidGlassOr(shape, color.alpha, role, color.copy(alpha = 1f)) { background(color).border(FolioGlass.edge, shape) }
+
+@Composable
+private fun Module(modifier: Modifier, shape: Shape, color: Color = ccGlass(), content: @Composable BoxScope.() -> Unit) {
+    Box(modifier.ccSurface(shape, GlassRole.PANEL, color), content = content)
 }
 
 @Composable
@@ -881,13 +929,13 @@ private fun RoundToggle(icon: ImageVector, label: String, on: Boolean, accent: C
 }
 
 @Composable
-private fun SquareToggle(icon: ImageVector, label: String, on: Boolean, accent: Color, size: Dp, onClick: () -> Unit) {
+private fun ControlToggle(icon: ImageVector, label: String, on: Boolean, accent: Color, size: Dp, onClick: () -> Unit) {
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val state = stringResource(if (on) R.string.state_on else R.string.state_off)
-    Box(Modifier.size(size).clip(RoundedCornerShape(size * .3f)).background(if (on) accent else ModuleGlass)
+    Box(Modifier.size(size).then(if (on) Modifier.clip(CircleShape).background(Color.White) else Modifier.ccSurface(CircleShape, GlassRole.TILE))
         .clickable(role = androidx.compose.ui.semantics.Role.Button) { haptic.toggle(!on); onClick() }
         .semantics { contentDescription = label; stateDescription = state }, contentAlignment = Alignment.Center) {
-        Icon(icon, null, tint = if (on && accent == Color.White) Color.Black else Color.White, modifier = Modifier.size(size * .4f))
+        Icon(icon, null, tint = if (!on) Color.White else if (accent == Color.White) FolioColors.MenuSurface else accent, modifier = Modifier.size(size * .4f))
     }
 }
 
@@ -896,7 +944,7 @@ private fun TallSlider(icon: ImageVector, label: String, value: Float, width: Dp
     onStart: () -> Unit = {}, onValue: (Float) -> Unit) {
     val shown by androidx.compose.animation.core.animateFloatAsState(value.coerceIn(0f, 1f), FolioMotion.spring(FolioMotion.Snap), label = label)
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-    Box(Modifier.size(width, height).clip(RoundedCornerShape(width * .36f)).background(ModuleGlass)
+    Box(Modifier.size(width, height).ccSurface(CircleShape, GlassRole.TILE)
         .pointerInput(Unit) {
             var last = -1f
             detectVerticalDragGestures(onDragStart = { onStart(); last = -1f }) { change, _ ->
@@ -915,16 +963,23 @@ private fun TallSlider(icon: ImageVector, label: String, value: Float, width: Dp
         }) {
         Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(shown).background(Color.White))
         Icon(icon, null, tint = if (shown > .18f) FolioColors.MenuSurface else Color.White,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = width * .22f).size(width * .36f))
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = width * .26f).size(width * .36f))
     }
 }
 
 @Composable
 private fun GlassIconButton(icon: ImageVector, label: String, onClick: () -> Unit) {
     Box(Modifier.minimumInteractiveComponentSize().clickable(onClick = onClick).semantics { contentDescription = label },
-        contentAlignment = Alignment.Center) { Box(Modifier.size(34.dp).clip(CircleShape).background(NotifGlass), contentAlignment = Alignment.Center) {
+        contentAlignment = Alignment.Center) { Box(Modifier.size(34.dp).ccSurface(CircleShape, GlassRole.CAPSULE), contentAlignment = Alignment.Center) {
         Icon(icon, null, tint = Color.White, modifier = Modifier.size(18.dp))
     } }
+}
+
+@Composable
+private fun CcPill(label: String, onClick: () -> Unit) {
+    Text(label, color = Color.White, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.Medium,
+        modifier = Modifier.heightIn(min = 40.dp).ccSurface(CircleShape, GlassRole.CAPSULE).clickable(onClick = onClick)
+            .padding(horizontal = FolioSpace.COMFY.dp, vertical = 11.dp))
 }
 
 @Composable

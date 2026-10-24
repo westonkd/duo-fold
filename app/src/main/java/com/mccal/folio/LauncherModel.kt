@@ -1733,10 +1733,13 @@ private fun launcherIcon(drawable: Drawable): Bitmap {
     if (drawable !is AdaptiveIconDrawable) return drawable.toBitmap(144, 144)
     val bitmap = Bitmap.createBitmap(144, 144, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
-    canvas.clipPath(Path().apply { addRoundRect(0f, 0f, 144f, 144f, 34f, 34f, Path.Direction.CW) })
     drawable.setBounds(0, 0, 144, 144)
     drawable.background?.draw(canvas)
     drawable.foreground?.draw(canvas)
+    val outside = Path().also { ContinuousCorners.trace(144f, 144f, 144f * ICON_CORNER_FRACTION, it::moveTo, it::lineTo, it::cubicTo); it.close() }
+    outside.fillType = Path.FillType.INVERSE_WINDING
+    canvas.drawPath(outside, android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR) })
     return bitmap
 }
 

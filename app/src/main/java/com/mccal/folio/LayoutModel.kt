@@ -3,6 +3,14 @@ package com.mccal.folio
 /** Jake's reference measures 76px dock artwork against 106px home artwork. */
 fun dockIconSize(homeIconSize: Float) = homeIconSize * (76f / 106f)
 
+internal const val ICON_CORNER_FRACTION = .2237f
+
+internal fun dockCornerRadius(thickness: Float, iconSize: Float, shape: IconShape): Float {
+    val inset = ((thickness - iconSize) / 2f).coerceAtLeast(0f)
+    val iconCorner = if (shape == IconShape.CIRCLE) iconSize / 2f else iconSize * ICON_CORNER_FRACTION
+    return (iconCorner + inset).coerceAtMost(thickness / 2f)
+}
+
 data class LayoutPreset(
     val iconSize: Float = 66f,
     val rowGap: Float = 8f,
