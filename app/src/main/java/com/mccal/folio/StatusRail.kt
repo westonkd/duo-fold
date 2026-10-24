@@ -175,8 +175,7 @@ fun StatusRail(
     // Text sits on the frosted capsule, not straight on the wallpaper, so pick its color from how light the capsule
     // looks: the wallpaper's main color seen through the glass. An explicit Light or Dark "Text on Home" still wins.
     val tone = LocalWallpaperTone.current
-    val homeInk = statusRailInk(LocalHomeInk.current, style.background, style.railGlass, Glass.luminance(),
-        tone.primary?.let { Color(it).luminance() } ?: if (tone.prefersDarkText) .75f else .25f)
+    val homeInk = statusRailInk(LocalHomeInk.current, style.background, style.railGlass, Glass.luminance(), tone.luminance)
     val ink = homeInk.primary
     val textShadow = if (style.background) null else homeInk.labelShadow
     // Over light wallpapers (dark text) the frosted capsule is light too, so dim parts and colors need more weight to read.

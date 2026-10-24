@@ -728,11 +728,11 @@ fun LauncherScreen(
         val homeInk = homeInkFor(state.homeInk, tone.prefersDarkText)
         val basePalette = LocalDuoPalette.current
         val tintAmount = state.glassTintAmount
-        val tinted = if (tintAmount > 0f) remember(basePalette, tone.primary, tintAmount) { basePalette.copy(glass = tintedGlass(basePalette.glass, tone.primary, tintAmount)) } else basePalette
+        val solidGlass = LocalSolidGlass.current
         // Reduce Transparency: nearly solid glass must still contrast with the text on it, so it's dark under white text
         // and light under dark text (whatever the appearance), keeping a little of the wallpaper tint.
-        val palette = if (LocalSolidGlass.current) tinted.copy(glass = tintedGlass(
-            if (homeInk.dark) FolioColors.LightBackground else FolioColors.SecondaryBackground, tone.primary, tintAmount * .5f)) else tinted
+        val palette = remember(basePalette, tone.primary, tintAmount, solidGlass, homeInk.dark) {
+            homePalette(basePalette, tone.primary, tintAmount, solidGlass, homeInk.dark) }
         val homeApps = remember(state.apps, state.hiddenApps) { HomeApps(state.apps.filter { it.id !in state.hiddenApps && it.available }) { onLaunchFrom(it, null) } }
         val bigClockStyles = remember(state.bigClockStyles) { BigClockStyles(state.bigClockStyles, model::setBigClockStyle) }
         // iOS "dark appearance dims wallpaper" and its legibility gradient over the background. They are worked out here, above

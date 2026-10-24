@@ -7,6 +7,7 @@ import android.os.Looper
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +52,9 @@ internal fun WallpaperColors?.prefersDarkText(): Boolean =
  */
 @Immutable
 internal data class WallpaperTone(val prefersDarkText: Boolean = false, val primary: Int? = null, val secondary: Int? = null,
-    val tertiary: Int? = null, val fromAndroid: Boolean = false, val palette: SystemPalette? = null)
+    val tertiary: Int? = null, val fromAndroid: Boolean = false, val palette: SystemPalette? = null) {
+    val luminance: Float get() = primary?.let { Color(it).luminance() } ?: if (prefersDarkText) .75f else .25f
+}
 
 internal val LocalWallpaperTone = staticCompositionLocalOf { WallpaperTone() }
 
@@ -146,6 +149,12 @@ internal fun tintedGlass(base: Color, wallpaper: Int?, amount: Float = .28f): Co
     val w = Color(wallpaper)
     return Color(base.red + (w.red - base.red) * amount, base.green + (w.green - base.green) * amount,
         base.blue + (w.blue - base.blue) * amount, base.alpha)
+}
+
+internal fun homePalette(base: DuoPalette, wallpaper: Int?, tintAmount: Float, solid: Boolean, inkDark: Boolean): DuoPalette {
+    val tinted = if (tintAmount > 0f) base.copy(glass = tintedGlass(base.glass, wallpaper, tintAmount)) else base
+    if (!solid) return tinted
+    return tinted.copy(glass = tintedGlass(if (inkDark) FolioColors.LightBackground else FolioColors.SecondaryBackground, wallpaper, tintAmount * .5f))
 }
 
 /** A clear, bright version of a wallpaper color for tinted icons (saturation ≥ 45%, brightness ≥ 85%). */
