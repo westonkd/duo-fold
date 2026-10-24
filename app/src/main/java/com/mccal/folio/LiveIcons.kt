@@ -153,7 +153,7 @@ private val SquircleShape = androidx.compose.foundation.shape.GenericShape { siz
 }
 
 private fun IconShape.toShape(): androidx.compose.ui.graphics.Shape? = when (this) {
-    IconShape.DEFAULT -> null
+    IconShape.DEFAULT -> IconContinuousShape
     IconShape.SQUIRCLE -> SquircleShape
     IconShape.CIRCLE -> androidx.compose.foundation.shape.CircleShape
     IconShape.ROUNDED -> RoundedCornerShape(22)
@@ -207,7 +207,6 @@ internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modif
     val kind = remember(src.component.packageName, look.liveIcons) { if (look.liveIcons) LiveIcons.kind(context, src.component.packageName) else null }
     val accent = if (look.style == IconStyle.TINTED) look.tint else null
     val lookShape = remember(look.shape) { look.shape.toShape() }
-    val clipShape = lookShape ?: shape
     // Pack lookup: null until it finishes, then the pack's icon or none. An icon pack's own Clock or Calendar icon wins
     // over the live one, so a pack keeps one consistent look; live icons fill in where the pack has nothing.
     val packLookup by androidx.compose.runtime.produceState<PackLookup?>(if (look.pack == null) PackLookup(null) else null, look.pack, src.id) {
@@ -236,20 +235,27 @@ internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modif
         else -> LivePalette.of(if (look.style == IconStyle.DEFAULT && darkSource) IconStyle.DARK else look.style, accent)
     }
     val badgeCount = if (!badge || look.badges == BadgeStyle.OFF || app.iconFrom != null) 0 else LocalBadgeCounts.current[src.component.packageName] ?: 0
+    val lighting = if (liquidGlassOn() && look.style != IconStyle.CLEAR) {
+        val outline = LocalGlassLook.current.outline
+        val wallpaper = LocalWallpaperTone.current.primary
+        val dimmed = look.style == IconStyle.DARK
+        remember(outline, wallpaper, dimmed) { iconLighting(outline, wallpaper, dimmed) }
+    } else null
+    val iconShape = lookShape ?: shape ?: IconContinuousShape
+    fun Modifier.lit(fills: Boolean = true): Modifier = if (lighting != null && fills) iconLighting(iconShape, lighting) else this
     Box(modifier.semantics { contentDescription?.let { this.contentDescription = it } }) {
-        val fill = Modifier.fillMaxSize().then(if (clipShape != null) Modifier.clip(clipShape) else Modifier)
-        // App icon bitmaps carry a small transparent margin; inset the drawn live icons to the same visual size.
+        val fill = Modifier.fillMaxSize().clip(iconShape)
         when {
-            // Real icons come masked; a picture is a plain square, so with no shape to clip to it gets the usual rounded corners.
-            picture != null -> { val shown = remember(picture) { picture!!.asImageBitmap() }; Image(shown, null, if (clipShape != null) fill else Modifier.fillMaxSize().clip(RoundedCornerShape(22))) }
-            liveKind == LiveIcons.Kind.CALENDAR -> BoxWithConstraints(Modifier.fillMaxSize()) { CalendarIcon(Modifier.fillMaxSize().padding(maxWidth * .035f).then(if (clipShape != null) Modifier.clip(clipShape) else Modifier), palette) }
-            liveKind == LiveIcons.Kind.CLOCK -> BoxWithConstraints(Modifier.fillMaxSize()) { ClockIcon(Modifier.fillMaxSize().padding(maxWidth * .035f).then(if (clipShape != null) Modifier.clip(clipShape) else Modifier), palette) }
+            picture != null -> { val shown = remember(picture) { picture!!.asImageBitmap() }; Image(shown, null, fill.lit()) }
+            liveKind == LiveIcons.Kind.CALENDAR -> CalendarIcon(fill.lit(), palette, iconShape)
+            liveKind == LiveIcons.Kind.CLOCK -> ClockIcon(fill.lit(), palette, iconShape)
             look.style == IconStyle.CLEAR -> ClearIcon(src, packIcon, fill)
             else -> {
                 val source = packIcon ?: src.icon
                 val bitmap = remember(source) { source.asImageBitmap() }
+                val fills = remember(source) { runCatching { fillsEdges(source.width, source.height) { x, y -> android.graphics.Color.alpha(source.getPixel(x, y)) } }.getOrDefault(false) }
                 val filter = remember(look.style, look.tint) { filterFor(look) }
-                Image(bitmap, null, fill, colorFilter = filter)
+                Image(bitmap, null, fill.lit(fills), colorFilter = filter)
             }
         }
         if (badgeCount > 0) {
@@ -338,10 +344,10 @@ internal fun InstallRing(progress: Float, modifier: Modifier) {
 }
 
 @Composable
-private fun CalendarIcon(modifier: Modifier, palette: LivePalette) {
+private fun CalendarIcon(modifier: Modifier, palette: LivePalette, shape: androidx.compose.ui.graphics.Shape = IconContinuousShape) {
     val tick by rememberMinuteTick()
     val today = remember(tick) { LocalDate.now() }
-    BoxWithConstraints(modifier.clip(RoundedCornerShape(22)).background(palette.calendarBackground), contentAlignment = Alignment.Center) {
+    BoxWithConstraints(modifier.clip(shape).background(palette.calendarBackground), contentAlignment = Alignment.Center) {
         val density = androidx.compose.ui.platform.LocalDensity.current
         val small = with(density) { (maxWidth * .17f).toSp() }
         val big = with(density) { (maxWidth * .46f).toSp() }
@@ -355,11 +361,11 @@ private fun CalendarIcon(modifier: Modifier, palette: LivePalette) {
 }
 
 @Composable
-private fun ClockIcon(modifier: Modifier, palette: LivePalette) {
+private fun ClockIcon(modifier: Modifier, palette: LivePalette, shape: androidx.compose.ui.graphics.Shape = IconContinuousShape) {
     // The tick is read while drawing, so a second redraws the hands without recomposing the icon.
     val tick = rememberSecondTick()
     val screenshot by ScreenshotMode.on.collectAsState()
-    Box(modifier.clip(RoundedCornerShape(22)).background(palette.clockBackground)) {
+    Box(modifier.clip(shape).background(palette.clockBackground)) {
         Canvas(Modifier.fillMaxSize()) {
             tick.value // subscribes this draw to the second tick
             val now = ScreenshotMode.now(screenshot).toLocalTime()

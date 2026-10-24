@@ -25,6 +25,7 @@ lock: the real state is `gh pr list` and `git worktree list`. Keep it honest rat
 | `dev/liquid-glass` | A Liquid glass style for Home surfaces, behind a beta gate | `FolioGlass.kt`, `LauncherScreen.kt`, `LauncherModel.kt`, `CustomizationSheet.kt`, `MainActivity.kt`, `FeatureGate.kt`, `strings.xml`, `CHANGELOG.md` |
 | `dev/status-rail` | The Side Bar status sits on the wallpaper in Home's text color, and a tap opens Control Center; the dock's corners follow its icons (on top of `dev/liquid-glass`) | `StatusRail.kt`, `LauncherScreen.kt`, `LayoutModel.kt`, `CustomizationSheet.kt`, `CHANGELOG.md` |
 | `dev/control-center` | Control Center in Home's tinted glass with iOS shapes, spacing and a status row (on top of `dev/status-rail`) | `TopPanels.kt`, `MainActivity.kt`, `LauncherScreen.kt`, `HomeInk.kt`, `StatusRail.kt`, `CHANGELOG.md` |
+| `dev/icon-depth` | App icons get iOS's continuous corners, and under Liquid a light edge, a soft light from above and a hint of the wallpaper (on top of `dev/control-center`) | `IconDepth.kt`, `LiveIcons.kt`, `HomeTiles.kt`, `LauncherModel.kt`, `SavedIcons.kt`, `LayoutModel.kt`, `CHANGELOG.md` |
 
 Dependabot's open bumps are left out: they touch only `gradle/libs` or `build.gradle.kts`, and
 [REL-27](standards/releases.md) says when to take them.
