@@ -34,7 +34,7 @@ that shape of mistake.
   `signing-certificate.txt` is covered by an explicit fallback that logs it, and a blank or non-hex checksum or signer
   fails the build.
 - **WEB-5 MUST NOT** invent content: no testimonials, ratings, download counts, compatibility claims, comparison
-  tables about other products, or "verified" and "official" badges Folio did not earn ([MKT-13](market.md)).
+  tables about other products, or "verified" and "official" badges Folio did not earn.
   Compatibility claims come from what Folio is tested on ([ADP](adaptive-layout.md), the screen matrix).
 - **WEB-6 MUST** credit what a thing is inspired by wherever it is described, as the app does. A tweak's page names
   the person who made the idea, taken from the package's own depiction.

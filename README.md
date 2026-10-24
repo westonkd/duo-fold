@@ -17,7 +17,6 @@
   <img src="https://img.shields.io/badge/root-not%20needed-2E5E66" alt="Root not needed">
   <img src="https://img.shields.io/badge/made%20for-foldables-6DB7B4" alt="Made for foldables">
   <img src="https://img.shields.io/badge/inspired%20by-jailbreak%20tweaks-BF5AF2" alt="Inspired by jailbreak tweaks">
-  <a href="https://ko-fi.com/mccal"><img src="https://img.shields.io/badge/Ko--fi-buy%20me%20a%20coffee-FF5E5B" alt="Buy me a coffee on Ko-fi"></a>
 </p>
 
 <p align="center">
@@ -76,7 +75,7 @@ way of bringing that back:
 - **The iPhone Duo Side Bar.** The status bar, Dynamic Island and dock live on the right edge. Thanks to
   [DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher), whose dev made it possible for me to build on top of their work.
 - **Left-handed mode and Spotlight.** Flip the Side Bar to the left, and search everything from Spotlight.
-- **Coming soon: Page Effects,** inspired by Barrel. See Settings › Roadmap for what else is planned.
+- **Page Effects,** inspired by Barrel.
 
 There's a lot to this launcher, and it's fun. I hope you have as much fun with it as I've had making it.
 
@@ -109,15 +108,6 @@ There's a lot to this launcher, and it's fun. I hope you have as much fun with i
   </tr>
   <tr>
     <td align="center" colspan="3"><img src="docs/images/folio-inner-settings.webp" width="640" alt="Settings in split view on the unfolded screen: the sidebar on the left and the Icons &amp; Side Bar page with a live Home preview on the right"><br><sub>Settings in split view, like iPad</sub></td>
-  </tr>
-  <tr>
-    <th colspan="3">New in 0.6.0</th>
-  </tr>
-  <tr>
-    <td align="center" colspan="3"><img src="docs/images/folio-inner-tweak-library.webp" width="640" alt="The Tweak Library on the unfolded screen: App Panels, Dock Magnification, Notification App Row, Tinted Notifications and Album Art Colors, each with its inspiration and a Get or Open button"><br><sub>The Tweak Library: get only the tweaks you want</sub></td>
-  </tr>
-  <tr>
-    <td align="center" colspan="3"><img src="docs/images/folio-inner-roadmap.webp" width="640" alt="The Roadmap in Settings: Tweak Library, Software Update, Badge styles and Folder options marked In this update, then The Folio app and Home grid columns marked Planned"><br><sub>The Roadmap in Settings</sub></td>
   </tr>
 </table>
 
@@ -227,23 +217,13 @@ service for pull-down panels. Every permission is listed with what it's for in S
 [PERMISSIONS.md](PERMISSIONS.md) (all 14, with what breaks if you say no) and in [PRIVACY.md](PRIVACY.md).
 
 **Does Folio send my data anywhere?** No. No accounts, no ads, no analytics. Crash reports stay on your phone unless you
-share one. Software Update only asks GitHub for the latest release when you check (or once a day if you turn that on).
-
-**How do I update?** Settings › Software Update checks GitHub, verifies the download and installs it. You can also
-turn on daily checks and automatic installs there, or use Obtainium.
-
-**Can I try new features early?** Yes: Settings › Software Update › Beta Updates › Folio Beta. Betas are GitHub
-pre-releases, signed with the same key, and may have bugs.
+share one.
 
 **How do I go back to my old launcher?** Settings › Apps › Default apps › Home app on your phone (the exact path can
 vary by phone). Your Folio layout stays saved if you switch back later.
 
-**Something broke. What do I do?** Settings › Help › Report a Bug in Folio opens the bug form with your details filled
-in. If Folio crashes a few times in a row, it opens in Safe Mode with tweaks paused. More in
-[troubleshooting](docs/troubleshooting.md).
-
-**What's coming next?** See Settings › Roadmap in the app, or suggest something with the
-[feature form](https://github.com/McCal-Codes/folio/issues/new/choose).
+**Something broke. What do I do?** If Folio crashes a few times in a row, it opens in Safe Mode with tweaks paused.
+Settings › General › Advanced › Share Diagnostics hands you the details to look at.
 
 ## Where things are
 
@@ -262,13 +242,9 @@ in. If Folio crashes a few times in a row, it opens in Safe Mode with tweaks pau
 something for whoever finds the most). Themes and code can come later. I'm one person doing this, but anyone who's
 interested is welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. No GPL code and nothing that needs root.
 
-- Found a bug? In Folio, go to Settings › Help › **Report a Bug**, or use the [bug form](https://github.com/McCal-Codes/folio/issues/new/choose).
 - Questions or want to show off your setup? [Discussions](https://github.com/McCal-Codes/folio/discussions).
 - Security problem? Report it privately, see [SECURITY.md](SECURITY.md).
 - Everyone here follows the [Code of Conduct](CODE_OF_CONDUCT.md).
-
-If you want to support the project, you can [buy me a coffee on Ko-fi](https://ko-fi.com/mccal). It's never
-expected, but it's always appreciated.
 
 ## Contact
 

@@ -4,15 +4,9 @@ Short records of decisions that shape Folio, why they were made, and what they c
 
 | # | Decision | Status |
 |---|---|---|
-| [0001](0001-repo-format.md) | Market sources use a signed entry file that pins a hashed index (F-Droid style) | Accepted |
-| [0002](0002-signing.md) | Sources are signed with ECDSA P-256 and their key is pinned on first use | Accepted |
-| 0003 | Script engine (QuickJS or LuaJ) | Decided in Phase 9 |
-| [0004](0004-declarative-first.md) | Packages are declarative first; no downloaded executable code | Accepted |
-| [0005](0005-org-json.md) | Keep org.json for Market parsing | Accepted |
 | [0006](0006-standards.md) | Folio Standards are the build contract; outside AI agents only test and fix bugs | Proposed |
 | [0007](0007-release-trains.md) | One trunk, two audiences: features gated by the `beta` scope, betas are tags, and `versionCode` gets hotfix headroom | Proposed |
 | [0008](0008-platform-architecture.md) | A launcher first, then an extension platform, then an optional system bridge: six core primitives, privilege tiers A0 to A5, packages never inherit privilege | Proposed |
 | [0009](0009-duet-effect-engine.md) | Duet is the fold animation; its looks are a catalog ported only from pinned, MIT-licensed code | Proposed |
 | [0011](0011-system-bridge.md) | The System Bridge is a broker, typed providers and a version handshake: no shell for packages, Shizuku in Folio's own APK first, everything above A2 off with one switch | Proposed |
 | [0012](0012-root-hinge-provider.md) | A continuous hinge angle is an optional root provider behind the broker: Folio's own code run through su, one pipe, public sensor always the way back | Accepted, built, off by default |
-| [0013](0013-package-compatibility-fields.md) | Package compatibility fields go into format 1 before the 0.7.0 freeze: an Android range (hard), a tested Folio range (advice), one-at-a-time slots and `breaks` in the manifest; access is derived, not declared; later breakage comes from the source | Accepted, not built |
