@@ -7,8 +7,8 @@ import java.io.File
 
 /**
  * The legibility gradient over Home's background: that it is strongest where Home's text is, that it is subtle enough
- * to leave a pale wallpaper looking like itself, that it does not darken the same pixels twice with the settings
- * already there, and that it is free while a page moves.
+ * to leave a pale wallpaper looking like itself, that it stands down under dark text, and that it is free while a
+ * page moves.
  */
 class HomeScrimTest {
     private val root = generateSequence(File("").absoluteFile) { it.parentFile }.first { File(it, "CHANGELOG.md").exists() }
@@ -38,40 +38,21 @@ class HomeScrimTest {
     private val paleSand = 0xDFC69B
 
     @Test fun `turning it off draws nothing at all`() {
-        assertTrue(!HomeScrim.of(on = false, darkText = false, dim = 0f).draws)
-        assertEquals(HomeScrim.None, HomeScrim.of(on = false, darkText = false, dim = 0f))
+        assertTrue(!HomeScrim.of(on = false, darkText = false).draws)
+        assertEquals(HomeScrim.None, HomeScrim.of(on = false, darkText = false))
     }
 
     @Test fun `dark text on Home means no scrim, because a dark scrim would take its contrast away`() {
-        assertTrue(!HomeScrim.of(on = true, darkText = true, dim = 0f).draws)
-        // And the setting being on is not enough to bring it back.
-        assertTrue(!HomeScrim.of(on = true, darkText = true, dim = .3f).draws)
+        assertTrue(!HomeScrim.of(on = true, darkText = true).draws)
     }
 
     @Test fun `on by default, over a light wallpaper, it draws at both ends`() {
         assertTrue(LauncherState().homeScrim)
-        val scrim = HomeScrim.of(on = true, darkText = false, dim = 0f)
+        val scrim = HomeScrim.of(on = true, darkText = false)
         assertEquals(HomeScrim.TOP, scrim.top, 1e-6f)
         assertEquals(HomeScrim.BOTTOM, scrim.bottom, 1e-6f)
         assertTrue("the bottom carries the page dots and the two round controls, so it is the stronger end",
             scrim.bottom > scrim.top)
-    }
-
-    @Test fun `it gives way to the dark appearance dim instead of darkening the same pixels twice`() {
-        // Whatever the dim is doing, the two together land on the same darkness as the scrim alone: never the sum.
-        for (dim in listOf(0f, .05f, .1f, .2f, .28f)) {
-            val scrim = HomeScrim.of(on = true, darkText = false, dim = dim)
-            for ((target, value) in listOf(HomeScrim.TOP to scrim.top, HomeScrim.BOTTOM to scrim.bottom)) {
-                if (target <= dim) continue
-                // Two blacks at a and b together darken by a + b - ab.
-                assertEquals("dim $dim", target, dim + value - dim * value, 1e-5f)
-            }
-        }
-        // At the dim's own .3 the top is already darker than the scrim would make it, so the scrim is nothing there.
-        assertEquals(0f, HomeScrim.under(HomeScrim.TOP, .3f), 0f)
-        // And it never asks for more than there is room for.
-        assertEquals(0f, HomeScrim.under(HomeScrim.BOTTOM, 1f), 0f)
-        assertEquals(0f, HomeScrim.under(HomeScrim.BOTTOM, 2f), 0f)
     }
 
     @Test fun `the two bands leave the middle of the wallpaper alone`() {
@@ -127,8 +108,7 @@ class HomeScrimTest {
     }
 
     @Test fun `it stops well short of a dark filter`() {
-        // Not darker at its peak than the .3 black "Dark appearance dims wallpaper" already lays over the whole screen,
-        // so Home is darkened strictly less than by a setting Folio already ships as a dim rather than a filter.
+        // Not darker at its peak than a .3 black over the whole screen, so it stays a dim rather than a filter.
         assertTrue(HomeScrim.TOP < .3f)
         assertTrue(HomeScrim.BOTTOM <= .32f)
         // A11Y-9's 4.5:1 for body-size white text over that same sand is out of a scrim's reach: it would take about
@@ -161,16 +141,14 @@ class HomeScrimTest {
         assertTrue("drawWithCache" in code)
     }
 
-    @Test fun `Home composes the scrim with the dim and with the text colour, and draws it over Android's wallpaper too`() {
+    @Test fun `Home composes the scrim with the text colour, and draws it over Android's wallpaper too`() {
         val screen = source("LauncherScreen.kt")
-        assertTrue("the scrim has to take both the resolved ink and the dim already being drawn",
-            "HomeScrim.of(state.homeScrim, homeInk.dark, dim)" in screen)
+        assertTrue("the scrim has to take the resolved ink",
+            "HomeScrim.of(state.homeScrim, homeInk.dark)" in screen)
         assertTrue("Folio's own background gets it inside its cached layer",
             "DuneWallpaper(Modifier.foldMotionWallpaper(), scrim = scrim)" in screen)
         assertTrue("Android's wallpaper is the system's to draw, so Home draws the bands over it",
             "if (scrim.draws) Box(Modifier.fillMaxSize().homeScrim(scrim))" in screen)
-        // The dim has to be worked out before the scrim, or the scrim cannot give way to it.
-        assertTrue(screen.indexOf("label = \"wallpaper dim\"") < screen.indexOf("HomeScrim.of(state.homeScrim"))
     }
 
     @Test fun `the setting is saved under its own key, and a phone that never had it gets it on`() {

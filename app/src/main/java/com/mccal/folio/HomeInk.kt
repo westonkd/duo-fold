@@ -151,11 +151,8 @@ internal fun tintedGlass(base: Color, wallpaper: Int?, amount: Float = .28f): Co
         base.blue + (w.blue - base.blue) * amount, base.alpha)
 }
 
-internal fun homePalette(base: DuoPalette, wallpaper: Int?, tintAmount: Float, solid: Boolean, inkDark: Boolean): DuoPalette {
-    val tinted = if (tintAmount > 0f) base.copy(glass = tintedGlass(base.glass, wallpaper, tintAmount)) else base
-    if (!solid) return tinted
-    return tinted.copy(glass = tintedGlass(if (inkDark) FolioColors.LightBackground else FolioColors.SecondaryBackground, wallpaper, tintAmount * .5f))
-}
+internal fun homePalette(base: DuoPalette, wallpaper: Int?): DuoPalette =
+    base.copy(glass = tintedGlass(base.glass, wallpaper, GLASS_TINT))
 
 /** A clear, bright version of a wallpaper color for tinted icons (saturation ≥ 45%, brightness ≥ 85%). */
 internal fun vividTint(argb: Int): Int {

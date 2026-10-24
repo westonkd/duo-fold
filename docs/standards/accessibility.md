@@ -32,7 +32,6 @@ guidelines, WCAG 2.2 AA and Apple's HIG.
   stronger value on light backgrounds.
 - **A11Y-10 MUST NOT** use color as the only signal (a red dot also has a shape or label; an active Focus also has
   text).
-- **A11Y-11 MUST** support Reduce Transparency and high contrast through `LocalSolidGlass`.
 
 ### Text size
 
@@ -65,7 +64,6 @@ guidelines, WCAG 2.2 AA and Apple's HIG.
 - [ ] 200% font scale in the cover and inner windows
 - [ ] Contrast checked over a white and a black wallpaper
 - [ ] Animations off
-- [ ] Reduce Transparency / high contrast
 - [ ] Keyboard only
 
 ## Where Folio is today
@@ -74,7 +72,7 @@ Good:
 
 - 48dp rows and dock minimums (`LayoutModel.kt`), 44dp jiggle remove, `minimumInteractiveComponentSize` in 7 files.
 - 77 content descriptions, 62 semantics blocks, custom move actions mirrored on the keyboard.
-- `LocalReduceMotion` and `LocalSolidGlass` exist and are used.
+- `LocalReduceMotion` exists and is used.
 - `getRecommendedTimeoutMillis` for Market notices and for everything the island shows for a moment.
 
 Not yet:

@@ -38,15 +38,8 @@ class ControlCenterLayoutTest {
 
     @Test fun `Control Center's glass is Home's glass, tinted the same way`() {
         val wallpaper = 0xFFC08060.toInt()
-        val home = homePalette(LightDuoPalette, wallpaper, .4f, solid = false, inkDark = false)
-        assertEquals(tintedGlass(LightDuoPalette.glass, wallpaper, .4f), home.glass)
-        assertEquals(LightDuoPalette, homePalette(LightDuoPalette, wallpaper, 0f, solid = false, inkDark = false))
-    }
-
-    @Test fun `Reduce Transparency makes the glass dark under white text and light under dark text`() {
-        val dark = homePalette(LightDuoPalette, null, 0f, solid = true, inkDark = false)
-        val light = homePalette(LightDuoPalette, null, 0f, solid = true, inkDark = true)
-        assertEquals(FolioColors.SecondaryBackground, dark.glass)
-        assertEquals(FolioColors.LightBackground, light.glass)
+        val home = homePalette(LightDuoPalette, wallpaper)
+        assertEquals(tintedGlass(LightDuoPalette.glass, wallpaper, GLASS_TINT), home.glass)
+        assertEquals(LightDuoPalette, homePalette(LightDuoPalette, null))
     }
 }

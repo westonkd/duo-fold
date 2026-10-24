@@ -111,18 +111,11 @@ internal val Glass: Color
     @Composable get() = LocalDuoPalette.current.glass
 
 @Composable
-fun DuoTheme(dark: Boolean = false, accent: AccentChoice = DuoAppearanceRuntime.accent, content: @Composable () -> Unit) {
-    val palette = if (dark) DarkDuoPalette else LightDuoPalette
-    // Every Folio surface reads its accent from here, so Settings › Accent reaches Home and the sheets in one place
-    // rather than each screen naming a color.
-    CompositionLocalProvider(LocalDuoPalette provides palette, LocalAccent provides FolioAccents.of(accent)) {
-        MaterialTheme(colorScheme = if (dark) darkColorScheme(primary = Color(0xFF9BC5D7), onPrimary = Color(0xFF12303D),
-            surface = Color(0xFF17272E), onSurface = palette.ink, secondary = Color(0xFFD1BE98),
-            secondaryContainer = Color(0xFF314852), onSecondaryContainer = palette.ink)
-        else lightColorScheme(primary = Color(0xFF30596D), onPrimary = Color.White,
-            surface = Color(0xFFF4F7F8), onSurface = palette.ink, secondary = Color(0xFF84775F),
-            secondaryContainer = Color(0xFFDCE8ED), onSecondaryContainer = palette.ink), content = content)
-    }
+fun DuoTheme(content: @Composable () -> Unit) {
+    val ink = LightDuoPalette.ink
+    MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF30596D), onPrimary = Color.White,
+        surface = Color(0xFFF4F7F8), onSurface = ink, secondary = Color(0xFF84775F),
+        secondaryContainer = Color(0xFFDCE8ED), onSecondaryContainer = ink), content = content)
 }
 
 
@@ -135,12 +128,6 @@ fun LauncherScreen(
     onDiscover: () -> Unit = {}, searchRequests: Int = 0, settingsRequests: Int = 0,
     onLaunchFrom: (AppEntry, android.graphics.Rect?) -> Unit = { app, _ -> onLaunch(app) },
     onGoogleSearch: (android.graphics.Rect?) -> Boolean = { false },
-    appearance: AppearanceState = AppearanceState(),
-    onAppearanceMode: (AppearanceMode) -> Unit = {},
-    onAppearanceAccent: (AccentChoice) -> Unit = {},
-    onAppearanceManual: (String, Double, Double) -> Unit = { _, _, _ -> },
-    onAppearanceDeviceLocation: () -> Unit = {},
-    onAppearanceClear: () -> Unit = {},
     showFirstRun: Boolean = false,
     onFinishFirstRun: () -> Unit = {},
     onShadeSetup: () -> Unit = {},
@@ -691,21 +678,14 @@ fun LauncherScreen(
         val tone = LocalWallpaperTone.current
         val homeInk = homeInkFor(state.homeInk, tone.prefersDarkText)
         val basePalette = LocalDuoPalette.current
-        val tintAmount = state.glassTintAmount
-        val solidGlass = LocalSolidGlass.current
-        // Reduce Transparency: nearly solid glass must still contrast with the text on it, so it's dark under white text
-        // and light under dark text (whatever the appearance), keeping a little of the wallpaper tint.
-        val palette = remember(basePalette, tone.primary, tintAmount, solidGlass, homeInk.dark) {
-            homePalette(basePalette, tone.primary, tintAmount, solidGlass, homeInk.dark) }
+        val palette = remember(basePalette, tone.primary) { homePalette(basePalette, tone.primary) }
         val homeApps = remember(state.apps, state.hiddenApps) { HomeApps(state.apps.filter { it.id !in state.hiddenApps && it.available }) { onLaunchFrom(it, null) } }
         val bigClockStyles = remember(state.bigClockStyles) { BigClockStyles(state.bigClockStyles, model::setBigClockStyle) }
-        // iOS "dark appearance dims wallpaper" and its legibility gradient over the background. They are worked out here, above
-        // everything that draws on the wallpaper, so the Big Clock can measure its picture as it really looks (LocalHomeDarkening).
-        val dim by androidx.compose.animation.core.animateFloatAsState(if (state.dimWallpaperDark && appearance.dark) .3f else 0f, label = "wallpaper dim")
-        // It gives way to the dim rather than darkening the same pixels twice, and stands down where Home's text is dark ink
-        // and a dark scrim would take contrast away. See HomeScrim.
-        val scrim = HomeScrim.of(state.homeScrim, homeInk.dark, dim)
-        CompositionLocalProvider(LocalOpenMenuId provides overlays.menu, LocalWidgetStacks provides state.widgetStacks, LocalHomeDarkening provides HomeDarkening(dim, scrim), LocalStackRotate provides state.stackRotate, LocalHomeApps provides homeApps,
+        // iOS's legibility gradient over the background. It is worked out here, above everything that draws on the wallpaper,
+        // so the Big Clock can measure its picture as it really looks (LocalHomeDarkening). It stands down where Home's text
+        // is dark ink and a dark scrim would take contrast away. See HomeScrim.
+        val scrim = HomeScrim.of(state.homeScrim, homeInk.dark)
+        CompositionLocalProvider(LocalOpenMenuId provides overlays.menu, LocalWidgetStacks provides state.widgetStacks, LocalHomeDarkening provides HomeDarkening(scrim), LocalStackRotate provides state.stackRotate, LocalHomeApps provides homeApps,
             LocalBigClockStyles provides bigClockStyles,
             LocalHomeInk provides homeInk, LocalDuoPalette provides palette,
             // Remembered so every icon isn't recomposed each time Home recomposes (a new lambda changes the local).
@@ -739,11 +719,8 @@ fun LauncherScreen(
             // into: here it is two gradient bands of fill a frame, in the window's own render node, with no new layer.
             if (scrim.draws) Box(Modifier.fillMaxSize().homeScrim(scrim))
         }
-        if (dim > 0f) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = dim)))
-        if (liquidGlassOn()) {
-            val wash = libraryWash(homeInk.dark, LocalGlassLook.current.backdropBlur)
-            Box(Modifier.fillMaxSize().graphicsLayer { alpha = LibraryShown.floatValue }.background(wash))
-        }
+        val wash = libraryWash(homeInk.dark, LocalGlassLook.current.backdropBlur)
+        Box(Modifier.fillMaxSize().graphicsLayer { alpha = LibraryShown.floatValue }.background(wash))
         // Home never moves for the keyboard: including IME insets here re-measured the whole grid on every
         // frame of the keyboard animation (Spotlight/search jank). Sheets that need it use imePadding themselves.
         var homeBoxTop by remember { mutableFloatStateOf(0f) }
@@ -1125,9 +1102,7 @@ fun LauncherScreen(
                     // Composite the stationary dock independently of the shared pager layer (not while magnifying: it would clip).
                     compositingStrategy = if (state.dockMagnify) androidx.compose.ui.graphics.CompositingStrategy.Auto
                         else androidx.compose.ui.graphics.CompositingStrategy.Offscreen
-                }.liquidGlassOr(dockShape, state.statusStyle.railGlass, GlassRole.CAPSULE) {
-                    background(Glass.copy(alpha = state.statusStyle.railGlass), dockShape)
-                        .border(1.dp, LocalGlassLook.current.outlineColor, dockShape) }.testTag("dock")) {
+                }.liquidGlass(dockShape, LIQUID_FROST, GlassRole.CAPSULE).testTag("dock")) {
                 Column(if (geometry.horizontalDock) (if (dockBarScrolls) Modifier.fillMaxHeight().horizontalScroll(dockBarScroll) else Modifier.fillMaxSize()).padding(horizontal = FolioSpace.SMALL.dp) else Modifier.padding(vertical = FolioSpace.SMALL.dp).verticalScroll(dockScroll)) {
                     DockAppColumn(shownDock, previewLayout.dock, appsById, dockPitchShown,
                         dockIconSize(geometry.iconSize), drag, insertionTarget,
@@ -1306,9 +1281,6 @@ fun LauncherScreen(
                             onExportLayout = { sheet = ""; launcherActivity.backups.startExport() },
                             onSaveLayoutToFolder = { launcherActivity.backups.saveToFolioFolder(it) },
                             onImportLayout = { sheet = ""; launcherActivity.backups.startImport() },
-                            appearance = appearance, onAppearanceMode = onAppearanceMode, onAppearanceAccent = onAppearanceAccent,
-                            onAppearanceManual = onAppearanceManual, onAppearanceDeviceLocation = onAppearanceDeviceLocation,
-                            onAppearanceClear = onAppearanceClear,
                             onShadeSetup = { sheet = ""; onShadeSetup() },
                             onShowWelcome = { sheet = ""; onShowWelcome() },
                             onShowWhatsNew = { sheet = ""; onShowWhatsNew() },
@@ -2032,7 +2004,7 @@ internal fun libraryEdges(statusInCorner: Boolean, dockWidth: Float, leftHanded:
 private fun PreviewBar(onUseAsHome: () -> Unit, onExit: () -> Unit) {
     val ink = LocalHomeInk.current
     Row(Modifier.padding(bottom = FolioSpace.SNUG.dp).heightIn(min = 48.dp).clip(RoundedCornerShape(FolioRadius.PANEL.dp))
-        .background(Glass.copy(alpha = LocalGlassLook.current.widget)).border(1.dp, LocalGlassLook.current.outlineColor, RoundedCornerShape(FolioRadius.PANEL.dp))
+        .background(Glass.copy(alpha = LIQUID_FROST)).border(1.dp, GlassOutlineColor, RoundedCornerShape(FolioRadius.PANEL.dp))
         .padding(start = FolioSpace.LARGE.dp, end = FolioSpace.TINY.dp).testTag("home-setup"), verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(R.string.preview), color = ink.secondary, fontSize = FolioType.SUBHEAD.sp, modifier = Modifier.semantics { heading() })
         Spacer(Modifier.width(12.dp))

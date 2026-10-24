@@ -387,8 +387,7 @@ private fun NotificationCard(item: NotificationItem, modifier: Modifier, extraCo
         Row(Modifier.fillMaxWidth().graphicsLayer { scaleX = pressScale; scaleY = pressScale }
             .clip(RoundedCornerShape(FolioRadius.NOTIFICATION.dp)).let { card ->
                 val body = mixColor(NotifGlass, cardAccent, .32f)
-                card.liquidGlassOr(RoundedCornerShape(FolioRadius.NOTIFICATION.dp), body.alpha, GlassRole.PANEL, body.copy(alpha = 1f)) {
-                    background(body).border(FolioGlass.edge, RoundedCornerShape(22.dp)) } }
+                card.liquidGlass(RoundedCornerShape(FolioRadius.NOTIFICATION.dp), body.alpha, GlassRole.PANEL, body.copy(alpha = 1f)) }
             .combinedClickable(interactionSource = press, indication = null, onClick = { if (swipe.value < -1f) settle(0f) else onOpen() }, onLongClick = {
                 if (!overApps) { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); options = true }
             }, onLongClickLabel = stringResource(R.string.notification_options))
@@ -905,11 +904,11 @@ private fun MediaModule(media: IslandActivity.Media?, modifier: Modifier, geomet
 
 @Composable
 private fun ccGlass(): Color =
-    if (LocalShadeOverApps.current || LocalSolidGlass.current) ModuleGlass else Glass.copy(alpha = LocalGlassLook.current.widget)
+    if (LocalShadeOverApps.current) ModuleGlass else Glass.copy(alpha = LIQUID_FROST)
 
 @Composable
 private fun Modifier.ccSurface(shape: Shape, role: GlassRole, color: Color = ccGlass()): Modifier =
-    clip(shape).liquidGlassOr(shape, color.alpha, role, color.copy(alpha = 1f)) { background(color).border(FolioGlass.edge, shape) }
+    clip(shape).liquidGlass(shape, color.alpha, role, color.copy(alpha = 1f))
 
 @Composable
 private fun Module(modifier: Modifier, shape: Shape, color: Color = ccGlass(), content: @Composable BoxScope.() -> Unit) {

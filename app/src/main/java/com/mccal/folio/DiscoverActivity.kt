@@ -215,16 +215,12 @@ class DiscoverActivity : DiscoverPageActivity() {
         setContent {
             val state by model.state.collectAsStateWithLifecycle()
             val status = ScreenshotMode.status(monitor.state.collectAsStateWithLifecycle().value, ScreenshotMode.on.collectAsStateWithLifecycle().value)
-            DuoTheme(rememberSavedAppearance().dark) {
-            // Discover is its own window, so it needs the Glass setting too (the Side Bar outline follows it).
-            androidx.compose.runtime.CompositionLocalProvider(LocalGlassLook provides GlassLook(state.widgetGlass, state.glassOutline,
-                usesLiquidGlass(state.glassMaterial, false))) {
+            DuoTheme {
                 BackHandler { DiscoverSession.requestHome(this) }
                 // The same swap as Home: Discover collects its own state, so it applies it here too.
                 DiscoverDock(rememberDisguised(if (state.loading) state.copy(apps = startupApps) else state), status, fullSize.value, onLaunch = ::launchApp,
                     onHome = { DiscoverSession.requestHome(this) }, onSearch = { DiscoverSession.home(this, search = true) },
                     onReady = { viewportReady = true; openFeed() })
-            }
             }
         }
         if (!DiscoverBounds.available) window.decorView.post { viewportReady = true; openFeed() }
@@ -276,7 +272,7 @@ class DiscoverFeedActivity : DiscoverPageActivity() {
             onVisible = frame::reveal, onProgress = { DiscoverMotion.progress.floatValue = it; frame.invalidate() },
             onClosed = { DiscoverSession.home(this) })
         setContent {
-            DuoTheme(rememberSavedAppearance().dark) {
+            DuoTheme {
                 BackHandler { returnHome() }
                 var showMessage by remember { mutableStateOf(false) }
                 LaunchedEffect(message.value) {
@@ -389,7 +385,7 @@ private fun DiscoverDock(state: LauncherState, status: DeviceStatus, fullSize: S
                 val native = drawContext.canvas
                 val painter = androidx.compose.ui.graphics.drawscope.CanvasDrawScope()
                 painter.draw(density, layoutDirection, native, fullSize) {
-                    drawLauncherBackground(backgroundPhoto, DuoAppearanceRuntime.dark)
+                    drawLauncherBackground(backgroundPhoto)
                 }
             }
         }

@@ -88,7 +88,7 @@ Not yet:
 - `model.state.value` read in composition at `LauncherScreen.kt:207` and `:479`.
 - Uncached prefs read in composition at `CustomizationSheet.kt:538`.
 - Globals: `FolioSettingsBridge.liveModel` (`FolioTiles.kt:19`), plus mutable globals in `FolioActions.kt:35`,
-  `CustomizationSheet.kt:52`, `Appearance.kt:75`.
+  `CustomizationSheet.kt:52`.
 - 26 `collectAsState()`; 4 `derivedStateOf`; 5 `@Stable`, 3 `@Immutable`; 0 `@Preview`.
 - 25 `Handler(` and 11 `postDelayed`; about 308 `runCatching` with ~19 that log.
 

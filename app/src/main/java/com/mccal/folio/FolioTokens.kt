@@ -13,7 +13,6 @@ internal object FolioColors {
      */
     object Value {
         const val Blue = 0xFF0A84FFL
-        const val BlueDeep = 0xFF0A6FD6L
         const val BlueOnDark = 0xFF6CB4FFL
         const val Red = 0xFFFF453AL
         const val RedLight = 0xFFFF3B30L
@@ -42,11 +41,6 @@ internal object FolioColors {
     }
 
     val Blue = Color(Value.Blue)
-    /**
-     * Blue deep enough for white text to clear 4.5:1 (4.93): filled buttons. iOS puts white on [Blue] itself, which
-     * measures 3.65 and fails WCAG AA for text this size, so Folio's filled buttons sit a shade deeper (A11Y-9).
-     */
-    val BlueDeep = Color(Value.BlueDeep)
     /** Blue for text and links on a dark surface, where [Blue] is too dark to read (6.19:1 on a sheet). */
     val BlueOnDark = Color(Value.BlueOnDark)
     val Red = Color(Value.Red)
@@ -114,8 +108,6 @@ internal object FolioColors {
     val InvalidDrop = Color(0xFFFF6B6B)
     /** The bezel drawn around a phone in the Customization previews. */
     val PreviewBezel = Color(0xFF0B0B0C)
-    /** Supporting text on [SecondaryBackground]-style cards in dark appearance (iOS secondaryLabel). */
-    val SecondaryLabelOnDark = Color(0xFF98989F)
     /** Supporting text on [LightBackground]-style cards in light appearance (iOS secondaryLabel). */
     val SecondaryLabelOnLight = Color(0xFF6C6C70)
     /** Supporting text on dark glass and sheets. */
@@ -128,21 +120,12 @@ internal object FolioColors {
  */
 internal data class FolioAccent(val fill: Color, val ink: Color)
 
-/** What Settings offers under Accent. Folio's own teal is the default; Apple's blue is there for whoever wants it. */
-enum class AccentChoice(val id: String) { FOLIO_TEAL("teal"), APPLE_BLUE("blue") }
-
 internal object FolioAccents {
     /** Folio's app icon, which ships in teal (#173D43 to #2E5E66), and the soft icon's mint for text. */
     val Teal = FolioAccent(fill = Color(0xFF2A6A70), ink = Color(0xFF6DB7B4))
-    /** iOS's blue, deep enough for white text to pass AA. */
-    val Blue = FolioAccent(fill = FolioColors.BlueDeep, ink = FolioColors.BlueOnDark)
-    fun of(choice: AccentChoice) = when (choice) {
-        AccentChoice.FOLIO_TEAL -> Teal
-        AccentChoice.APPLE_BLUE -> Blue
-    }
 }
 
-/** The accent in force, from Settings › Wallpaper & Appearance › Accent. */
+/** The accent in force. */
 internal val LocalAccent = androidx.compose.runtime.staticCompositionLocalOf { FolioAccents.Teal }
 
 /**

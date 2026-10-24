@@ -92,10 +92,9 @@ internal fun SetupReminderCard(isDefaultHome: Boolean, blocked: Boolean, onMakeD
     LaunchedEffect(left) { show = SetupReminder.shouldShow(context, left) }
     val visible = show && !blocked
     androidx.activity.compose.BackHandler(visible) { show = false; SetupReminder.snooze(context, SetupReminder.CONTINUE_MS) }
-    val dark = LocalDuoPalette.current.dark
-    val background = if (dark) FolioColors.SecondaryBackground else FolioColors.LightBackground
-    val primary = if (dark) Color.White else Color.Black
-    val secondary = if (dark) FolioColors.SecondaryLabelOnDark else FolioColors.SecondaryLabelOnLight
+    val background = FolioColors.LightBackground
+    val primary = Color.Black
+    val secondary = FolioColors.SecondaryLabelOnLight
     val reduceMotion = LocalReduceMotion.current
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
         AnimatedVisibility(visible,

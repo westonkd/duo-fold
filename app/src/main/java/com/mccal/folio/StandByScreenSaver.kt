@@ -91,7 +91,7 @@ class StandByScreenSaver : DreamService(), LifecycleOwner, SavedStateRegistryOwn
             it.setViewTreeSavedStateRegistryOwner(this)
             it.setViewTreeViewModelStoreOwner(this)
         }
-        content.setContent { DuoTheme(dark = true) { ScreenSaverFace(status, onNight = { isScreenBright = !it }, onLeave = ::leave) } }
+        content.setContent { DuoTheme { ScreenSaverFace(status, onNight = { isScreenBright = !it }, onLeave = ::leave) } }
         setContentView(content)
     }
 

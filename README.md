@@ -61,7 +61,7 @@ I found jailbreaking in middle school and loved it. iOS keeps getting more locke
 open (for now, until Google locks theirs down too). I also have an app in testing on the App Store, and that alone was
 a three-month process, so I'll do what it takes to make what I want.
 
-**Have an idea? Tell me!** And if you want to help build Folio, or make a theme or a tweak for it, [let me know](#get-involved).
+**Have an idea? Tell me!** And if you want to help build Folio, or make a tweak for it, [let me know](#get-involved).
 
 ## A few of my favorite parts
 
@@ -70,8 +70,6 @@ way of bringing that back:
 
 - **Badges that match the app.** Badges can take the color of each app's icon, like the ColorBadges tweak. It was more
   complex than I expected, but it's neat, so check it out (Settings › Icons & Side Bar › Badge color).
-- **Themes, and more on top.** I loved SnowBoard. Android already has icon packs and themes, so Folio builds on them
-  with its own themes you can save and share.
 - **The iPhone Duo Side Bar.** The status bar, Dynamic Island and dock live on the right edge. Thanks to
   [DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher), whose dev made it possible for me to build on top of their work.
 - **Left-handed mode and Spotlight.** Flip the Side Bar to the left, and search everything from Spotlight.
@@ -138,9 +136,7 @@ There's a lot to this launcher, and it's fun. I hope you have as much fun with i
 - Get the ones you want from the Tweak Library, Sileo-style. Only those show up in Settings, and you can remove them any time.
 - Turn a tweak on for just the cover or just the inner screen, and Safe Mode if something crashes.
 
-**Themes**
-- Save your look as a theme file, import one, or share a `.json` theme straight to Folio from Files or Chrome.
-- Grab community themes (or add yours) in [`themes/`](themes/).
+**Icons**
 - Pick an app icon (Teal, Soft or Olive), and live Clock and Calendar icons that match your other icons.
 
 **Betas (off until you turn them on)**
@@ -233,7 +229,6 @@ Settings › General › Advanced › Share Diagnostics hands you the details to
   - `StatusRail.kt`, `CutoutIsland.kt`: the Side Bar status bar and Dynamic Island
   - `CustomizationSheet.kt`, `IosControls.kt`, `FolioSheet.kt`: Settings and the iOS controls
 - `app/src/test/`: unit tests, including the screen size tests
-- `themes/`: community themes and the theme format
 - `docs/`: [user guide](docs/user-guide.md), [troubleshooting](docs/troubleshooting.md), [architecture](docs/architecture.md)
 
 ## Get involved

@@ -64,20 +64,19 @@ class IconDepthTest {
         assertFalse(fillsEdges(4, 4) { _, _ -> 255 })
     }
 
-    @Test fun `the Outline slider scales the rim and at zero removes it`() {
-        assertEquals(0f, iconLighting(0f, null, false).rimLead.alpha, 0f)
-        assertEquals(IconLight.RIM_LEAD, iconLighting(GlassLook().outline, null, false).rimLead.alpha, 1f / 255f)
-        assertTrue(iconLighting(GlassLook().outline, null, false).rimLead.alpha > iconLighting(GlassLook().outline, null, false).rimTrail.alpha)
+    @Test fun `the rim is lit from the top left`() {
+        assertEquals(IconLight.RIM_LEAD, iconLighting(null, false).rimLead.alpha, 1f / 255f)
+        assertTrue(iconLighting(null, false).rimLead.alpha > iconLighting(null, false).rimTrail.alpha)
     }
 
     @Test fun `the wallpaper tints the icon only faintly, and not at all without its colors`() {
-        assertNull(iconLighting(GlassLook().outline, null, false).wash)
-        val wash = iconLighting(GlassLook().outline, 0xFFC08060.toInt(), false).wash!!
+        assertNull(iconLighting(null, false).wash)
+        val wash = iconLighting(0xFFC08060.toInt(), false).wash!!
         assertTrue(wash.red > .9f && wash.green > .9f && wash.blue > .9f)
         assertTrue(wash.blue < 1f)
     }
 
     @Test fun `dark icons get half the sheen`() {
-        assertEquals(IconLight.SHEEN / 2f, iconLighting(GlassLook().outline, null, dimmed = true).sheen, 0f)
+        assertEquals(IconLight.SHEEN / 2f, iconLighting(null, dimmed = true).sheen, 0f)
     }
 }

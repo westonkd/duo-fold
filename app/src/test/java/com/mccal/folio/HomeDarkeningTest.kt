@@ -7,16 +7,10 @@ import org.junit.Test
 
 class HomeDarkeningTest {
     private val none = HomeDarkening()
-    private val dimmed = HomeDarkening(dim = .3f)
-    private val scrimmed = HomeDarkening(dim = 0f, scrim = HomeScrim(top = .29f, bottom = .32f))
+    private val scrimmed = HomeDarkening(scrim = HomeScrim(top = .29f, bottom = .32f))
 
     @Test fun nothingDrawnMeansNoDarkening() {
         assertEquals(0f, none.alphaOver(Rect(.1f, .1f, .9f, .3f)), 1e-6f)
-    }
-
-    @Test fun theDimIsTheSameEverywhere() {
-        assertEquals(.3f, dimmed.alphaOver(Rect(.1f, .1f, .9f, .3f)), 1e-4f)
-        assertEquals(.3f, dimmed.alphaOver(Rect(.1f, .5f, .9f, .6f)), 1e-4f)
     }
 
     @Test fun theScrimOnlyReachesTheEdges() {
@@ -32,13 +26,6 @@ class HomeDarkeningTest {
         val inner = scrimmed.alphaOver(Rect(.1f, .25f, .9f, .27f))
         assertTrue(edge > inner)
         assertTrue(edge <= .29f)
-    }
-
-    @Test fun dimAndScrimComposeLikeTwoBlacks() {
-        val both = HomeDarkening(dim = .3f, scrim = HomeScrim(top = .29f, bottom = 0f))
-        val top = both.alphaOver(Rect(.1f, 0f, .9f, .01f))
-        // a + b - ab with the scrim near its peak: more than the dim alone, less than the sum.
-        assertTrue(top > .3f && top < .3f + .29f)
     }
 
     @Test fun darkeningAPatchLowersItsLuminanceAndColor() {

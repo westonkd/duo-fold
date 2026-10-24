@@ -16,23 +16,6 @@ class SettingsRegroupTest {
         return sheet.substring(a, b)
     }
 
-    @Test fun reduceTransparencySitsBesideReduceMotionInAccessibility() {
-        val card = between("CustomizationPage.ACCESSIBILITY -> {", "R.string.big_buttons")
-        val motion = card.indexOf("R.string.reduce_motion)")
-        val transparency = card.indexOf("R.string.reduce_transparency)")
-        assertTrue("Reduce Motion is in the first Accessibility card", motion >= 0)
-        assertTrue("Reduce Transparency follows it in the same card", transparency > motion)
-    }
-
-    @Test fun theGlassPageNoLongerHasItsOwnReduceTransparencySwitch() {
-        val glass = sheet.substring(sheet.indexOf("private fun GlassCardSettings"))
-        assertFalse(glass.substringBefore("A live sample of the badge settings").contains("SettingsSwitch(stringResource(R.string.reduce_transparency)"))
-    }
-
-    @Test fun searchForReduceTransparencyLandsOnAccessibility() {
-        assertTrue(sheet.contains("R.string.reduce_transparency to CustomizationPage.ACCESSIBILITY"))
-    }
-
     @Test fun theDockHasOneCardHoldingItsPlacementWidthSpacingAlignAndHeight() {
         val card = between("SettingsCard(stringResource(R.string.dock)) {", "R.string.reset_this_layout")
         listOf("dock-placement", "R.string.width", "R.string.space_between_dock_apps", "R.string.align_dock_with_app_rows", "R.string.dock_height")

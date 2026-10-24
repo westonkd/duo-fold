@@ -104,7 +104,7 @@ internal class DiscoverFrame(private val activity: Activity, private val vertica
                         canvas.translate(-LiveDiscover.viewport.left.toFloat(), -LiveDiscover.viewport.top.toFloat())
                         painter.draw(Density(d), LayoutDirection.Ltr, androidx.compose.ui.graphics.Canvas(canvas),
                             LiveDiscover.fullSize) {
-                            drawLauncherBackground(LauncherBackgroundCache.bitmap?.asImageBitmap(), DuoAppearanceRuntime.dark)
+                            drawLauncherBackground(LauncherBackgroundCache.bitmap?.asImageBitmap())
                             translate(LiveDiscover.pagerOrigin.x, LiveDiscover.pagerOrigin.y) { drawLayer(layer) }
                         }
                     }
@@ -124,14 +124,13 @@ internal class DiscoverFrame(private val activity: Activity, private val vertica
                 canvas.translate(-origin.x, -origin.y)
                 painter.draw(Density(d), LayoutDirection.Ltr, androidx.compose.ui.graphics.Canvas(canvas),
                     if (fullSize == Size.Zero) Size(width.toFloat(), height.toFloat()) else fullSize) {
-                        drawLauncherBackground(LauncherBackgroundCache.bitmap?.asImageBitmap(), DuoAppearanceRuntime.dark)
+                        drawLauncherBackground(LauncherBackgroundCache.bitmap?.asImageBitmap())
                     }
-                if (DiscoverBounds.available) canvas.drawColor(
-                    if (DuoAppearanceRuntime.dark) 0xeb263a43.toInt() else 0xebe8eff2.toInt())
+                if (DiscoverBounds.available) canvas.drawColor(0xebe8eff2.toInt())
                 canvas.restoreToCount(saved)
                 canvas.drawPath(path, border)
                 if (coverAlpha > 0f) {
-                    cover.color = if (DuoAppearanceRuntime.dark) 0xff263a43.toInt() else 0xffe8eff2.toInt()
+                    cover.color = 0xffe8eff2.toInt()
                     cover.alpha = (coverAlpha * 255).toInt()
                     canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), cover)
                 }

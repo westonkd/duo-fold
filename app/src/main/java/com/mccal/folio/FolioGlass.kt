@@ -112,15 +112,18 @@ internal val LocalFolderColors = androidx.compose.runtime.compositionLocalOf { e
 internal data class TintOptions(val notifications: Boolean = false, val media: Boolean = true, val notificationAppRow: Boolean = true, val mediaIsland: Boolean = true)
 internal val LocalTintOptions = androidx.compose.runtime.staticCompositionLocalOf { TintOptions() }
 
-/** How strong Home's glass is: widget frost and the outline around widgets and Side Bar capsules (Settings › Glass). */
-internal data class GlassLook(val widget: Float = .26f, val outline: Float = .16f, val liquid: Boolean = false, val backdropBlur: Boolean = false) {
-    val outlineColor get() = androidx.compose.ui.graphics.Color.White.copy(alpha = outline)
-}
+internal data class GlassLook(val backdropBlur: Boolean = false)
 internal val LocalGlassLook = androidx.compose.runtime.staticCompositionLocalOf { GlassLook() }
 
+/** Strength of the thin light outline around widgets and Side Bar capsules. */
+internal const val GLASS_OUTLINE = .16f
+internal val GlassOutlineColor = Color.White.copy(alpha = GLASS_OUTLINE)
+
+/** How strongly Home's glass takes the wallpaper's main color (iOS-style tinted materials). */
+internal const val GLASS_TINT = .28f
+
 /** Settings › Home Screen & Dock › Folders. */
-enum class FolderBackground(@androidx.annotation.StringRes val label: Int) { GLASS(R.string.glass), SOLID(R.string.solid), CLEAR(R.string.clear) }
-internal data class FolderLook(val columns: Int = 0, val background: FolderBackground = FolderBackground.GLASS)
+internal data class FolderLook(val columns: Int = 0)
 internal val LocalFolderLook = androidx.compose.runtime.staticCompositionLocalOf { FolderLook() }
 
 /** App name size on Home (Settings › Icons & Side Bar). */
@@ -201,30 +204,6 @@ internal fun androidx.compose.ui.Modifier.fadingVerticalScroll() = composed {
     edgeFade(state).verticalScroll(state)
 }
 
-/** Reduce Transparency is in effect (the setting, or Android's high contrast): glass controls show as nearly solid. */
-internal val LocalSolidGlass = androidx.compose.runtime.staticCompositionLocalOf { false }
-
-/** Android 14+ high contrast (Settings › Accessibility › Contrast). Earlier versions don't expose it, so it's off. */
-@androidx.compose.runtime.Composable
-internal fun rememberSystemHighContrast(): Boolean {
-    if (android.os.Build.VERSION.SDK_INT < 34) return false
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val ui = androidx.compose.runtime.remember { context.getSystemService(android.app.UiModeManager::class.java) }
-    val contrast = androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(ui?.contrast ?: 0f) }
-    androidx.compose.runtime.DisposableEffect(ui) {
-        val listener = android.app.UiModeManager.ContrastChangeListener { contrast.floatValue = it }
-        ui?.addContrastChangeListener(context.mainExecutor, listener)
-        onDispose { ui?.removeContrastChangeListener(listener) }
-    }
-    // Android's levels are 0 (standard), 0.5 (medium) and 1 (high).
-    return contrast.floatValue >= .5f
-}
-
-enum class GlassMaterial { CLASSIC, LIQUID }
-
-internal fun usesLiquidGlass(material: GlassMaterial, solid: Boolean): Boolean =
-    material == GlassMaterial.LIQUID && !solid
-
 internal enum class GlassRole(val rim: Float, val light: Float, val inset: Boolean = false, val lift: Float = 0f) {
     PANEL(1f, 1f), TILE(.9f, .8f), CAPSULE(1f, .9f), FIELD(.7f, 0f, inset = true), FLOATING(1f, .7f, lift = 1f)
 }
@@ -234,7 +213,6 @@ internal data class GlassSpec(val bodyStart: Color, val bodyEnd: Color, val ligh
     val rimLead: Color, val rimSide: Color, val rimTrail: Color, val lift: Float)
 
 internal const val LIQUID_FROST = .30f
-internal const val LIBRARY_PANEL_FROST = .48f
 internal const val SEARCH_FIELD_FROST = .12f
 internal const val LIQUID_OVERLAY_FROST = .72f
 internal const val LIBRARY_TILE_FROST = .22f
@@ -301,14 +279,13 @@ internal object LiquidGlass {
     const val LIFT = .22f
 }
 
-internal fun liquidGlassSpec(base: Color, frost: Float, role: GlassRole, outline: Float, primary: Int? = null, secondary: Int? = null): GlassSpec {
+internal fun liquidGlassSpec(base: Color, frost: Float, role: GlassRole, primary: Int? = null, secondary: Int? = null): GlassSpec {
     val alpha = frost.coerceIn(0f, 1f)
     val start = tintedGlass(base, primary, LiquidGlass.TONE_MIX).copy(alpha = alpha)
     val end = tintedGlass(base, secondary ?: primary, LiquidGlass.TONE_MIX).copy(alpha = alpha * LiquidGlass.END_FROST)
-    val edge = (outline / GlassLook().outline).coerceIn(0f, 2f)
-    val bright = Color.White.copy(alpha = (LiquidGlass.RIM_BRIGHT * role.rim * edge).coerceIn(0f, 1f))
-    val faint = Color.White.copy(alpha = (LiquidGlass.RIM_FAINT * role.rim * edge).coerceIn(0f, 1f))
-    val side = Color.White.copy(alpha = (LiquidGlass.RIM_SIDE * edge).coerceIn(0f, 1f))
+    val bright = Color.White.copy(alpha = LiquidGlass.RIM_BRIGHT * role.rim)
+    val faint = Color.White.copy(alpha = LiquidGlass.RIM_FAINT * role.rim)
+    val side = Color.White.copy(alpha = LiquidGlass.RIM_SIDE)
     return GlassSpec(start, end, LiquidGlass.LIGHT * role.light, LiquidGlass.GRAIN,
         if (role.inset) faint else bright, side, if (role.inset) bright else faint, LiquidGlass.LIFT * role.lift)
 }
@@ -328,20 +305,11 @@ private object GlassGrain {
 }
 
 @androidx.compose.runtime.Composable
-internal fun liquidGlassOn(): Boolean = LocalGlassLook.current.liquid && !LocalSolidGlass.current
-
-@androidx.compose.runtime.Composable
-internal fun androidx.compose.ui.Modifier.liquidGlassOr(shape: androidx.compose.ui.graphics.Shape, frost: Float, role: GlassRole,
-    base: Color = Glass, classic: @androidx.compose.runtime.Composable androidx.compose.ui.Modifier.() -> androidx.compose.ui.Modifier): androidx.compose.ui.Modifier =
-    if (liquidGlassOn()) liquidGlass(shape, frost, role, base) else classic()
-
-@androidx.compose.runtime.Composable
 internal fun androidx.compose.ui.Modifier.liquidGlass(shape: androidx.compose.ui.graphics.Shape, frost: Float, role: GlassRole,
     base: Color = Glass): androidx.compose.ui.Modifier {
     val tone = LocalWallpaperTone.current
-    val outline = LocalGlassLook.current.outline
-    val spec = androidx.compose.runtime.remember(base, frost, role, outline, tone.primary, tone.secondary) {
-        liquidGlassSpec(base, frost, role, outline, tone.primary, tone.secondary)
+    val spec = androidx.compose.runtime.remember(base, frost, role, tone.primary, tone.secondary) {
+        liquidGlassSpec(base, frost, role, tone.primary, tone.secondary)
     }
     return drawLiquidGlass(shape, spec)
 }

@@ -44,57 +44,18 @@ class AppearanceBackgroundIntegrationTest {
         compose.onNodeWithTag("background-choose").assertExists()
     }
 
-    @Test fun appearanceAndBackgroundPersistRecoverAndLeaveLayoutUntouched() {
+    @Test fun backgroundPersistsRecoversAndLeavesLayoutUntouched() {
         ready()
         val layout = model().state.value.layout
-        val appearancePrefs = compose.activity.getSharedPreferences("appearance", Context.MODE_PRIVATE)
         val backgroundPrefs = compose.activity.getSharedPreferences("launcher_background", Context.MODE_PRIVATE)
-        val oldAppearance = appearancePrefs.all.toMap()
         val oldBackground = backgroundPrefs.all.toMap()
         val file = launcherPhotoFile(compose.activity)
         val oldPhoto = file.takeIf { it.isFile }?.readBytes()
         val oldStagedPhotos = stagedPhotoFiles(compose.activity)
         try {
-            appearancePrefs.edit().clear().commit()
             backgroundPrefs.edit().clear().commit(); file.delete()
             compose.runOnUiThread { LauncherBackgroundCache.changed(null) }
             compose.activityRule.scenario.recreate(); ready(); settings()
-            compose.onNodeWithTag("appearance-light").assertIsSelected()
-
-            compose.onNodeWithTag("appearance-dark").performScrollTo().performClick()
-            assertEquals("DARK", appearancePrefs.getString("mode", null))
-            compose.onNodeWithTag("appearance-sunrise_sunset").performScrollTo().performClick()
-            compose.waitUntil(5_000) {
-                compose.onAllNodesWithTag("appearance-latitude")
-                    .fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
-            }
-            compose.onNodeWithTag("appearance-latitude").performScrollTo().performTextInput("99")
-            compose.onNodeWithTag("appearance-longitude").performScrollTo().performTextInput("0")
-            compose.onNodeWithTag("appearance-save-place").performScrollTo().assertIsDisplayed().performClick()
-            val coordinateError = hasText("Enter a latitude from −90 to 90 and longitude from −180 to 180.")
-            try {
-                compose.waitUntil(5_000) {
-                    runCatching { compose.onNode(coordinateError).assertIsDisplayed() }.isSuccess
-                }
-            } catch (failure: Throwable) {
-                writeFailureArtifacts("manual-feedback", appearancePrefs, file)
-                throw failure
-            }
-            compose.onNodeWithTag("appearance-place").performScrollTo().performTextInput("Equator")
-            compose.onNodeWithTag("appearance-latitude").performScrollTo().performTextReplacement("0")
-            compose.onNodeWithTag("appearance-longitude").performScrollTo().performTextReplacement("0")
-            compose.onNodeWithTag("appearance-save-place").performScrollTo().assertIsDisplayed().performClick()
-            try {
-                compose.waitUntil(5_000) { appearancePrefs.getString("lat", null) == "0.0" }
-            } catch (failure: Throwable) {
-                writeFailureArtifacts("manual-valid-save", appearancePrefs, file)
-                throw failure
-            }
-            assertEquals("SUNRISE_SUNSET", appearancePrefs.getString("mode", null))
-            assertEquals("0.0", appearancePrefs.getString("lat", null))
-            compose.activityRule.scenario.recreate(); ready(); settings()
-            compose.onNodeWithTag("appearance-sunrise_sunset").assertIsSelected()
-
             val bitmap = Bitmap.createBitmap(12, 8, Bitmap.Config.ARGB_8888).apply { eraseColor(0xff31596d.toInt()) }
             val bytes = ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }.toByteArray()
             file.writeBytes(bytes); backgroundPrefs.edit().putBoolean("photoEnabled", true).commit()
@@ -108,7 +69,7 @@ class AppearanceBackgroundIntegrationTest {
             assertFalse(backgroundPrefs.contains("pickerPending"))
             assertEquals(layout, model().state.value.layout)
         } finally {
-            restore(appearancePrefs, oldAppearance); restore(backgroundPrefs, oldBackground)
+            restore(backgroundPrefs, oldBackground)
             if (oldPhoto == null) file.delete() else file.writeBytes(oldPhoto)
             restoreStagedPhotoFiles(compose.activity, oldStagedPhotos)
             compose.runOnUiThread { LauncherBackgroundCache.changed(null) }

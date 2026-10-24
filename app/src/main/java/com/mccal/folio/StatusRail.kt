@@ -2,7 +2,6 @@ package com.mccal.folio
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.LocalTextStyle
@@ -56,8 +55,6 @@ data class StatusStyle(
     val showBatteryPercent: Boolean = true,
     val glyph: StatusGlyph = StatusGlyph.RING,
     val colorfulBattery: Boolean = true,
-    /** Frost strength shared by the status, dock and island capsules (0 = clear, 1 = solid). */
-    val railGlass: Float = .26f,
     /** A bell with a slash while the ringer is on silent or vibrate, like iPhone's status bar. */
     val showSilent: Boolean = true,
     /** The frosted capsule behind the status (the dock keeps its own). */
@@ -71,7 +68,7 @@ data class StatusStyle(
     val tight get() = spacing < (COMPACT_SPACING + STANDARD_SPACING) / 2f
     fun toJson(): org.json.JSONObject = org.json.JSONObject().put("showTime", showTime).put("showDate", showDate)
         .put("showBatteryPercent", showBatteryPercent).put("glyph", glyph.name).put("colorfulBattery", colorfulBattery)
-        .put("railGlass", railGlass.toDouble()).put("showSilent", showSilent)
+        .put("showSilent", showSilent)
         .put("pill", background).put("spacing", spacing.toDouble()).put("strongRings", strongRings)
 
     companion object {
@@ -82,7 +79,6 @@ data class StatusStyle(
             showBatteryPercent = j.optBoolean("showBatteryPercent", true),
             glyph = runCatching { StatusGlyph.valueOf(j.optString("glyph")) }.getOrDefault(StatusGlyph.RING),
             colorfulBattery = j.optBoolean("colorfulBattery", true),
-            railGlass = j.optDouble("railGlass", .26).toFloat().coerceIn(0f, 1f),
             showSilent = j.optBoolean("showSilent", true),
             background = j.optBoolean("pill", false),
             strongRings = j.optBoolean("strongRings", false),
@@ -191,7 +187,7 @@ fun StatusRail(
     // Text sits on the frosted capsule, not straight on the wallpaper, so pick its color from how light the capsule
     // looks: the wallpaper's main color seen through the glass. An explicit Light or Dark "Text on Home" still wins.
     val tone = LocalWallpaperTone.current
-    val homeInk = statusRailInk(LocalHomeInk.current, style.background, style.railGlass, Glass.luminance(), tone.luminance)
+    val homeInk = statusRailInk(LocalHomeInk.current, style.background, LIQUID_FROST, Glass.luminance(), tone.luminance)
     val ink = homeInk.primary
     val textShadow = if (style.background) null else homeInk.labelShadow
     // Over light wallpapers (dark text) the frosted capsule is light too, so dim parts and colors need more weight to read.
@@ -253,8 +249,7 @@ fun StatusRail(
             // Same frosted capsule as the dock so status and dock read as one side rail.
             val tight = style.tight
             if (hasContent) Column(Modifier.fillMaxWidth()
-                .then(if (style.background) Modifier.liquidGlassOr(capsule, style.railGlass, GlassRole.CAPSULE) {
-                    background(Glass.copy(alpha = style.railGlass), capsule).border(1.dp, LocalGlassLook.current.outlineColor, capsule) } else Modifier)
+                .then(if (style.background) Modifier.liquidGlass(capsule, LIQUID_FROST, GlassRole.CAPSULE) else Modifier)
                 // Standard (4) and Compact (0) keep their old padding; the slider moves between and past them.
                 .padding(vertical = if (!style.background) 0.dp else if (compact) FolioSpace.SMALL.dp else (8f + style.spacing).coerceAtMost(12f).dp),
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(style.spacing.dp)) {

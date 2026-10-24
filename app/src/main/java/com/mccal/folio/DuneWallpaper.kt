@@ -6,11 +6,6 @@ import kotlinx.coroutines.flow.conflate
 import android.service.wallpaper.WallpaperService
 import android.view.SurfaceHolder
 import android.content.SharedPreferences
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import androidx.core.content.ContextCompat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -53,7 +48,6 @@ import androidx.compose.ui.unit.LayoutDirection
  */
 @Composable
 internal fun DuneWallpaper(modifier: Modifier = Modifier, scrim: HomeScrim = HomeScrim.None) {
-    val palette = LocalDuoPalette.current
     val context = LocalContext.current.applicationContext
     val revision = LauncherBackgroundCache.revision.intValue
     val initial = remember(revision) { LauncherBackgroundCache.bitmap?.takeUnless { it.isRecycled } }
@@ -67,15 +61,15 @@ internal fun DuneWallpaper(modifier: Modifier = Modifier, scrim: HomeScrim = Hom
         .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
         // After the layer, so the scrim is rasterised into it with the background rather than composited over it every
         // frame. A vertical gradient is the same at every x, so the drift sliding it sideways cannot show.
-        .homeScrim(scrim)) { drawLauncherBackground(photo?.asImageBitmap(), palette.dark) }
+        .homeScrim(scrim)) { drawLauncherBackground(photo?.asImageBitmap()) }
 }
 
-internal fun DrawScope.drawLauncherBackground(photo: ImageBitmap?, dark: Boolean = false) {
+internal fun DrawScope.drawLauncherBackground(photo: ImageBitmap?) {
     if (photo == null || photo.width <= 0 || photo.height <= 0) {
         // No picture chosen. A flat surface rather than a scene: DES-2a says Folio does not draw backgrounds, and
         // this is the absence of one. It still has to be opaque, because Home's window is see-through and a window
         // with nothing behind it keeps showing the frame before (#12, #35).
-        drawRect(if (dark) Color(0xFF0B0B0C) else Color(0xFFE9E9EC))
+        drawRect(Color(0xFFE9E9EC))
         return
     }
     val destinationWidth = size.width.toInt().coerceAtLeast(1)
@@ -105,8 +99,6 @@ class DuneWallpaperService : WallpaperService() {
 
     inner class DuneEngine : Engine(), SharedPreferences.OnSharedPreferenceChangeListener {
         private val painter = CanvasDrawScope()
-        private val appearance = AppearanceStore(this@DuneWallpaperService)
-        private val appearancePrefs = getSharedPreferences("appearance", MODE_PRIVATE)
         private val backgroundPrefs = launcherBackgroundPreferences(this@DuneWallpaperService)
         private val loader = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         private var photo: ImageBitmap? = cachedLauncherBackground(this@DuneWallpaperService)?.asImageBitmap()
@@ -114,31 +106,9 @@ class DuneWallpaperService : WallpaperService() {
         private var photoLoading = false
         private var photoFailed = false
         private var visible = false
-        private var timeReceiverRegistered = false
-        private val timeReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                if (visible) { appearance.reloadFromPreferences(systemDark()); render(surfaceHolder) }
-            }
-        }
-        private fun registerTimeReceiver() {
-            if (timeReceiverRegistered) return
-            ContextCompat.registerReceiver(this@DuneWallpaperService, timeReceiver, IntentFilter().apply {
-                addAction(Intent.ACTION_TIME_TICK)
-                addAction(Intent.ACTION_TIME_CHANGED)
-                addAction(Intent.ACTION_TIMEZONE_CHANGED)
-                addAction(Intent.ACTION_DATE_CHANGED)
-                addAction(Intent.ACTION_CONFIGURATION_CHANGED)
-            }, ContextCompat.RECEIVER_NOT_EXPORTED)
-            timeReceiverRegistered = true
-        }
-        private fun unregisterTimeReceiver() {
-            if (!timeReceiverRegistered) return
-            unregisterReceiver(timeReceiver)
-            timeReceiverRegistered = false
-        }
-        override fun onSurfaceCreated(holder: SurfaceHolder) { super.onSurfaceCreated(holder); appearance.reloadFromPreferences(systemDark()); render(holder) }
+        override fun onSurfaceCreated(holder: SurfaceHolder) { super.onSurfaceCreated(holder); render(holder) }
         override fun onSurfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-            super.onSurfaceChanged(holder, format, width, height); appearance.reloadFromPreferences(systemDark()); render(holder)
+            super.onSurfaceChanged(holder, format, width, height); render(holder)
         }
         override fun onVisibilityChanged(visible: Boolean) {
             this.visible = visible
@@ -147,21 +117,15 @@ class DuneWallpaperService : WallpaperService() {
                 photoLoading = false
                 photoFailed = false
                 photo = cachedLauncherBackground(this@DuneWallpaperService)?.asImageBitmap()
-                appearancePrefs.registerOnSharedPreferenceChangeListener(this)
                 backgroundPrefs.registerOnSharedPreferenceChangeListener(this)
-                registerTimeReceiver()
-                appearance.reloadFromPreferences(systemDark()); render(surfaceHolder)
+                render(surfaceHolder)
             } else {
-                appearancePrefs.unregisterOnSharedPreferenceChangeListener(this)
                 backgroundPrefs.unregisterOnSharedPreferenceChangeListener(this)
-                unregisterTimeReceiver()
             }
         }
         override fun onDestroy() {
             photoLoad++
             loader.cancel()
-            unregisterTimeReceiver()
-            appearancePrefs.unregisterOnSharedPreferenceChangeListener(this)
             backgroundPrefs.unregisterOnSharedPreferenceChangeListener(this)
             super.onDestroy()
         }
@@ -172,10 +136,8 @@ class DuneWallpaperService : WallpaperService() {
                 photoLoading = false
                 photoFailed = false
             }
-            if (visible) { appearance.reloadFromPreferences(systemDark()); render(surfaceHolder) }
+            if (visible) render(surfaceHolder)
         }
-        private fun systemDark() = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
-            android.content.res.Configuration.UI_MODE_NIGHT_YES
         private fun render(holder: SurfaceHolder) {
             if (!holder.surface.isValid) return
             if (launcherBackgroundEnabled(this@DuneWallpaperService) && photo == null && !photoFailed) {
@@ -198,7 +160,7 @@ class DuneWallpaperService : WallpaperService() {
             try {
                 painter.draw(Density(resources.displayMetrics.density), LayoutDirection.Ltr,
                     androidx.compose.ui.graphics.Canvas(canvas), Size(canvas.width.toFloat(), canvas.height.toFloat())) {
-                        drawLauncherBackground(photo, appearance.state.dark)
+                        drawLauncherBackground(photo)
                     }
             } finally { holder.unlockCanvasAndPost(canvas) }
         }

@@ -37,7 +37,7 @@ Every dynamic feature declares one class in its KDoc or PR. The class sets which
 | **D2 Transitional** | One UI state becomes another | Folder open, sheets, island expand, Control Center, context menus |
 | **D3 Interactive** | Motion follows a finger or pointer | Page swipe, drag and drop, dock magnification, widget resize, predictive back |
 | **D4 Adaptive** | The window or posture changes | Fold and unfold, rotation, resize, multi-window, half-open hinge |
-| **D5 Ambient** | Time or the system, with no user action | Clock icon, sunrise/sunset appearance, install rings, Smart Stack rotation, recent-app dots |
+| **D5 Ambient** | Time or the system, with no user action | Clock icon, install rings, Smart Stack rotation, recent-app dots |
 
 Declaration template (for the KDoc or PR):
 

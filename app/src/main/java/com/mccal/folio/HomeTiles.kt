@@ -283,8 +283,7 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
                 else folder.appIds.mapNotNull { apps[it]?.packageName }.distinct().sumOf { counts[it] ?: 0 }
             val tileShape = IconContinuousShape
             Box(Modifier.fillMaxSize().clip(tileShape)
-                .liquidGlassOr(tileShape, if (tint != null) .78f else .72f, GlassRole.TILE, tint ?: Glass) {
-                    background(tint?.copy(alpha = .78f) ?: Glass.copy(alpha = .72f)).border(1.dp, Color.White.copy(alpha = .55f), tileShape) }
+                .liquidGlass(tileShape, if (tint != null) .78f else .72f, GlassRole.TILE, tint ?: Glass)
                 .testTag("folder-drop-${folder.id}")) {
             folder.appIds.take(4).forEachIndexed { index, id ->
                 apps[id]?.let { app ->
@@ -342,8 +341,7 @@ internal fun AppTile(app: AppEntry, size: Float, labels: Boolean, modifier: Modi
                 val p = plate()
                 alpha = if (still) p else if (p > .001f) 1f else 0f
                 val grown = 1f + FolderOrRoom.PLATE_GROWTH * (if (still) 1f else p); scaleX = grown; scaleY = grown
-            }.liquidGlassOr(IconContinuousShape, .72f, GlassRole.TILE) {
-                background(Glass.copy(alpha = .72f), IconContinuousShape).border(1.dp, Color.White.copy(alpha = .55f), IconContinuousShape) })
+            }.liquidGlass(IconContinuousShape, .72f, GlassRole.TILE))
             if (app.id in LocalStackedApps.current) StackPeek(iconSize)
             AppIcon(app, null, Modifier.fillMaxSize()
                 .graphicsLayer { if (plate != null && !still) { val inside = 1f - (1f - FolderOrRoom.ICON_INSIDE) * plate(); scaleX = inside; scaleY = inside } }

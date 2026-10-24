@@ -6,8 +6,6 @@ import androidx.activity.findViewTreeOnBackPressedDispatcherOwner
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.border
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.graphics.Color
@@ -104,9 +102,7 @@ internal fun HomeEditMenu(anchor: androidx.compose.ui.unit.IntRect?, onDismiss: 
                 val g = appear.value; alpha = g.coerceIn(0f, 1f); scaleX = .7f + .3f * g; scaleY = scaleX
                 transformOrigin = androidx.compose.ui.graphics.TransformOrigin(if (alignEnd) 1f else 0f, 0f)
             }
-            .liquidGlassOr(RoundedCornerShape(FolioRadius.FLOATING.dp), LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.PopoverSurface) {
-                shadow(18.dp, RoundedCornerShape(FolioRadius.FLOATING.dp)).clip(RoundedCornerShape(FolioRadius.FLOATING.dp)).background(FolioColors.PopoverSurface.copy(alpha = .97f))
-                    .border(FolioGlass.edge, RoundedCornerShape(18.dp)) }
+            .liquidGlass(RoundedCornerShape(FolioRadius.FLOATING.dp), LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.PopoverSurface)
             .clip(RoundedCornerShape(FolioRadius.FLOATING.dp)).testTag("home-edit-menu")) {
             fun act(action: () -> Unit) = { onDismiss(); action() }
             Box(Modifier.testTag("empty-space-widgets")) { MenuRow(stringResource(R.string.add_widget_2), Icons.Rounded.Widgets, onClick = act(onWidgets)) }

@@ -8,7 +8,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -192,9 +191,7 @@ internal fun AppContextMenu(
                     // The menu fades as it grows and shrinks, so closing reads as going back into the icon.
                     alpha = (appear.value * 1.4f).coerceIn(0f, 1f)
                 }
-                .liquidGlassOr(RoundedCornerShape(FolioRadius.FLOATING.dp), LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.PopoverSurface) {
-                    clip(RoundedCornerShape(FolioRadius.FLOATING.dp)).background(FolioColors.PopoverSurface.copy(alpha = .96f))
-                        .border(FolioGlass.edge, RoundedCornerShape(18.dp)) }
+                .liquidGlass(RoundedCornerShape(FolioRadius.FLOATING.dp), LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.PopoverSurface)
                 .clip(RoundedCornerShape(FolioRadius.FLOATING.dp))
                 .clickable(remember { MutableInteractionSource() }, null) {}
                 .fadingVerticalScroll()) {

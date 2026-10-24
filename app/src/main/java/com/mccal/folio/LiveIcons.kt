@@ -235,11 +235,10 @@ internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modif
         else -> LivePalette.of(if (look.style == IconStyle.DEFAULT && darkSource) IconStyle.DARK else look.style, accent)
     }
     val badgeCount = if (!badge || look.badges == BadgeStyle.OFF || app.iconFrom != null) 0 else LocalBadgeCounts.current[src.component.packageName] ?: 0
-    val lighting = if (liquidGlassOn() && look.style != IconStyle.CLEAR) {
-        val outline = LocalGlassLook.current.outline
+    val lighting = if (look.style != IconStyle.CLEAR) {
         val wallpaper = LocalWallpaperTone.current.primary
         val dimmed = look.style == IconStyle.DARK
-        remember(outline, wallpaper, dimmed) { iconLighting(outline, wallpaper, dimmed) }
+        remember(wallpaper, dimmed) { iconLighting(wallpaper, dimmed) }
     } else null
     val iconShape = lookShape ?: shape ?: IconContinuousShape
     fun Modifier.lit(fills: Boolean = true): Modifier = if (lighting != null && fills) iconLighting(iconShape, lighting) else this

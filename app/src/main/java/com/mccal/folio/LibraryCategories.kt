@@ -5,7 +5,6 @@ import androidx.compose.foundation.combinedClickable
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -90,7 +89,7 @@ internal fun CategoryCard(title: String, apps: List<AppEntry>, modifier: Modifie
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         val tileShape = RoundedCornerShape(FolioRadius.PANEL.dp)
         BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(1f).clip(tileShape)
-            .liquidGlassOr(tileShape, LIBRARY_TILE_FROST, GlassRole.TILE) { background(FolioGlass.card).border(FolioGlass.edge, tileShape) }
+            .liquidGlass(tileShape, LIBRARY_TILE_FROST, GlassRole.TILE)
             .padding(FolioSpace.MEDIUM.dp)) {
             val gap = 10.dp
             val cell = (maxWidth - gap) / 2
@@ -150,14 +149,12 @@ internal fun CategoryFolder(title: String, apps: List<AppEntry>, onDismiss: () -
                         modifier = Modifier.padding(start = FolioSpace.SMALL.dp, bottom = FolioSpace.MEDIUM.dp))
                     // Lazy, so a category with dozens of apps only builds the rows on screen as it opens.
                     val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
-                    val liquid = liquidGlassOn()
                     val cardShape = RoundedCornerShape(36.dp)
                     androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
                         androidx.compose.foundation.lazy.grid.GridCells.Fixed(columns),
                         Modifier.fillMaxWidth().heightIn(max = availableHeight - 64.dp)
-                            .then(if (liquid) Modifier.liquidGlass(cardShape, LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.SheetSurface) else Modifier)
+                            .liquidGlass(cardShape, LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.SheetSurface)
                             .clip(cardShape)
-                            .then(if (liquid) Modifier else Modifier.background(FolioColors.SheetSurface.copy(alpha = .96f)).border(FolioGlass.edge, cardShape))
                             .pointerInput(Unit) { detectTapGestures() }
                             .edgeFade(gridState).testTag("category-folder"),
                         state = gridState, contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),

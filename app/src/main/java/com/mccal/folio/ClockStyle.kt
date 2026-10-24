@@ -176,17 +176,17 @@ private const val COLOR_DOTS_MAX = 5
 
 internal data class RegionStats(val mean: Float, val p15: Float, val p85: Float, val r: Float, val g: Float, val b: Float)
 /**
- * What Home draws over the picture before the clock does: the "dark appearance dims wallpaper" black over everything and
- * the legibility scrim at the top and bottom edges. The clock measures its picture as it really looks, not as the file is.
+ * What Home draws over the picture before the clock does: the legibility scrim at the top and bottom edges. The clock
+ * measures its picture as it really looks, not as the file is.
  */
 @Immutable
-internal data class HomeDarkening(val dim: Float = 0f, val scrim: HomeScrim = HomeScrim.None)
+internal data class HomeDarkening(val scrim: HomeScrim = HomeScrim.None)
 
 internal val LocalHomeDarkening = compositionLocalOf { HomeDarkening() }
 
 /** How dark Home's own layers make the picture under [box] (fractions of the window, 0..1): the average over the box, 0 to 1. */
 internal fun HomeDarkening.alphaOver(box: Rect): Float {
-    if (box.isEmpty) return dim.coerceIn(0f, 1f)
+    if (box.isEmpty) return 0f
     val steps = 5
     var total = 0f
     for (n in 0 until steps) {
@@ -194,8 +194,7 @@ internal fun HomeDarkening.alphaOver(box: Rect): Float {
         val top = if (scrim.top > 0f && y < HomeScrim.BAND) HomeScrim.alphaAt(scrim.top, y / HomeScrim.BAND) else 0f
         val bottom = if (scrim.bottom > 0f && y > 1f - HomeScrim.BAND) HomeScrim.alphaAt(scrim.bottom, (1f - y) / HomeScrim.BAND) else 0f
         // Two blacks at a and b compose to a + b - ab.
-        val s = top + bottom - top * bottom
-        total += dim + s - dim * s
+        total += top + bottom - top * bottom
     }
     return (total / steps).coerceIn(0f, 1f)
 }
@@ -427,7 +426,7 @@ internal fun rememberClockInkSample(box: Rect, enabled: Boolean, windowAspect: F
             runCatching { sampleClockRegion(bitmap, box, windowAspect) }.getOrNull()
         }
     }
-    // Home's dim and scrim are drawn over the picture, so the clock is judged against the picture as it looks on screen.
+    // Home's scrim is drawn over the picture, so the clock is judged against the picture as it looks on screen.
     val darkening = LocalHomeDarkening.current.alphaOver(box)
     return remember(sample, darkening) { sample?.darkenedBy(darkening) }
 }

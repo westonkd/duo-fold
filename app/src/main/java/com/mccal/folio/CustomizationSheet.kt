@@ -91,7 +91,7 @@ internal class SettingsScroll(private var page: CustomizationPage, offset: Int) 
     }
 }
 
-internal enum class CustomizationPage { OVERVIEW, SETUP, WALLPAPER, HOME, STATUS, GESTURES, FOLD, BACKUP, HELP, SIDE_KEY, LOCK, CREDITS, TWEAKS, TWEAK, ADVANCED, NOTIFICATIONS, SEARCH, TODAY, ISLAND, PERMISSIONS, FOCUS, FOCUS_MODE, THEMES, ISLAND_APPS, GENERAL, FOLD_TWEAK, ACCESSIBILITY, SYSTEM_BRIDGE, SCREENSHOT_SWAP;
+internal enum class CustomizationPage { OVERVIEW, SETUP, WALLPAPER, HOME, STATUS, GESTURES, FOLD, BACKUP, HELP, SIDE_KEY, LOCK, CREDITS, TWEAKS, TWEAK, ADVANCED, NOTIFICATIONS, SEARCH, TODAY, ISLAND, PERMISSIONS, FOCUS, FOCUS_MODE, ISLAND_APPS, GENERAL, FOLD_TWEAK, ACCESSIBILITY, SYSTEM_BRIDGE, SCREENSHOT_SWAP;
 
     /** The page Back returns to: the nav bar button and the system Back gesture both use it. */
     val parent: CustomizationPage get() = when (this) {
@@ -102,7 +102,6 @@ internal enum class CustomizationPage { OVERVIEW, SETUP, WALLPAPER, HOME, STATUS
         // The pages you open once live under General, as iOS keeps them under General › About.
         ADVANCED, BACKUP, HELP, CREDITS -> GENERAL
         SYSTEM_BRIDGE, SCREENSHOT_SWAP -> ADVANCED
-        THEMES -> WALLPAPER // a theme is a look: wallpaper, accent and icons together
         else -> OVERVIEW
     }
 
@@ -125,7 +124,6 @@ internal enum class CustomizationPage { OVERVIEW, SETUP, WALLPAPER, HOME, STATUS
         CREDITS -> R.string.credits
         TWEAKS -> R.string.tweaks
         FOCUS, FOCUS_MODE -> R.string.focus
-        THEMES -> R.string.themes
         TWEAK, FOLD_TWEAK -> R.string.tweak
         ADVANCED -> R.string.advanced
         SYSTEM_BRIDGE -> R.string.system_bridge
@@ -165,9 +163,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     onMakeDefault: () -> Unit, onClose: () -> Unit, onEditPins: () -> Unit, onWidget: (Int) -> Unit,
     onAddWidget: (Int) -> Unit, onRemoveWidget: (Int) -> Unit, onWallpaperPreview: () -> Unit,
     onExportLayout: () -> Unit, onImportLayout: () -> Unit, onSaveLayoutToFolder: (String) -> Unit = {},
-    appearance: AppearanceState, onAppearanceMode: (AppearanceMode) -> Unit, onAppearanceAccent: (AccentChoice) -> Unit = {},
-    onAppearanceManual: (String, Double, Double) -> Unit, onAppearanceDeviceLocation: () -> Unit,
-    onAppearanceClear: () -> Unit, backgrounds: LauncherBackgroundController, homePage: Int = 0,
+    backgrounds: LauncherBackgroundController, homePage: Int = 0,
     onShadeSetup: () -> Unit = {},
     onShowWelcome: () -> Unit = {},
     onShowWhatsNew: () -> Unit = {},
@@ -302,8 +298,8 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                 CustomizationPage.WALLPAPER -> {
                     val wallpaperContext = androidx.compose.ui.platform.LocalContext.current
                     // The order is the one every well-regarded product uses, sourced in docs/mockups/wallpaper-page.html:
-                    // the preview first because it is what the rest edits, then the picture, then the mode that dims it,
-                    // then the colors, then the things drawn over it. App Icon lives on the Icons page. That is the
+                    // the preview first because it is what the rest edits, then the picture, then the things drawn over
+                    // it. App Icon lives on the Icons page. That is the
                     // iOS Wallpaper flow's shape rather than a Folio invention (DES-1), built from Folio's own rows,
                     // groups and cards (DES-9), with the preview standing in for iOS's chrome-on-preview.
                     //
@@ -354,21 +350,6 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                             TextButton(onClick = backgrounds::clearMessage, Modifier.fillMaxWidth().testTag("background-message")) { Text(message) }
                         }
                     }
-                    // Themes change the look as a set (wallpaper, accent, icons), so they open here, just before the colors.
-                    SheetGroup {
-                        TweakRow(Icons.Rounded.Palette, FolioColors.Value.Pink, stringResource(R.string.themes), "customization-themes",
-                            FolioTheme.PRESETS.firstOrNull { state.looksLike(it) }?.name ?: stringResource(R.string.custom)) { onPage(CustomizationPage.THEMES) }
-                    }
-                    AppearanceSettings(appearance, onAppearanceMode, onAppearanceManual, onAppearanceDeviceLocation,
-                        onAppearanceClear, onAppearanceAccent) {
-                        // A property of the mode, not of the text: One UI files "Dim wallpaper when Dark mode is on"
-                        // right under its wallpaper and color entries, and that is where it reads correctly.
-                        MenuDivider()
-                        // The Appearance rows pad themselves (they're a SheetGroup, not a SettingsCard), so this one matches them.
-                        Box(Modifier.padding(horizontal = FolioSpace.LARGE.dp)) {
-                            SettingsSwitch(stringResource(R.string.dark_appearance_dims_wallpaper), state.dimWallpaperDark, model::setDimWallpaperDark, "dim-wallpaper-switch")
-                        }
-                    }
                     SettingsCard(stringResource(R.string.text_on_home)) {
                         IosMenuRow(stringResource(R.string.text_color), listOf("AUTO" to stringResource(R.string.automatic), "LIGHT" to stringResource(R.string.light), "DARK" to stringResource(R.string.dark)), state.homeInk, model::setHomeInk, tag = "home-ink")
                         // Beside the text colour it exists for: the scrim is the other half of the same job, for a pale
@@ -376,7 +357,6 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         SettingsSwitch(stringResource(R.string.darken_behind_text), state.homeScrim, model::setHomeScrim, "home-scrim-switch")
                         CardNote(stringResource(R.string.labels_status_page_dots_and_widget_text))
                     }
-                    GlassCardSettings(state, model)
                     SettingsCard(stringResource(R.string.screen_corners)) {
                         SettingsSwitch(stringResource(R.string.rounded_corners), state.roundedCorners, model::setRoundedCorners, "rounded-corners-switch")
                         if (state.roundedCorners) CustomizationSlider(stringResource(R.string.size), stringResource(R.string.dp_value, state.cornerRadius.toInt()), state.cornerRadius, 16f..72f,
@@ -388,7 +368,6 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                     HomeLayoutSettings(state, wide, { wide = it }, upright, { upright = it }, model, homePage, onEditPins, onWidget, onAddWidget, onRemoveWidget)
                     SettingsCard(stringResource(R.string.folders)) {
                         IosMenuRow(stringResource(R.string.columns), listOf(0 to stringResource(R.string.automatic), 3 to "3", 4 to "4"), state.folderColumns, model::setFolderColumns, tag = "folder-columns")
-                        IosMenuRow(stringResource(R.string.folder_background), FolderBackground.entries.map { it to stringResource(it.label) }, state.folderBackground, model::setFolderBackground, tag = "folder-background")
                     }
                     RecentDotsCard(state, model)
                 }
@@ -710,9 +689,6 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         val removed = reduceMotionEnabled(androidx.compose.ui.platform.LocalContext.current)
                         SettingsSwitch(stringResource(R.string.reduce_motion), state.reduceMotion || removed, model::setReduceMotion, "reduce-motion-switch", enabled = !removed)
                         CardNote(stringResource(if (removed) R.string.reduce_motion_note_removed else R.string.reduce_motion_note))
-                        // The other half of "make Folio calmer": glass turns nearly solid. Android's high contrast does it too.
-                        SettingsSwitch(stringResource(R.string.reduce_transparency), state.reduceTransparency, model::setReduceTransparency, "reduce-transparency-switch")
-                        CardNote(stringResource(R.string.reduce_transparency_note))
                     }
                     SettingsCard(null) {
                         // For people who find the system's buttons too small, especially on the inner screen.
@@ -825,7 +801,6 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                 // The model's apps, not the sheet's state: Home's state is disguised while Screenshot Mode is on.
                 CustomizationPage.SCREENSHOT_SWAP -> ScreenshotSwapPage(model.state.collectAsState().value.apps)
                 CustomizationPage.PERMISSIONS -> PermissionsPage(isDefaultHome, onMakeDefault, onShadeSetup)
-                CustomizationPage.THEMES -> ThemesPage(state, model, backgrounds.previewBitmap)
                 CustomizationPage.FOCUS -> FocusListPage(state, model) { focusId = it; onPage(CustomizationPage.FOCUS_MODE) }
                 CustomizationPage.FOCUS_MODE -> state.focusModes.firstOrNull { it.id == focusId }?.let { FocusModePage(it, state, model) }
                     ?: LaunchedEffect(Unit) { onPage(CustomizationPage.FOCUS) }
@@ -1132,17 +1107,12 @@ internal val SettingsIndex: List<Triple<Int, Int, CustomizationPage>> = listOf(
     Triple(R.string.settings_big_buttons_in_every_app, R.string.settings_keywords_big_buttons_in_every_app, CustomizationPage.ACCESSIBILITY),
     Triple(R.string.settings_dock_and_status_position, R.string.settings_keywords_dock_and_status_position, CustomizationPage.HOME),
     Triple(R.string.settings_rounded_screen_corners, R.string.settings_keywords_rounded_screen_corners, CustomizationPage.WALLPAPER),
-    Triple(R.string.glass, R.string.settings_keywords_glass, CustomizationPage.WALLPAPER),
     Triple(R.string.folders, R.string.settings_keywords_folders, CustomizationPage.HOME),
     Triple(R.string.settings_animation_speed, R.string.settings_keywords_animation_speed, CustomizationPage.GESTURES),
     Triple(R.string.reduce_motion, R.string.settings_keywords_reduce_motion, CustomizationPage.ACCESSIBILITY),
     Triple(R.string.settings_app_name_size, R.string.settings_keywords_app_name_size, CustomizationPage.STATUS),
-    Triple(R.string.tint_glass_with_wallpaper_color, R.string.settings_keywords_tint_glass_with_wallpaper_color, CustomizationPage.WALLPAPER),
-    Triple(R.string.dark_appearance_dims_wallpaper, R.string.settings_keywords_dark_appearance_dims_wallpaper, CustomizationPage.WALLPAPER),
     Triple(R.string.darken_behind_text, R.string.settings_keywords_darken_behind_text, CustomizationPage.WALLPAPER),
-    Triple(R.string.settings_appearance_light_dark_sunset, R.string.settings_keywords_appearance_light_dark_sunset, CustomizationPage.WALLPAPER),
     Triple(R.string.settings_grid_icon_size_dock, R.string.settings_keywords_grid_icon_size_dock, CustomizationPage.HOME),
-    Triple(R.string.folder_background, R.string.settings_keywords_folder_background, CustomizationPage.HOME),
     Triple(R.string.rows, R.string.settings_keywords_rows, CustomizationPage.HOME),
     Triple(R.string.space_between_columns, R.string.settings_keywords_space_between_columns, CustomizationPage.HOME),
     Triple(R.string.space_between_dock_apps, R.string.settings_keywords_space_between_dock_apps, CustomizationPage.HOME),
@@ -1170,7 +1140,6 @@ internal val SettingsIndex: List<Triple<Int, Int, CustomizationPage>> = listOf(
     Triple(R.string.lock_cover, R.string.settings_keywords_lock_cover, CustomizationPage.LOCK),
     Triple(R.string.fold_animation, R.string.settings_keywords_fold_animation, CustomizationPage.FOLD),
     Triple(R.string.standby, R.string.settings_keywords_standby, CustomizationPage.FOLD),
-    Triple(R.string.themes, R.string.settings_keywords_themes, CustomizationPage.THEMES),
     Triple(R.string.focus, R.string.settings_keywords_focus, CustomizationPage.FOCUS),
     Triple(R.string.tweaks, R.string.settings_keywords_tweaks, CustomizationPage.TWEAKS),
     Triple(R.string.general, R.string.settings_keywords_general, CustomizationPage.GENERAL),
@@ -1238,7 +1207,6 @@ internal val SettingsRows: List<Pair<Int, CustomizationPage>> = listOf(
     R.string.stay_awake_on_the_cover_screen to CustomizationPage.FOLD,
     R.string.text_color to CustomizationPage.WALLPAPER,
     R.string.wallpaper_moves_with_pages to CustomizationPage.WALLPAPER,
-    R.string.reduce_transparency to CustomizationPage.ACCESSIBILITY,
     R.string.position to CustomizationPage.HOME,
     R.string.placement to CustomizationPage.HOME,
     R.string.when_unfolded to CustomizationPage.TODAY,
@@ -1260,7 +1228,6 @@ internal val SettingsRows: List<Pair<Int, CustomizationPage>> = listOf(
     R.string.apps to CustomizationPage.HOME,
     R.string.columns to CustomizationPage.HOME,
     R.string.dock to CustomizationPage.HOME,
-    R.string.folder_background to CustomizationPage.HOME,
     R.string.labels to CustomizationPage.HOME,
     R.string.status to CustomizationPage.HOME,
     R.string.side_rail to CustomizationPage.STATUS,
@@ -1284,9 +1251,6 @@ internal val SettingsRows: List<Pair<Int, CustomizationPage>> = listOf(
     R.string.other_notifications_2 to CustomizationPage.ISLAND,
     R.string.suggestions to CustomizationPage.TODAY,
     R.string.rounded_corners to CustomizationPage.WALLPAPER,
-    R.string.outline to CustomizationPage.WALLPAPER,
-    R.string.style to CustomizationPage.WALLPAPER,
-    R.string.wallpaper_tint to CustomizationPage.WALLPAPER,
     R.string.screen_saver to CustomizationPage.FOLD,
     R.string.restore to CustomizationPage.BACKUP,
     R.string.dark_appearance to CustomizationPage.FOCUS,
@@ -1304,8 +1268,6 @@ internal val SettingsRows: List<Pair<Int, CustomizationPage>> = listOf(
     R.string.put_the_island_back_at_the_camera to CustomizationPage.ISLAND,
     R.string.also_set_as_phone_wallpaper to CustomizationPage.WALLPAPER,
     R.string.change_android_wallpaper to CustomizationPage.WALLPAPER,
-    R.string.import_theme to CustomizationPage.THEMES,
-    R.string.save_current_look_as_theme to CustomizationPage.THEMES,
     R.string.put_the_buttons_back_at_the_bottom to CustomizationPage.ACCESSIBILITY,
     R.string.refresh_icons to CustomizationPage.STATUS,
     R.string.reset_fold_timing to CustomizationPage.FOLD,
@@ -1342,7 +1304,7 @@ internal val SettingsRows: List<Pair<Int, CustomizationPage>> = listOf(
 
 /**
  * A search result scrolls to its row when it is a row: an entry with no keywords, or one with keywords whose title is also
- * a row (Folder background is found by "glass" or "blur" and is still one control further down its page).
+ * a row.
  */
 internal fun isRowEntry(title: Int, keywords: Int?): Boolean = keywords == null || SettingsRows.any { it.first == title }
 
@@ -1498,51 +1460,6 @@ internal fun searchableTweaks(context: android.content.Context): List<Pair<Tweak
             }
         }
     }
-}
-
-/** Themes (after SnowBoard): built-in looks with a live preview, plus saving and importing theme files. */
-@Composable private fun ThemesPage(state: LauncherState, model: LauncherModel, stagedBitmap: android.graphics.Bitmap?) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val scope = rememberCoroutineScope()
-    var message by remember { mutableStateOf<String?>(null) }
-    var undo by remember { mutableStateOf(model.themeUndo != null) }
-    val open = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) scope.launch {
-            val theme = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                readThemeText(context, uri)?.let(FolioTheme::fromJson)
-            }
-            if (theme == null) message = context.getString(R.string.that_file_isn_t_a_folio_theme)
-            else { model.applyTheme(theme); undo = true; message = context.getString(R.string.applied, theme.name) }
-        }
-    }
-    MiniHomePreview(stagedBitmap, state, 220.dp)
-    SheetGroup {
-        FolioTheme.PRESETS.forEachIndexed { index, theme ->
-            if (index > 0) MenuDivider()
-            val current = state.looksLike(theme)
-            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable { model.applyTheme(theme); undo = true; message = null }
-                .padding(horizontal = FolioSpace.LARGE.dp).testTag("theme-${theme.name.lowercase()}"), verticalAlignment = Alignment.CenterVertically) {
-                Text(theme.name, color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.BODY.sp, modifier = Modifier.weight(1f))
-                if (current) Icon(Icons.Rounded.Check, null, tint = LocalAccent.current.ink, modifier = Modifier.size(20.dp))
-            }
-        }
-    }
-    CardNote(stringResource(R.string.a_theme_changes_icons_badges_glass_text), Modifier.padding(horizontal = FolioSpace.TINY.dp))
-    SheetGroup {
-        IosActionRow(stringResource(R.string.save_current_look_as_theme), "theme-save") {
-            scope.launch {
-                val name = FolioFiles.datedName("folio-theme")
-                val saved = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    FolioFiles.save(context, name, "application/json", FolioTheme.of(state, context.getString(R.string.my_folio_theme)).toJson().toString(2).toByteArray())
-                }
-                message = if (saved != null) context.getString(R.string.saved_to_as, FolioFiles.displayPath, FolioFiles.displayName(context, saved) ?: name) else context.getString(R.string.the_theme_couldn_t_be_saved)
-            }
-        }
-        MenuDivider()
-        IosActionRow(stringResource(R.string.import_theme), "theme-import") { open.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }
-        if (undo) { MenuDivider(); IosActionRow(stringResource(R.string.undo_theme_change), "theme-undo") { model.undoTheme(); undo = false; message = null } }
-    }
-    message?.let { CardNote(it, Modifier.padding(horizontal = FolioSpace.TINY.dp)) }
 }
 
 /**
@@ -1850,7 +1767,7 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
     val tone = LocalWallpaperTone.current
     val ink = homeInkFor(state.homeInk, tone.prefersDarkText)
     val basePalette = LocalDuoPalette.current
-    val glass = if (state.glassTintAmount > 0f) tintedGlass(basePalette.glass, tone.primary, state.glassTintAmount) else basePalette.glass
+    val glass = tintedGlass(basePalette.glass, tone.primary, GLASS_TINT)
     // Home page 1 drawn at a real cover-screen size with Folio's own layout math and parts (widget cards, icons,
     // status rail, dock, search pill), then scaled down, so the preview matches Home instead of approximating it.
     val refW = 420f; val refH = 720f
@@ -1882,11 +1799,9 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
                     DuneWallpaper()
                     bitmap?.let { Image(it.asImageBitmap(), null, Modifier.matchParentSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
                 }
-                val previewDim = if (state.dimWallpaperDark && basePalette.dark) .3f else 0f
-                if (previewDim > 0f) Box(Modifier.matchParentSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = previewDim)))
                 // Drawn over the background rather than inside it, because the preview lays the chosen photo over the
                 // background; on Home the same scrim is baked into the background's cached layer.
-                HomeScrim.of(state.homeScrim, ink.dark, previewDim).let { if (it.draws) Box(Modifier.matchParentSize().homeScrim(it)) }
+                HomeScrim.of(state.homeScrim, ink.dark).let { if (it.draws) Box(Modifier.matchParentSize().homeScrim(it)) }
                 CompositionLocalProvider(LocalHomeInk provides ink, LocalDuoPalette provides basePalette.copy(glass = glass), LocalHomeIconSize provides geometry.iconSize) {
                     Box(Modifier.offset(x = (if (left) refW - 16f - geometry.gridWidth else 16f).dp, y = geometry.contentTop.dp).width(geometry.gridWidth.dp).height((cells.height(shownRows)).dp)) {
                         placements.forEach { w ->
@@ -1896,7 +1811,7 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
                             Box(Modifier.offset(x = (cells.x(w.column, w.row) + 5f + geometry.cellWidth * w.offsetX).dp, y = (cells.y(w.row) + rowPitch * w.offsetY).dp)
                                 .size((geometry.cellWidth * w.spanX - 10f).dp, (cells.spanHeight(w.row, w.spanY) - 18f).coerceAtLeast(48f).dp)) {
                                 if (w.id < 0) BuiltinWidgetCard(w.id, w.slot) {}
-                                else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.PANEL.dp)).background(glass.copy(alpha = LocalGlassLook.current.widget)), contentAlignment = Alignment.Center) {
+                                else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.PANEL.dp)).background(glass.copy(alpha = LIQUID_FROST)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Rounded.Widgets, null, tint = ink.secondary, modifier = Modifier.size(32.dp))
                                 }
                             }
@@ -1924,8 +1839,8 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
                     // A bottom dock bar: beside the status Side Bar, or the whole width when there is none (Full-Width Home).
                     if (sideBar && geometry.horizontalDock) Box(Modifier.align(if (!geometry.dockBesideRail) Alignment.BottomCenter else if (left) Alignment.BottomEnd else Alignment.BottomStart)
                         .width((if (geometry.dockBesideRail) refW - preset.dockWidth - 28f else refW).dp).padding(bottom = 58.dp), contentAlignment = Alignment.Center) { Row(Modifier
-                        .height(geometry.dockBarHeight.dp).background(glass.copy(alpha = state.statusStyle.railGlass), barShape)
-                        .border(1.dp, LocalGlassLook.current.outlineColor, barShape).padding(horizontal = FolioSpace.SMALL.dp), verticalAlignment = Alignment.CenterVertically) {
+                        .height(geometry.dockBarHeight.dp).background(glass.copy(alpha = LIQUID_FROST), barShape)
+                        .border(1.dp, GlassOutlineColor, barShape).padding(horizontal = FolioSpace.SMALL.dp), verticalAlignment = Alignment.CenterVertically) {
                         state.dock.forEach { id ->
                             Box(Modifier.width(geometry.dockPitch.dp), contentAlignment = Alignment.Center) {
                                 id?.let(apps::get)?.let { AppIcon(it, null, Modifier.size(dockIconSize(iconSize).dp), shape = RoundedCornerShape(11.dp)) }
@@ -1933,8 +1848,8 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
                         }
                     } }
                     else if (sideBar) Column(Modifier.align(railAlign).then(railEdge).offset(y = geometry.dockTop.dp).width(preset.dockWidth.dp)
-                        .height(geometry.dockHeight.dp).background(glass.copy(alpha = state.statusStyle.railGlass), railShape)
-                        .border(1.dp, LocalGlassLook.current.outlineColor, railShape).padding(vertical = FolioSpace.SMALL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        .height(geometry.dockHeight.dp).background(glass.copy(alpha = LIQUID_FROST), railShape)
+                        .border(1.dp, GlassOutlineColor, railShape).padding(vertical = FolioSpace.SMALL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         state.dock.forEach { id ->
                             Box(Modifier.fillMaxWidth().height(geometry.dockRowHeight.dp), contentAlignment = Alignment.Center) {
                                 id?.let(apps::get)?.let { AppIcon(it, null, Modifier.size(dockIconSize(iconSize).dp), shape = RoundedCornerShape(11.dp)) }
@@ -2473,34 +2388,6 @@ internal fun layoutSnapshotsShown(layoutHistory: Boolean, layoutDamaged: Boolean
     }
 }
 
-/** Settings › Wallpaper & Appearance › Glass: one style menu for most people, sliders to fine-tune. */
-@Composable private fun GlassCardSettings(state: LauncherState, model: LauncherModel) {
-    val presets = listOf("CLEAR" to .08f, "LIGHT" to .16f, "FROSTED" to .26f, "SOLID" to .55f)
-    val rail = state.statusStyle.railGlass
-    val current = if (state.glassMaterial == GlassMaterial.LIQUID) "LIQUID"
-        else presets.firstOrNull { (_, v) -> kotlin.math.abs(state.widgetGlass - v) < .005f && kotlin.math.abs(rail - v) < .005f }?.first ?: "CUSTOM"
-    val solid = LocalSolidGlass.current
-    SettingsCard(stringResource(R.string.glass)) {
-        if (!solid) IosMenuRow(stringResource(R.string.style), listOf("CLEAR" to stringResource(R.string.clear), "LIGHT" to stringResource(R.string.light), "FROSTED" to stringResource(R.string.frosted), "SOLID" to stringResource(R.string.solid)) +
-            listOf("LIQUID" to stringResource(R.string.liquid)) +
-            (if (current == "CUSTOM") listOf("CUSTOM" to stringResource(R.string.custom)) else emptyList()), current,
-            { key -> if (key == "LIQUID") model.setGlassPreset(LIQUID_FROST, GlassMaterial.LIQUID)
-                else presets.firstOrNull { it.first == key }?.let { model.setGlassPreset(it.second) } }, tag = "glass-style")
-        if (!solid) {
-            CustomizationSlider(stringResource(R.string.widgets), "${(state.widgetGlass * 100).toInt()}%", state.widgetGlass, 0f..0.8f, onChange = model::setWidgetGlass)
-            CustomizationSlider(stringResource(R.string.side_rail), "${(rail * 100).toInt()}%", rail, 0f..0.8f) { model.setStatusStyle(state.statusStyle.copy(railGlass = it)) }
-            CustomizationSlider(stringResource(R.string.outline), if (state.glassOutline < .01f) stringResource(R.string.off) else "${(state.glassOutline * 100).toInt()}%", state.glassOutline, 0f..0.5f, onChange = model::setGlassOutline)
-        }
-        // Clear ↔ Tinted, like iOS: all the way left is clear glass, the middle is Folio's usual wallpaper tint.
-        val tint = if (state.tintedGlass) state.glassTint else 0f
-        CustomizationSlider(stringResource(R.string.wallpaper_tint), when { tint < .01f -> stringResource(R.string.clear); tint > .99f -> stringResource(R.string.tinted); else -> "${(tint * 100).toInt()}%" },
-            tint, 0f..1f, default = .5f, peek = true, onChange = model::setGlassTint)
-        CardNote(if (solid && !state.reduceTransparency) stringResource(R.string.glass_is_nearly_solid_because_android_s)
-            else if (solid) stringResource(R.string.glass_is_nearly_solid_turn_off_reduce_transparency)
-            else stringResource(R.string.frost_is_how_see_through_widgets_and_the))
-    }
-}
-
 /** A live sample of the badge settings on a plain icon, so each change shows right away. */
 @Composable private fun BadgePreviewRow(state: LauncherState) {
     val look = LocalIconLook.current
@@ -2599,28 +2486,6 @@ internal fun automaticRowsNote(state: LauncherState, strings: Strings): String {
     CardNote(stringResource(when { text.isBlank() -> R.string.custom_search_blank; valid -> R.string.custom_search_note; else -> R.string.custom_search_invalid }))
 }
 
-
-/** A theme file is small text; anything bigger than this is not one, and is never read whole into memory. */
-internal const val MAX_THEME_BYTES = 64_000
-
-internal fun readThemeText(context: android.content.Context, uri: android.net.Uri): String? = runCatching {
-    context.contentResolver.openInputStream(uri)?.use { readCapped(it, MAX_THEME_BYTES)?.decodeToString() }
-}.getOrNull()
-
-/** At most [limit] bytes of [input]; null when there is more than that. */
-internal fun readCapped(input: java.io.InputStream, limit: Int): ByteArray? {
-    val out = java.io.ByteArrayOutputStream()
-    val buffer = ByteArray(8192)
-    var total = 0
-    while (true) {
-        val read = input.read(buffer, 0, minOf(buffer.size, limit + 1 - total))
-        if (read < 0) break
-        total += read
-        if (total > limit) return null
-        out.write(buffer, 0, read)
-    }
-    return out.toByteArray()
-}
 
 /** Advanced › System Bridge (ADR 0011): the ways Folio can reach more of the system, what each lets it do, and the one switch that turns the extra ones off. */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)

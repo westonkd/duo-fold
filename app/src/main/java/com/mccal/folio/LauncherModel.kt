@@ -25,7 +25,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -232,20 +231,11 @@ data class LauncherState(
     val systemWallpaper: Boolean = false,
     /** Text drawn on the wallpaper: "AUTO" follows the wallpaper, "LIGHT" white, "DARK" dark. */
     val homeInk: String = "AUTO",
-    /** iOS-style tinted materials: Home's glass takes on the wallpaper's color. */
-    val tintedGlass: Boolean = true,
-    /** Wallpaper Tint for glass (Clear ↔ Tinted), 0–1; half is Folio's original tint. Used while [tintedGlass] is on. */
-    val glassTint: Float = .5f,
-    /** Accessibility › Reduce Transparency: glass becomes nearly solid (also follows Android's high contrast). */
-    val reduceTransparency: Boolean = false,
     /** Black rounded corners over Home, like the iPhone Duo concept (issue #8). */
     val roundedCorners: Boolean = false,
     /** Dock along the bottom on phone-sized screens (the cover) in portrait, instead of on the Side Bar. */
     val cornerRadius: Float = 40f,
-    /** Frost behind Home's widgets (0 = clear, 1 = solid). The Side Bar's is statusStyle.railGlass. */
-    val widgetGlass: Float = .26f,
     val folderColumns: Int = 0,
-    val folderBackground: FolderBackground = FolderBackground.GLASS,
     val labelSize: LabelSize = LabelSize.STANDARD,
     val motionSpeed: MotionSpeed = MotionSpeed.STANDARD,
     val holdDelay: HoldDelay = HoldDelay.STANDARD,
@@ -255,14 +245,9 @@ data class LauncherState(
     val pageEffect: PageEffect = PageEffect.NONE,
     /** The effect Flipbook's switch turns back on: the last one chosen, so Carousel survives an off and on. */
     val lastPageEffect: PageEffect = PageEffect.CUBE,
-    /** Strength of the thin light outline around widgets and Side Bar capsules (0 = none). */
-    val glassOutline: Float = .16f,
-    val glassMaterial: GlassMaterial = GlassMaterial.CLASSIC,
-    /** Darken the wallpaper while Folio's dark appearance is on. */
-    val dimWallpaperDark: Boolean = true,
     /**
      * iOS's legibility gradient: darken the top and bottom of the background so white text reads over a pale
-     * wallpaper (A11Y-9). See [HomeScrim] for what it draws and how it composes with [dimWallpaperDark] and [homeInk].
+     * wallpaper (A11Y-9). See [HomeScrim] for what it draws and how it composes with [homeInk].
      */
     val homeScrim: Boolean = true,
     /** Tinted icons use the wallpaper's color instead of [iconTint]. */
@@ -1080,21 +1065,6 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
 
     fun setStackRotate(value: Boolean) = updateSettings(soon = false) { it.copy(stackRotate = value) }
     fun setRailActivities(value: Boolean) = updateSettings(soon = false) { it.copy(railActivities = value) }
-    /** The look before the last theme was applied, so Undo can put it back. */
-    var themeUndo: FolioTheme? = null
-        private set
-    /** Applying and undoing a theme go one after another, in the order they were asked, even though each looks up icon packs off the main thread first. */
-    private val themeLock = kotlinx.coroutines.sync.Mutex()
-    fun applyTheme(theme: FolioTheme) {
-        themeUndo = FolioTheme.of(mutable.value, "Previous")
-        viewModelScope.launch { themeLock.withLock { val packs = installedPackNames(); updateSettings(soon = false) { it.withTheme(theme, packs) } } }
-    }
-    fun undoTheme() { themeUndo?.let { previous -> themeUndo = null
-        viewModelScope.launch { themeLock.withLock { val packs = installedPackNames(); updateSettings(soon = false) { it.withTheme(previous, packs) } } } } }
-    /** The icon packs on this phone, asked of Android off the main thread. */
-    private suspend fun installedPackNames() = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        IconPacks.installed(getApplication()).mapTo(mutableSetOf()) { it.packageName }
-    }
     fun setPageStyle(page: Int, style: PageStyle) = updateSettings(soon = false) {
         it.copy(pageStyles = if (style.isDefault) it.pageStyles - page else it.pageStyles + (page to style))
     }
@@ -1211,15 +1181,9 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
     fun setTodayUnfolded(value: String) = updateSettings(soon = false) { it.copy(todayUnfolded = value) }
     fun setSystemWallpaper(value: Boolean) = updateSettings(soon = false) { it.copy(systemWallpaper = value) }
     fun setHomeInk(value: String) = updateSettings(soon = false) { it.copy(homeInk = value) }
-    fun setTintedGlass(value: Boolean) = updateSettings(soon = false) { it.copy(tintedGlass = value) }
-    /** One slider for both: all the way to Clear turns tinting off. */
-    fun setGlassTint(value: Float) = updateSettings(soon = true) { it.copy(tintedGlass = value > .01f, glassTint = if (value > .01f) value.coerceIn(0f, 1f) else it.glassTint) }
-    fun setReduceTransparency(value: Boolean) = updateSettings(soon = false) { it.copy(reduceTransparency = value) }
     fun setRoundedCorners(value: Boolean) = updateSettings(soon = false) { it.copy(roundedCorners = value) }
     fun setCornerRadius(value: Float) = updateSettings(soon = true) { it.copy(cornerRadius = value.coerceIn(16f, 72f)) }
-    fun setWidgetGlass(value: Float) = updateSettings(soon = true) { it.copy(widgetGlass = value.coerceIn(0f, 1f)) }
     fun setFolderColumns(value: Int) = updateSettings(soon = false) { it.copy(folderColumns = value.takeIf { v -> v in setOf(0, 3, 4) } ?: 0) }
-    fun setFolderBackground(value: FolderBackground) = updateSettings(soon = false) { it.copy(folderBackground = value) }
     fun setLabelSize(value: LabelSize) = updateSettings(soon = false) { it.copy(labelSize = value) }
     fun setExperienceProfile(profile: ExperienceProfile) = updateSettings(soon = false) { it.withProfile(profile) }
     /** Setup's first question: where you are coming from (see [StartingPoint]). */
@@ -1229,11 +1193,6 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
     fun setPageEffect(value: PageEffect) = updateSettings(soon = false) { it.withPageEffect(value) }
     fun setPageEffectOn(on: Boolean) = updateSettings(soon = false) { it.withPageEffectOn(on) }
     /** A package installed an effect (or an update replaced it): one entry per package id. */
-    fun setGlassOutline(value: Float) = updateSettings(soon = true) { it.copy(glassOutline = value.coerceIn(0f, 1f)) }
-    /** One tap for the whole glass look: widgets and Side Bar together. */
-    fun setGlassPreset(frost: Float, material: GlassMaterial = GlassMaterial.CLASSIC) = updateSettings(soon = false) {
-        it.copy(widgetGlass = frost, glassMaterial = material, statusStyle = it.statusStyle.copy(railGlass = frost)) }
-    fun setDimWallpaperDark(value: Boolean) = updateSettings(soon = false) { it.copy(dimWallpaperDark = value) }
     fun setHomeScrim(value: Boolean) = updateSettings(soon = false) { it.copy(homeScrim = value) }
     fun setIconTintFromWallpaper(value: Boolean) = updateSettings(soon = false) { it.copy(iconTintFromWallpaper = value) }
     fun setTintNotifications(value: Boolean) = updateSettings(soon = false) { it.copy(tintNotifications = value) }
@@ -1610,15 +1569,13 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
             .put("widgetStacks", JSONObject().apply { s.widgetStacks.forEach { (slot, ids) -> put(slot.toString(), JSONArray(ids)) } })
             .put("stackRotate", s.stackRotate).put("railActivitiesUnderStatus", s.railActivities).put("addNewAppsToHome", s.addNewAppsToHome)
             .put("layoutHistory", s.layoutHistory).put("dockRecentDots", s.dockRecentDots)
-            .put("folderColumns", s.folderColumns).put("folderBackground", s.folderBackground.name)
+            .put("folderColumns", s.folderColumns)
             .put("labelSize", s.labelSize.name).put("motionSpeed", s.motionSpeed.name).put("holdDelay", s.holdDelay.name).put("pageEffect", s.pageEffect.name)
             .put("lastPageEffect", s.lastPageEffect.name)
-            .put("widgetGlass", s.widgetGlass.toDouble()).put("glassOutline", s.glassOutline.toDouble())
-            .put("glassMaterial", s.glassMaterial.name)
             .put("focusModes", focusModesToJson(s.focusModes))
-            .put("activeFocus", s.activeFocus ?: "").put("leftPage", s.leftPage).put("todayUnfolded", s.todayUnfolded).put("todaySuggestions", s.todaySuggestions).put("systemWallpaper", s.systemWallpaper).put("homeInk", s.homeInk).put("tintedGlass", s.tintedGlass).put("glassTint", s.glassTint.toDouble()).put("reduceTransparency", s.reduceTransparency)
+            .put("activeFocus", s.activeFocus ?: "").put("leftPage", s.leftPage).put("todayUnfolded", s.todayUnfolded).put("todaySuggestions", s.todaySuggestions).put("systemWallpaper", s.systemWallpaper).put("homeInk", s.homeInk)
             .put("roundedCorners", s.roundedCorners).put("cornerRadius", s.cornerRadius.toDouble())
-            .put("dimWallpaperDark", s.dimWallpaperDark).put("homeScrim", s.homeScrim).put("iconTintFromWallpaper", s.iconTintFromWallpaper)
+            .put("homeScrim", s.homeScrim).put("iconTintFromWallpaper", s.iconTintFromWallpaper)
             .put("tintNotifications", s.tintNotifications).put("tintMedia", s.tintMedia).put("dockMagnify", s.dockMagnify).put("appPanels", s.appPanels).put("haptics", s.haptics).put("lockCover", s.lockCover)
             .put("featureScopes", JSONObject().apply { s.featureScopes.forEach { (id, m) -> put(id, JSONObject(m as Map<*, *>)) } })
             .put("tweakOptions", JSONObject().apply { s.tweakOptions.forEach { (id, m) -> put(id, JSONObject(m as Map<*, *>)) } }).put("notificationAppRow", s.notificationAppRow)
@@ -1669,7 +1626,7 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
         if (legacyRaw != null && v10BackupNeeded(sourceSchema, stateSchemaFor(s), prefs.contains("state_v10_backup")))
             editor.putString("state_v10_backup", legacyRaw)
         editor.putString("state", data.toString()).putBoolean("initialized", true)
-            // Kept beside the state so a restore or theme import that changes it chooses the right window next time.
+            // Kept beside the state so a restore that changes it chooses the right window next time.
             .putBoolean(SettingKeys.SYSTEM_WALLPAPER, s.systemWallpaper).apply()
     }
 
@@ -1899,7 +1856,6 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         addNewAppsToHome = j.optBoolean("addNewAppsToHome", false),
         layoutHistory = j.optBoolean("layoutHistory", false), dockRecentDots = j.optBoolean("dockRecentDots", false),
         folderColumns = j.optInt("folderColumns", 0).takeIf { it in setOf(0, 3, 4) } ?: 0,
-        folderBackground = runCatching { FolderBackground.valueOf(j.optString("folderBackground")) }.getOrDefault(FolderBackground.GLASS),
         labelSize = runCatching { LabelSize.valueOf(j.optString("labelSize")) }.getOrDefault(LabelSize.STANDARD),
         motionSpeed = runCatching { MotionSpeed.valueOf(j.optString("motionSpeed")) }.getOrDefault(MotionSpeed.STANDARD),
         holdDelay = runCatching { HoldDelay.valueOf(j.optString("holdDelay")) }.getOrDefault(HoldDelay.STANDARD),
@@ -1907,8 +1863,6 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         pageEffect = PageEffect.of(j.optString("pageEffect")),
         // Before 0.6.7.2 this wasn't saved: the effect in use, else the cube.
         lastPageEffect = PageEffect.of(j.optString("lastPageEffect", j.optString("pageEffect"))).takeIf { it != PageEffect.NONE } ?: PageEffect.CUBE,
-        widgetGlass = j.optDouble("widgetGlass", .26).toFloat().coerceIn(0f, 1f), glassOutline = j.optDouble("glassOutline", .16).toFloat().coerceIn(0f, 1f),
-        glassMaterial = runCatching { GlassMaterial.valueOf(j.optString("glassMaterial")) }.getOrDefault(GlassMaterial.CLASSIC),
         focusModes = focusModesFromJson(j.optJSONArray("focusModes")),
         activeFocus = j.optString("activeFocus").takeIf { it.isNotEmpty() },
         leftPage = j.optString("leftPage", "TODAY").takeIf { it in setOf("TODAY", "DISCOVER", "NONE") } ?: "TODAY",
@@ -1916,10 +1870,7 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         todayUnfolded = j.optString("todayUnfolded", "PAGE").takeIf { it in setOf("PAGE", "BESIDE", "OFF") } ?: "PAGE",
         systemWallpaper = j.optBoolean("systemWallpaper", false),
         homeInk = j.optString("homeInk", "AUTO").takeIf { it in setOf("AUTO", "LIGHT", "DARK") } ?: "AUTO",
-        tintedGlass = j.optBoolean("tintedGlass", true),
-        glassTint = j.optDouble("glassTint", .5).toFloat().takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: .5f,
-        reduceTransparency = j.optBoolean("reduceTransparency", false),
-        roundedCorners = j.optBoolean("roundedCorners", false), cornerRadius = j.optDouble("cornerRadius", 40.0).toFloat().coerceIn(16f, 72f), dimWallpaperDark = j.optBoolean("dimWallpaperDark", true),
+        roundedCorners = j.optBoolean("roundedCorners", false), cornerRadius = j.optDouble("cornerRadius", 40.0).toFloat().coerceIn(16f, 72f),
         homeScrim = j.optBoolean("homeScrim", true),
         iconTintFromWallpaper = j.optBoolean("iconTintFromWallpaper", false),
         tintNotifications = j.optBoolean("tintNotifications", false), tintMedia = j.optBoolean("tintMedia", false),
@@ -1989,10 +1940,6 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         homeFitUpright = j.optInt("homeFitUpright", 0).takeIf { it in BASE_APP_ROWS..MAX_APP_ROWS } ?: 0)
 }
 
-/** How strongly glass takes the wallpaper color: none when tinting is off; half the slider is the original .28. */
-val LauncherState.glassTintAmount: Float get() = if (tintedGlass) .56f * glassTint else 0f
-
-/** Reduce Transparency: nearly solid widgets, Side Bar and dock, with a clearer edge (the saved values stay as they are). */
 /** Choosing an effect also remembers it, unless it's None, so Flipbook's switch has something to bring back. */
 internal fun LauncherState.withPageEffect(value: PageEffect): LauncherState =
     copy(pageEffect = value, lastPageEffect = if (value == PageEffect.NONE) lastPageEffect else value)
@@ -2000,9 +1947,6 @@ internal fun LauncherState.withPageEffect(value: PageEffect): LauncherState =
 /** Flipbook's switch: on brings back the last effect chosen, off is the flat swipe. */
 internal fun LauncherState.withPageEffectOn(on: Boolean): LauncherState =
     copy(pageEffect = if (on) lastPageEffect else PageEffect.NONE)
-
-fun LauncherState.withSolidGlass(): LauncherState =
-    copy(widgetGlass = maxOf(widgetGlass, .9f), glassOutline = maxOf(glassOutline, .45f), statusStyle = statusStyle.copy(railGlass = maxOf(statusStyle.railGlass, .9f)))
 
 /**
  * Android counts changes to installed themes and overlays (Samsung's Theme Park among them) in the configuration's

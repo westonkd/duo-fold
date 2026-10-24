@@ -34,14 +34,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.doOnPreDraw
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.activity.result.contract.ActivityResultContracts
-import android.content.pm.PackageManager
-import android.location.LocationManager
-import android.os.CancellationSignal
-import androidx.core.content.ContextCompat
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.IntentFilter
 
 class MainActivity : ComponentActivity() {
     private val model: LauncherModel by viewModels()
@@ -63,25 +55,8 @@ class MainActivity : ComponentActivity() {
     private val showWhatsNew = mutableStateOf(false)
     private val whatsNewRequested = mutableStateOf(false)
     private val showDevBuild = mutableStateOf(false)
-    /** A theme shared to Folio, waiting for Apply or Cancel. */
-    private val sharedTheme = mutableStateOf<FolioTheme?>(null)
     private lateinit var setupExperience: SetupExperience
     private lateinit var status: DeviceStatusMonitor
-    private lateinit var appearance: AppearanceStore
-    private var appearanceLocationGeneration = 0
-    private var appearancePermissionGeneration = -1
-    private var appearanceLocationCancellation: CancellationSignal? = null
-    private var timeReceiverRegistered = false
-    private val timeReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) { appearance.refresh(systemDark()) }
-    }
-    private val locationPermission = activityResultRegistry.register("duo.appearance.location", this,
-        ActivityResultContracts.RequestPermission(), permissionResult@{ granted ->
-        if (appearancePermissionGeneration != appearanceLocationGeneration || isDestroyed) return@permissionResult
-        appearancePermissionGeneration = -1
-        if (granted) requestAppearanceLocation(keepPending = true)
-        else finishAppearanceLocation(getString(R.string.location_permission_wasn_t_granted_using))
-    })
     private var openingDiscover = false
     private var shadeSetupDialog: android.app.AlertDialog? = null
     private var returningFromShadeSettings = false
@@ -117,7 +92,6 @@ class MainActivity : ComponentActivity() {
         showDevBuild.value = DevBuild.shouldShow(this)
         returningFromShadeSettings = savedInstanceState?.getBoolean(SHADE_SETTINGS_PENDING) == true
         val restoreShadeDialog = savedInstanceState?.getBoolean(SHADE_DIALOG_VISIBLE) == true
-        appearance = AppearanceStore(this)
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
         widgets = WidgetController(this, model) { active ->
@@ -135,17 +109,12 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null && intent.getStringExtra("duo_destination") == "search") searchRequests.intValue++
         if (savedInstanceState == null && opensSettings(intent)) settingsRequests.intValue++
         intent.removeExtra("duo_destination")
-        // A recreated activity (rotation, fold, process restart) keeps the pending alert; the launch intent is used once.
-        if (savedInstanceState == null) takeSharedTheme(intent)
-        else sharedTheme.value = savedInstanceState.getString(PENDING_THEME)?.let(FolioTheme::fromJson)
         setContent {
             val savedState = model.state.collectAsStateWithLifecycle().value
             // Home is fully drawn once its own apps are in; at a start they come ahead of the rest.
             androidx.activity.compose.ReportDrawnWhen { savedState.homeReady }
             val safeMode = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(SafeMode.active) }
-            val solidGlass = savedState.reduceTransparency || rememberSystemHighContrast()
-            val state = rememberDisguised(FocusPages.effective(if (safeMode.value) SafeMode.effective(savedState) else savedState)
-                .let { if (solidGlass) it.withSolidGlass() else it })
+            val state = rememberDisguised(FocusPages.effective(if (safeMode.value) SafeMode.effective(savedState) else savedState))
             androidx.compose.runtime.LaunchedEffect(Unit) { kotlinx.coroutines.delay(31_000); SafeMode.markStable(this@MainActivity) }
             // Saveable: a theme or language change recreates the activity, and the answer must not be asked again.
             val safeAcknowledged = androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
@@ -191,7 +160,7 @@ class MainActivity : ComponentActivity() {
             val backdropBlur = androidx.compose.runtime.remember(backdropBlurPx) {
                 androidx.compose.ui.graphics.BlurEffect(backdropBlurPx, backdropBlurPx, androidx.compose.ui.graphics.TileMode.Clamp)
             }
-            DuoTheme(appearance.state.dark) { val notificationItems = IslandListenerService.notifications.collectAsStateWithLifecycle().value
+            DuoTheme { val notificationItems = IslandListenerService.notifications.collectAsStateWithLifecycle().value
             // Progress ticks for every install session on the phone. Kept as a State that nothing here reads, so a tick
             // reaches only the icons that are installing (see LocalInstallProgress) instead of recomposing all of Home.
             val installProgress = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(emptyMap<String, Float>()) }
@@ -242,15 +211,13 @@ class MainActivity : ComponentActivity() {
             // Folio's own Reduce Motion, or Android's Remove animations: the same flag to every screen.
             val reduceMotion = reduceMotionState.value || state.reduceMotion
             val iconTint = if (state.iconTintFromWallpaper) wallpaperIconTint(wallpaperTone)?.toLong()?.and(0xFFFFFFFFL) ?: state.iconTint else state.iconTint
-            val liquidGlass = usesLiquidGlass(state.glassMaterial, solidGlass)
             val crossWindowBlur = rememberCrossWindowBlur()
-            val libraryBlur = liquidGlass && crossWindowBlur && state.systemWallpaper && showsWallpaper
+            val libraryBlur = crossWindowBlur && state.systemWallpaper && showsWallpaper
             LibraryBackdropBlur(window, libraryBlur)
             androidx.compose.runtime.CompositionLocalProvider(
                 LocalWallpaperTone provides wallpaperTone,
-                LocalGlassLook provides GlassLook(state.widgetGlass, state.glassOutline, liquidGlass, libraryBlur),
-                LocalSolidGlass provides solidGlass,
-                LocalFolderLook provides FolderLook(state.folderColumns, state.folderBackground),
+                LocalGlassLook provides GlassLook(libraryBlur),
+                LocalFolderLook provides FolderLook(state.folderColumns),
                 LocalLabelSize provides state.labelSize,
                 LocalDeviceStatus provides deviceStatus,
                 LocalReduceMotion provides reduceMotion,
@@ -296,12 +263,6 @@ class MainActivity : ComponentActivity() {
                     isDefaultHome = defaultHome.value, deviceStatus = deviceStatus, onStatusMode = ::setStatusMode, onWallpaperPreview = ::previewWallpaper,
                     onDiscover = ::openDiscover, searchRequests = searchRequests.intValue, settingsRequests = settingsRequests.intValue,
                     onLaunchFrom = ::launchApp, onGoogleSearch = ::openGoogleSearch,
-                    appearance = appearance.state,
-                    onAppearanceMode = { cancelAppearanceLocation(); appearance.setMode(it, systemDark()) },
-                    onAppearanceAccent = { appearance.setAccent(it, systemDark()) },
-                    onAppearanceManual = { place, lat, lon -> cancelAppearanceLocation(); appearance.setManual(place, lat, lon, systemDark()) },
-                    onAppearanceDeviceLocation = ::useAppearanceLocation,
-                    onAppearanceClear = { cancelAppearanceLocation(); appearance.clearLocation(systemDark()) },
                     showFirstRun = showFirstRun.value,
                     onFinishFirstRun = ::finishFirstRun,
                     onShadeSetup = ::showShadeSetup, onShowWelcome = { SetupReplay.active = true; showFirstRun.value = true }, onShowWhatsNew = { whatsNewRequested.value = true })
@@ -320,15 +281,6 @@ class MainActivity : ComponentActivity() {
                 // One prompt at a time: the card also waits while the gestures dialog is up, and comes back when it closes.
                 SetupReminderCard(defaultHome.value, blocked = overlayOpen || standByShowing.value || showFirstRun.value || !defaultHome.value || shadeSetupUp.value, onMakeDefault = ::makeDefault,
                     onShadeSetup = ::showShadeSetup) { SettingsLink.page = CustomizationPage.PERMISSIONS; settingsRequests.intValue++ }
-                sharedTheme.value?.let { theme ->
-                    AlertDialog(onDismissRequest = { sharedTheme.value = null },
-                        title = { androidx.compose.material3.Text(stringResource(R.string.apply_1, theme.name)) },
-                        text = { androidx.compose.material3.Text(stringResource(R.string.this_changes_icons_badges_glass_text_on)) },
-                        confirmButton = { androidx.compose.material3.TextButton(onClick = { model.applyTheme(theme); sharedTheme.value = null }) {
-                            androidx.compose.material3.Text(getString(R.string.apply)) } },
-                        dismissButton = { androidx.compose.material3.TextButton(onClick = { sharedTheme.value = null }) {
-                            androidx.compose.material3.Text(getString(R.string.cancel)) } })
-                }
                 // The gestures dialog never opens on top of either sheet: it waits here and shows once both are closed.
                 val startupSheet = startupSheetUp()
                 androidx.compose.runtime.LaunchedEffect(startupSheet) {
@@ -348,8 +300,7 @@ class MainActivity : ComponentActivity() {
                 }
                 val basePalette = LocalDuoPalette.current
                 val panelInk = homeInkFor(state.homeInk, wallpaperTone.prefersDarkText)
-                val panelPalette = androidx.compose.runtime.remember(basePalette, wallpaperTone, state.glassTintAmount, solidGlass, panelInk.dark) {
-                    homePalette(basePalette, wallpaperTone.primary, state.glassTintAmount, solidGlass, panelInk.dark) }
+                val panelPalette = androidx.compose.runtime.remember(basePalette, wallpaperTone) { homePalette(basePalette, wallpaperTone.primary) }
                 androidx.compose.runtime.CompositionLocalProvider(LocalDuoPalette provides panelPalette) {
                 TopPanels(topPanel.value, { OverlayBack.shown(overlayProgress, OverlayBack.swipe.value) }, deviceStatus, onClose = { topPanel.value = null },
                     onSystemPanel = { openAndroidShade(it) }, showClock = state.notificationClock, grouped = state.groupNotifications, sections = state.notificationSections,
@@ -381,19 +332,10 @@ class MainActivity : ComponentActivity() {
         super.onStart(); widgets.host.startListening()
         // A new build can also arrive while this activity is alive in a restored task, so look again each time it starts.
         if (!showDevBuild.value && DevBuild.shouldShow(this)) showDevBuild.value = true
-        if (!timeReceiverRegistered) {
-            ContextCompat.registerReceiver(this, timeReceiver, IntentFilter().apply {
-                addAction(Intent.ACTION_TIME_TICK); addAction(Intent.ACTION_TIME_CHANGED)
-                addAction(Intent.ACTION_TIMEZONE_CHANGED); addAction(Intent.ACTION_DATE_CHANGED)
-            }, ContextCompat.RECEIVER_NOT_EXPORTED)
-            timeReceiverRegistered = true
-        }
-        appearance.refresh(systemDark())
     }
     override fun onStop() {
         stoppedSinceHome = true
         closeOverlays() // never come back to a blurred Home
-        if (timeReceiverRegistered) { unregisterReceiver(timeReceiver); timeReceiverRegistered = false }
         widgets.host.stopListening(); model.flushPending(); super.onStop()
     }
     override fun onDestroy() {
@@ -402,7 +344,6 @@ class MainActivity : ComponentActivity() {
         recreatingShadeSetup = isChangingConfigurations
         shadeSetupDialog?.dismiss()
         if (!isChangingConfigurations) releaseShadeSetupOwnership()
-        cancelAppearanceLocation()
         super.onDestroy()
     }
     override fun onPause() {
@@ -432,7 +373,7 @@ class MainActivity : ComponentActivity() {
         if (discover != null) window.decorView.doOnPreDraw {
             it.postOnAnimation { if (DiscoverSession.host.get() === discover) DiscoverSession.dismiss() }
         }
-        model.refresh(); appearance.refresh(systemDark()); updateDefaultHome()
+        model.refresh(); updateDefaultHome()
         window.decorView.post {
             if (!isFinishing && !isDestroyed && !LiveDiscover.viewport.isEmpty)
                 LiveDiscover.prepare(this, LiveDiscover.viewport, LiveDiscover.pageWidth)
@@ -546,7 +487,6 @@ class MainActivity : ComponentActivity() {
         widgets.save(outState)
         outState.putBoolean(SHADE_DIALOG_VISIBLE, (shadeSetupDialog?.isShowing == true || shadeSetupWaiting) && !returningFromShadeSettings)
         outState.putBoolean(SHADE_SETTINGS_PENDING, returningFromShadeSettings)
-        sharedTheme.value?.let { outState.putString(PENDING_THEME, it.toJson().toString()) }
         super.onSaveInstanceState(outState)
     }
     /** Android's "Home app settings" gear, or Folio's own app icon (the FolioSettingsApp alias). Until Folio is the
@@ -555,18 +495,10 @@ class MainActivity : ComponentActivity() {
         (fromAppIcon(intent) && defaultHome.value)
     private fun fromAppIcon(intent: Intent) = intent.component?.className?.startsWith("$FOLIO_CLASSES.${AppIconChoice.ALIAS_PREFIX}") == true
 
-    /** Any app can start Home with this extra, so it's parsed again and only ever applied after the user taps Apply. */
-    private fun takeSharedTheme(intent: Intent?) {
-        val raw = intent?.getStringExtra(ThemeImportActivity.EXTRA_THEME) ?: return
-        intent.removeExtra(ThemeImportActivity.EXTRA_THEME)
-        sharedTheme.value = raw.takeIf { it.length <= ThemeImportActivity.MAX_BYTES }?.let(FolioTheme::fromJson)
-    }
-
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
 
         setIntent(intent)
-        takeSharedTheme(intent)
         FoldRenderExperiment.onNewIntent(this, intent)
         updateDefaultHome()
         if (intent.getStringExtra("duo_destination") == "search") searchRequests.intValue++
@@ -667,70 +599,6 @@ class MainActivity : ComponentActivity() {
         defaultHome.value = getSystemService(RoleManager::class.java).isRoleHeld(RoleManager.ROLE_HOME)
     }
 
-    private fun systemDark() = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
-        android.content.res.Configuration.UI_MODE_NIGHT_YES
-
-    private fun useAppearanceLocation() {
-        cancelAppearanceLocation()
-        appearance.locationStatus(getString(R.string.waiting_for_approximate_device_location))
-        LiveDiscover.setExternalResultPending(this, "main", "appearance-location", true)
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-            requestAppearanceLocation(keepPending = true)
-        else {
-            appearancePermissionGeneration = appearanceLocationGeneration
-            runCatching { locationPermission.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION) }
-                .onFailure { finishAppearanceLocation(getString(R.string.location_permission_couldn_t_be_requeste)) }
-        }
-    }
-
-    private fun requestAppearanceLocation(keepPending: Boolean = false) {
-        if (!keepPending) LiveDiscover.setExternalResultPending(this, "main", "appearance-location", true)
-        val generation = ++appearanceLocationGeneration
-        val manager = getSystemService(LocationManager::class.java)
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            finishAppearanceLocation(getString(R.string.location_permission_isn_t_available_usin)); return
-        }
-        val cached = runCatching { manager.getProviders(true).mapNotNull { manager.getLastKnownLocation(it) }
-            .maxByOrNull { it.time }?.takeIf { System.currentTimeMillis() - it.time <= 15 * 60_000 } }.getOrNull()
-        if (cached != null) {
-            if (generation == appearanceLocationGeneration) appearance.setDeviceLocation(cached.latitude, cached.longitude, systemDark())
-            finishAppearanceLocation(null); return
-        }
-        val provider = runCatching { when {
-            manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
-            manager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER) -> LocationManager.PASSIVE_PROVIDER
-            else -> null
-        } }.getOrNull() ?: run { finishAppearanceLocation(getString(R.string.no_approximate_location_provider_is_avai)); return }
-        val cancellation = CancellationSignal()
-        appearanceLocationCancellation = cancellation
-        window.decorView.postDelayed({
-            if (generation == appearanceLocationGeneration && appearanceLocationCancellation === cancellation) {
-                cancellation.cancel(); finishAppearanceLocation(getString(R.string.location_timed_out_using_the_system_them))
-            }
-        }, 10_000)
-        runCatching { manager.getCurrentLocation(provider, cancellation, ContextCompat.getMainExecutor(this)) { location ->
-            if (generation != appearanceLocationGeneration || isDestroyed) return@getCurrentLocation
-            if (location != null) appearance.setDeviceLocation(location.latitude, location.longitude, systemDark())
-            finishAppearanceLocation(if (location == null) getString(R.string.location_is_unavailable_using_the_system) else null)
-        } }.onFailure { finishAppearanceLocation(getString(R.string.location_is_unavailable_using_the_system)) }
-    }
-
-    private fun cancelAppearanceLocation() {
-        appearanceLocationGeneration++
-        appearancePermissionGeneration = -1
-        appearanceLocationCancellation?.cancel(); appearanceLocationCancellation = null
-        if (::appearance.isInitialized) appearance.locationStatus(null)
-        LiveDiscover.setExternalResultPending(this, "main", "appearance-location", false)
-    }
-
-    private fun finishAppearanceLocation(message: String?) {
-        appearanceLocationGeneration++
-        appearancePermissionGeneration = -1
-        appearanceLocationCancellation = null
-        appearance.locationStatus(message)
-        LiveDiscover.setExternalResultPending(this, "main", "appearance-location", false)
-    }
-
     /** The window's size in dp, to tell a fold or a resize from a change that leaves the layout alone. */
     private var lastWindowSize: Pair<Int, Int>? = null
         get() = field ?: (resources.configuration.screenWidthDp to resources.configuration.screenHeightDp).also { field = it }
@@ -781,6 +649,5 @@ class MainActivity : ComponentActivity() {
     private companion object {
         const val SHADE_DIALOG_VISIBLE = "duo.shade.dialog_visible"
         const val SHADE_SETTINGS_PENDING = "duo.shade.settings_pending"
-        const val PENDING_THEME = "folio.theme.pending"
     }
 }
