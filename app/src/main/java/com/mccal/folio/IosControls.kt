@@ -72,13 +72,17 @@ internal fun IosChip(selected: Boolean, onClick: () -> Unit, label: @Composable 
 /** iOS search field: frosted rounded capsule, magnifier, placeholder and a clear button. */
 @Composable
 internal fun IosSearchField(query: String, onQuery: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier,
-    fieldModifier: Modifier = Modifier, ink: Color = Color.White, glass: Boolean = false, onSearch: (() -> Unit)? = null) {
+    fieldModifier: Modifier = Modifier, ink: Color = Color.White, glass: Boolean = false, darkGlass: Boolean = false,
+    minHeight: androidx.compose.ui.unit.Dp = 40.dp, onSearch: (() -> Unit)? = null) {
     // 40 dp at the normal text size, taller only when larger text needs it (A11Y-12). The row is as tall as its
     // content (IntrinsicSize.Min), so the clear button's fillMaxHeight fills the field, not the space around it.
     val fieldShape = CircleShape
-    Row(modifier.fillMaxWidth().clip(fieldShape).then(if (glass) Modifier.liquidGlass(fieldShape, LIBRARY_FIELD_FROST, GlassRole.CAPSULE)
-            else Modifier.background(ink.copy(alpha = SEARCH_FIELD_FROST)))
-        .heightIn(min = 40.dp).height(IntrinsicSize.Min).padding(start = FolioSpace.COMPACT.dp, end = FolioSpace.HAIR.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier.fillMaxWidth().clip(fieldShape).then(when {
+            darkGlass -> Modifier.liquidGlass(fieldShape, SEARCH_DARK_FROST, GlassRole.CAPSULE, FolioColors.SearchGlass)
+            glass -> Modifier.liquidGlass(fieldShape, LIBRARY_FIELD_FROST, GlassRole.CAPSULE)
+            else -> Modifier.background(ink.copy(alpha = SEARCH_FIELD_FROST))
+        })
+        .heightIn(min = minHeight).height(IntrinsicSize.Min).padding(start = FolioSpace.COMPACT.dp, end = FolioSpace.HAIR.dp), verticalAlignment = Alignment.CenterVertically) {
         androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Search, null, tint = ink.copy(alpha = .55f), modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))
         Box(Modifier.weight(1f)) {

@@ -187,6 +187,7 @@ internal const val LIBRARY_FIELD_FROST = .2f
 internal const val MENU_FROST = .84f
 internal const val FOLDER_FROST = .24f
 internal const val TOOLBAR_FROST = .9f
+internal const val SEARCH_DARK_FROST = .78f
 internal const val FOLDER_TILE_FROST = .72f
 internal const val FOLDER_TILE_TINTED_FROST = .78f
 

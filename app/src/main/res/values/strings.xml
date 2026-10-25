@@ -647,11 +647,9 @@
     <string name="choose_named">Choose %1$s</string>
     <string name="installing_percent">Installing, %1$d percent</string>
     <string name="fix_saved_layout">Fix the saved layout</string>
-    <string name="home_strip">Bottom of Home</string>
     <string name="home_strip_search">Search bar</string>
     <string name="home_strip_dots">Page dots</string>
     <string name="home_strip_nothing">Nothing</string>
-    <string name="home_strip_note">Page dots appear while you swipe or edit Home, and dragging along the bottom still moves between pages. With Page dots or Nothing, Search moves to a round button in the bottom corner.</string>
     <string name="capability_risk_line">What it does: %1$s</string>
     <string name="risk_observe">Read only</string>
     <string name="risk_reversible">Easy to undo</string>

@@ -98,6 +98,8 @@ internal object FolioColors {
     val PreviewBezel = Color(0xFF0B0B0C)
     /** Supporting text on dark glass and sheets. */
     val SecondaryLabel = Color.White.copy(alpha = .62f)
+    /** Search's glass: iOS 27 draws the search field as a dark bubble with silver edges, even in light appearance. */
+    val SearchGlass = Color(0xFF151518)
     /** iOS's label in light appearance: text on light glass (menus). */
     val LightLabel = Color(0xFF1C1C1E)
     /** iOS's secondaryLabel in light appearance. */

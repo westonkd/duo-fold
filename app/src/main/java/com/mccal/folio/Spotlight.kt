@@ -125,14 +125,14 @@ internal fun SpotlightOverlay(visible: Boolean, progress: () -> Float, state: La
         if (!visible) { snapshotFlow { progress() }.first { it <= .001f }; composed = false }
     }
     if (!composed) return
-    val lift = with(androidx.compose.ui.platform.LocalDensity.current) { 24.dp.toPx() }
+    val lift = with(androidx.compose.ui.platform.LocalDensity.current) { 48.dp.toPx() }
     val look = spotlightLook(LocalHomeInk.current)
     Box(Modifier.fillMaxSize().graphicsLayer { alpha = progress() }.background(look.backdrop)
         .then(if (visible) Modifier.clickable(remember { MutableInteractionSource() }, null, onClick = onClose) else Modifier))
     Box(Modifier.fillMaxSize().graphicsLayer {
         val p = progress()
         // Moves with the back swipe's preview, fades only as it closes (OverlayBack).
-        alpha = OverlayBack.unpreviewed(p); translationY = -lift * (1f - p); scaleX = .96f + .04f * p; scaleY = scaleX
+        alpha = OverlayBack.unpreviewed(p); translationY = -lift * (1f - p); scaleX = .9f + .1f * p; scaleY = scaleX
         transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, 0f)
     }) { CompositionLocalProvider(LocalHomeInk provides look.ink) { SpotlightContent(state, active = visible, onClose, onLaunch, onAddToHome) } }
 }
@@ -250,7 +250,7 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
                 // The whole capsule is the tap target, not just the text line.
                 Modifier.weight(1f).clickable(remember { MutableInteractionSource() }, null) { fieldScope.launch { raiseKeyboard() } },
                 fieldModifier = Modifier.focusRequester(focus).onFocusChanged { fieldFocused = it.isFocused }.testTag("spotlight-field"),
-                ink = ink.primary, glass = true, onSearch = {
+                ink = Color.White, glass = true, darkGlass = true, minHeight = 48.dp, onSearch = {
                     when {
                         appHits.isNotEmpty() -> launch(appHits.first())
                         q.isNotEmpty() -> { onClose(); openEnterSearch(context, state, q) }

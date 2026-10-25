@@ -239,9 +239,6 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         CardNote(stringResource(R.string.off_new_downloads_go_to_the_app_library))
                     }
                     SettingsCard(stringResource(R.string.search)) {
-                        // One choice instead of a switch: what sits above the dock at rest.
-                        IosMenuRow(stringResource(R.string.home_strip), HomeStrip.entries.map { it to stringResource(it.label) }, state.homeStrip, model::setHomeStrip, tag = "home-strip")
-                        CardNote(stringResource(R.string.home_strip_note))
                         SettingsSwitch(stringResource(R.string.search_button_opens_the_google_app), state.googleSearch, model::setGoogleSearch, "google-search-switch")
                         CardNote(stringResource(R.string.when_off_the_search_button_opens_spotlig))
                     }
