@@ -12,14 +12,14 @@ All paths below are relative to `app/src/main/java/com/mccal/folio/`.
 | --- | --- | --- |
 | Activity | `MainActivity.kt` | Android intents/results and Home selection |
 | App catalog and saved layout | `LauncherModel.kt`, `ProfileSupport.kt` | Observable launcher state, profile-aware identities, package changes and persistence |
-| Home and navigation | `LauncherScreen.kt`, `PageGestures.kt`, `WorkspacePageMotion.kt` | Page composition, shared gestures, unfolded pairs and page motion |
+| Home and navigation | `LauncherScreen.kt`, `LauncherPager.kt`, `PageGestures.kt`, `WorkspacePageMotion.kt` | Page composition, shared gestures, unfolded pairs and page motion |
 | Editing and folders | `HomeEditing.kt`, `HomeDrag.kt`, `FolderEditing.kt`, `FolderPanel.kt` | Placement rules, drag previews, insertion, folders and cancellation |
 | Native widgets | `WidgetController.kt`, `WidgetPicker.kt`, `WidgetSizing.kt`, `ZeroPaddingWidgetHost.kt`, `WidgetVerticalGestures.kt` | Provider catalog, binding/configuration, geometry and native touch arbitration |
 | Google search | `GoogleSearch.kt` | The Google app's search intent |
 | Settings | `CustomizationSheet.kt`, `LauncherActionSheet.kt` | Long-press actions and Settings: a list of five flat pages (Home, Search, Gestures, Fold, General), with the list beside the page on the inner screen |
 | Photos and status | `LauncherBackground.kt`, `DeviceStatus.kt`, `StatusRail.kt` | Private photo staging, live status and the Side Bar's time and battery Ring |
 | Backup and shade access | `LayoutBackup.kt`, `BackupController.kt`, `SystemShadeController.kt` | Portable layout import/export and optional system-panel actions |
-| Fold animation | `FoldTransition.kt`, `HingeTracker.kt`, `duet/DuetShader.kt` | Duet: the fold timeline and its one shader, iPhone Duo's look or Reduce Motion's shade |
+| Fold animation | `FoldTransition.kt`, `HingeTracker.kt`, `PageLandingShader.kt` | The page landing: a bounce about the hinge when the phone reaches flat or shut ([ADR 0010](adr/0010-page-landing.md)) |
 
 ## Layout and identity
 
@@ -27,7 +27,7 @@ All paths below are relative to `app/src/main/java/com/mccal/folio/`.
 
 Each ordinary Home page has a four-column, six-row grid. Apps occupy cells; widgets occupy explicit rectangles with durable slot identities. The dock has four positions and rejects incoming apps when full. Moving a shortcut between Home and the dock moves that placement; All apps remains the installed-app catalog.
 
-Unfolded navigation uses overlapping pairs: leading workspace + Home 1, Home 1 + Home 2, and so on. The leading workspace has separate `leadingSlots` and durable widget page `-1`; it disappears from the cover view without deleting its contents. The pager has no page to the left of Home: pager page 0 is Home 1 (on the inner screen, the leading workspace + Home 1 pair). Use the address helpers in `HomeEditing.kt` rather than treating negative cell indices as missing values.
+Page `-1` is the widgets page, with its own `leadingSlots` and durable widget page `-1`. It takes widgets only: apps and folders can't be dropped on it, and any left there from before can be moved off. Unfolded navigation uses overlapping pairs: widgets page + Home 1, Home 1 + Home 2, and so on, and unfolding lands on the first pair. On the cover (and the upright inner screen) the widgets page is its own page to the left of Home 1. `LauncherPager` keeps page numbers the same on both: logical page `-1` is the widgets page, `0` is Home 1, and the pager underneath is offset by one where the widgets page is a page of its own. Use the address helpers in `HomeEditing.kt` rather than treating negative cell indices as missing values.
 
 Saved layouts use explicit JSON fields with migration backups. Layout export is a portable description, not a copy of Android's widget capabilities: an import must reconnect widgets, and cross-installation work profiles may require manual correction. Photo files are outside the layout backup. A backup or save that still carries packages or settings from removed features restores without them.
 

@@ -57,16 +57,4 @@ class HingeTrackerTest {
         tracker.feed(10f, 7L); assertTrue(tracker.closed)
         tracker.feed(13f, 8L); assertFalse(tracker.closed)
     }
-
-    @Test fun `the halfway tick fires once per pass`() {
-        // Stepped: opening ticks at 0→90 only; closing at 180→90 only.
-        assertTrue(HingeTracker.crossedHalfway(0f, 90f))
-        assertFalse(HingeTracker.crossedHalfway(90f, 180f))
-        assertTrue(HingeTracker.crossedHalfway(180f, 90f))
-        assertFalse(HingeTracker.crossedHalfway(90f, 0f))
-        // Continuous: jitter around 90° doesn't tick again.
-        assertTrue(HingeTracker.crossedHalfway(95f, 89f))
-        assertFalse(HingeTracker.crossedHalfway(89f, 91f))
-        assertFalse(HingeTracker.crossedHalfway(91f, 87f))
-    }
 }

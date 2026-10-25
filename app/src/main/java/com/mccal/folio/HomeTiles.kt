@@ -217,7 +217,7 @@ internal fun DockAppColumn(
                     .testTag("dock-app-$id"), contentAlignment = Alignment.Center) {
                     Box(Modifier.size(iconSize.dp).testTag("dock-icon-$id")
                         .onGloballyPositioned { if (savedIndex >= 0) { launchBounds[savedIndex].set(it.boundsInWindow().toAndroidBounds()); IconBounds.update(id, launchBounds[savedIndex]) } }
-                        .jiggle(id).foldMotionIcon()) {
+                        .jiggle(id)) {
                         val magnification by animateFloatAsState(touchY?.let { y ->
                             val center = (renderIndex + .5f) * rowHeightPx
                             1f + .38f * (1f - kotlin.math.abs(center - y) / (rowHeightPx * 1.5f)).coerceAtLeast(0f)
@@ -271,7 +271,7 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
         Box(Modifier.size(size.dp).graphicsLayer { scaleX = lift; scaleY = lift
                 alpha = FolderOpening.tileAlpha(folder.id, FolderOpening.id, FolderOpening.progress) }
             .onGloballyPositioned { bounds.set(it.boundsInWindow().toAndroidBounds()); IconBounds.update(folder.id, bounds) }
-            .jiggle(folder.id).foldMotionIcon().pressFeedback(pressed || opening, lifted, size * ICON_CORNER_FRACTION)) {
+            .jiggle(folder.id).pressFeedback(pressed || opening, lifted, size * ICON_CORNER_FRACTION)) {
             // Like iOS: a folder's badge is the total of its apps' badges (each app counted once).
             val look = LocalIconLook.current
             val counts = LocalBadgeCounts.current
@@ -330,7 +330,7 @@ internal fun AppTile(app: AppEntry, size: Float, labels: Boolean, modifier: Modi
         horizontalAlignment = Alignment.CenterHorizontally) {
         // Bounds are read outside the wiggle layer so jiggling doesn't report a new position every frame.
         Box(Modifier.size(iconSize).onGloballyPositioned { bounds.set(it.boundsInWindow().toAndroidBounds()); IconBounds.update(app.id, bounds) }
-            .jiggle(app.id).foldMotionIcon()) {
+            .jiggle(app.id)) {
             // The folder plate grows behind the icon and the icon shrinks into it; under Reduce Motion the plate only fades in.
             val still = LocalReduceMotion.current
             if (plate != null) Box(Modifier.matchParentSize().graphicsLayer {

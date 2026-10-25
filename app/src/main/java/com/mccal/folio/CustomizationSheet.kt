@@ -300,20 +300,8 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                 }
                 CustomizationPage.FOLD -> {
                     SettingsCard(stringResource(R.string.fold_animation)) {
-                        SettingsSwitch("Duet", state.foldEffect, model::setFoldEffect, "duet-switch") // english-only
-                        CardNote(stringResource(R.string.tweak_duet_detail))
-                    }
-                    // What Folio has learned about how fast you fold (it adapts the animation to this).
-                    val foldPrefs = androidx.compose.ui.platform.LocalContext.current.getSharedPreferences("folio", 0)
-                    var learned by remember { mutableStateOf(foldPrefs.getFloat("fold_open_ms", 520f) to foldPrefs.getFloat("fold_close_ms", 650f)) }
-                    SettingsCard(stringResource(R.string.your_fold_timing)) {
-                        Text(stringResource(R.string.unfold_about_1_ms_fold_about_2_ms, learned.first.toInt(), learned.second.toInt()),
-                            style = MaterialTheme.typography.bodyLarge)
-                        CardAction(stringResource(R.string.reset_fold_timing), onClick = {
-                            foldPrefs.edit().remove("fold_open_ms").remove("fold_close_ms").apply()
-                            learned = 520f to 650f
-                        })
-                        CardNote(stringResource(R.string.learned_from_your_last_folds_and_used_to))
+                        SettingsSwitch(stringResource(R.string.page_landing), state.foldEffect, model::setFoldEffect, "duet-switch")
+                        CardNote(stringResource(R.string.page_landing_detail))
                     }
                     SettingsCard(stringResource(R.string.closing_from_home)) {
                         SettingsSwitch(stringResource(R.string.stay_awake_on_the_cover_screen), state.stayAwakeOnFold, model::setStayAwakeOnFold, "fold-awake-switch")

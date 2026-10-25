@@ -21,17 +21,19 @@ class LeadingGridEditingTest {
         val before = HomeLayout(listOf("home"), emptyList(), leadingSlots = leading)
         val direct = dropApp(before, "a", DropTarget.Home(-H + 2))
         assertNull(direct.slotAt(-H)); assertEquals("a", direct.slotAt(-H + 2)); assertEquals("b", direct.slotAt(-H + 1))
-        val inserted = dropApp(before, "new", DropTarget.Home(-H + 1))
-        assertEquals(listOf("a", "new", "b"), listOf(-H, -H + 1, -H + 2).map(inserted::slotAt))
-        assertEquals(listOf("home"), inserted.slots)
-        val full = HomeLayout(listOf("home"), emptyList(), leadingSlots = List(H) { "l$it" })
-        assertSame(full, dropApp(full, "new", DropTarget.Home(-H)))
+        val swapped = dropApp(before, "b", DropTarget.Home(-H))
+        assertEquals(listOf("b", "a"), listOf(-H, -H + 1).map(swapped::slotAt))
     }
 
-    @Test fun `cross-surface moves are atomic and never duplicate shortcuts`() {
-        val before = HomeLayout(listOf("home"), listOf(null, null, null, null), leadingSlots = List(H) { null })
-        val toLeading = dropApp(before, "home", DropTarget.Home(-H))
-        assertEquals("home", toLeading.slotAt(-H)); assertNull(toLeading.slotAt(0))
+    @Test fun `the widgets page takes no new apps`() {
+        val before = HomeLayout(listOf("home"), listOf("docked", null, null, null), leadingSlots = List(H) { null })
+        assertSame(before, dropApp(before, "home", DropTarget.Home(-H)))
+        assertSame(before, dropApp(before, "docked", DropTarget.Home(-H + 1)))
+        assertSame(before, dropApp(before, "new", DropTarget.Home(-H + 2)))
+    }
+
+    @Test fun `an app left on the widgets page moves off it without duplicating`() {
+        val toLeading = HomeLayout(emptyList(), listOf(null, null, null, null), leadingSlots = List(H) { if (it == 0) "home" else null })
         val back = dropApp(toLeading, "home", DropTarget.Home(4))
         assertNull(back.slotAt(-H)); assertEquals("home", back.slotAt(4))
         assertEquals(1, (back.leadingSlots + back.slots + back.dock).count { it == "home" })

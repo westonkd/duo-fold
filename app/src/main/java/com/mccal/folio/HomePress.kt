@@ -10,5 +10,5 @@ internal fun homePressPage(
 ): Int {
     if (homePages <= 0) return 0
     if (alreadyInFront && !somethingOpen) return 0
-    return currentPage.takeIf { it in 0 until homePages } ?: lastHomePage.coerceIn(0, homePages - 1)
+    return currentPage.takeIf { it in -1 until homePages } ?: lastHomePage.coerceIn(0, homePages - 1)
 }

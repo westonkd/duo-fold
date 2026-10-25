@@ -131,6 +131,10 @@ fun layoutScreenFor(widthDp: Float, heightDp: Float, classScale: Float = 1f): La
 fun fitsRegularHomeLayout(widthDp: Float, heightDp: Float, classScale: Float = 1f) =
     widthDp * classScale >= ANDROID_MEDIUM_WIDTH_DP && heightDp * classScale >= HOME_REGULAR_MIN_HEIGHT_DP
 
+fun expandedHome(widthDp: Float, heightDp: Float, classScale: Float = 1f) =
+    widthDp * classScale >= EXPANDED_HOME_MIN_WIDTH_DP && heightDp * classScale >= HOME_REGULAR_MIN_HEIGHT_DP &&
+        !(fitsRegularHomeLayout(widthDp, heightDp, classScale) && heightDp > widthDp)
+
 /** Current density over the device's own ([stableDpi]); 1 when either is unknown. */
 fun classScale(densityDpi: Int, stableDpi: Int): Float =
     if (densityDpi <= 0 || stableDpi <= 0) 1f else densityDpi.toFloat() / stableDpi
@@ -187,7 +191,7 @@ fun homeGeometry(width: Float, height: Float, dockPlacement: DockPlacement, labe
     val dockBesideRail = horizontalDock && !tallRegular && statusRail
     // A bottom bar with no status Side Bar: nothing to leave room for, so the grid takes the width (less its margins).
     val fullWidth = horizontalDock && !tallRegular && !statusRail
-    val expanded = width * classScale >= 650f && height * classScale >= HOME_REGULAR_MIN_HEIGHT_DP && !tallRegular
+    val expanded = expandedHome(width, height, classScale)
     val homeWidth = if (expanded) minOf(460f, width * 0.56f, if (foldAtCenter) width / 2f else Float.MAX_VALUE) else width
     val dockBarHeight = if (horizontalDock) dockIconSize(HOME_ICON_SIZE) + 28f else 0f
     val homeBottomSpace = homeBottomSpace + if (horizontalDock) dockBarHeight + 16f else 0f

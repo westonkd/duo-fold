@@ -191,6 +191,7 @@ fun dropApp(layout: HomeLayout, id: String, target: DropTarget, appRows: Int = M
                 val cells = normalizedLeadingSlots(layout.leadingSlots).toMutableList()
                 val targetLocal = homeCellLocal(target.index)
                 val sourceLocal = cells.indexOf(id)
+                if (sourceLocal < 0) return layout
                 cells.indices.filter { it != sourceLocal && cells[it] == id }.forEach { cells[it] = null }
                 val blockedLocal = blocked.filter { homeCellPage(it) == -1 }.mapTo(mutableSetOf(), ::homeCellLocal)
                 if (targetLocal in blockedLocal) return layout

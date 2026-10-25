@@ -19,19 +19,6 @@ The default wallpaper and launcher icon are generated locally from project drawi
 
 Private design-study images, copied reference files, device captures, and probe research are excluded from the public source package. Apple, Google, Android, Samsung, and other referenced names are trademarks of their respective owners; this project is unaffiliated with those companies.
 
-## Code included in Duet, the fold animation
-
-Duet's styles carry renderer math from these MIT projects. Each file keeps its upstream notice in `third_party/duet/`, and `third_party/duet/PROVENANCE.md` pins the commit, says what was taken and what Folio changed.
-
-| Project | Author | License | What Folio took |
-| --- | --- | --- | --- |
-| [duo-fold-live](https://github.com/joeconsorti/duo-fold-live) | joeconsorti and contributors | MIT | Classic Glass projection, the inner blur, the Fold-Only and Unfold-Only idea |
-| [iphone-duo](https://github.com/chuspeeism/iphone-duo) | jadon7 (chuspeeism) | MIT | The projection and shade model Classic Glass and the iPhone Duo style are adapted from, by way of duo-fold-live |
-| [hingewave](https://github.com/Ant-lib/hingewave) | Ant-lib | MIT | The perspective projection and blur floor behind the Deep style |
-| [FoldFX](https://github.com/iamkeeler/FoldFX) | Gary Keeler | MIT | The idea of one style catalog that the picker and the renderer both read (no code) |
-
-[duo-open](https://github.com/marcoazeem/duo-open) (marcoazeem) gave ideas only: no code.
-
 ## Inspiration (no code included)
 
 | Project | Author | License | What inspired Folio |
