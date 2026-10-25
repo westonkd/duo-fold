@@ -13,9 +13,4 @@ internal object SettingKeys {
     const val DOCK_EVERYWHERE = "dockEverywhere"
     /** Buttons in Every App: a large Back / Home / Recents bar drawn over other apps. */
     const val BUTTON_BAR = "buttonBar"
-    const val BUTTON_BAR_HEIGHT = "buttonBarHeight"
-    const val BUTTON_BAR_WIDTH = "buttonBarWidth"
-    const val BUTTON_BAR_ANDROID_ORDER = "buttonBarAndroidOrder"
-    const val BUTTON_BAR_LIGHT = "buttonBarLight"
-    const val BUTTON_BAR_FADE = "buttonBarFade"
 }

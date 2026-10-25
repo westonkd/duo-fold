@@ -1,6 +1,5 @@
 package com.mccal.folio
 
-import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -34,26 +33,17 @@ class HomeStripAndRingsTest {
         assertEquals(StripView.EMPTY, stripView(HomeStrip.NOTHING, idle = true))
     }
 
-    @Test fun `strong rings are thicker with a clearer track, and Bold text turns them on`() {
+    @Test fun `the strong ring is thicker with a clearer track, and Bold text turns it on`() {
         assertTrue(RingLook.STRONG.strokeScale > RingLook.NORMAL.strokeScale)
         assertTrue(RingLook.STRONG.trackAlpha > RingLook.NORMAL.trackAlpha)
-        assertEquals(RingLook.NORMAL, RingLook.of(strongRings = false, fontWeightAdjustment = 0))
-        assertEquals(RingLook.STRONG, RingLook.of(strongRings = true, fontWeightAdjustment = 0))
-        assertEquals(RingLook.STRONG, RingLook.of(strongRings = false, fontWeightAdjustment = 300))
-        assertEquals("an undefined adjustment is not Bold text", RingLook.NORMAL, RingLook.of(strongRings = false, fontWeightAdjustment = Int.MAX_VALUE))
-        assertEquals("nor is a negative one", RingLook.NORMAL, RingLook.of(strongRings = false, fontWeightAdjustment = -100))
+        assertEquals(RingLook.NORMAL, RingLook.of(fontWeightAdjustment = 0))
+        assertEquals(RingLook.STRONG, RingLook.of(fontWeightAdjustment = 300))
+        assertEquals("an undefined adjustment is not Bold text", RingLook.NORMAL, RingLook.of(fontWeightAdjustment = Int.MAX_VALUE))
+        assertEquals("nor is a negative one", RingLook.NORMAL, RingLook.of(fontWeightAdjustment = -100))
     }
 
-    @Test fun `the biggest ring still fits inside its box when strong`() {
-        // Outer ring: radius .44 of the width plus half the stroke must stay inside .5.
-        listOf(.075f, .07f, .06f).forEach { base -> assertTrue(.44f + base * RingLook.STRONG.strokeScale / 2f < .5f) }
-        assertTrue(.36f + .115f * RingLook.GAUGE_SCALE / 2f < .5f)
-    }
-
-    @Test fun `stronger rings are saved with the status style, off by default`() {
-        assertFalse(StatusStyle.fromJson(null).strongRings)
-        assertFalse(StatusStyle.fromJson(JSONObject()).strongRings)
-        val saved = StatusStyle(strongRings = true).toJson()
-        assertTrue(StatusStyle.fromJson(saved).strongRings)
+    @Test fun `the ring still fits inside its box when strong`() {
+        // Radius .44 of the width plus half the stroke must stay inside .5.
+        assertTrue(.44f + .06f * RingLook.STRONG.strokeScale / 2f < .5f)
     }
 }

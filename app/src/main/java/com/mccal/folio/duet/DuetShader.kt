@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.asComposeRenderEffect
 import com.mccal.folio.FoldGeometry
 
 /**
- * Duet's one fold shader. With [DuetStyles.DUO] it draws exactly what Folio drew before iPhone Duo: the moving half blurred with
+ * Duet's one fold shader. Without perspective it draws what Folio drew before iPhone Duo: the moving half blurred with
  * radius ∝ m·e^1.35 and darkened toward its outer edge (chuspeeism/iphone-duo's model), plus the light sweep. A style
  * only changes the numbers: frost and darkening scale those curves, the blur floor frosts the half as one pane, and
  * perspective tilts it toward the viewer before sampling (hingewave's projection, run on the live screen instead of
@@ -23,7 +23,7 @@ internal class DuetShader {
     private val shader = RuntimeShader(SOURCE)
 
     fun effect(width: Float, height: Float, m: Float, cover: Boolean, geometry: FoldGeometry,
-        style: DuetStyle = DuetStyles.IPHONE, cornerPx: Float = 0f): androidx.compose.ui.graphics.RenderEffect {
+        style: DuetStyle, cornerPx: Float = 0f): androidx.compose.ui.graphics.RenderEffect {
         shader.setFloatUniform("size", width, height)
         shader.setFloatUniform("axis", if (geometry.horizontal) 1f else 0f)
         shader.setFloatUniform("hingePos", geometry.hingePx)

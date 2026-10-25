@@ -1,18 +1,13 @@
 package com.mccal.folio
 
-import com.mccal.folio.duet.DuetOptions
 import com.mccal.folio.duet.DuetStyles
-import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Duet, the fold animation as a tweak: a save from before Duet keeps the fold it had until someone picks another look. */
+/** Duet, the fold animation as a tweak, drawn with iPhone Duo's numbers. */
 class DuetTest {
-    @Test fun `the default is iPhone Duo, with Apple's numbers`() {
-        assertEquals(DuetStyles.IPHONE, DuetOptions().resolved())
-        assertEquals(DuetStyles.IPHONE, LauncherState().duet.resolved())
-        assertEquals("a save with no style gets the default", DuetStyles.IPHONE, DuetOptions.fromJson(JSONObject("{}")).look)
+    @Test fun `the look is iPhone Duo, with Apple's numbers`() {
         with(DuetStyles.IPHONE) {
             // chuspeeism/iphone-duo: 72 px at the edge (Folio's 4.5% of the width), 2x shade, straight-on projection, full
             // tilt, and a hard edge at the hinge because the camera half never moves.
@@ -22,33 +17,11 @@ class DuetTest {
         }
     }
 
-    @Test fun `a save from before Duet keeps the Duo fold, and a new save keeps its choice`() {
-        val before = JSONObject().put("foldEffect", true)
-        assertEquals("duo", decodeLauncherState(before.toString(), legacyRaw = null).duet.style)
-        val after = JSONObject().put("foldEffect", true).put("duet", DuetOptions(style = "deep").toJson())
-        assertEquals("deep", decodeLauncherState(after.toString(), legacyRaw = null).duet.style)
-        // Nothing saved at all is a new install, which starts on the default look.
-        assertEquals(DuetStyles.IPHONE.id, decodeLauncherState("{}", legacyRaw = null).duet.style)
-    }
-
-    @Test fun `Duo is still Folio's earlier fold, number for number`() {
-        with(DuetStyles.DUO) { assertEquals(listOf(1f, 1f, 0f, 0f, 0f, 1f), listOf(frost, darkening, perspective, blurFloor, softEdge, startAt)) }
-        assertTrue("Duo keeps its hard edge at the fold", !DuetStyles.DUO.classic)
-    }
-
-    @Test fun `sliders scale the style, so switching style keeps the adjustment`() {
-        val mine = DuetOptions(style = "deep", frost = .5f, perspective = 5f)
-        assertEquals(.5f, mine.resolved().frost)
-        assertEquals("perspective can't pass a full tilt", 1f, mine.resolved().perspective)
-        assertEquals(.5f * DuetStyles.SUBTLE.frost, mine.copy(style = "subtle").resolved().frost)
-    }
-
-    @Test fun `saved options survive a round trip, and damaged ones fall back instead of throwing`() {
-        val mine = DuetOptions(style = "minimal", frost = .25f, darkening = 1.5f, perspective = .5f)
-        assertEquals(mine, DuetOptions.fromJson(mine.toJson()))
-        assertEquals(DuetOptions(), DuetOptions.fromJson(null))
-        val damaged = DuetOptions.fromJson(JSONObject("""{"style":"nope","frost":99,"darkening":"x","perspective":-4}"""))
-        assertEquals(DuetOptions(style = "iphone", frost = 2f, darkening = 1f, perspective = 0f), damaged)
+    @Test fun `Reduce Motion keeps only the shade`() {
+        with(DuetStyles.reducedMotion(DuetStyles.IPHONE)) {
+            assertEquals(listOf(0f, 1f, 0f, 0f, 0f), listOf(frost, darkening, perspective, blurFloor, softEdge))
+            assertTrue(!classic)
+        }
     }
 
     @Test fun `Duet is a tweak, on by default as the fold animation always was`() {
@@ -67,20 +40,8 @@ class DuetTest {
         assertTrue("the fold animation should ask Use On", "FeatureScopes.on(state.featureScopes, DUET_ID" in main)
     }
 
-    @Test fun `Plays When picks which way the fold animates, and survives a save`() {
-        val open = com.mccal.folio.duet.DuetDirection.OPENING
-        assertTrue(open.allows(true)); assertTrue(!open.allows(false))
-        assertTrue(com.mccal.folio.duet.DuetDirection.CLOSING.allows(false))
-        assertTrue(com.mccal.folio.duet.DuetDirection.BOTH.allows(true) && com.mccal.folio.duet.DuetDirection.BOTH.allows(false))
-        val mine = DuetOptions(direction = "closing")
-        assertEquals(mine, DuetOptions.fromJson(mine.toJson()))
-        assertEquals("both", DuetOptions.fromJson(JSONObject("""{"direction":"sideways"}""")).direction)
-    }
-
-    @Test fun `Classic Glass is Duo Fold Live's look, and its tilt follows the Tilt slider`() {
-        val classic = DuetOptions(style = "classic", perspective = .5f).resolved()
-        assertTrue(classic.classic)
-        assertEquals(.5f, classic.perspective)
-        assertEquals(1.25f, classic.frost)
+    @Test fun `a save with the old Duet look and sliders still loads`() {
+        val saved = """{"foldEffect":true,"foldIntensity":.5,"foldSnapshot":true,"duet":{"style":"deep","frost":.25,"direction":"closing"}}"""
+        assertTrue(decodeLauncherState(saved, legacyRaw = null).foldEffect)
     }
 }

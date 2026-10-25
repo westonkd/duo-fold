@@ -76,11 +76,11 @@ internal object IconLight {
 @Immutable
 internal data class IconLighting(val rimLead: Color, val rimSide: Color, val rimTrail: Color, val sheen: Float, val shade: Float, val wash: Color?)
 
-internal fun iconLighting(wallpaper: Int?, dimmed: Boolean): IconLighting {
+internal fun iconLighting(wallpaper: Int?): IconLighting {
     fun white(alpha: Float) = Color.White.copy(alpha = alpha)
     val wash = wallpaper?.let { lerp(Color.White, Color(it).copy(alpha = 1f), IconLight.WASH) }
     return IconLighting(white(IconLight.RIM_LEAD), white(IconLight.RIM_SIDE), white(IconLight.RIM_TRAIL),
-        if (dimmed) IconLight.SHEEN / 2f else IconLight.SHEEN, IconLight.SHADE, wash)
+        IconLight.SHEEN, IconLight.SHADE, wash)
 }
 
 internal fun fillsEdges(width: Int, height: Int, alphaAt: (Int, Int) -> Int): Boolean {

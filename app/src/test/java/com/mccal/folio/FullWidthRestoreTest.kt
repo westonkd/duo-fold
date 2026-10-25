@@ -57,15 +57,15 @@ class FullWidthRestoreTest {
         assertEquals(mine, on.withFullWidthHome(LayoutScreen.COVER, false))
     }
 
-    @Test fun `merging the upright layout back forgets it, and the Side Bar returns when nothing else is in it`() {
-        val state = LauncherState(portrait = LayoutPreset()).withFullWidthHome(LayoutScreen.INNER_UPRIGHT, true)
-        assertFalse(state.verticalStatus)
-        val merged = state.copy(portrait = null).withoutFullWidthEntry(LayoutScreen.INNER_UPRIGHT)
+    @Test fun `an old separate upright layout in Full-Width Home is merged back, and the Side Bar returns when nothing else is in it`() {
+        val upright = """{"verticalStatus":false,"fullWidthRestore":{"INNER_UPRIGHT":"AUTOMATIC","status":"true"}}"""
+        val merged = decodeLauncherState(upright, legacyRaw = null)
         assertTrue(merged.verticalStatus)
         assertTrue(merged.fullWidthRestore.isEmpty())
         // With the cover still in it, the Side Bar stays away.
-        val both = LauncherState(portrait = LayoutPreset()).withFullWidthHome(LayoutScreen.COVER, true).withFullWidthHome(LayoutScreen.INNER_UPRIGHT, true)
-        assertFalse(both.copy(portrait = null).withoutFullWidthEntry(LayoutScreen.INNER_UPRIGHT).verticalStatus)
-        assertEquals(both, both.withoutFullWidthEntry(LayoutScreen.INNER))
+        val both = """{"verticalStatus":false,"fullWidthRestore":{"COVER":"SIDE","INNER_UPRIGHT":"AUTOMATIC","status":"true"}}"""
+        assertFalse(decodeLauncherState(both, legacyRaw = null).verticalStatus)
+        val cover = LauncherState().withFullWidthHome(LayoutScreen.COVER, true)
+        assertEquals(cover, cover.withoutFullWidthEntry(LayoutScreen.INNER))
     }
 }

@@ -16,7 +16,7 @@ class FullWidthHomeTest {
         assertTrue(without.horizontalDock)
         assertFalse("nothing to sit beside", without.dockBesideRail)
         assertEquals(411f - 32f, without.gridWidth, .01f)
-        assertTrue("the strip the Side Bar took is the grid's now", without.gridWidth > withRail.gridWidth + bottom.dockWidth - 1f)
+        assertTrue("the strip the Side Bar took is the grid's now", without.gridWidth > withRail.gridWidth + DOCK_WIDTH - 1f)
         assertEquals(411f, without.dockBarRoom, .01f)
         assertTrue(without.iconSize >= withRail.iconSize)
     }

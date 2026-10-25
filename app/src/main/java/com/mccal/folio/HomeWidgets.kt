@@ -4,7 +4,6 @@ package com.mccal.folio
 
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import android.appwidget.AppWidgetProviderInfo
 import android.content.Intent
 import android.os.UserManager
 import android.provider.AlarmClock
@@ -266,7 +265,7 @@ internal fun BuiltinWidgetCard(id: Int, slot: Int, opensApp: Boolean = false, on
         DATE_WIDGET -> DateCard(onTap)
         UP_NEXT_WIDGET -> UpNextCard(onTap)
         SUGGESTIONS_WIDGET -> SuggestionsCard(onAdd)
-        BIG_CLOCK_WIDGET -> BigClockCard(onTap, slot, home = opensApp)
+        BIG_CLOCK_WIDGET -> BigClockCard(onTap)
         INFO_WIDGET -> if (slot % 3 == 2) ExpandedCard(onAdd) else GlassCard(onClick = onAdd) {
             Icon(Icons.Rounded.Widgets, null, tint = Color.White, modifier = Modifier.size(28.dp))
             Text(stringResource(R.string.your_widgets), color = Color.White, fontSize = FolioType.SUBHEAD.sp, maxLines = 1)
@@ -372,10 +371,6 @@ internal fun WidgetActions(
     onReplace: () -> Unit,
     onRemove: () -> Unit,
     onClose: () -> Unit,
-    /** A built-in widget's own look (today, only Big Clock's color and weight). Real AppWidgets configure
-     * through [onConfigure] instead - that gate only ever fires for a real `AppWidgetProviderInfo`, which a
-     * built-in widget's negative id never has, so this is a separate entry rather than folded into it. */
-    onCustomize: (() -> Unit)? = null,
     onPlace: (() -> Unit)? = null,
     stackCards: List<Int> = emptyList(),
     stackLabel: (Int) -> String? = { null },
@@ -471,7 +466,6 @@ internal fun WidgetActions(
         SheetGroupLabel(stringResource(R.string.widget))
         SheetGroup {
             if (canConfigure) { MenuRow(stringResource(R.string.edit_widget), Icons.Rounded.Settings) { onConfigure() }; MenuDivider() }
-            if (onCustomize != null) { MenuRow(stringResource(R.string.customize), Icons.Rounded.Palette) { onCustomize() }; MenuDivider() }
             if (onPlace != null) { MenuRow(stringResource(R.string.place_freely), Icons.Rounded.OpenWith) { onPlace() }; MenuDivider() }
             MenuRow(stringResource(R.string.replace_widget), Icons.Rounded.FindReplace) { onReplace() }
             if (homePages > 1) {

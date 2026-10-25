@@ -148,8 +148,7 @@ internal fun AppContextMenu(
             // Lifted icon, exactly where it was.
             AppIcon(app, null, Modifier.offset { IntOffset(iconLeft.roundToInt(), iconTop.roundToInt()) }
                 .size(with(density) { iconSize.toDp() })
-                .graphicsLayer { if (!still) { val s = 1f + .1f * appear.value; scaleX = s; scaleY = s } }
-                , shape = RoundedCornerShape(with(density) { (iconSize * .24f).toDp() }))
+                .graphicsLayer { if (!still) { val s = 1f + .1f * appear.value; scaleX = s; scaleY = s } }, badge = true)
 
             // Menu below the icon, or above when there's no room; aligned to the icon, kept on screen.
             val menuW = with(density) { 260.dp.toPx() }

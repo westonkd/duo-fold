@@ -101,7 +101,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
             val overlayOpen = spotlightVisible.value || LauncherSheets.isOpen(this@MainActivity)
-            MotionSpeed.current = state.motionSpeed
             // The trail for bug reports: what was open, and a heartbeat while Home is showing.
             val overlayName = listOfNotNull(getString(R.string.spotlight).takeIf { spotlightVisible.value },
                 "sheet".takeIf { LauncherSheets.isOpen(this@MainActivity) })
@@ -115,11 +114,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
             val overlayProgress by rememberSettlingProgress(if (overlayOpen) 1f else 0f,
-                MotionSpeed.spring(.86f, androidx.compose.animation.core.Spring.StiffnessMediumLow))
+                FolioMotion.spring(.86f to androidx.compose.animation.core.Spring.StiffnessMediumLow))
             // A back swipe that closed Spotlight keeps its preview until the close ends; the next one starts clean (MO7).
             val overlayShowing = spotlightVisible.value
             androidx.compose.runtime.LaunchedEffect(overlayShowing) { if (overlayShowing) OverlayBack.swipe.snapTo(0f) }
-            val backdropBlurPx = with(androidx.compose.ui.platform.LocalDensity.current) { (state.panelBlur * 32).dp.toPx() }
+            val backdropBlurPx = with(androidx.compose.ui.platform.LocalDensity.current) { 32.dp.toPx() }
             val backdropBlur = androidx.compose.runtime.remember(backdropBlurPx) {
                 androidx.compose.ui.graphics.BlurEffect(backdropBlurPx, backdropBlurPx, androidx.compose.ui.graphics.TileMode.Clamp)
             }
@@ -163,15 +162,12 @@ class MainActivity : ComponentActivity() {
             androidx.lifecycle.compose.LifecycleResumeEffect(Unit) { reduceMotionState.value = reduceMotionEnabled(this@MainActivity); onPauseOrDispose { } }
             // Folio's own Reduce Motion, or Android's Remove animations: the same flag to every screen.
             val reduceMotion = reduceMotionState.value || state.reduceMotion
-            val iconTint = if (state.iconTintFromWallpaper) wallpaperIconTint(wallpaperTone)?.toLong()?.and(0xFFFFFFFFL) ?: state.iconTint else state.iconTint
             val crossWindowBlur = rememberCrossWindowBlur()
             val libraryBlur = crossWindowBlur && state.systemWallpaper && showsWallpaper
             LibraryBackdropBlur(window, libraryBlur)
             androidx.compose.runtime.CompositionLocalProvider(
                 LocalWallpaperTone provides wallpaperTone,
                 LocalGlassLook provides GlassLook(libraryBlur),
-                LocalFolderLook provides FolderLook(state.folderColumns),
-                LocalLabelSize provides state.labelSize,
                 LocalDeviceStatus provides deviceStatus,
                 LocalReduceMotion provides reduceMotion,
                 LocalHinge provides rememberHinge(this@MainActivity),
@@ -183,16 +179,13 @@ class MainActivity : ComponentActivity() {
                     if (scale == 1f) d else androidx.compose.ui.unit.Density(d.density * scale, d.fontScale)
                 },
                 androidx.compose.ui.platform.LocalHapticFeedback provides (if (state.haptics) androidx.compose.ui.platform.LocalHapticFeedback.current else NoHaptics),
-                LocalIconLook provides IconLook(state.iconStyle, androidx.compose.ui.graphics.Color(iconTint), state.iconShape, state.iconPack, state.badgeStyle, state.badgeColor, state.liveIcons, state.liveIconLook, state.badgeLook, state.badgeSize),
+                LocalIconLook provides IconLook(state.iconPack, state.badgeStyle, state.liveIcons),
                 LocalAppIconStyles provides state.appIconStyles,
                 LocalIconsAreDark provides iconsAreDark,
                 LocalRecentPackages provides recentPackages,
                 LocalBadgeCounts provides badgeCounts, LocalInstallProgress provides installProgress, LocalNewApps provides newApps, LocalFolderColors provides state.folderColors) { FoldTransitionHost(FeatureScopes.on(state.featureScopes, DUET_ID, state.foldEffect,
-                    screenFor(androidx.compose.ui.platform.LocalConfiguration.current.fitsRegularHomeLayout())), state.foldIntensity, state.stayAwakeOnFold,
-                    // Reduce Motion: a plain shade, no frost, tilt, shrink or picture moving (DYN-11: motion becomes a fade).
-                    state.foldSnapshot && !reduceMotion, state.haptics,
-                    if (reduceMotion) com.mccal.folio.duet.DuetStyles.reducedMotion(state.duet.resolved()) else state.duet.resolved(), state.duet.plays,
-                    reduceMotion = reduceMotion) {
+                    screenFor(androidx.compose.ui.platform.LocalConfiguration.current.fitsRegularHomeLayout())), state.stayAwakeOnFold,
+                    state.haptics, reduceMotion = reduceMotion) {
                 // The launcher blurs behind every overlay with the same spring the overlay uses.
                 androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()
                     .graphicsLayer {
@@ -200,7 +193,7 @@ class MainActivity : ComponentActivity() {
                     // Fixed radius while any overlay is showing: a constant blur is cached by the RenderThread,
                     // whereas animating the radius re-blurred the whole Home every frame (~14ms of GPU per
                     // frame). The overlay's scrim fades in over it, which hides the switch.
-                    renderEffect = if (p > .02f && backdropBlurPx >= 2f && !LauncherPages.isOpen(this@MainActivity) && SettingsPeek.value == null) backdropBlur else null
+                    renderEffect = if (p > .02f && backdropBlurPx >= 2f && !LauncherPages.isOpen(this@MainActivity)) backdropBlur else null
                 }) {
                 LauncherScreen(state, model, widgets, homeRequests.intValue, homeFromFront = homeFromFront.value,
                     onLaunch = { launchApp(it) }, onMakeDefault = ::makeDefault, onAppInfo = ::appInfo,
@@ -235,7 +228,6 @@ class MainActivity : ComponentActivity() {
                 }
                 }
                 // Last, so the corners sit above everything in Home's window.
-                if (state.roundedCorners) RoundedScreenCorners(state.cornerRadius.dp)
             } } }
         }
         FoldRenderExperiment.attach(this)
@@ -343,7 +335,7 @@ class MainActivity : ComponentActivity() {
      * Home app, its icon opens Home instead, as a preview you can leave with Back or the Home gesture. */
     private fun opensSettings(intent: Intent) = intent.action == Intent.ACTION_APPLICATION_PREFERENCES ||
         (fromAppIcon(intent) && defaultHome.value)
-    private fun fromAppIcon(intent: Intent) = intent.component?.className?.startsWith("$FOLIO_CLASSES.${AppIconChoice.ALIAS_PREFIX}") == true
+    private fun fromAppIcon(intent: Intent) = intent.component?.className == "$FOLIO_CLASSES.$FOLIO_SETTINGS_ALIAS"
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)

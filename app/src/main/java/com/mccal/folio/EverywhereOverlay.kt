@@ -85,15 +85,12 @@ internal class EverywhereOverlay(private val service: AccessibilityService) {
     private var handle: View? = null
     private var dock: ComposeView? = null
     private var buttons: ComposeView? = null
-    private var buttonSettings: ButtonBarSettings? = null
     private var buttonParams: WindowManager.LayoutParams? = null
     private val dockOpen = MutableStateFlow(false)
 
     private data class Settings(val dockEverywhere: Boolean, val leftHanded: Boolean, val dock: List<String>,
-        val buttons: ButtonBarSettings = ButtonBarSettings())
-    /** Buttons in Every App (Settings › Accessibility › Big Buttons). */
-    internal data class ButtonBarSettings(val on: Boolean = false, val height: Float = 52f, val width: Float = .5f,
-        val androidOrder: Boolean = false, val light: Boolean = false, val fade: Boolean = true)
+        /** Buttons in Every App (Settings › Accessibility › Big Buttons). */
+        val buttons: Boolean = false)
     private val settings = MutableStateFlow(readSettings())
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (key != SettingKeys.STATE) return@OnSharedPreferenceChangeListener
@@ -167,20 +164,16 @@ internal class EverywhereOverlay(private val service: AccessibilityService) {
         val j = JSONObject(prefs.getString(SettingKeys.STATE, "{}") ?: "{}")
         val dockIds = j.optJSONArray(SettingKeys.DOCK)?.let { a -> (0 until a.length()).mapNotNull { a.optString(it).takeIf { s -> s.isNotBlank() && s != "null" } } }.orEmpty()
         Settings(j.optBoolean(SettingKeys.DOCK_EVERYWHERE, false), j.optBoolean(SettingKeys.LEFT_HANDED, false), dockIds,
-            ButtonBarSettings(j.optBoolean(SettingKeys.BUTTON_BAR, false),
-                j.optDouble(SettingKeys.BUTTON_BAR_HEIGHT, 52.0).toFloat().coerceIn(44f, 60f),
-                j.optDouble(SettingKeys.BUTTON_BAR_WIDTH, .5).toFloat().coerceIn(.3f, .8f),
-                j.optBoolean(SettingKeys.BUTTON_BAR_ANDROID_ORDER, false), j.optBoolean(SettingKeys.BUTTON_BAR_LIGHT, false),
-                j.optBoolean(SettingKeys.BUTTON_BAR_FADE, true)))
+            j.optBoolean(SettingKeys.BUTTON_BAR, false))
     }.getOrDefault(Settings(false, false, emptyList()))
 
     private fun sync() {
-        val s = settings.value.let { if (SafeMode.active) it.copy(dockEverywhere = false, buttons = ButtonBarSettings()) else it }
+        val s = settings.value.let { if (SafeMode.active) it.copy(dockEverywhere = false, buttons = false) else it }
         val home = FolioForeground.visible.value
-        watchFullScreen(!home && s.buttons.on)
+        watchFullScreen(!home && s.buttons)
         if (s.dockEverywhere && !home) addHandle(s.leftHanded) else { removeHandle(); removeDock() }
         // The bar presses the same buttons the system's does, so it steps aside where the system's bar does.
-        if (s.buttons.on && !home && !fullScreen) addButtons(s.buttons) else removeButtons()
+        if (s.buttons && !home && !fullScreen) addButtons() else removeButtons()
     }
 
     // ---- Dock handle -------------------------------------------------------------------------
@@ -225,15 +218,14 @@ internal class EverywhereOverlay(private val service: AccessibilityService) {
      * screen. It floats above the app, presses the same buttons Android's own bar does, and gets out of the way in
      * full-screen apps.
      */
-    private fun addButtons(s: ButtonBarSettings) {
-        if (buttons != null) { if (buttonSettings != s) { removeButtons(); addButtons(s) }; return }
-        buttonSettings = s
+    private fun addButtons() {
+        if (buttons != null) return
         val view = ComposeView(service).apply {
             setViewTreeLifecycleOwner(owner); setViewTreeSavedStateRegistryOwner(owner)
-            setContent { ButtonBar(s, onAction = { service.performGlobalAction(it) }, onLift = ::liftButtons) }
+            setContent { ButtonBar(onAction = { service.performGlobalAction(it) }, onLift = ::liftButtons) }
         }
         val params = WindowManager.LayoutParams(
-            (service.resources.displayMetrics.widthPixels * s.width).toInt(), (s.height * density).toInt() + (20 * density).toInt(),
+            (service.resources.displayMetrics.widthPixels * .5f).toInt(), (BUTTON_BAR_HEIGHT_DP * density).toInt() + (20 * density).toInt(),
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT).apply {
@@ -263,7 +255,7 @@ internal class EverywhereOverlay(private val service: AccessibilityService) {
     private fun wideScreen(): Boolean = service.resources.configuration.smallestScreenWidthDp >= 600
 
     private fun removeButtons() {
-        buttons?.let { runCatching { wm.removeView(it) } }; buttons = null; buttonSettings = null; buttonParams = null
+        buttons?.let { runCatching { wm.removeView(it) } }; buttons = null; buttonParams = null
     }
 
     private fun openDock() {
@@ -369,31 +361,33 @@ internal object ButtonBarPosition {
     }
 }
 
+internal const val BUTTON_BAR_HEIGHT_DP = 52f
+
 /**
  * The Buttons in Every App bar: one glass pill with three large targets. It fades while you're not using it, and
  * a long-press drag moves it up the screen. Full-screen apps are the service's business: it takes the bar away.
  */
 @androidx.compose.runtime.Composable
-private fun ButtonBar(s: EverywhereOverlay.ButtonBarSettings, onAction: (Int) -> Unit, onLift: (Float, Boolean) -> Unit) {
+private fun ButtonBar(onAction: (Int) -> Unit, onLift: (Float, Boolean) -> Unit) {
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     var touched by androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(System.currentTimeMillis()) }
     var faded by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    androidx.compose.runtime.LaunchedEffect(touched, s.fade) {
+    androidx.compose.runtime.LaunchedEffect(touched) {
         faded = false
-        if (s.fade) { kotlinx.coroutines.delay(2200); faded = true }
+        kotlinx.coroutines.delay(2200); faded = true
     }
     // Full-screen apps are handled by the service, which takes the whole window away.
     val alpha by androidx.compose.animation.core.animateFloatAsState(
         if (faded) .35f else 1f, androidx.compose.animation.core.tween(350), label = "button bar")
-    val ink = if (s.light) FolioColors.SecondaryBackground else androidx.compose.ui.graphics.Color.White
+    val ink = androidx.compose.ui.graphics.Color.White
     val actions = listOf(
         Triple(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_RECENTS, stringResource(R.string.action_a11y_recents), Icons.Rounded.Menu),
         Triple(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME, stringResource(R.string.action_a11y_home), Icons.Rounded.Circle),
         Triple(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK, stringResource(R.string.action_a11y_back), Icons.Rounded.ChevronLeft),
-    ).let { if (s.androidOrder) it.reversed() else it }
+    )
     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()
         .padding(bottom = FolioSpace.COMPACT.dp), contentAlignment = androidx.compose.ui.Alignment.BottomCenter) {
-        androidx.compose.foundation.layout.Row(androidx.compose.ui.Modifier.fillMaxWidth().height(s.height.dp)
+        androidx.compose.foundation.layout.Row(androidx.compose.ui.Modifier.fillMaxWidth().height(BUTTON_BAR_HEIGHT_DP.dp)
             .alpha(alpha)
             .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress(
@@ -402,20 +396,20 @@ private fun ButtonBar(s: EverywhereOverlay.ButtonBarSettings, onAction: (Int) ->
                     onDragCancel = { onLift(0f, true) },
                     onDrag = { change, drag -> change.consume(); onLift(drag.y, false) })
             }
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(s.height.dp / 2))
-            .background(if (s.light) androidx.compose.ui.graphics.Color.White.copy(alpha = .72f) else FolioColors.SecondaryBackground.copy(alpha = .62f))
-            .border(1.dp, (if (s.light) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White).copy(alpha = if (s.light) .08f else .28f),
-                androidx.compose.foundation.shape.RoundedCornerShape(s.height.dp / 2)),
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(BUTTON_BAR_HEIGHT_DP.dp / 2))
+            .background(FolioColors.SecondaryBackground.copy(alpha = .62f))
+            .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = .28f),
+                androidx.compose.foundation.shape.RoundedCornerShape(BUTTON_BAR_HEIGHT_DP.dp / 2)),
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
             actions.forEach { (action, label, icon) ->
                 androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.weight(1f).fillMaxHeight()
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(s.height.dp / 2))
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(BUTTON_BAR_HEIGHT_DP.dp / 2))
                     .clickable(onClickLabel = label) {
                         touched = System.currentTimeMillis()
                         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.ContextClick)
                         onAction(action)
                     }, contentAlignment = androidx.compose.ui.Alignment.Center) {
-                    androidx.compose.material3.Icon(icon, label, tint = ink, modifier = androidx.compose.ui.Modifier.size((s.height * .46f).dp)
+                    androidx.compose.material3.Icon(icon, label, tint = ink, modifier = androidx.compose.ui.Modifier.size((BUTTON_BAR_HEIGHT_DP * .46f).dp)
                         .then(if (action == android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK) androidx.compose.ui.Modifier.mirroredForRtl() else androidx.compose.ui.Modifier))
                 }
             }

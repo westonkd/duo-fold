@@ -110,9 +110,6 @@ internal fun DockAppColumn(
     onLaunch: (AppEntry, android.graphics.Rect?) -> Unit,
     onChoose: (Int) -> Unit,
     magnify: Boolean = false,
-    /** How far the icon under the finger swells at its peak (Harborline's Amount), and whether crossing apps ticks. */
-    magnifyAmount: Float = .38f,
-    magnifyTick: Boolean = true,
     leftHanded: Boolean = false,
     /** Lay the dock out left to right (the bottom bar) instead of top to bottom (the side rail). */
     horizontal: Boolean = false,
@@ -155,7 +152,7 @@ internal fun DockAppColumn(
     val haptic = LocalHapticFeedback.current
     fun along(position: Offset) = if (horizontal) position.x else position.y
     Box((if (horizontal) Modifier.fillMaxHeight().width((rowHeight * savedDock.size).dp) else Modifier.fillMaxWidth().height((rowHeight * savedDock.size).dp))
-        .then(if (!magnify) Modifier else Modifier.pointerInput(horizontal, magnifyTick) {
+        .then(if (!magnify) Modifier else Modifier.pointerInput(horizontal) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
             touchY = along(down.position)
@@ -166,7 +163,7 @@ internal fun DockAppColumn(
                 if (!change.pressed) break
                 touchY = along(change.position)
                 val row = (along(change.position) / rowHeightPx).toInt()
-                if (row != lastRow) { lastRow = row; if (magnifyTick) haptic.perform(FolioHaptic.Scrub) }
+                if (row != lastRow) { lastRow = row; haptic.perform(FolioHaptic.Scrub) }
             }
             touchY = null
         }
@@ -224,14 +221,14 @@ internal fun DockAppColumn(
                         .jiggle(id).foldMotionIcon()) {
                         val magnification by animateFloatAsState(touchY?.let { y ->
                             val center = (renderIndex + .5f) * rowHeightPx
-                            1f + magnifyAmount * (1f - kotlin.math.abs(center - y) / (rowHeightPx * 1.5f)).coerceAtLeast(0f)
+                            1f + .38f * (1f - kotlin.math.abs(center - y) / (rowHeightPx * 1.5f)).coerceAtLeast(0f)
                         } ?: 1f, FolioMotion.spring(FolioMotion.Control), label = "dock magnify $id") // english-only
                         AppIcon(app, null, Modifier.fillMaxSize().graphicsLayer {
                             val s = slotScales[renderIndex].value * magnification; scaleX = s; scaleY = s; alpha = slotAlphas[renderIndex].value
                             // Grow toward the screen, away from the edge the dock sits on.
                             transformOrigin = if (horizontal) androidx.compose.ui.graphics.TransformOrigin(.5f, 1f)
                                 else androidx.compose.ui.graphics.TransformOrigin(if (leftHanded) 0f else 1f, .5f)
-                        }, shape = IconContinuousShape)
+                        }, badge = true)
                         if (edit.active && savedIndex >= 0) JiggleRemoveButton(stringResource(R.string.remove_from_dock, app.label), inset = 6.dp) { edit.onRemove(DropTarget.Dock(savedIndex)) }
                     }
                     // Recent-app dot (Beta): below the icon in a horizontal dock, on the screen side of a side dock.
@@ -293,9 +290,9 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
                 }
             }
             }
-            if (total > 0) IconBadge(total, look.badges, look.badgeColor.fixed?.let { Color(it) } ?: BadgeRed, look.badgeLook, look.badgeSize.scale)
+            if (total > 0) IconBadge(total, look.badges, BadgeRed)
         }
-        if (labels) Text(folder.title, color = LocalHomeInk.current.primary, fontSize = LocalLabelSize.current.sp.sp, maxLines = 1,
+        if (labels) Text(folder.title, color = LocalHomeInk.current.primary, fontSize = HOME_LABEL_SP.sp, maxLines = 1,
             overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = FolioSpace.TINY.dp))
     }
 }
@@ -345,13 +342,13 @@ internal fun AppTile(app: AppEntry, size: Float, labels: Boolean, modifier: Modi
             if (app.id in LocalStackedApps.current) StackPeek(iconSize)
             AppIcon(app, null, Modifier.fillMaxSize()
                 .graphicsLayer { if (plate != null && !still) { val inside = 1f - (1f - FolderOrRoom.ICON_INSIDE) * plate(); scaleX = inside; scaleY = inside } }
-                .pressFeedback(pressed || launching, lifted, size * ICON_CORNER_FRACTION), shape = IconContinuousShape)
+                .pressFeedback(pressed || launching, lifted, size * ICON_CORNER_FRACTION), badge = true)
             if (onRemove != null) JiggleRemoveButton(stringResource(R.string.remove_from_home_2, app.label), onRemove = onRemove)
         }
         val ink = LocalHomeInk.current
         if (labels) Row(Modifier.padding(top = FolioSpace.TINY.dp), verticalAlignment = Alignment.CenterVertically) {
             NewAppDot(app.packageName)
-            Text(app.label, color = ink.primary, fontSize = LocalLabelSize.current.sp.sp, lineHeight = LocalLabelSize.current.lineSp.sp, maxLines = 1,
+            Text(app.label, color = ink.primary, fontSize = HOME_LABEL_SP.sp, lineHeight = HOME_LABEL_LINE_SP.sp, maxLines = 1,
                 overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, style = TextStyle(shadow = ink.labelShadow))
         }
     }

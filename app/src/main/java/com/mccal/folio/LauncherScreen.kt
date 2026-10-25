@@ -17,7 +17,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -77,12 +76,10 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -140,8 +137,6 @@ fun LauncherScreen(
         PerfLog.begin(PerfScenario.WIDGET_RESIZE)
         try { kotlinx.coroutines.awaitCancellation() } finally { PerfLog.end(PerfScenario.WIDGET_RESIZE) }
     }
-    // The Big Clock being edited right on Home (Customize on its menu): Looks, color, Fine tune, Done.
-    var clockEditSlot by remember { mutableStateOf<Int?>(null) }
     var placeSlot by remember { mutableStateOf<Int?>(null) }
     val homeView = androidx.compose.ui.platform.LocalView.current
     val newFolderTitle = stringResource(R.string.new_folder_name) // in the phone's language, not always English
@@ -246,13 +241,7 @@ fun LauncherScreen(
     val pageGestures = remember(pager) { PageGestureLimits(pager) }
     SideEffect { pageGestures.editing = drag.active || widgetSession != null || resize.active }
     val pageFling = androidx.compose.foundation.pager.PagerDefaults.flingBehavior(pager, pagerSnapDistance = pageGestures,
-        snapAnimationSpec = MotionSpeed.spring(1f, androidx.compose.animation.core.Spring.StiffnessMediumLow * 1.2f))
-    // Page Effects, resolved once here so nothing about the feature is consulted where it doesn't apply:
-    // NONE adds no layer, no pager read and no per-frame work at all. Off with Reduce Motion (DYN-11, A11Y-14), and
-    // off while an icon or widget is being moved, because a drop lands by coordinates and a layer transform would move
-    // the coordinates under the finger.
-    val pageEffect = if (!LocalReduceMotion.current && !drag.active && !resize.active && widgetSession == null)
-        state.pageEffect.spec else PageEffect.NONE.spec
+        snapAnimationSpec = FolioMotion.spring(1f to androidx.compose.animation.core.Spring.StiffnessMediumLow * 1.2f))
     val scope = rememberCoroutineScope()
     var previousHomePages by remember { mutableIntStateOf(homePages) }
     var previousEditRevision by remember { mutableIntStateOf(state.editRevision) }
@@ -536,8 +525,6 @@ fun LauncherScreen(
         }
     }
 
-    // The hold delay covers all of Home, including the root detector that picks icons up, which is built here.
-    WithHoldDelay(state.holdDelay) {
     Box(Modifier.fillMaxSize().graphicsLayer {
         // The 0.6.9 motion pass (MO5): Home steps back a little while a folder is open; not under Reduce Motion.
         if (!dockReduceMotion && FolderOpening.id != null) {
@@ -568,13 +555,10 @@ fun LauncherScreen(
         val basePalette = LocalDuoPalette.current
         val palette = remember(basePalette, tone.primary) { homePalette(basePalette, tone.primary) }
         val homeApps = remember(state.apps, state.hiddenApps) { HomeApps(state.apps.filter { it.id !in state.hiddenApps && it.available }) { onLaunchFrom(it, null) } }
-        val bigClockStyles = remember(state.bigClockStyles) { BigClockStyles(state.bigClockStyles, model::setBigClockStyle) }
-        // iOS's legibility gradient over the background. It is worked out here, above everything that draws on the wallpaper,
-        // so the Big Clock can measure its picture as it really looks (LocalHomeDarkening). It stands down where Home's text
-        // is dark ink and a dark scrim would take contrast away. See HomeScrim.
+        // iOS's legibility gradient over the background. It stands down where Home's text is dark ink and a dark scrim
+        // would take contrast away. See HomeScrim.
         val scrim = HomeScrim.of(state.homeScrim, homeInk.dark)
-        CompositionLocalProvider(LocalOpenMenuId provides overlays.menu, LocalWidgetStacks provides state.widgetStacks, LocalHomeDarkening provides HomeDarkening(scrim), LocalStackRotate provides state.stackRotate, LocalHomeApps provides homeApps,
-            LocalBigClockStyles provides bigClockStyles,
+        CompositionLocalProvider(LocalOpenMenuId provides overlays.menu, LocalWidgetStacks provides state.widgetStacks, LocalStackRotate provides state.stackRotate, LocalHomeApps provides homeApps,
             LocalHomeInk provides homeInk, LocalDuoPalette provides palette,
             // Remembered so every icon isn't recomposed each time Home recomposes (a new lambda changes the local).
             LocalStackedApps provides state.iconStacks.keys,
@@ -618,7 +602,6 @@ fun LauncherScreen(
             val classScale = androidx.compose.ui.platform.LocalConfiguration.current.classScale
             val wide = maxWidth.value * classScale >= EXPANDED_HOME_MIN_WIDTH_DP && maxHeight.value * classScale >= HOME_REGULAR_MIN_HEIGHT_DP
             val layoutScreen = layoutScreenFor(maxWidth.value, maxHeight.value, classScale)
-            val boxHeightDp = maxHeight.value
             val preset = state.presetFor(layoutScreen)
             val density = LocalDensity.current
             val inLibrary = pager.currentPage == visibleHomePages
@@ -630,20 +613,20 @@ fun LauncherScreen(
             val shownDock = if (dockOpenPlace) state.dock + null else state.dock
             val geometry = homeGeometry(maxWidth.value, maxHeight.value, preset, state.labels, dockSlots = shownDock.size, statusRail = state.verticalStatus,
                 statusHeight = if (state.verticalStatus) statusHeight + 22f else 0f,
-                labelHeight = with(density) { LocalLabelSize.current.lineSp.sp.toDp().value } + 6f, inLibrary = inLibrary,
+                labelHeight = with(density) { HOME_LABEL_LINE_SP.sp.toDp().value } + 6f, inLibrary = inLibrary,
                 homeBottomSpace = if (isDefaultHome) 44f else 88f,
                 // The rail's round controls, counted as the column at its bottom draws them: Search without the search
                 // pill or off the Home pages. Home's own count anchors the dock.
                 railControls = if (!state.searchPill || pager.currentPage !in 0 until homePages) 1 else 0,
                 homeRailControls = if (state.searchPill) 0 else 1, classScale = classScale, appRows = homeAppRows,
-                foldAtCenter = hinge?.vertical == true, fillSpace = state.homeRows == 0, shrinkIconsForRows = state.homeRows > BASE_APP_ROWS)
+                foldAtCenter = hinge?.vertical == true, fillSpace = true)
             // Half folded like a laptop: the status (information) stays above the hinge and the dock (controls) goes
             // below it, like Folio's other fold-aware panels; the dock scrolls if the lower half is short.
             val tableHinge = hinge?.takeIf { it.active && !it.vertical }
             val hingeTop = tableHinge?.let { with(density) { (it.startPx - homeBoxTop).toDp().value } }
             val hingeBottom = tableHinge?.let { with(density) { (it.endPx - homeBoxTop).toDp().value } }
-            val statusTopShown = if (hingeTop != null && geometry.statusTop + statusHeight > hingeTop - 8f)
-                maxOf(16f, hingeTop - 8f - statusHeight) else geometry.statusTop
+            val statusTopShown = if (hingeTop != null && geometry.contentTop + statusHeight > hingeTop - 8f)
+                maxOf(16f, hingeTop - 8f - statusHeight) else geometry.contentTop
             val dockTopShown = if (hingeBottom != null && !geometry.horizontalDock && geometry.dockTop < hingeBottom + 8f)
                 hingeBottom + 8f else geometry.dockTop
             val dockHeightShown = if (dockTopShown != geometry.dockTop)
@@ -687,7 +670,7 @@ fun LauncherScreen(
             val contentWidth = maxWidth
             val panelWidth = maxWidth - geometry.homeWidth.dp
             // A phone-sized screen keeps the status Side Bar beside Home even with the dock at the bottom.
-            val pagerWidth = if (geometry.horizontalDock && !geometry.dockBesideRail) maxWidth else maxWidth - preset.dockWidth.dp - 28.dp
+            val pagerWidth = if (geometry.horizontalDock && !geometry.dockBesideRail) maxWidth else maxWidth - DOCK_WIDTH.dp - 28.dp
             val leftColumnOrigin = (maxWidth / 2f - geometry.gridWidth.dp) / 2f - 16.dp
             val homeStride = panelWidth - leftColumnOrigin
             // The page controls under Home (and the Preview bar before Folio is the Home app), measured: the old guess
@@ -704,8 +687,6 @@ fun LauncherScreen(
             var gestureOriginInRoot by remember { mutableStateOf(Offset.Zero) }
             var gestureOriginInWindow by remember { mutableStateOf(Offset.Zero) }
             var scrubberBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
-            // The edit-mode dock grabber, so a downward drag on it moves the dock instead of opening Spotlight or the shade (#326).
-            var grabberBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
             val pagerInputEnabled = pager.currentPage in 0..visibleHomePages && !drag.active &&
                 widgetSession == null && !resize.active && sheet.isEmpty() && overlays.menu == null &&
                 overlays.folder == null && overlays.emptyCell == null && overlays.newFolder == null &&
@@ -729,9 +710,7 @@ fun LauncherScreen(
                     // down, a downward drag scrolls the library.
                     if (pager.currentPage == visibleHomePages) point.y < libraryPullZone
                     else if (pager.currentPage !in 0 until visibleHomePages) false
-                    // Home's page gestures see a touch before the grabber does, so a pull down on it opened Spotlight and only
-                    // drags upward reached it: "the dock handle rarely works" (#326).
-                    else if (homeEdit.active && grabberBounds.contains(point + gestureOriginInRoot)) false else {
+                    else {
                         val region = drag.hit(point + gestureOriginInRoot, eligibleDragPages)
                         val rootOnScreen = IntArray(2).also(launcherRootView::getLocationOnScreen)
                         val screenPoint = point + gestureOriginInWindow +
@@ -798,34 +777,22 @@ fun LauncherScreen(
                             // Unfolded portrait: the Side Bar's status capsule sits in the top corner, so the library keeps
                             // the same side margin Home does instead of running underneath it.
                             onActions = { overlays.menu = it.id }, modifier = Modifier.fillMaxSize()
-                                // The page effect turns the whole page, so it goes outside the library's own layer:
-                                // that one pushes the library back as Home returns, and the two stack rather than fight.
-                                .pageEffect(pageEffect, pager, page)
                                 .graphicsLayer { val b = libraryBack; scaleX = 1f - .14f * b; scaleY = scaleX; alpha = 1f - .35f * b; translationX = size.width * .08f * b }
                                 .padding(top = FolioSpace.LARGE.dp, bottom = bottomSpace)
-                                .padding(libraryEdges(geometry.horizontalDock && !geometry.dockBesideRail && state.verticalStatus, preset.dockWidth, state.leftHanded,
+                                .padding(libraryEdges(geometry.horizontalDock && !geometry.dockBesideRail && state.verticalStatus, state.leftHanded,
                                     spansWindow = geometry.horizontalDock && !geometry.dockBesideRail)).testTag("library-page"),
                             drag = drag, page = visibleHomePages, onLaunchFrom = onLaunchFrom, onTurnOnWork = { model.turnOnWork(it) })
                     } else {
                         // Centered beside the rail when the grid is narrower than the space (short, wide windows).
-                        // Page Effects turn the page as it goes by, and only here, where one page fills the window.
-                        // Unfolded, Home pans two pages at once past the window (ExpandedWorkspace) and there is no
-                        // single page turning to speak of.
-                        //
-                        // The layer wraps the pane, not this Row: the Row fills the window and centres a narrower
-                        // grid beside the rail, so a cube pivoting on the Row would hinge on the window edge, out in
-                        // the empty margin, instead of on the seam the pane shares with its neighbour.
                         Row(Modifier.fillMaxSize().testTag("home-surface"), horizontalArrangement = Arrangement.Center) {
-                            Box(Modifier.pageEffect(pageEffect, pager, page)) {
-                                HomePagePane(page, state, previewLayout.slots, previewLayout.leadingSlots, previewLayout.widgetPlacements, appsById, geometry, contentHeight,
-                                    bottomSpace, widgets, drag, target, insertionTarget, showLargeWidget = false,
-                                    onLaunch = onLaunchFrom, onActions = { overlays.menu = it.id },
-                                    onWidget = { picker.slot = it; sheet = "widgetActions" },
-                                    onFolder = { overlays.folder = it },
-                                    onEmptyWidget = onEmptyLongPress,
-                                    onMove = { id, offset -> model.move(id, offset) },
-                                    onProblem = onProblem)
-                            }
+                            HomePagePane(page, state, previewLayout.slots, previewLayout.leadingSlots, previewLayout.widgetPlacements, appsById, geometry, contentHeight,
+                                bottomSpace, widgets, drag, target, insertionTarget, showLargeWidget = false,
+                                onLaunch = onLaunchFrom, onActions = { overlays.menu = it.id },
+                                onWidget = { picker.slot = it; sheet = "widgetActions" },
+                                onFolder = { overlays.folder = it },
+                                onEmptyWidget = onEmptyLongPress,
+                                onMove = { id, offset -> model.move(id, offset) },
+                                onProblem = onProblem)
                             // The pane starts with a 16 dp margin before its grid. With nothing beside the page (dock at the
                             // bottom, no Side Bar) the Row centers the page in the window, so the same margin after it keeps
                             // the grid itself centered instead of 8 dp to the right.
@@ -836,11 +803,11 @@ fun LauncherScreen(
             }
             if (state.verticalStatus) StatusRail(deviceStatus,
                 Modifier.align(railTop(state.leftHanded)).railEdge(state.leftHanded, 12.dp).offset(y = statusTopShown.dp)
-                    .width(preset.dockWidth.dp).onSizeChanged {
-                        // The whole rail, location slot included: the dock goes below all of it.
+                    .width(DOCK_WIDTH.dp).onSizeChanged {
+                        // The whole rail: the dock goes below all of it.
                         statusHeight = with(density) { it.height.toDp().value }
                     },
-                compact = contentHeight < COMPACT_DOCK_MAX_HEIGHT_DP.dp, iconSize = dockIconSize(geometry.iconSize).dp, style = state.statusStyle,
+                compact = contentHeight < COMPACT_DOCK_MAX_HEIGHT_DP.dp, iconSize = dockIconSize(geometry.iconSize).dp,
                 onClick = { launcherActivity.openAndroidShade(ShadePanel.QUICK_SETTINGS) })
             // Background and border without clipping, so Harbor-style magnified icons can grow past the rail.
             // Portrait unfolded (iPhone Duo): a horizontal dock bar centered along the bottom, above the page controls.
@@ -861,46 +828,8 @@ fun LauncherScreen(
             val dockPitchShown by animateFloatAsState(if (geometry.horizontalDock) dockPitch else geometry.dockRowHeight, dockSpec, label = "dock pitch")
             val dockRailHeightShown by animateFloatAsState(dockHeightShown, dockSpec, label = "dock height")
             val dockBarWidthShown = animateFloatAsState(dockBarWidth.value, dockSpec, label = "dock width").value.dp
-            // Edit mode: a grabber under the Side Bar dock to drag it up or down (#21). Only where the dock follows a saved
-            // position rather than the grid, and below the dock so it never takes a drag meant for a dock app.
-            if (homeEdit.active && sheet.isEmpty() && !geometry.horizontalDock && !geometry.dockBesideRail && !geometry.splitColumns &&
-                !preset.dockAlignToGrid) {
-                // Read through updated state: folding, unfolding or resizing keeps edit mode, and the drag below must use the new screen and height.
-                val grabScreen by rememberUpdatedState(layoutScreen)
-                val centerDp by rememberUpdatedState(dockTopShown + dockHeightShown / 2f)
-                val windowHeight by rememberUpdatedState(boxHeightDp)
-                val currentPreset by rememberUpdatedState(preset)
-                // The drag is added up here from where it started, so two moves before the screen redraws are both counted.
-                // Forget where it was once it's gone, so a stale spot never blocks a pull down later.
-                DisposableEffect(Unit) { onDispose { grabberBounds = androidx.compose.ui.geometry.Rect.Zero } }
-                var dragStartCenter by remember { mutableFloatStateOf(0f) }
-                var dragged by remember { mutableFloatStateOf(0f) }
-                val moveLabel = stringResource(R.string.move_dock)
-                val upLabel = stringResource(R.string.move_dock_up)
-                val downLabel = stringResource(R.string.move_dock_down)
-                Box(Modifier.align(railTop(state.leftHanded)).railEdge(state.leftHanded, 12.dp)
-                    // Under the dock, but never lower than a touch target above the bottom of the window.
-                    .offset(y = minOf(dockTopShown + dockHeightShown + 4f, boxHeightDp - FolioTouch.MIN - 8f).dp).width(preset.dockWidth.dp).height(FolioTouch.MIN.dp)
-                    .onGloballyPositioned { grabberBounds = it.boundsInRoot() }
-                    .pointerInput(Unit) {
-                        detectVerticalDragGestures(onDragStart = { dragStartCenter = centerDp; dragged = 0f }) { change, dy ->
-                            change.consume()
-                            dragged += dy / density.density
-                            model.setPreset(grabScreen, currentPreset.copy(dockPosition = dockPositionForCenter(dragStartCenter + dragged, windowHeight)))
-                        }
-                    }.semantics {
-                        contentDescription = moveLabel
-                        customActions = listOf(
-                            androidx.compose.ui.semantics.CustomAccessibilityAction(upLabel) { model.setPreset(grabScreen, currentPreset.copy(dockPosition = dockPositionStepFrom(centerDp, windowHeight, -1))); true },
-                            androidx.compose.ui.semantics.CustomAccessibilityAction(downLabel) { model.setPreset(grabScreen, currentPreset.copy(dockPosition = dockPositionStepFrom(centerDp, windowHeight, 1))); true })
-                    }.testTag("dock-grabber"), contentAlignment = Alignment.Center) {
-                    Box(Modifier.size(width = 56.dp, height = 28.dp).background(Glass.copy(alpha = .9f), RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.UnfoldMore, null, tint = Color.White, modifier = Modifier.size(20.dp))
-                    }
-                }
-            }
-            val dockShape = RoundedCornerShape(dockCornerRadius(if (geometry.horizontalDock) geometry.dockBarHeight else preset.dockWidth,
-                dockIconSize(geometry.iconSize), state.iconShape).dp)
+            val dockShape = RoundedCornerShape(dockCornerRadius(if (geometry.horizontalDock) geometry.dockBarHeight else DOCK_WIDTH,
+                dockIconSize(geometry.iconSize)).dp)
             Box((if (geometry.horizontalDock) (if (hinge?.active == true && hinge.vertical)
                     // Half folded like a book: the bar sits centered on the trailing half, off the hinge.
                     Modifier.align(Alignment.BottomEnd).padding(end = ((contentWidth / 2 - dockBarWidthShown) / 2).coerceAtLeast(0.dp))
@@ -913,7 +842,7 @@ fun LauncherScreen(
                     .padding(bottom = controlsSpace + FolioSpace.SMALL.dp)
                     .width(dockBarWidthShown).height(geometry.dockBarHeight.dp)
                 else Modifier.align(railTop(state.leftHanded)).railEdge(state.leftHanded, 12.dp).offset(y = dockTopShown.dp)
-                    .width(preset.dockWidth.dp).height(dockRailHeightShown.dp)).graphicsLayer {
+                    .width(DOCK_WIDTH.dp).height(dockRailHeightShown.dp)).graphicsLayer {
                     translationX = dockShake.value * this.density
                     // Composite the stationary dock independently of the shared pager layer (not while magnifying: it would clip).
                     compositingStrategy = if (state.dockMagnify) androidx.compose.ui.graphics.CompositingStrategy.Auto
@@ -924,8 +853,7 @@ fun LauncherScreen(
                         dockIconSize(geometry.iconSize), drag, insertionTarget,
                         onLaunch = onLaunchFrom, onChoose = { dockSlot = it; sheet = "dock" },
                         magnify = FeatureScopes.on(state.featureScopes, "dockMagnify", state.dockMagnify, screenFor(wide)) &&
-                            !LocalReduceMotion.current, leftHanded = state.leftHanded, horizontal = geometry.horizontalDock,
-                        magnifyAmount = TweakOptions.magnifyAmount(state.tweakOptions), magnifyTick = TweakOptions.on(state.tweakOptions, "dockMagnify", "tick"))
+                            !LocalReduceMotion.current, leftHanded = state.leftHanded, horizontal = geometry.horizontalDock)
                 }
             }
             // Unfolded, the pager carries the extra left page beside Home, so a row centred on the whole pager lands
@@ -1038,7 +966,7 @@ fun LauncherScreen(
                 }
             }
             if (!inLibrary && !drag.active) Column(Modifier.align(railBottom(state.leftHanded)).railEdge(state.leftHanded, 12.dp).padding(bottom = FolioSpace.SNUG.dp)
-                .width(preset.dockWidth.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                .width(DOCK_WIDTH.dp), horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
                 val controlSize = dockIconSize(geometry.iconSize).dp
                 val searchBounds = remember { android.graphics.Rect() }
@@ -1081,7 +1009,7 @@ fun LauncherScreen(
                         }
                         "settings", "settings:wallpaper" -> {
                             CompositionLocalProvider(LocalPreviewPage provides pager.currentPage.coerceIn(0, homePages - 1)) {
-                            CustomizationSheet(state, wide, model, initiallyUpright = layoutScreen == LayoutScreen.INNER_UPRIGHT, isDefaultHome = isDefaultHome,
+                            CustomizationSheet(state, wide, model, isDefaultHome = isDefaultHome,
                             page = activeCustomizationPage, onPage = { customizationPage = it; sheet = "settings" },
                             onMakeDefault = { sheet = ""; onMakeDefault() },
                             onClose = { sheet = "" }, onEditPins = { sheet = "pins" },
@@ -1135,7 +1063,6 @@ fun LauncherScreen(
                                 },
                                 onRemove = { widgets.remove(picker.slot); sheet = "" },
                                 onClose = { sheet = "" },
-                                onCustomize = if (placement.id == BIG_CLOCK_WIDGET) {{ clockEditSlot = placement.slot; sheet = "" }} else null,
                                 onPlace = if (placement.id == BIG_CLOCK_WIDGET && !geometry.splitColumns && !(hinge?.let { it.active && !it.vertical } ?: false)) {{ placeSlot = placement.slot; sheet = "" }} else null)
                         }
                     }
@@ -1462,28 +1389,13 @@ fun LauncherScreen(
                 // Keep removal in the right-side control area that is vacated during a drag.
                 // A centered target overlaps the expanded workspace's right-hand first cell.
                 Modifier.align(railBottom(state.leftHanded)).navigationBarsPadding().railEdge(state.leftHanded, 12.dp).padding(bottom = FolioSpace.MEDIUM.dp)
-                    .width((if (expandedWorkspace) state.expanded else state.compact).dockWidth.dp).height(64.dp)
+                    .width(DOCK_WIDTH.dp).height(64.dp)
                     .dropRegion(drag, DropTarget.Remove).testTag("remove-drop-target"),
                 color = if (target == DropTarget.Remove) Color(0xFFB33B3B) else Glass.copy(alpha = .96f), shape = RoundedCornerShape(FolioRadius.PANEL.dp)) {
                 Column(Modifier.fillMaxSize().padding(vertical = FolioSpace.SNUG.dp), verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Rounded.DeleteOutline, null)
                     Text(stringResource(R.string.remove), fontSize = FolioType.CAPTION.sp, maxLines = 1)
-                }
-            }
-        }
-        clockEditSlot?.let { slot ->
-            if (model.placement(slot) == null) clockEditSlot = null
-            else {
-                BackHandler { clockEditSlot = null }
-                val windowHeight = androidx.compose.ui.platform.LocalWindowInfo.current.containerSize.height
-                // In the half of the screen the clock is not in, so the real clock stays in view.
-                val clockLow = (BigClockBounds.bySlot[slot]?.center?.y ?: 0f) > windowHeight / 2f
-                Box(Modifier.fillMaxSize(), contentAlignment = if (clockLow) Alignment.TopCenter else Alignment.BottomCenter) {
-                    ClockEditBar(slot, state.bigClockStyles[slot], { model.setBigClockStyle(slot, it) },
-                        onDone = { clockEditSlot = null }, enterFromTop = clockLow,
-                        modifier = if (clockLow) Modifier.windowInsetsPadding(WindowInsets.folioSafeTop).padding(top = FolioSpace.SMALL.dp)
-                            else Modifier.navigationBarsPadding().padding(bottom = FolioSpace.LARGE.dp))
                 }
             }
         }
@@ -1682,7 +1594,6 @@ fun LauncherScreen(
                     dockVacancies = state.dock.indices.filter { state.dock[it] == null },
                     onDismiss = { overlays.folder = null }, onRename = { model.renameFolder(id, it) },
                     color = state.folderColors[id], onColor = { model.setFolderColor(id, it) },
-                    size = state.folderSizes[id], onSize = { model.setFolderSize(id, it) },
                     onReorder = { appId, index -> model.moveFolderApp(id, appId, index) },
                     onSortAlphabetically = { model.sortFolderAlphabetically(id) },
                     onCarryStart = { app ->
@@ -1750,7 +1661,6 @@ fun LauncherScreen(
         }
         }
     } } }
-    }
 }
 
 // Keeps a block in its own compiled method. Home's content lambda outgrew 256 registers, and R8 then wrote a
@@ -1762,8 +1672,8 @@ private fun BoxScope.OwnMethod(content: @Composable BoxScope.() -> Unit) = conte
  * App Library side margins: Home's 16dp, plus room for the Side Bar's status capsule on whichever side it sits. When the
  * page spans the window (dock at the bottom, nothing beside it) the far side gets the same 16dp, so the library is centered.
  */
-internal fun libraryEdges(statusInCorner: Boolean, dockWidth: Float, leftHanded: Boolean, spansWindow: Boolean = false): PaddingValues {
-    val rail = if (statusInCorner) (dockWidth + 28f).dp else if (spansWindow) 16.dp else 0.dp
+internal fun libraryEdges(statusInCorner: Boolean, leftHanded: Boolean, spansWindow: Boolean = false): PaddingValues {
+    val rail = if (statusInCorner) (DOCK_WIDTH + 28f).dp else if (spansWindow) 16.dp else 0.dp
     return if (leftHanded) PaddingValues(start = rail.coerceAtLeast(16.dp), end = if (statusInCorner || spansWindow) 16.dp else 0.dp)
     else PaddingValues(start = 16.dp, end = rail)
 }

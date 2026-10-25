@@ -16,22 +16,9 @@ class SettingsRegroupTest {
         return sheet.substring(a, b)
     }
 
-    @Test fun theDockHasOneCardHoldingItsPlacementWidthSpacingAlignAndHeight() {
-        val card = between("SettingsCard(stringResource(R.string.dock)) {", "R.string.reset_this_layout")
-        listOf("dock-placement", "R.string.width", "R.string.space_between_dock_apps", "R.string.align_dock_with_app_rows", "R.string.dock_height")
-            .forEach { assertTrue("$it belongs in the Dock card", card.contains(it)) }
-    }
-
-    @Test fun thePositionCardKeepsOnlyAppsAndStatus() {
-        val card = between("SettingsCard(stringResource(R.string.position)) {", "SettingsCard(stringResource(R.string.full_width_home))")
-        assertFalse(card.contains("dock-placement"))
-        assertTrue(card.contains("page-position") && card.contains("status-position"))
-    }
-
-    @Test fun theDockRowIsNamedPlacementSoItDoesNotRepeatThePositionCard() {
-        val card = between("SettingsCard(stringResource(R.string.dock)) {", "R.string.reset_this_layout")
-        assertTrue(card.contains("IosMenuRow(stringResource(R.string.placement)"))
-        assertFalse(card.contains("IosMenuRow(stringResource(R.string.position)"))
+    @Test fun theDockCardHoldsItsPlacement() {
+        val card = between("SettingsCard(stringResource(R.string.dock)) {", "SheetGroupLabel(stringResource(R.string.widgets_page_number")
+        assertTrue(card.contains("IosMenuRow(stringResource(R.string.placement)") && card.contains("dock-placement"))
         assertTrue(sheet.contains("R.string.placement to CustomizationPage.HOME"))
     }
 

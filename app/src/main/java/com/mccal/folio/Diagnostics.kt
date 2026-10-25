@@ -176,10 +176,7 @@ internal object Diagnostics {
             "font ${config.fontScale}×",
             "animations ${scale}×",
             "wallpaper ${if (state?.optBoolean("systemWallpaper", false) == true) "Android" else "Folio"}",
-            "fold effect ${if (state?.optBoolean("foldEffect", true) != false) "on" else "off"}" +
-                " (Duet ${state?.optJSONObject("duet")?.optString("style")?.ifBlank { null } ?: "duo"}," +
-                " plays ${state?.optJSONObject("duet")?.optString("direction")?.ifBlank { null } ?: "both"})",
-            "page effect ${state?.optString("pageEffect")?.ifBlank { PageEffect.NONE.name } ?: "?"}",
+            "fold effect ${if (state?.optBoolean("foldEffect", true) != false) "on" else "off"}",
             "safe mode ${if (SafeMode.active) "on" else "off"}",
         ).joinToString(", ")
     }
@@ -229,9 +226,8 @@ internal object Diagnostics {
     }.trimEnd()
 
     /**
-     * What Android shares about its wallpaper, and which background Folio puts behind Home (#353). With Android's
-     * wallpaper the Big Clock's colors come from the home colors here, then from the system palette when Android shares
-     * none; "none" means neither gave Folio any colors.
+     * What Android shares about its wallpaper, and which background Folio puts behind Home (#353); "none" means Android
+     * gave Folio no colors.
      */
     fun wallpaperReport(context: Context): String {
         val manager = runCatching { android.app.WallpaperManager.getInstance(context) }.getOrNull()
@@ -251,19 +247,12 @@ internal object Diagnostics {
     internal fun wallpaperReportText(systemWallpaper: Boolean, folioPictureSaved: Boolean, home: List<Int>?, lock: List<Int>?,
         palette: List<Int>? = null, themeColorSource: String? = null): String = buildString {
         fun text(colors: List<Int>?) = colors?.takeIf { it.isNotEmpty() }?.joinToString(" ") { String.format(java.util.Locale.ROOT, "#%06X", it and 0xFFFFFF) } ?: "none"
-        val clockSource = WallpaperTone(primary = home?.firstOrNull(), fromAndroid = systemWallpaper,
-            palette = palette?.takeIf { it.size >= 3 }?.let { SystemPalette(it[0], it[1], it[2]) }).colorSource()
         appendLine("Wallpaper:")
         appendLine("  behind Home: ${if (systemWallpaper) "Android's wallpaper" else "Folio's background"}" +
             " (a Folio picture is ${if (folioPictureSaved) "saved" else "not saved"})")
         appendLine("  Android's colors, home: ${text(home)}")
         appendLine("  Android's colors, lock: ${text(lock)}")
-        appendLine("  system palette (accent 1, 2, 3 at 500): ${text(palette)}, theme color source: ${themeColorSource ?: "not set"}")
-        append("  Big Clock colors: " + if (!systemWallpaper) "from Folio's background" else when (clockSource) {
-            WallpaperColorSource.ANDROID_COLORS -> "from Android's wallpaper colors"
-            WallpaperColorSource.SYSTEM_PALETTE -> "from the system palette"
-            WallpaperColorSource.NONE -> "none"
-        })
+        append("  system palette (accent 1, 2, 3 at 500): ${text(palette)}, theme color source: ${themeColorSource ?: "not set"}")
     }
 
     fun buildDisplay(): String = "${Build.DISPLAY} (${Build.HARDWARE}, ${Build.SOC_MODEL})"

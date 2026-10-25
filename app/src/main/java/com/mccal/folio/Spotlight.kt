@@ -124,7 +124,7 @@ internal fun SpotlightOverlay(visible: Boolean, progress: () -> Float, state: La
     }
     if (!composed) return
     val lift = with(androidx.compose.ui.platform.LocalDensity.current) { 24.dp.toPx() }
-    val look = spotlightLook(LocalHomeInk.current, state.panelBlur > 0f)
+    val look = spotlightLook(LocalHomeInk.current)
     Box(Modifier.fillMaxSize().graphicsLayer { alpha = progress() }.background(look.backdrop)
         .then(if (visible) Modifier.clickable(remember { MutableInteractionSource() }, null, onClick = onClose) else Modifier))
     Box(Modifier.fillMaxSize().graphicsLayer {
@@ -594,8 +594,8 @@ internal const val SPOTLIGHT_CHIP = .14f
 @androidx.compose.runtime.Immutable
 internal data class SpotlightLook(val ink: HomeInk, val backdrop: Color)
 
-internal fun spotlightLook(homeInk: HomeInk, blurred: Boolean): SpotlightLook =
-    SpotlightLook(homeInk, libraryWash(homeInk.dark, blurred))
+internal fun spotlightLook(homeInk: HomeInk): SpotlightLook =
+    SpotlightLook(homeInk, libraryWash(homeInk.dark, blurred = true))
 
 /** Whether the IME is actually on screen for [view]'s window. */
 private object WindowInsetsHolderIme {

@@ -83,12 +83,6 @@ internal fun RegisterOpenWindow(windows: OpenWindows, active: Boolean = true) {
 /** How far a back swipe has gone over the full-screen Settings page (0–1), for predictive back. */
 internal val SheetBackProgress = androidx.compose.runtime.mutableFloatStateOf(0f)
 
-/** A Home layout slider being dragged in Settings, with its bounds in the Settings window (see [SettingsPeek]). */
-internal data class PeekSlider(val label: String, val valueLabel: String, val fraction: Float, val bounds: androidx.compose.ui.geometry.Rect)
-
-/** Set while a Home layout slider is dragged: Settings fades so the real Home shows the change, like iOS. */
-internal val SettingsPeek = androidx.compose.runtime.mutableStateOf<PeekSlider?>(null)
-
 /**
  * Top-safe insets that respect the real camera cutout. Folio hides the status bar on Home, which
  * makes `statusBarsPadding()` zero, so content slid under the camera; the display cutout is still
@@ -110,26 +104,10 @@ internal val GlassOutlineColor = Color.White.copy(alpha = GLASS_OUTLINE)
 /** How strongly Home's glass takes the wallpaper's main color (iOS-style tinted materials). */
 internal const val GLASS_TINT = .28f
 
-/** Settings › Home Screen & Dock › Folders. */
-internal data class FolderLook(val columns: Int = 0)
-internal val LocalFolderLook = androidx.compose.runtime.staticCompositionLocalOf { FolderLook() }
 
-/** App name size on Home (Settings › Icons & Side Bar). */
-enum class LabelSize(@androidx.annotation.StringRes val label: Int, val sp: Float, val lineSp: Float) { SMALL(R.string.small, 10f, 13f), STANDARD(R.string.standard, 11f, 14f), LARGE(R.string.large, 13f, 16f) }
-internal val LocalLabelSize = androidx.compose.runtime.staticCompositionLocalOf { LabelSize.STANDARD }
-
-/**
- * Animation Speed (Settings › Gestures & Actions): scales the stiffness of Folio's springs, so panels, folders, menus
- * and page snaps all move faster or slower together. Android's Remove animations still turns motion off.
- */
-enum class MotionSpeed(@androidx.annotation.StringRes val label: Int, val factor: Float) {
-    RELAXED(R.string.relaxed, .55f), STANDARD(R.string.standard, 1f), SNAPPY(R.string.snappy, 1.8f);
-    companion object {
-        @Volatile var current: MotionSpeed = STANDARD
-        fun <T> spring(dampingRatio: Float, stiffness: Float, visibilityThreshold: T? = null) =
-            androidx.compose.animation.core.spring(dampingRatio = dampingRatio, stiffness = stiffness * current.factor, visibilityThreshold = visibilityThreshold)
-    }
-}
+/** App name size on Home. */
+internal const val HOME_LABEL_SP = 11f
+internal const val HOME_LABEL_LINE_SP = 14f
 
 /**
  * Soft edges on scrolling content, like iOS: rows fade out toward an edge where there's more to scroll. The fade

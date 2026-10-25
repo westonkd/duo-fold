@@ -101,7 +101,7 @@ internal fun CategoryCard(title: String, apps: List<AppEntry>, modifier: Modifie
                         val index = row * 2 + col
                         when {
                             index < big.size -> AppIcon(big[index], spokenName(big[index]), Modifier.size(cell)
-                                .clickable { onLaunch(big[index]) }, shape = RoundedCornerShape(cell * .24f))
+                                .clickable { onLaunch(big[index]) }, badge = true)
                             index == 3 && rest.isNotEmpty() -> Box(Modifier.size(cell).clip(RoundedCornerShape(cell * .24f))
                                 .clickable(onClick = onOpen).semantics { contentDescription = showAllText }) {
                                 val mini = (cell - 4.dp) / 2
@@ -164,7 +164,7 @@ internal fun CategoryFolder(title: String, apps: List<AppEntry>, onDismiss: () -
                             Column(Modifier.clip(RoundedCornerShape(FolioRadius.CARD.dp))
                                 .combinedClickable(onLongClick = { onActions(app) }) { onLaunch(app) }.padding(vertical = FolioSpace.TINY.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally) {
-                                AppIcon(app, null, Modifier.size(54.dp), shape = RoundedCornerShape(13.dp))
+                                AppIcon(app, null, Modifier.size(54.dp), badge = true)
                                 Text(app.label, color = Color.White, fontSize = FolioType.CAPTION.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.padding(top = FolioSpace.TINY.dp, start = FolioSpace.HAIR.dp, end = FolioSpace.HAIR.dp))
                                 // A clone sits beside its original with the same name, as in the A to Z list.

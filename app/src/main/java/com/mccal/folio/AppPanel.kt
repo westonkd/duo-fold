@@ -122,7 +122,7 @@ internal fun AppPanel(app: AppEntry, onDismiss: () -> Unit, onOpen: () -> Unit) 
                 .clickable(remember { MutableInteractionSource() }, null) {}.padding(FolioSpace.COMFY.dp),
                 verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    AppIcon(app, null, Modifier.size(36.dp), shape = RoundedCornerShape(9.dp), badge = false)
+                    AppIcon(app, null, Modifier.size(36.dp))
                     Spacer(Modifier.width(10.dp))
                     Text(app.label, color = Color.White, fontSize = FolioType.BODY.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
                         overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))

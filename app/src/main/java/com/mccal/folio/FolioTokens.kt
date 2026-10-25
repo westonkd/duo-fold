@@ -160,8 +160,7 @@ internal object FolioRadius {
 }
 
 /**
- * Folio's type scale, in sp, following iOS's text styles. Home app labels come from [LabelSize] instead, because they
- * follow the user's icon size.
+ * Folio's type scale, in sp, following iOS's text styles. Home app labels use [HOME_LABEL_SP] instead.
  */
 internal object FolioType {
     const val TITLE = 28
@@ -174,7 +173,7 @@ internal object FolioType {
     const val CALLOUT = 16
     /** iOS Title 3: sheet and card headings. */
     const val TITLE3 = 20
-    /** iOS Caption 2: timestamps and the smallest supporting text. Home app labels use [LabelSize] instead. */
+    /** iOS Caption 2: timestamps and the smallest supporting text. Home app labels use [HOME_LABEL_SP] instead. */
     const val CAPTION = 11
     /** Uppercase group labels, SemiBold with .4sp tracking. */
     const val GROUP_LABEL = 12
@@ -195,13 +194,9 @@ internal object FolioRow {
 }
 
 /**
- * Folio's shared springs as (damping, stiffness) pairs. Always run them through [MotionSpeed.spring] so they follow
- * Settings › Gestures › Animation Speed; Reduce Motion is handled by the callers.
+ * Folio's shared springs as (damping, stiffness) pairs, run through [FolioMotion.spring]; Reduce Motion is handled by the callers.
  */
 internal object FolioMotion {
-    /** How long the Gauge takes to sweep to a new battery level: long enough to read as movement, short enough to ignore. */
-    const val GAUGE_MS = 650
-
     /** Sheets and panels settling into place. */
     val Settle = .86f to 420f
     /** Quick responses to a touch (buttons, toggles, closing). */
@@ -224,7 +219,8 @@ internal object FolioMotion {
     /** A settle that starts with the finger's speed (a flick, a drop): visibly passes the line and eases back. Never for a tap. */
     val Bounce = .7f to 480f
 
-    fun <T> spring(pair: Pair<Float, Float>, visibilityThreshold: T? = null) = MotionSpeed.spring(pair.first, pair.second, visibilityThreshold)
+    fun <T> spring(pair: Pair<Float, Float>, visibilityThreshold: T? = null) =
+        androidx.compose.animation.core.spring(dampingRatio = pair.first, stiffness = pair.second, visibilityThreshold = visibilityThreshold)
 
     /** Reduce Motion's stand-in for anything that would slide or grow in: a fade where it lands, this long. */
     const val FADE_MS = 150

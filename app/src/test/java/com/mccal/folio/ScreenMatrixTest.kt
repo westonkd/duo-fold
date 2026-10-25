@@ -140,7 +140,7 @@ class ScreenMatrixTest {
             assertTrue("$tag dock rows", g.dockRowHeight >= 48f)
             assertTrue("$tag icon ${g.iconSize}", g.iconSize >= 32f)
             assertTrue("$tag home width", g.homeWidth <= w)
-            if (!g.horizontalDock) assertTrue("$tag grid ${g.gridWidth} + dock beside it", g.gridWidth + LayoutPreset().sanitized().dockWidth <= g.homeWidth)
+            if (!g.horizontalDock) assertTrue("$tag grid ${g.gridWidth} + dock beside it", g.gridWidth + DOCK_WIDTH <= g.homeWidth)
             else assertTrue("$tag grid", g.gridWidth <= w)
             assertTrue("$tag dock under the top", g.dockTop >= 8f)
             if (h >= 400f) assertTrue("$tag dock ${g.dockTop}+${g.dockHeight} inside $h", g.dockTop + g.dockHeight <= h)

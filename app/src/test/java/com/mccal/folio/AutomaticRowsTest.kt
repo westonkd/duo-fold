@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * How many rows Automatic lands on, and what Settings says about it.
+ * How many rows Home lands on.
  *
  * The sizes are the window Home actually gets, logged on a Galaxy Z Fold8: the cover screen is 475 x 751 dp, but
  * Android's bars and gesture area take about 56 dp of it, so Home is laid out in 695. Measuring against the physical
@@ -15,48 +15,27 @@ class AutomaticRowsTest {
     private val cover = 475f to 695f   // 751 dp of screen, less ~56 dp of system insets
     private val inner = 932f to 648f
 
-    /** The same call Home makes: default settings, the search pill's space, and Folio as the Home app. */
-    private fun fit(size: Pair<Float, Float>, labelHeight: Float, icon: Float = LayoutPreset().iconSize): Int =
-        homeGeometry(size.first, size.second, LayoutPreset(iconSize = icon), labels = true, statusHeight = 0f, labelHeight = labelHeight,
+    /** The same call Home makes: the search pill's space, and Folio as the Home app. */
+    private fun fit(size: Pair<Float, Float>, labelHeight: Float): Int =
+        homeGeometry(size.first, size.second, LayoutPreset(), labels = true, statusHeight = 0f, labelHeight = labelHeight,
             inLibrary = false, homeBottomSpace = 44f, railControls = 0, classScale = 1f,
             appRows = BASE_APP_ROWS, foldAtCenter = false, fillSpace = true).fitAppRows
 
     // A widget fills two rows, so the cover fits a fifth row with the space under labels tightened; the inner screen
-    // fits four, and Automatic takes the smaller.
+    // fits four, and Home takes the smaller.
     @Test fun `the Fold8 fits four rows at the default icon size`() {
         assertEquals(5, fit(cover, 20f))
         assertEquals(4, fit(inner, 20f))
-        assertEquals(4, effectiveHomeRows(setting = 0, fitCompact = fit(cover, 20f), fitExpanded = fit(inner, 20f)))
-    }
-
-    /** What Settings promises when it says smaller icons make room: at 52 dp the cover gains its sixth row. */
-    @Test fun `smaller icons make room for another row`() {
-        assertEquals(6, fit(cover, 20f, icon = 52f))
+        assertEquals(4, effectiveHomeRows(fitCompact = fit(cover, 20f), fitExpanded = fit(inner, 20f)))
     }
 
     @Test fun `a screen Folio hasn't measured doesn't drag the count down`() {
-        assertEquals(5, effectiveHomeRows(setting = 0, fitCompact = 5, fitExpanded = 0))
-        assertEquals(BASE_APP_ROWS, effectiveHomeRows(setting = 0, fitCompact = 0, fitExpanded = 0))
-        assertEquals(4, effectiveHomeRows(setting = 4, fitCompact = 7, fitExpanded = 7))
+        assertEquals(5, effectiveHomeRows(fitCompact = 5, fitExpanded = 0))
+        assertEquals(BASE_APP_ROWS, effectiveHomeRows(fitCompact = 0, fitExpanded = 0))
     }
 
-    @Test fun `Settings says where the number came from`() {
-        val unmeasured = LauncherState()
-        fun note(state: LauncherState) = automaticRowsNote(state, EnglishStrings)
-        assertTrue("hasn't measured" in note(unmeasured))
-        assertTrue("cover" in note(unmeasured.copy(homeFitCompact = 5)))
-        assertTrue("inner screen fits 6" in note(unmeasured.copy(homeFitExpanded = 6)))
-        assertTrue("Both screens fit 5" in note(unmeasured.copy(homeFitCompact = 5, homeFitExpanded = 5)))
-        val mixed = note(unmeasured.copy(homeFitCompact = 5, homeFitExpanded = 4))
-        assertTrue("cover screen fits 5" in mixed && "inner screen fits 4" in mixed && "shows 4" in mixed)
-        // The upright inner screen counts as part of the inner screen: its fit limits the rows when it is the smallest.
-        val upright = unmeasured.copy(homeFitCompact = 6, homeFitExpanded = 6, homeFitUpright = 4)
-        val limited = note(upright)
-        assertTrue("cover screen fits 6" in limited && "inner screen fits 4" in limited && "shows 4" in limited)
-        assertEquals(4, upright.homeAppRows)
-        assertTrue("Both screens fit 6" in note(upright.copy(homeFitUpright = 6)))
-        assertTrue("Both screens fit 6" in note(upright.copy(homeFitUpright = 0)))
-        assertTrue("inner screen fits 5" in note(unmeasured.copy(homeFitExpanded = 6, homeFitUpright = 5)))
-        assertTrue("Fixed at 4" in note(unmeasured.copy(homeRows = 4, homeFitCompact = 6)))
+    @Test fun `the upright inner screen counts as part of the inner screen`() {
+        assertEquals(4, LauncherState(homeFitCompact = 6, homeFitExpanded = 6, homeFitUpright = 4).homeAppRows)
+        assertEquals(6, LauncherState(homeFitCompact = 6, homeFitExpanded = 6).homeAppRows)
     }
 }

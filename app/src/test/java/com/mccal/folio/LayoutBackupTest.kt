@@ -52,13 +52,13 @@ class LayoutBackupTest {
         assertFalse(unplaced.id in savedIds(raw))
     }
 
-    @Test fun `an app with only an icon action or icon look is still described`() {
+    @Test fun `an app with only an icon action is still described, and an icon picture is not carried`() {
         val withExtras = state.copy(
             iconActions = mapOf(unplaced.id to IconActions(up = ActionRef("TORCH"))),
-            appIconStyles = mapOf(work.id to AppIconOverride(shape = IconShape.CIRCLE)),
+            appIconStyles = mapOf(work.id to AppIconOverride(picture = 3L)),
         )
         val saved = savedIds(encodeLayoutBackup(withExtras, emptyList(), "this-phone"))
-        assertEquals(setOf(home.id, docked.id, inFolderA.id, inFolderB.id, renamed.id, unplaced.id, work.id), saved)
+        assertEquals(setOf(home.id, docked.id, inFolderA.id, inFolderB.id, renamed.id, unplaced.id), saved)
         assertFalse(hidden.id in saved)
     }
 

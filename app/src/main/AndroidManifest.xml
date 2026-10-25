@@ -93,21 +93,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity-alias>
-        <!-- The Soft alternate icon (Settings › Wallpaper & Appearance › App Icon); off until chosen. -->
-        <activity-alias android:name=".FolioSettingsAppSoft" android:targetActivity=".MainActivity" android:exported="true"
-            android:label="${appLabel}" android:icon="@mipmap/ic_launcher_soft" android:enabled="false">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-        <activity-alias android:name=".FolioSettingsAppOlive" android:targetActivity=".MainActivity" android:exported="true"
-            android:label="${appLabel}" android:icon="@mipmap/ic_launcher_olive" android:enabled="false">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
         <!-- "Add to Home Screen" for widgets an app asks to pin (only delivered to the default Home app). -->
         <activity android:name=".PinWidgetActivity" android:exported="true" android:excludeFromRecents="true"
             android:theme="@style/Theme.Folio.FoldBridge" android:taskAffinity="com.mccal.folio.pin" android:noHistory="true">

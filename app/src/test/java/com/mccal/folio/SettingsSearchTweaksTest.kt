@@ -10,8 +10,6 @@ import org.robolectric.annotation.Config
 
 /**
  * Settings search finds tweaks by name, by what they're based on, and by what they do.
- *
- * Until 0.6.7.2 the index held only pages, so searching "flipbook" found nothing even with Flipbook installed.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -34,10 +32,5 @@ class SettingsSearchTweaksTest {
     @Test fun `every tweak on offer can be searched for`() {
         assertTrue(TweakFeatures.isNotEmpty())
         TweakFeatures.forEach { assertTrue("${it.name} isn't searchable", found(it.name).contains(it.name)) }
-    }
-
-    // Page Effects moved from Settings › Gestures onto Flipbook's page in 0.6.8, so searching the old name finds it.
-    @Test fun `Flipbook is found by Page Effects, the name of the row it replaced`() {
-        assertTrue(found("page effects").contains("Flipbook"))
     }
 }

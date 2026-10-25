@@ -44,17 +44,11 @@ class FoldMotionTest {
     }
 
     @Test fun distanceIsMeasuredFromTheHinge() {
-        val scope = FoldMotionScope({ 1f }, FoldMotionOptions(), hingeIsHorizontal = false, hingePx = 500f, farthestPx = 500f)
+        val scope = FoldMotionScope({ 1f }, hingeIsHorizontal = false, hingePx = 500f, farthestPx = 500f)
         assertEquals(0f, scope.distance(500f, 10f), 0f)
         assertEquals(1f, scope.distance(0f, 10f), 0f)
         assertEquals(.5f, scope.distance(750f, 10f), 0f)
-        val flat = FoldMotionScope({ 1f }, FoldMotionOptions(), hingeIsHorizontal = true, hingePx = 300f, farthestPx = 600f)
+        val flat = FoldMotionScope({ 1f }, hingeIsHorizontal = true, hingePx = 300f, farthestPx = 600f)
         assertEquals(.5f, flat.distance(10f, 600f), 0f)
-    }
-
-    @Test fun optionsAnyIsFalseOnlyWhenAllAreOff() {
-        assertTrue(FoldMotionOptions().any)
-        assertTrue(!FoldMotionOptions(false, false, false).any)
-        assertTrue(FoldMotionOptions(false, true, false).any)
     }
 }

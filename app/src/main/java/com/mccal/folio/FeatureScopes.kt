@@ -33,7 +33,7 @@ internal data class TweakFeature(
     @androidx.annotation.StringRes val description: Int,
     val icon: androidx.compose.ui.graphics.vector.ImageVector, val color: Long,
     val get: (LauncherState) -> Boolean, val set: (LauncherModel, Boolean) -> Unit, val default: Boolean,
-    /** More words Settings search finds it by, for a tweak people know by what it does ("Page Effects"). */
+    /** More words Settings search finds it by, for a tweak people know by what it does. */
     @androidx.annotation.StringRes val keywords: Int? = null,
     /** The credit line when this tweak includes someone's code, in place of "re-created from scratch". */
     @androidx.annotation.StringRes val credit: Int? = null,
@@ -46,13 +46,6 @@ internal val TweakFeatures = listOf(
     TweakFeature("dockMagnify", "Harborline", "Harbor by Evan Swick", // english-only
         R.string.tweak_harborline_detail,
         androidx.compose.material.icons.Icons.Rounded.Add, FolioColors.Value.Indigo, { it.dockMagnify }, { m, v -> m.setDockMagnify(v) }, false),
-    // The switch is on or off, and which effect it is lives on Flipbook's own page. Turning it on brings back the last
-    // one chosen; the cube the first time, since that is the one Barrel was known for.
-    TweakFeature("pageEffects", "Flipbook", "Barrel by Aaron Ash, Cylinder by Reed Weichler", // english-only
-        R.string.tweak_flipbook_detail,
-        androidx.compose.material.icons.Icons.Rounded.AutoStories, FolioColors.Value.Teal,
-        { it.pageEffect != PageEffect.NONE },
-        { m, v -> m.setPageEffectOn(v) }, false, keywords = R.string.page_effects),
     // Folio's fold animation. It was built in, so it defaults on.
     TweakFeature(DUET_ID, "Duet", "Duo Fold Live by joeconsorti", // english-only
         R.string.tweak_duet_detail,

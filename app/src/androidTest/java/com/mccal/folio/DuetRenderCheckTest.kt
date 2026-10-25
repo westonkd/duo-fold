@@ -24,12 +24,12 @@ import java.io.File
 import kotlin.math.abs
 
 /**
- * Every Duet style drawn by the real shader over a fixed test card and compared with its reference picture, the way
+ * Duet's look drawn by the real shader over a fixed test card and compared with its reference picture, the way
  * hingewave (MIT) checks its ports with golden renders. It runs on the phone because only the GPU runs AGSL, and it
  * also proves the shader compiles there, which no JVM test can.
  *
  * The references live in androidTest/assets/duet-golden. With one missing, the test saves what it drew to the app's
- * files (duet-golden/) and fails, so a new or changed style is recorded on purpose:
+ * files (duet-golden/) and fails, so a changed look is recorded on purpose:
  * `adb exec-out run-as com.mccal.folio.dev cat files/duet-golden/<style>.png > app/src/androidTest/assets/duet-golden/<style>.png`
  */
 @RunWith(AndroidJUnit4::class)
@@ -85,33 +85,24 @@ class DuetRenderCheckTest {
         return sum / (w * h * 3.0)
     }
 
-    @Test fun everyStyleMatchesItsReference() {
+    @Test fun theLookMatchesItsReference() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val app = instrumentation.targetContext
         val out = File(app.filesDir, "duet-golden").apply { mkdirs() }
-        val recorded = mutableListOf<String>()
-        val problems = mutableListOf<String>()
-        for (style in DuetStyles.all) {
-            val drawn = render(style, m = .6f)
-            val name = "${style.id}.png"
-            val golden = runCatching { instrumentation.context.assets.open("duet-golden/$name").use(BitmapFactory::decodeStream) }.getOrNull()
-            if (golden == null) {
-                File(out, name).outputStream().use { drawn.compress(Bitmap.CompressFormat.PNG, 100, it) }
-                recorded += name
-                continue
-            }
-            val d = difference(drawn, golden)
-            if (d > 2.0) {
-                File(out, "changed-$name").outputStream().use { drawn.compress(Bitmap.CompressFormat.PNG, 100, it) }
-                problems += "${style.id} differs from its reference by ${"%.2f".format(d)}/255"
-            }
+        val drawn = render(DuetStyles.IPHONE, m = .6f)
+        val name = "iphone.png"
+        val golden = runCatching { instrumentation.context.assets.open("duet-golden/$name").use(BitmapFactory::decodeStream) }.getOrNull()
+        if (golden == null) {
+            File(out, name).outputStream().use { drawn.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            fail("No reference yet for $name: saved in files/duet-golden; copy it into androidTest/assets/duet-golden")
+            return
         }
-        // The styles have to look different from each other, or a style has silently stopped doing anything.
-        val renders = DuetStyles.all.associate { it.id to render(it, .6f) }
-        for ((a, b) in renders.keys.toList().let { ids -> ids.flatMap { x -> ids.filter { it > x }.map { x to it } } }) {
-            assertTrue("$a and $b look the same", difference(renders.getValue(a), renders.getValue(b)) > .5)
+        val d = difference(drawn, golden)
+        if (d > 2.0) {
+            File(out, "changed-$name").outputStream().use { drawn.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            fail("iphone differs from its reference by ${"%.2f".format(d)}/255")
         }
-        if (recorded.isNotEmpty()) fail("No reference yet for ${recorded.joinToString()}: saved in files/duet-golden; copy them into androidTest/assets/duet-golden")
-        if (problems.isNotEmpty()) fail(problems.joinToString("\n"))
+        // Reduce Motion has to look different, or the shade-only look has silently stopped doing anything.
+        assertTrue("Reduce Motion looks the same", difference(drawn, render(DuetStyles.reducedMotion(DuetStyles.IPHONE), .6f)) > .5)
     }
 }

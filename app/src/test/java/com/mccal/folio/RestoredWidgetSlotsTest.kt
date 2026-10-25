@@ -58,11 +58,9 @@ class RestoredWidgetSlotsTest {
 
         val state = model.state.value
         val restoredWeather = state.widgetPlacements.single { it.id == NEEDS_BINDING_WIDGET }
-        val restoredClock = state.widgetPlacements.single { it.id == BIG_CLOCK_WIDGET }
         state.widgetPlacements.forEach { assertEquals("no old stack on ${it.slot}", listOf(it.id), model.stackCards(it.slot)) }
         assertTrue("restored widgets are on numbers the old Home never used", state.widgetPlacements.none { it.slot in setOf(0, 1) })
         assertEquals("the widget waiting to be bound still finds its provider", weather, state.layout.widgetRestore(restoredWeather.slot)?.providerComponent)
-        assertEquals("the same Big Clock keeps its look", "WHITE", state.bigClockStyles[restoredClock.slot]?.mode)
 
         // Undo puts the old widget back with its stack.
         assertTrue(model.undoEdit())

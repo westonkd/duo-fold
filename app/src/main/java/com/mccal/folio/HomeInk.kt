@@ -44,22 +44,17 @@ internal fun WallpaperColors?.prefersDarkText(): Boolean =
  * What Folio knows about the wallpaper behind Home, without reading its pixels. [fromAndroid] is true when Android's own
  * wallpaper is behind Home (the user's setting, not whether a Folio picture happens to be saved): the colors are then
  * the ones Android shares for it, and all null when it shares none.
- *
- * [palette] is the phone's theme colors (Android's system palette), kept only with Android's wallpaper and only for the
- * colors a person picks as the wallpaper's (the Big Clock's, and tinted icons' "Wallpaper color" through [choiceColor]),
- * as their second source when Android shares no wallpaper colors (One UI on the Fold8 shares none). It stays out of
- * [primary]: the status rail and the glass read [primary] as the wallpaper's own color, which the palette is not.
  */
 @Immutable
 internal data class WallpaperTone(val prefersDarkText: Boolean = false, val primary: Int? = null, val secondary: Int? = null,
-    val tertiary: Int? = null, val fromAndroid: Boolean = false, val palette: SystemPalette? = null) {
+    val fromAndroid: Boolean = false) {
     val luminance: Float get() = primary?.let { Color(it).luminance() } ?: if (prefersDarkText) .75f else .25f
 }
 
 internal val LocalWallpaperTone = staticCompositionLocalOf { WallpaperTone() }
 
-internal fun WallpaperColors?.tone(fromAndroid: Boolean = false, palette: SystemPalette? = null) = WallpaperTone(prefersDarkText(),
-    this?.primaryColor?.toArgb(), this?.secondaryColor?.toArgb(), this?.tertiaryColor?.toArgb(), fromAndroid, palette)
+internal fun WallpaperColors?.tone(fromAndroid: Boolean = false) = WallpaperTone(prefersDarkText(),
+    this?.primaryColor?.toArgb(), this?.secondaryColor?.toArgb(), fromAndroid)
 
 /**
  * The middle shade (500, tone 50) of the three accent ranges of Android's system palette (API 31+). Android, or One UI
@@ -76,35 +71,9 @@ internal fun systemPalette(context: android.content.Context): SystemPalette? = r
         context.getColor(android.R.color.system_accent3_500))
 }.getOrNull()
 
-/** Where the Big Clock's colors come from with Android's wallpaper, in the order they are tried (NONE for a Folio picture). */
-internal enum class WallpaperColorSource { ANDROID_COLORS, SYSTEM_PALETTE, NONE }
-
-internal fun WallpaperTone.colorSource(): WallpaperColorSource = when {
-    !fromAndroid -> WallpaperColorSource.NONE
-    primary != null -> WallpaperColorSource.ANDROID_COLORS
-    palette != null -> WallpaperColorSource.SYSTEM_PALETTE
-    else -> WallpaperColorSource.NONE
-}
-
-/**
- * The color a "Wallpaper color" choice stands for, from the same sources in the same order as the Big Clock
- * ([colorSource]): the wallpaper's own main color, else with Android's wallpaper the phone's theme color (the palette's
- * first accent), else null. Unlike [WallpaperTone.primary], which the status rail and the glass read as the wallpaper's
- * own color, this can be the palette's, so it is only for things a person picks as "the wallpaper's color".
- */
-internal fun WallpaperTone.choiceColor(): Int? = primary ?: palette?.accent1?.takeIf { fromAndroid }
-
-/** What tinted icons draw with "Wallpaper color" picked, and what its dot in Home customization shows: one source for both. */
-internal fun wallpaperIconTint(tone: WallpaperTone): Int? = tone.choiceColor()?.let(::vividTint)
-
-/**
- * Android's colors for the home screen's wallpaper, or a tone with no colors when it shares none (or the call fails).
- * The system palette rides along for the clock's second source; it is read only when the wallpaper colors are missing.
- */
-internal fun WallpaperManager.androidWallpaperTone(context: android.content.Context): WallpaperTone {
-    val colors = runCatching { getWallpaperColors(WallpaperManager.FLAG_SYSTEM) }.getOrNull()
-    return colors.tone(fromAndroid = true, palette = if (colors == null) systemPalette(context) else null)
-}
+/** Android's colors for the home screen's wallpaper, or a tone with no colors when it shares none (or the call fails). */
+internal fun WallpaperManager.androidWallpaperTone(): WallpaperTone =
+    runCatching { getWallpaperColors(WallpaperManager.FLAG_SYSTEM) }.getOrNull().tone(fromAndroid = true)
 
 /**
  * The wallpaper's tone. Android's wallpaper: the system's own colors and hints (no permission needed, updates
@@ -117,9 +86,9 @@ internal fun rememberWallpaperTone(systemWallpaper: Boolean): WallpaperTone {
     if (systemWallpaper) {
         val manager = remember(context) { WallpaperManager.getInstance(context) }
         // Read once where it is composed, so the first frame already has the colors; later reads go off the main thread.
-        var tone by remember { mutableStateOf(manager.androidWallpaperTone(context)) }
+        var tone by remember { mutableStateOf(manager.androidWallpaperTone()) }
         val scope = rememberCoroutineScope()
-        val refresh = { scope.launch { tone = withContext(Dispatchers.IO) { manager.androidWallpaperTone(context) } }; Unit }
+        val refresh = { scope.launch { tone = withContext(Dispatchers.IO) { manager.androidWallpaperTone() } }; Unit }
         DisposableEffect(manager) {
             // Any change reads the home screen's colors again rather than trusting the ones handed over: One UI reports
             // `which` with its own display bits added (5 is home on the main screen), and the colors in a callback can
@@ -154,11 +123,3 @@ internal fun tintedGlass(base: Color, wallpaper: Int?, amount: Float = .28f): Co
 internal fun homePalette(base: DuoPalette, wallpaper: Int?): DuoPalette =
     base.copy(glass = tintedGlass(base.glass, wallpaper, GLASS_TINT))
 
-/** A clear, bright version of a wallpaper color for tinted icons (saturation ≥ 45%, brightness ≥ 85%). */
-internal fun vividTint(argb: Int): Int {
-    val hsv = FloatArray(3)
-    android.graphics.Color.colorToHSV(argb, hsv)
-    hsv[1] = hsv[1].coerceAtLeast(.45f)
-    hsv[2] = hsv[2].coerceAtLeast(.85f)
-    return android.graphics.Color.HSVToColor(hsv)
-}

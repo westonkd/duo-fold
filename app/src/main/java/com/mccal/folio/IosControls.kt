@@ -11,7 +11,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Slider
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -70,23 +69,6 @@ internal fun IosChip(selected: Boolean, onClick: () -> Unit, label: @Composable 
     }
 }
 
-/** iOS slider: thin track filled in system blue with a round white thumb. */
-@Composable
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-internal fun IosSlider(value: Float, onValueChange: (Float) -> Unit, valueRange: ClosedFloatingPointRange<Float>, modifier: Modifier = Modifier,
-    interactionSource: androidx.compose.foundation.interaction.MutableInteractionSource? = null) {
-    val interaction = interactionSource ?: androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    Slider(value, onValueChange, modifier, valueRange = valueRange, interactionSource = interaction,
-        thumb = { Box(Modifier.size(28.dp).shadow(3.dp, CircleShape).background(Color.White, CircleShape)) },
-        track = { state ->
-            val span = state.valueRange.endInclusive - state.valueRange.start
-            val fraction = if (span > 0f) ((state.value - state.valueRange.start) / span).coerceIn(0f, 1f) else 0f
-            Box(Modifier.fillMaxWidth().height(4.dp).clip(CircleShape).background(Color.White.copy(alpha = .22f))) {
-                Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(LocalAccent.current.fill))
-            }
-        })
-}
-
 /** iOS search field: frosted rounded capsule, magnifier, placeholder and a clear button. */
 @Composable
 internal fun IosSearchField(query: String, onQuery: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier,
@@ -128,21 +110,6 @@ internal fun IosActionRow(text: String, tag: String? = null, destructive: Boolea
     androidx.compose.material3.Text(text, color = if (enabled) color else Color.White.copy(alpha = .3f), fontSize = FolioType.BODY.sp,
         modifier = Modifier.fillMaxWidth().heightIn(min = FolioRow.ACTION.dp).settingsFocus(text).clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = FolioSpace.LARGE.dp, vertical = 13.dp).then(if (tag != null) Modifier.testTag(tag) else Modifier))
-}
-
-/**
- * One choice in an iOS selection list: its label, and a checkmark on the one in use. A radio button to TalkBack.
- * Tapping the chosen row does nothing, so a repeat tap doesn't rewrite what's saved (as [IosMenuRow] guards too).
- * No inset of its own: the card it sits in provides it.
- */
-@Composable
-internal fun IosCheckRow(text: String, selected: Boolean, onClick: () -> Unit, tag: String? = null) {
-    Row(Modifier.fillMaxWidth().heightIn(min = FolioRow.ACTION.dp).selectable(selected, role = Role.RadioButton) { if (!selected) onClick() }
-        .then(if (tag != null) Modifier.testTag(tag) else Modifier), verticalAlignment = Alignment.CenterVertically) {
-        androidx.compose.material3.Text(text, color = Color.White, fontSize = FolioType.BODY.sp, modifier = Modifier.weight(1f))
-        if (selected) androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Check, null,
-            tint = LocalAccent.current.ink, modifier = Modifier.size(20.dp))
-    }
 }
 
 /** A row that opens another page, like iOS Settings: label, current value and a chevron. */

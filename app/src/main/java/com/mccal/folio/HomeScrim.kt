@@ -16,9 +16,8 @@ import androidx.compose.ui.draw.drawWithCache
  *
  * Both ends, and only the ends, because of what Home really draws:
  *
- * - The top holds the clock and date. The Side Bar's own text sits on frosted glass, but not with the capsule turned
- *   off (`StatusStyle.background`), and the Clock and Date widgets draw straight on the wallpaper with no shadow at
- *   all ([HomeWidgets.kt]).
+ * - The top holds the clock and date. The Side Bar's own text has no capsule behind it, and the Clock and Date widgets
+ *   draw straight on the wallpaper with no shadow at all ([HomeWidgets.kt]).
  * - The bottom holds the page dots ([HomeInk.faint], white at .4), the App Library button (white at .6) and the
  *   "3 / 7" page counter. A11Y-9 names white at .55 over a bright wallpaper as the case that needs a
  *   scrim, and these are below it.

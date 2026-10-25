@@ -6,7 +6,6 @@ import android.provider.AlarmClock
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -16,11 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -75,36 +71,23 @@ internal object LiveIcons {
     }
 }
 
-enum class IconStyle(@androidx.annotation.StringRes val label: Int) { DEFAULT(R.string.default_choice), DARK(R.string.dark), TINTED(R.string.tinted), CLEAR(R.string.clear) }
-
-enum class IconShape(@androidx.annotation.StringRes val label: Int) { DEFAULT(R.string.default_choice), SQUIRCLE(R.string.squircle), CIRCLE(R.string.circle), ROUNDED(R.string.rounded_square) }
 /**
- * One app's own icon look, over the launcher's: a null part follows it. Applied when the icon is drawn, never in the
- * saved or cached icon pictures, so changing or clearing it can't leave a stale icon behind.
+ * One app's own icon: a picture chosen in Edit Icon. Applied when the icon is drawn, never in the saved or cached icon
+ * pictures, so changing or clearing it can't leave a stale icon behind.
  */
-data class AppIconOverride(val style: IconStyle? = null, val shape: IconShape? = null, val picture: Long = 0L) {
-    val isDefault: Boolean get() = style == null && shape == null && picture == 0L
+data class AppIconOverride(val picture: Long = 0L) {
+    val isDefault: Boolean get() = picture == 0L
 
     /** Whether the app has a picture of its own ([picture] is the time it was set, so a new one redraws). */
     val hasPicture: Boolean get() = picture > 0L
 
-    internal fun applyTo(look: IconLook): IconLook = look.copy(style = style ?: look.style, shape = shape ?: look.shape)
-
-    fun toJson(): org.json.JSONObject = org.json.JSONObject().also { o ->
-        style?.let { o.put("style", it.name) }; shape?.let { o.put("shape", it.name) }; if (hasPicture) o.put("picture", picture)
-    }
+    fun toJson(): org.json.JSONObject = org.json.JSONObject().also { o -> if (hasPicture) o.put("picture", picture) }
 
     companion object {
-        fun fromJson(o: org.json.JSONObject?): AppIconOverride = AppIconOverride(
-            style = o?.optString("style")?.let { n -> IconStyle.entries.firstOrNull { it.name == n } },
-            shape = o?.optString("shape")?.let { n -> IconShape.entries.firstOrNull { it.name == n } },
-            picture = o?.optLong("picture", 0L)?.coerceAtLeast(0L) ?: 0L)
+        fun fromJson(o: org.json.JSONObject?): AppIconOverride =
+            AppIconOverride(picture = o?.optLong("picture", 0L)?.coerceAtLeast(0L) ?: 0L)
     }
 }
-
-/** Backups carry the style and shape choices but not the pictures, which stay on this phone, so no stamp is left pointing at nothing. */
-fun withoutPictures(map: Map<String, AppIconOverride>): Map<String, AppIconOverride> =
-    map.mapValues { it.value.copy(picture = 0L) }.filterValues { !it.isDefault }
 
 /** [override] for [id] in [map], or no entry at all when it follows the launcher, so the map holds only real choices. */
 fun editAppIcon(map: Map<String, AppIconOverride>, id: String, override: AppIconOverride): Map<String, AppIconOverride> =
@@ -113,96 +96,35 @@ fun editAppIcon(map: Map<String, AppIconOverride>, id: String, override: AppIcon
 fun appIconStylesToJson(map: Map<String, AppIconOverride>): org.json.JSONObject =
     org.json.JSONObject().also { o -> map.forEach { (id, override) -> if (!override.isDefault) o.put(id, override.toJson()) } }
 
-/** Saved choices back into a map; a damaged entry, an unknown name or a choice that follows the launcher is dropped. */
+/** Saved pictures back into a map; a damaged entry or one without a picture is dropped. */
 fun appIconStylesFromJson(o: org.json.JSONObject?): Map<String, AppIconOverride> =
     o?.keys()?.asSequence()?.mapNotNull { id -> AppIconOverride.fromJson(o.optJSONObject(id)).takeUnless { it.isDefault }?.let { id to it } }?.toMap().orEmpty()
 
 internal val LocalAppIconStyles = androidx.compose.runtime.staticCompositionLocalOf { emptyMap<String, AppIconOverride>() }
 
 enum class BadgeStyle(@androidx.annotation.StringRes val label: Int) { OFF(R.string.off), DOT(R.string.dot), COUNT(R.string.count) }
-enum class BadgeColor(@androidx.annotation.StringRes val label: Int, val fixed: Long? = null) {
-    RED(R.string.red), APP(R.string.match_icon), SOFT(R.string.soft),
-    BLUE(R.string.blue, FolioColors.Value.Blue), GREEN(R.string.green, FolioColors.Value.Green), ORANGE(R.string.orange, FolioColors.Value.Orange), PURPLE(R.string.purple, FolioColors.Value.Purple)
-}
-/** iOS: today's flat pill. Classic: the older white-outlined, glossy badge. Glass: frosted dark with a light count. */
-enum class BadgeLook(@androidx.annotation.StringRes val label: Int) { IOS(R.string.ios), CLASSIC(R.string.classic), GLASS(R.string.glass) }
-enum class BadgeSize(@androidx.annotation.StringRes val label: Int, val scale: Float) { SMALL(R.string.small, .82f), STANDARD(R.string.standard, 1f), LARGE(R.string.large, 1.2f) }
 
 /** Icon look for the whole launcher, provided from the saved settings. */
-internal data class IconLook(val style: IconStyle = IconStyle.DEFAULT, val tint: Color = FolioColors.Warning,
-    val shape: IconShape = IconShape.DEFAULT, val pack: String? = null, val badges: BadgeStyle = BadgeStyle.DOT,
-    val badgeColor: BadgeColor = BadgeColor.RED, val liveIcons: Boolean = true, val liveLook: String = "AUTO",
-    val badgeLook: BadgeLook = BadgeLook.IOS, val badgeSize: BadgeSize = BadgeSize.STANDARD)
+internal data class IconLook(val pack: String? = null, val badges: BadgeStyle = BadgeStyle.DOT, val liveIcons: Boolean = true)
 
 /** Unread notification counts per package, for icon badges. */
 internal val LocalBadgeCounts = androidx.compose.runtime.compositionLocalOf { emptyMap<String, Int>() }
 
-private val SquircleShape = androidx.compose.foundation.shape.GenericShape { size, _ ->
-    // Superellipse (n = 4), the iOS-style continuous-corner icon shape.
-    val a = size.width / 2; val b = size.height / 2
-    val steps = 64
-    for (i in 0..steps) {
-        val t = 2 * Math.PI * i / steps
-        val c = kotlin.math.cos(t); val s = kotlin.math.sin(t)
-        val x = a + a * Math.signum(c) * Math.pow(kotlin.math.abs(c), 0.5)
-        val y = b + b * Math.signum(s) * Math.pow(kotlin.math.abs(s), 0.5)
-        if (i == 0) moveTo(x.toFloat(), y.toFloat()) else lineTo(x.toFloat(), y.toFloat())
-    }
-    close()
-}
-
-private fun IconShape.toShape(): androidx.compose.ui.graphics.Shape? = when (this) {
-    IconShape.DEFAULT -> IconContinuousShape
-    IconShape.SQUIRCLE -> SquircleShape
-    IconShape.CIRCLE -> androidx.compose.foundation.shape.CircleShape
-    IconShape.ROUNDED -> RoundedCornerShape(22)
-}
 internal val LocalIconLook = androidx.compose.runtime.staticCompositionLocalOf { IconLook() }
-/** Whether most app icons are dark (null until measured), for Automatic live Clock and Calendar icons. */
+/** Whether most app icons are dark (null until measured), for the live Clock and Calendar icons. */
 internal val LocalIconsAreDark = androidx.compose.runtime.staticCompositionLocalOf<Boolean?> { null }
 
-private fun filterFor(look: IconLook): androidx.compose.ui.graphics.ColorFilter? = when (look.style) {
-    IconStyle.DEFAULT -> null
-    // Dimmer and a little less saturated, so bright icons sit calmly on a dark Home.
-    IconStyle.DARK -> androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
-        .62f, .08f, .05f, 0f, -6f,
-        .05f, .65f, .05f, 0f, -6f,
-        .05f, .08f, .62f, 0f, -6f,
-        0f, 0f, 0f, 1f, 0f)))
-    // Luminance mapped onto one tint color, like iOS tinted icons.
-    // Clear, for apps without their own one-color symbol: a light, colorless version of the icon.
-    IconStyle.CLEAR -> androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
-        .17f, .34f, .07f, 0f, 125f,
-        .17f, .34f, .07f, 0f, 125f,
-        .17f, .34f, .07f, 0f, 125f,
-        0f, 0f, 0f, .88f, 0f)))
-    IconStyle.TINTED -> {
-        val r = look.tint.red; val g = look.tint.green; val b = look.tint.blue
-        androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(
-            .299f * r, .587f * r, .114f * r, 0f, 0f,
-            .299f * g, .587f * g, .114f * g, 0f, 0f,
-            .299f * b, .587f * b, .114f * b, 0f, 0f,
-            0f, 0f, 0f, 1f, 0f)))
-    }
-}
-
 /**
- * Drop-in replacement for an app's icon Image: live Clock and Calendar icons, like iPhone.
- * Pass [shape] instead of clipping the modifier so the notification badge can sit over the corner;
- * badges only show where a shape is passed (Home, dock, folders, App Library).
+ * Drop-in replacement for an app's icon Image: live Clock and Calendar icons, like iPhone, in Folio's icon shape.
+ * [badge] lets the notification badge sit over the corner (Home, dock, folders, App Library).
  */
 @Composable
-internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modifier = Modifier,
-    shape: androidx.compose.ui.graphics.Shape? = null, badge: Boolean = shape != null,
+internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modifier = Modifier, badge: Boolean = false,
     badgePlacement: BadgePlacement = BadgePlacement.DEFAULT) {
     val context = LocalContext.current
-    val launcherLook = LocalIconLook.current
-    // This app's own look, if it has one, over the launcher's.
+    val look = LocalIconLook.current
     val override = LocalAppIconStyles.current[app.id]
-    val look = remember(launcherLook, override) { override?.applyTo(launcherLook) ?: launcherLook }
     val kind = remember(app.component.packageName, look.liveIcons) { if (look.liveIcons) LiveIcons.kind(context, app.component.packageName) else null }
-    val accent = if (look.style == IconStyle.TINTED) look.tint else null
-    val lookShape = remember(look.shape) { look.shape.toShape() }
     // Pack lookup: null until it finishes, then the pack's icon or none. An icon pack's own Clock or Calendar icon wins
     // over the live one, so a pack keeps one consistent look; live icons fill in where the pack has nothing.
     val packLookup by androidx.compose.runtime.produceState<PackLookup?>(if (look.pack == null) PackLookup(null) else null, look.pack, app.id) {
@@ -217,110 +139,32 @@ internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modif
         value = if (stamp > 0L) AppIconPictures.load(context, app.id, stamp) else null
     }
     val liveKind = kind.takeIf { packLookup != null && packIcon == null && picture == null }
-    // Default style follows the app's real icon: a dark system icon theme (like iDark through Theme Park) gets the dark
-    // live icon, so Clock and Calendar match the icons around them.
-    // Automatic follows the other icons on Home (an icon theme often leaves Calendar and Clock alone), falling back
-    // to this app's own icon before those have been measured.
+    // A dark system icon theme (like iDark through Theme Park) gets the dark live icon, so Clock and Calendar match the
+    // icons around them. It follows the other icons on Home (an icon theme often leaves Calendar and Clock alone),
+    // falling back to this app's own icon before those have been measured.
     val iconsAreDark = LocalIconsAreDark.current
     val darkSource = iconsAreDark ?: remember(app.icon) { kind != null && isDarkIcon(app.icon) }
-    val palette = when {
-        look.style == IconStyle.TINTED -> LivePalette.of(IconStyle.TINTED, accent)
-        look.style == IconStyle.CLEAR -> LivePalette.of(IconStyle.CLEAR, null)
-        look.liveLook == "LIGHT" -> LivePalette.of(IconStyle.DEFAULT, null)
-        look.liveLook == "DARK" -> LivePalette.of(IconStyle.DARK, null)
-        else -> LivePalette.of(if (look.style == IconStyle.DEFAULT && darkSource) IconStyle.DARK else look.style, accent)
-    }
+    val palette = if (darkSource) LivePalette.Dark else LivePalette.Light
     val badgeCount = if (!badge || look.badges == BadgeStyle.OFF) 0 else LocalBadgeCounts.current[app.component.packageName] ?: 0
-    val lighting = if (look.style != IconStyle.CLEAR) {
-        val wallpaper = LocalWallpaperTone.current.primary
-        val dimmed = look.style == IconStyle.DARK
-        remember(wallpaper, dimmed) { iconLighting(wallpaper, dimmed) }
-    } else null
-    val iconShape = lookShape ?: shape ?: IconContinuousShape
-    fun Modifier.lit(fills: Boolean = true): Modifier = if (lighting != null && fills) iconLighting(iconShape, lighting) else this
+    val wallpaper = LocalWallpaperTone.current.primary
+    val lighting = remember(wallpaper) { iconLighting(wallpaper) }
+    fun Modifier.lit(fills: Boolean = true): Modifier = if (fills) iconLighting(IconContinuousShape, lighting) else this
     Box(modifier.semantics { contentDescription?.let { this.contentDescription = it } }) {
-        val fill = Modifier.fillMaxSize().clip(iconShape)
+        val fill = Modifier.fillMaxSize().clip(IconContinuousShape)
         when {
             picture != null -> { val shown = remember(picture) { picture!!.asImageBitmap() }; Image(shown, null, fill.lit()) }
-            liveKind == LiveIcons.Kind.CALENDAR -> CalendarIcon(fill.lit(), palette, iconShape)
-            liveKind == LiveIcons.Kind.CLOCK -> ClockIcon(fill.lit(), palette, iconShape)
-            look.style == IconStyle.CLEAR -> ClearIcon(app, packIcon, fill)
+            liveKind == LiveIcons.Kind.CALENDAR -> CalendarIcon(fill.lit(), palette)
+            liveKind == LiveIcons.Kind.CLOCK -> ClockIcon(fill.lit(), palette)
             else -> {
                 val source = packIcon ?: app.icon
                 val bitmap = remember(source) { source.asImageBitmap() }
                 val fills = remember(source) { runCatching { fillsEdges(source.width, source.height) { x, y -> android.graphics.Color.alpha(source.getPixel(x, y)) } }.getOrDefault(false) }
-                val filter = remember(look.style, look.tint) { filterFor(look) }
-                Image(bitmap, null, fill.lit(fills), colorFilter = filter)
+                Image(bitmap, null, fill.lit(fills))
             }
         }
-        if (badgeCount > 0) {
-            val color = when {
-                look.badgeColor == BadgeColor.RED -> BadgeRed
-                look.badgeColor.fixed != null -> Color(look.badgeColor.fixed)
-                look.style == IconStyle.TINTED -> if (look.badgeColor == BadgeColor.SOFT) Color(softened(look.tint.toArgb())) else look.tint
-                liveKind == LiveIcons.Kind.CALENDAR -> if (look.badgeColor == BadgeColor.SOFT) Color(softened(IconRed.toArgb())) else IconRed
-                liveKind == LiveIcons.Kind.CLOCK -> if (look.badgeColor == BadgeColor.SOFT) Color(softened(IconOrange.toArgb())) else IconOrange
-                else -> {
-                    val source = packIcon ?: app.icon
-                    val soft = look.badgeColor == BadgeColor.SOFT
-                    val accent by produceState(BadgeAccents.cached(source, soft), source, soft) {
-                        if (value == null) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { BadgeAccents.of(source, soft) }
-                    }
-                    accent?.let { Color(it) } ?: if (soft) SoftNeutral else BadgeRed
-                }
-            }
-            IconBadge(badgeCount, look.badges, color, look.badgeLook, look.badgeSize.scale, badgePlacement)
-        }
+        if (badgeCount > 0) IconBadge(badgeCount, look.badges, BadgeRed, badgePlacement)
         // Updating: the icon dims under an iOS-style progress ring until the installer finishes.
         installProgressFor(app.component.packageName)?.let { progress -> InstallRing(progress, fill) }
-    }
-}
-
-/**
- * iOS-style Clear icon: a frosted tile with the app's own one-color symbol in white. That symbol is the monochrome
- * layer apps provide for Android 13's themed icons; apps (and icon packs) without one get a light, colorless icon.
- */
-@Composable
-private fun ClearIcon(app: AppEntry, packIcon: android.graphics.Bitmap?, modifier: Modifier) {
-    val context = LocalContext.current
-    val glyph by produceState(if (packIcon == null) ClearGlyphs.cached(app.id) else null, app.id, packIcon) {
-        if (packIcon == null && value == null)
-            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { ClearGlyphs.load(context, app) }
-    }
-    Box(modifier.background(ClearTile).border(1.dp, Color.White.copy(alpha = .3f), RoundedCornerShape(22)), contentAlignment = Alignment.Center) {
-        val symbol = glyph
-        if (symbol != null) Image(remember(symbol) { symbol.asImageBitmap() }, null, Modifier.fillMaxSize())
-        else {
-            val source = packIcon ?: app.icon
-            val bitmap = remember(source) { source.asImageBitmap() }
-            Image(bitmap, null, Modifier.fillMaxSize(.78f), colorFilter = remember { filterFor(IconLook(style = IconStyle.CLEAR)) })
-        }
-    }
-}
-
-/** White symbols for Clear icons, from the monochrome layer of adaptive icons (Android 13+), cached per app. */
-internal object ClearGlyphs {
-    private val cache = android.util.LruCache<String, android.graphics.Bitmap>(96)
-    private val missing = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
-    fun cached(id: String): android.graphics.Bitmap? = cache.get(id)
-
-    fun load(context: android.content.Context, app: AppEntry, size: Int = 192): android.graphics.Bitmap? {
-        cache.get(app.id)?.let { return it }
-        if (android.os.Build.VERSION.SDK_INT < 33 || app.id in missing || app.isShortcut) return null
-        val icon = runCatching {
-            context.getSystemService(android.content.pm.LauncherApps::class.java)
-                .getActivityList(app.packageName, app.user).firstOrNull { it.componentName == app.component }?.getIcon(0)
-        }.getOrNull() as? android.graphics.drawable.AdaptiveIconDrawable
-        val mono = icon?.monochrome ?: run { missing.add(app.id); return null }
-        val bitmap = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
-        val canvas = android.graphics.Canvas(bitmap)
-        // The layer is 108dp with the symbol inside the middle 72dp, the same framing as the icon itself.
-        val bleed = (size * .25f).toInt()
-        mono.mutate().setBounds(-bleed, -bleed, size + bleed, size + bleed)
-        mono.setTint(android.graphics.Color.WHITE)
-        mono.draw(canvas)
-        cache.put(app.id, bitmap)
-        return bitmap
     }
 }
 
@@ -339,10 +183,10 @@ internal fun InstallRing(progress: Float, modifier: Modifier) {
 }
 
 @Composable
-private fun CalendarIcon(modifier: Modifier, palette: LivePalette, shape: androidx.compose.ui.graphics.Shape = IconContinuousShape) {
+private fun CalendarIcon(modifier: Modifier, palette: LivePalette) {
     val tick by rememberMinuteTick()
     val today = remember(tick) { LocalDate.now() }
-    BoxWithConstraints(modifier.clip(shape).background(palette.calendarBackground), contentAlignment = Alignment.Center) {
+    BoxWithConstraints(modifier.clip(IconContinuousShape).background(palette.calendarBackground), contentAlignment = Alignment.Center) {
         val density = androidx.compose.ui.platform.LocalDensity.current
         val small = with(density) { (maxWidth * .17f).toSp() }
         val big = with(density) { (maxWidth * .46f).toSp() }
@@ -356,10 +200,10 @@ private fun CalendarIcon(modifier: Modifier, palette: LivePalette, shape: androi
 }
 
 @Composable
-private fun ClockIcon(modifier: Modifier, palette: LivePalette, shape: androidx.compose.ui.graphics.Shape = IconContinuousShape) {
+private fun ClockIcon(modifier: Modifier, palette: LivePalette) {
     // The tick is read while drawing, so a second redraws the hands without recomposing the icon.
     val tick = rememberSecondTick()
-    Box(modifier.clip(shape).background(palette.clockBackground)) {
+    Box(modifier.clip(IconContinuousShape).background(palette.clockBackground)) {
         Canvas(Modifier.fillMaxSize()) {
             tick.value // subscribes this draw to the second tick
             val now = java.time.LocalTime.now()
@@ -405,62 +249,32 @@ internal fun isDarkIcon(bitmap: android.graphics.Bitmap): Boolean = runCatching 
 }.getOrDefault(false)
 
 /**
- * Live Clock and Calendar colors for each icon style, like iOS 18: Default is the classic light Calendar and Clock,
- * Dark is the dark-mode versions, Tinted draws the details in the tint color on dark.
+ * Live Clock and Calendar colors, like iOS 18: [Light] is the classic light Calendar and Clock, [Dark] the dark-mode
+ * versions.
  */
 internal data class LivePalette(val calendarBackground: Color, val calendarNumber: Color, val accent: Color,
     val clockBackground: Color, val clockFace: Color, val clockHands: Color, val secondHand: Color) {
     companion object {
-        fun of(style: IconStyle, tint: Color?): LivePalette = when {
-            style == IconStyle.TINTED && tint != null -> LivePalette(IconDark, tint, tint, IconDark, IconFace, tint, tint.copy(alpha = .7f))
-            style == IconStyle.DARK -> LivePalette(IconDark, Color.White, IconRed, IconDark, IconFace, Color.White, IconOrange)
-            style == IconStyle.CLEAR -> LivePalette(ClearTile, Color.White, Color.White.copy(alpha = .85f), ClearTile,
-                Color.White.copy(alpha = .1f), Color.White, Color.White.copy(alpha = .7f))
-            else -> LivePalette(Color.White, Color.Black, IconRedLight, Color.Black, Color.White, Color.Black, IconOrange)
-        }
+        val Light = LivePalette(Color.White, Color.Black, FolioColors.RedLight, Color.Black, Color.White, Color.Black, FolioColors.Orange)
+        val Dark = LivePalette(FolioColors.SecondaryBackground, Color.White, FolioColors.Red, FolioColors.SecondaryBackground,
+            FolioColors.SheetSurface, Color.White, FolioColors.Orange)
     }
 }
 
-private val IconRedLight = FolioColors.RedLight
-/** The frosted tile behind Clear icons. */
-internal val ClearTile = Color.White.copy(alpha = .2f)
-private val IconDark = FolioColors.SecondaryBackground
-private val IconFace = FolioColors.SheetSurface
-private val IconRed = FolioColors.Red
-private val IconOrange = FolioColors.Orange
-
 internal val BadgeRed = FolioColors.RedLight
-private val SoftNeutral = Color(0xFFE5E5EA)
 
 /** iOS-style badge: sits over the icon's top-right corner (or where [placement] says), a dot or a pill that widens for 2+ digits. */
 @Composable
 internal fun androidx.compose.foundation.layout.BoxScope.IconBadge(count: Int, style: BadgeStyle, color: Color,
-    badgeLook: BadgeLook = BadgeLook.IOS, scale: Float = 1f, placement: BadgePlacement = BadgePlacement.DEFAULT) {
+    placement: BadgePlacement = BadgePlacement.DEFAULT) {
     BoxWithConstraints(Modifier.matchParentSize()) {
         val density = androidx.compose.ui.platform.LocalDensity.current
-        val h = (if (style == BadgeStyle.COUNT) maxWidth * .34f else maxWidth * .22f) * scale
+        val h = if (style == BadgeStyle.COUNT) maxWidth * .34f else maxWidth * .22f
         val pill = androidx.compose.foundation.shape.CircleShape
-        val fill = when (badgeLook) {
-            BadgeLook.GLASS -> FolioColors.SecondaryBackground.copy(alpha = .78f)
-            else -> color
-        }
-        val readable = when {
-            badgeLook == BadgeLook.GLASS -> color.takeIf { it.luminance() > .2f } ?: Color.White
-            color.luminance() > .62f -> Color.Black.copy(alpha = .85f)
-            else -> Color.White
-        }
-        val look = when (badgeLook) {
-            // iOS 7 and later: a flat pill, no shadow or outline.
-            BadgeLook.IOS -> Modifier.background(fill, pill)
-            // Classic (iOS 6): a white ring, a soft shadow and a glossy top half.
-            BadgeLook.CLASSIC -> Modifier.shadow(with(density) { 2.dp }, pill, ambientColor = Color.Black, spotColor = Color.Black)
-                .background(fill, pill).border(h * .09f, Color.White, pill)
-                .background(androidx.compose.ui.graphics.Brush.verticalGradient(0f to Color.White.copy(alpha = .35f), .5f to Color.Transparent), pill)
-            BadgeLook.GLASS -> Modifier.background(fill, pill).border(1.dp, Color.White.copy(alpha = .25f), pill)
-        }
+        val readable = if (color.luminance() > .62f) Color.Black.copy(alpha = .85f) else Color.White
         Box(Modifier.align(placement.corner.alignment).offset(placement.offsetX(maxWidth.value, h.value).dp, placement.offsetY(h.value).dp)
             .heightIn(min = h).widthIn(min = h)
-            .then(look)
+            .background(color, pill)
             .padding(horizontal = if (style == BadgeStyle.COUNT && count > 9) h * .22f else 0.dp),
             contentAlignment = Alignment.Center) {
             if (style == BadgeStyle.COUNT) {
@@ -475,112 +289,6 @@ internal fun androidx.compose.foundation.layout.BoxScope.IconBadge(count: Int, s
             }
         }
     }
-}
-
-/** Main color of an icon for "Match icon" badges, cached per bitmap. */
-internal object BadgeAccents {
-    private val cache = android.util.LruCache<android.graphics.Bitmap, Int>(256)
-    private val softCache = android.util.LruCache<android.graphics.Bitmap, Int>(256)
-    private const val NONE = 0 // grayscale icons fall back to red (or a soft neutral)
-
-    fun cached(bitmap: android.graphics.Bitmap, soft: Boolean = false): Int? =
-        (if (soft) softCache else cache).get(bitmap)?.takeIf { it != NONE }
-
-    fun of(bitmap: android.graphics.Bitmap, soft: Boolean = false): Int? {
-        if (soft) {
-            softCache.get(bitmap)?.let { return it.takeIf { c -> c != NONE } }
-            val color = pixels(bitmap)?.let(::softBadgeColor)
-            softCache.put(bitmap, color ?: NONE)
-            return color
-        }
-        cache.get(bitmap)?.let { return it.takeIf { c -> c != NONE } }
-        val accent = pixels(bitmap)?.let(::dominantAccent)
-        cache.put(bitmap, accent ?: NONE)
-        return accent
-    }
-
-    /** A 24×24 sample of the icon: enough to find its main colors without reading every pixel. */
-    private fun pixels(bitmap: android.graphics.Bitmap): IntArray? = runCatching {
-        val readable = if (bitmap.config == android.graphics.Bitmap.Config.HARDWARE) bitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else bitmap
-        val small = android.graphics.Bitmap.createScaledBitmap(readable, 24, 24, true)
-        IntArray(24 * 24).also { small.getPixels(it, 0, 24, 0, 0, 24, 24) }
-    }.getOrNull()
-}
-
-/**
- * Soft pastel badge: the icon's three most prominent color groups (transparent, white, black and gray
- * pixels ignored) blended by how much of the icon each covers, then softened like iOS pastels —
- * saturation capped at 40%, brightness raised to at least 90%. Null for icons with no real color.
- */
-internal fun softBadgeColor(pixels: IntArray): Int? {
-    val weight = FloatArray(12); val rs = FloatArray(12); val gs = FloatArray(12); val bs = FloatArray(12)
-    var opaque = 0
-    for (p in pixels) {
-        if ((p ushr 24) < 160) continue
-        opaque++
-        val r = (p shr 16 and 255) / 255f; val g = (p shr 8 and 255) / 255f; val b = (p and 255) / 255f
-        val max = maxOf(r, g, b); val delta = max - minOf(r, g, b)
-        val sat = if (max == 0f) 0f else delta / max
-        if (sat < .2f || max < .2f) continue
-        val hue = when (max) { r -> ((g - b) / delta).mod(6f); g -> (b - r) / delta + 2f; else -> (r - g) / delta + 4f }
-        val bucket = (hue * 2f).toInt().coerceIn(0, 11)
-        weight[bucket] += 1f; rs[bucket] += r; gs[bucket] += g; bs[bucket] += b
-    }
-    val top = weight.indices.sortedByDescending { weight[it] }.take(3).filter { weight[it] >= maxOf(1f, opaque * .04f) }
-    if (top.isEmpty()) return null
-    val total = top.sumOf { weight[it].toDouble() }.toFloat()
-    val r = top.sumOf { rs[it].toDouble() }.toFloat() / total
-    val g = top.sumOf { gs[it].toDouble() }.toFloat() / total
-    val b = top.sumOf { bs[it].toDouble() }.toFloat() / total
-    return softened((0xFF shl 24) or ((r * 255).toInt() shl 16) or ((g * 255).toInt() shl 8) or (b * 255).toInt())
-}
-
-/** Caps saturation at 40% and lifts brightness to at least 90% (HSV), keeping the hue. */
-internal fun softened(argb: Int): Int {
-    val r = (argb shr 16 and 255) / 255f; val g = (argb shr 8 and 255) / 255f; val b = (argb and 255) / 255f
-    val max = maxOf(r, g, b); val min = minOf(r, g, b); val delta = max - min
-    val hue = when {
-        delta == 0f -> 0f
-        max == r -> 60f * (((g - b) / delta).mod(6f))
-        max == g -> 60f * ((b - r) / delta + 2f)
-        else -> 60f * ((r - g) / delta + 4f)
-    }
-    val s = (if (max == 0f) 0f else delta / max).coerceAtMost(.40f)
-    val v = max.coerceAtLeast(.90f)
-    val c = v * s
-    val x = c * (1 - kotlin.math.abs((hue / 60f).mod(2f) - 1))
-    val m = v - c
-    val (r1, g1, b1) = when ((hue / 60f).toInt().coerceIn(0, 5)) {
-        0 -> Triple(c, x, 0f); 1 -> Triple(x, c, 0f); 2 -> Triple(0f, c, x)
-        3 -> Triple(0f, x, c); 4 -> Triple(x, 0f, c); else -> Triple(c, 0f, x)
-    }
-    fun ch(v: Float) = kotlin.math.round((v + m) * 255f).toInt().coerceIn(0, 255)
-    return (0xFF shl 24) or (ch(r1) shl 16) or (ch(g1) shl 8) or ch(b1)
-}
-
-/**
- * The most prominent saturated color in ARGB [pixels], or null when the icon is mostly
- * transparent, gray, black or white. Hues are bucketed and weighted by saturation × brightness.
- */
-internal fun dominantAccent(pixels: IntArray): Int? {
-    val weight = FloatArray(12); val rs = FloatArray(12); val gs = FloatArray(12); val bs = FloatArray(12)
-    var opaque = 0
-    for (p in pixels) {
-        if ((p ushr 24) < 160) continue
-        opaque++
-        val r = (p shr 16 and 255) / 255f; val g = (p shr 8 and 255) / 255f; val b = (p and 255) / 255f
-        val max = maxOf(r, g, b); val delta = max - minOf(r, g, b)
-        val sat = if (max == 0f) 0f else delta / max
-        if (sat < .35f || max < .25f) continue
-        val hue = when (max) { r -> ((g - b) / delta).mod(6f); g -> (b - r) / delta + 2f; else -> (r - g) / delta + 4f }
-        val bucket = (hue * 2f).toInt().coerceIn(0, 11)
-        val w = sat * max
-        weight[bucket] += w; rs[bucket] += r * w; gs[bucket] += g * w; bs[bucket] += b * w
-    }
-    val best = weight.indices.maxBy { weight[it] }
-    if (opaque == 0 || weight[best] < opaque * .06f) return null
-    fun channel(sum: Float) = kotlin.math.round(sum / weight[best] * 255f).toInt().coerceIn(0, 255)
-    return (0xFF shl 24) or (channel(rs[best]) shl 16) or (channel(gs[best]) shl 8) or channel(bs[best])
 }
 
 /**

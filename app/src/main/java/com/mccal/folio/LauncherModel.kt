@@ -108,8 +108,6 @@ data class LauncherState(
     val widgetRestores: List<WidgetRestore> = emptyList(),
     val googleSearch: Boolean = true,
     val compact: LayoutPreset = LayoutPreset(),
-    /** The inner screen held upright, when it has a layout of its own; null means it uses [expanded], as it always did. */
-    val portrait: LayoutPreset? = null,
     val expanded: LayoutPreset = LayoutPreset(),
     val labels: Boolean = true,
     val verticalStatus: Boolean = true,
@@ -123,28 +121,11 @@ data class LauncherState(
     /** App ids kept out of All apps and app search (Home shortcuts are unaffected). */
     val hiddenApps: Set<String> = emptySet(),
     val minPages: Int = 1,
-    val statusStyle: StatusStyle = StatusStyle(),
     val foldEffect: Boolean = true,
-    val foldIntensity: Float = 1f,
-    /** Fold style: blur only (false) or iPhone Duo — still 1:1 right half plus blur (true). */
-    val foldSnapshot: Boolean = false,
-    /** Duet's look (style and its sliders). */
-    val duet: com.mccal.folio.duet.DuetOptions = com.mccal.folio.duet.DuetOptions(),
     val stayAwakeOnFold: Boolean = true,
-    /** Blur of Home behind Spotlight and other overlays, 0…1. */
-    val panelBlur: Float = 1f,
     val dockEverywhere: Boolean = false,
     /** Buttons in Every App: a large Back / Home / Recents bar over other apps (Folio's accessibility service). */
     val buttonBar: Boolean = false,
-    /** Bar height in dp (44 standard, 52 large, 60 extra large) and width as a share of the screen. */
-    val buttonBarHeight: Float = 52f,
-    val buttonBarWidth: Float = .5f,
-    /** Android's Back · Home · Recents order instead of Samsung's Recents · Home · Back. */
-    val buttonBarAndroidOrder: Boolean = false,
-    val buttonBarLight: Boolean = false,
-    /** Fades the bar when you haven't touched it for a moment. */
-    val buttonBarFade: Boolean = true,
-    val iconStyle: IconStyle = IconStyle.DEFAULT,
     /** Spotlight sections the user turned off (names of [SpotlightSection]). */
     val spotlightHidden: Set<String> = emptySet(),
     /** Engine for Enter in search: a [WebSearchTarget] name. */
@@ -154,14 +135,9 @@ data class LauncherState(
     val libraryCategories: Boolean = true,
     /** The Personal and Work switch in the App Library (only shown with a work profile); off shows personal apps only. */
     val libraryWork: Boolean = true,
-    val iconTint: Long = FolioColors.Value.Warning,
-    val iconShape: IconShape = IconShape.DEFAULT,
     /** Package of the selected third-party icon pack, or null for app icons. */
     val iconPack: String? = null,
     val badgeStyle: BadgeStyle = BadgeStyle.DOT,
-    val badgeColor: BadgeColor = BadgeColor.RED,
-    val badgeLook: BadgeLook = BadgeLook.IOS,
-    val badgeSize: BadgeSize = BadgeSize.STANDARD,
     /** Clear Badges When Opened: an app's badge goes quiet once you open it (see [BadgesWhenOpened]). */
     val badgesWhenOpened: Boolean = false,
     /** Badge counts already seen, by package name: the count that was showing when the app was last opened. */
@@ -186,27 +162,13 @@ data class LauncherState(
     val systemWallpaper: Boolean = false,
     /** Text drawn on the wallpaper: "AUTO" follows the wallpaper, "LIGHT" white, "DARK" dark. */
     val homeInk: String = "AUTO",
-    /** Black rounded corners over Home, like the iPhone Duo concept (issue #8). */
-    val roundedCorners: Boolean = false,
-    /** Dock along the bottom on phone-sized screens (the cover) in portrait, instead of on the Side Bar. */
-    val cornerRadius: Float = 40f,
-    val folderColumns: Int = 0,
-    val labelSize: LabelSize = LabelSize.STANDARD,
-    val motionSpeed: MotionSpeed = MotionSpeed.STANDARD,
-    val holdDelay: HoldDelay = HoldDelay.STANDARD,
     /** Settings › Accessibility › Reduce Motion: fades instead of slides and pops, no wiggle. Android's Remove animations turns it on too. */
     val reduceMotion: Boolean = false,
-    /** How Home pages move as you swipe between them. [PageEffect.NONE] is the default and the flat swipe. */
-    val pageEffect: PageEffect = PageEffect.NONE,
-    /** The effect Flipbook's switch turns back on: the last one chosen, so Carousel survives an off and on. */
-    val lastPageEffect: PageEffect = PageEffect.CUBE,
     /**
      * iOS's legibility gradient: darken the top and bottom of the background so white text reads over a pale
      * wallpaper (A11Y-9). See [HomeScrim] for what it draws and how it composes with [homeInk].
      */
     val homeScrim: Boolean = true,
-    /** Tinted icons use the wallpaper's color instead of [iconTint]. */
-    val iconTintFromWallpaper: Boolean = false,
     /** Harbor-style: dock icons magnify under your finger. */
     val dockMagnify: Boolean = false,
     /** Velox-style: swipe up on a Home app icon for its quick panel. */
@@ -216,34 +178,22 @@ data class LauncherState(
     val haptics: Boolean = true,
     /** Per-screen overrides for tweaks: feature id → screen → "ON"/"OFF" (absent = follow the main switch). */
     val featureScopes: Map<String, Map<String, String>> = emptyMap(),
-    /** Settings a tweak offers on its own page: tweak id → option id → value (see [TweakOptions]). Absent = the default. */
-    val tweakOptions: Map<String, Map<String, String>> = emptyMap(),
     /** Drag along the Search pill or page dots to scrub pages. */
     val pageScrub: Boolean = true,
     /** Android wallpaper shifts slightly as pages change. */
     val wallpaperMotion: Boolean = true,
     /** Live Clock and Calendar icons. */
     val liveIcons: Boolean = true,
-    /** Live Clock and Calendar look: AUTO (match the icons around them), LIGHT or DARK. */
-    val liveIconLook: String = "AUTO",
     /** Optional tint per folder id (ARGB). */
     val folderColors: Map<String, Long> = emptyMap(),
-    /** Optional custom width/height per folder id, from dragging its resize handle; absent means automatic. */
-    val folderSizes: Map<String, FolderSize> = emptyMap(),
-    /** Optional color/weight per Big Clock, keyed by its widget slot since more than one can be on Home. */
-    val bigClockStyles: Map<Int, BigClockStyle> = emptyMap(),
     /** Icon Stacks: anchor app id → the apps that fan out when you swipe down on it. */
     val iconStacks: Map<String, List<String>> = emptyMap(),
     /** Custom app names by app id; apps without an entry keep the name Android reports. */
     val appNames: Map<String, String> = emptyMap(),
-    /** Icon looks chosen for single apps (long-press, More, Edit Icon); an app not here follows the launcher. */
+    /** Pictures chosen for single apps (Edit Icon); an app not here keeps its own icon. */
     val appIconStyles: Map<String, AppIconOverride> = emptyMap(),
     /** Swipe up, swipe down and double tap actions chosen for single apps; an app not here keeps today's behavior. */
     val iconActions: Map<String, IconActions> = emptyMap(),
-    /** Per-page looks by real Home page number (pages without an entry use Home's settings). */
-    val pageStyles: Map<Int, PageStyle> = emptyMap(),
-    /** Home Screen & Dock › Layout › Rows: 0 = Automatic (More rows), 4 = always four app rows. */
-    val homeRows: Int = 0,
     /** App rows that last fit the cover-class and the inner-class Home (0 = not measured yet); see [homeAppRows]. */
     val homeFitCompact: Int = 0,
     val homeFitExpanded: Int = 0,
@@ -259,7 +209,7 @@ data class LauncherState(
     val layout: HomeLayout get() = HomeLayout(homeSlots, dock, widgetPlacements, folders, widgetRestores, leadingSlots, minPages)
     val homePages get() = layout.pageCount
     /** App rows every Home page shows, the same on both screens so pages don't change when you fold. */
-    val homeAppRows: Int get() = effectiveHomeRows(homeRows, homeFitCompact, homeFitExpanded, homeFitUpright)
+    val homeAppRows: Int get() = effectiveHomeRows(homeFitCompact, homeFitExpanded, homeFitUpright)
     /** Home can be drawn complete: its apps are in, or loading has ended (or failed). */
     val homeReady: Boolean get() = homeAppsLoaded || !loading
 }
@@ -323,18 +273,11 @@ internal fun LauncherState.withHomeFit(screen: LayoutScreen, rows: Int): Launche
     LayoutScreen.INNER_UPRIGHT -> copy(homeFitUpright = rows)
 }
 
-internal fun LauncherState.withPreset(screen: LayoutScreen, preset: LayoutPreset): LauncherState = when (screen) {
-    LayoutScreen.COVER -> copy(compact = preset)
-    LayoutScreen.INNER -> copy(expanded = preset)
-    LayoutScreen.INNER_UPRIGHT -> if (portrait != null) copy(portrait = preset) else copy(expanded = preset)
-}
+internal fun LauncherState.withPreset(screen: LayoutScreen, preset: LayoutPreset): LauncherState =
+    if (screen == LayoutScreen.COVER) copy(compact = preset) else copy(expanded = preset)
 
-/** The saved layout [screen] uses: the upright inner screen falls back to the inner one until it has its own. */
-fun LauncherState.presetFor(screen: LayoutScreen): LayoutPreset = when (screen) {
-    LayoutScreen.COVER -> compact
-    LayoutScreen.INNER -> expanded
-    LayoutScreen.INNER_UPRIGHT -> portrait ?: expanded
-}
+/** The saved layout [screen] uses: the upright inner screen shares the inner one. */
+fun LauncherState.presetFor(screen: LayoutScreen): LayoutPreset = if (screen == LayoutScreen.COVER) compact else expanded
 
 /** Every app id Home shows without opening an app: its pages, the dock, and the apps in its folders and icon stacks. */
 internal fun LauncherState.homeAppIds(): Set<String> =
@@ -349,12 +292,11 @@ internal fun LauncherState.withHomeApps(home: List<AppEntry>): LauncherState =
     if (!loading || apps.isNotEmpty() || home.isEmpty()) this else copy(apps = home.withAppNames(appNames), homeAppsLoaded = true)
 
 /**
- * Automatic: the fewest rows any of this device's screens has room for (screens not measured yet don't count, and
- * nothing measured means four). A fixed setting is used as is.
+ * The fewest rows any of this device's screens has room for (screens not measured yet don't count, and nothing measured
+ * means four).
  */
-fun effectiveHomeRows(setting: Int, fitCompact: Int, fitExpanded: Int, fitUpright: Int = 0): Int =
-    (if (setting > 0) setting else listOf(fitCompact, fitExpanded, fitUpright).filter { it > 0 }.minOrNull() ?: BASE_APP_ROWS)
-        .coerceIn(BASE_APP_ROWS, MAX_APP_ROWS)
+fun effectiveHomeRows(fitCompact: Int, fitExpanded: Int, fitUpright: Int = 0): Int =
+    (listOf(fitCompact, fitExpanded, fitUpright).filter { it > 0 }.minOrNull() ?: BASE_APP_ROWS).coerceIn(BASE_APP_ROWS, MAX_APP_ROWS)
 
 /**
  * The newest saved-state schema this build reads. 11: Hide in Landscape on the unfolded screen (removed with the island); 10: icon actions; 9: 36-cell Home pages (More rows); 6–8 had 24.
@@ -376,19 +318,12 @@ internal fun stateSchemaFor(s: LauncherState) = when {
 /** Whether this save should keep the schema 9 file it is about to replace: it writes schema 10 over an older read and no copy exists yet. */
 internal fun v9BackupNeeded(sourceSchema: Int, writtenSchema: Int, hasBackup: Boolean) = sourceSchema < 10 && writtenSchema >= 10 && !hasBackup
 
-/**
- * The schema that brought More rows. A save older than this was arranged in four rows, and keeps them; anything
- * from this schema on already had Automatic. Pinned to 9 rather than following [STATE_SCHEMA], or the next schema
- * bump would start treating 0.6.5 saves as old and take their Automatic rows away.
- */
-const val MORE_ROWS_SCHEMA = 9
-
 /** Home's state. */
 class LauncherModel(application: Application) : AndroidViewModel(application) {
     private data class RefreshedApps(val entries: List<AppEntry>, val profiles: List<AppProfile>,
         val authoritativeProfiles: Set<Long>, val removedProfiles: Set<Long>)
     private data class UndoImportSettings(val compact: LayoutPreset, val expanded: LayoutPreset, val labels: Boolean,
-        val googleSearch: Boolean, val verticalStatus: Boolean, val portrait: LayoutPreset? = null)
+        val googleSearch: Boolean, val verticalStatus: Boolean)
     private val prefs = application.getSharedPreferences("launcher", 0)
     private val launcherApps = application.getSystemService(LauncherApps::class.java)
     private val userManager = application.getSystemService(UserManager::class.java)
@@ -694,11 +629,8 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
     private fun activityId(info: LauncherActivityInfo, serial: Long, personalSerial: Long): String? {
         val own = getApplication<Application>().packageName
         val component = info.componentName
-        if (component.packageName == own && !component.className.startsWith("$FOLIO_CLASSES.${AppIconChoice.ALIAS_PREFIX}")) return null
-        // Every alternate icon is its own component; they share one id so switching icons keeps
-        // Folio's place on Home, in the dock and in folders.
-        val idComponent = if (component.packageName == own) ComponentName(own, "$FOLIO_CLASSES.${AppIconChoice.TEAL.alias}") else component
-        return profileAppId(idComponent.flattenToString(), serial, personalSerial)
+        if (component.packageName == own && component.className != "$FOLIO_CLASSES.$FOLIO_SETTINGS_ALIAS") return null
+        return profileAppId(component.flattenToString(), serial, personalSerial)
     }
 
     /**
@@ -893,33 +825,27 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
         if (recovering && !appsListed) return false
         val old = mutable.value
         if (!recovering && old.layout == preview.layout && old.compact == preview.compact && old.expanded == preview.expanded &&
-            old.portrait == preview.portrait && old.labels == preview.labels && old.googleSearch == preview.googleSearch && old.verticalStatus == preview.verticalStatus &&
-            old.appNames + preview.appNames == old.appNames && old.appIconStyles + preview.appIconStyles == old.appIconStyles &&
+            old.labels == preview.labels && old.googleSearch == preview.googleSearch && old.verticalStatus == preview.verticalStatus &&
+            old.appNames + preview.appNames == old.appNames &&
             old.iconActions + preview.iconActions == old.iconActions) return false
         if (recovering) leaveDamagedLayout(restoring = true)
         else if (old.layoutHistory && !old.loading) LayoutHistory.add(getApplication(), "Before restoring a backup", old.layout)
-        // The backup's widgets get slot numbers nothing here uses, so a stack or clock look kept for Undo stays on its own widget.
-        val (restored, newSlots) = renumberRestoredWidgets(preview.layout,
-            maxOf(nextWidgetSlot(), old.widgetPlacements.maxOfOrNull { it.slot + 1 } ?: 0))
+        // The backup's widgets get slot numbers nothing here uses, so a stack kept for Undo stays on its own widget.
+        val restored = renumberRestoredWidgets(preview.layout,
+            maxOf(nextWidgetSlot(), old.widgetPlacements.maxOfOrNull { it.slot + 1 } ?: 0)).first
         val restoredSlots = restored.widgetPlacements.mapTo(mutableSetOf()) { it.slot }
         undoLayout = (old.layout to restored).takeUnless { recovering }
         // A stack on a number the restored layout still uses can't stay on Home, but Undo brings it back whole.
         setAsideStacks = (restored to old.widgetStacks.filterKeys { it in restoredSlots }).takeUnless { recovering }
-        undoImportSettings = UndoImportSettings(old.compact, old.expanded, old.labels, old.googleSearch, old.verticalStatus, old.portrait).takeUnless { recovering }
+        undoImportSettings = UndoImportSettings(old.compact, old.expanded, old.labels, old.googleSearch, old.verticalStatus).takeUnless { recovering }
         // A restored name replaces the one on this phone; names this backup says nothing about are left alone.
         val names = old.appNames + preview.appNames
-        mutable.value = old.copy(appNames = names, appIconStyles = old.appIconStyles + preview.appIconStyles, iconActions = old.iconActions + preview.iconActions, apps = old.apps.withAppNames(names),
+        mutable.value = old.copy(appNames = names, iconActions = old.iconActions + preview.iconActions, apps = old.apps.withAppNames(names),
             homeSlots = restored.slots, leadingSlots = restored.leadingSlots, dock = trimmedDock(restored.dock),
             widgetPlacements = restored.widgetPlacements, folders = restored.folders,
-            widgetRestores = restored.widgetRestores, compact = preview.compact, expanded = preview.expanded, portrait = preview.portrait,
+            widgetRestores = restored.widgetRestores, compact = preview.compact, expanded = preview.expanded,
             // Kept for Undo, except on a number a restored widget still uses (only an old overflow widget keeps its number).
             widgetStacks = WidgetStacks.prune(old.widgetStacks, old.widgetPlacements.map { it.slot }.toSet() - restoredSlots),
-            // A backup carries no clock styles, so a style only stays where the same Big Clock is still in the same slot, and
-            // follows that clock to its new number; a clock that lands where another widget was does not inherit that look.
-            bigClockStyles = old.bigClockStyles.filterKeys { slot ->
-                old.widgetPlacements.any { it.slot == slot && it.id == BIG_CLOCK_WIDGET } &&
-                    preview.layout.widgetPlacements.any { it.slot == slot && it.id == BIG_CLOCK_WIDGET } }
-                .let { same -> same + same.mapNotNull { (slot, style) -> newSlots[slot]?.let { it to style } } },
             labels = preview.labels, googleSearch = preview.googleSearch, verticalStatus = preview.verticalStatus,
             // The backup brings its own presets and Side Bar, so what Full-Width Home remembered no longer applies.
             fullWidthRestore = emptyMap(), error = old.error.takeUnless { recovering },
@@ -938,10 +864,8 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
     fun placeWidget(placement: WidgetPlacement) = commitLayout(placeWidget(mutable.value.layout, placement))
     fun placement(slot: Int) = mutable.value.layout.placement(slot)
     // Never reuse a slot number that a (possibly undoable) stack still refers to.
-    // A slot that still has a stack or a Big Clock style (the widget may only have been removed, and removal is undoable) is
-    // not handed to a new widget, which would otherwise inherit the old one's look.
     fun nextWidgetSlot() = maxOf(mutable.value.widgetPlacements.maxOfOrNull { it.slot } ?: -1,
-        mutable.value.widgetStacks.keys.maxOrNull() ?: -1, mutable.value.bigClockStyles.keys.maxOrNull() ?: -1) + 1
+        mutable.value.widgetStacks.keys.maxOrNull() ?: -1) + 1
 
     fun stackCards(slot: Int): List<Int> = mutable.value.layout.placement(slot)
         ?.let { WidgetStacks.cards(it.id, mutable.value.widgetStacks[slot]) }.orEmpty()
@@ -985,9 +909,6 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setStackRotate(value: Boolean) = updateSettings(soon = false) { it.copy(stackRotate = value) }
-    fun setPageStyle(page: Int, style: PageStyle) = updateSettings(soon = false) {
-        it.copy(pageStyles = if (style.isDefault) it.pageStyles - page else it.pageStyles + (page to style))
-    }
     fun toggleStackApp(anchor: String, app: String) = updateSettings(soon = false) { it.copy(iconStacks = IconStacks.toggle(it.iconStacks, anchor, app)) }
     fun setAddNewAppsToHome(value: Boolean) = updateSettings(soon = false) { it.copy(addNewAppsToHome = value) }
     fun setLayoutHistory(value: Boolean) = updateSettings(soon = false) { it.copy(layoutHistory = value) }
@@ -1027,40 +948,27 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
             widgetPlacements = next.widgetPlacements, folders = next.folders, widgetRestores = next.widgetRestores, minPages = next.minPages,
             // Only stacks of the restored widgets: a snapshot widget landing in a reused slot mustn't inherit another stack.
             widgetStacks = WidgetStacks.prune(old.widgetStacks, next.widgetPlacements.map { it.slot }.toSet()),
-            bigClockStyles = old.bigClockStyles.filterKeys { slot -> slot in next.widgetPlacements.map { it.slot }.toSet() },
             error = old.error.takeUnless { recovering }, editRevision = old.editRevision + 1, canUndoEdit = !recovering)
         persist()
         return true
     }
     fun setSystemWallpaper(value: Boolean) = updateSettings(soon = false) { it.copy(systemWallpaper = value) }
     fun setHomeInk(value: String) = updateSettings(soon = false) { it.copy(homeInk = value) }
-    fun setRoundedCorners(value: Boolean) = updateSettings(soon = false) { it.copy(roundedCorners = value) }
-    fun setCornerRadius(value: Float) = updateSettings(soon = true) { it.copy(cornerRadius = value.coerceIn(16f, 72f)) }
-    fun setFolderColumns(value: Int) = updateSettings(soon = false) { it.copy(folderColumns = value.takeIf { v -> v in setOf(0, 3, 4) } ?: 0) }
-    fun setLabelSize(value: LabelSize) = updateSettings(soon = false) { it.copy(labelSize = value) }
-    fun setHoldDelay(value: HoldDelay) = updateSettings(soon = false) { it.copy(holdDelay = value) }
-    fun setMotionSpeed(value: MotionSpeed) = updateSettings(soon = false) { it.copy(motionSpeed = value) }
-    fun setPageEffect(value: PageEffect) = updateSettings(soon = false) { it.withPageEffect(value) }
-    fun setPageEffectOn(on: Boolean) = updateSettings(soon = false) { it.withPageEffectOn(on) }
     /** A package installed an effect (or an update replaced it): one entry per package id. */
     fun setHomeScrim(value: Boolean) = updateSettings(soon = false) { it.copy(homeScrim = value) }
-    fun setIconTintFromWallpaper(value: Boolean) = updateSettings(soon = false) { it.copy(iconTintFromWallpaper = value) }
     fun setDockMagnify(value: Boolean) = updateSettings(soon = false) { it.copy(dockMagnify = value) }
     fun setAppPanels(value: Boolean) = updateSettings(soon = false) { it.copy(appPanels = value) }
     fun setHaptics(value: Boolean) = updateSettings(soon = false) { it.copy(haptics = value) }
-    fun setTweakOption(tweakId: String, optionId: String, value: String) =
-        updateSettings(soon = false) { it.copy(tweakOptions = TweakOptions.set(it.tweakOptions, tweakId, optionId, value)) }
     fun setFeatureScope(id: String, screen: FolioScreen, value: ScopeValue) =
         updateSettings(soon = false) { it.copy(featureScopes = FeatureScopes.set(it.featureScopes, id, screen, value)) }
     internal fun resetTweak(feature: TweakFeature) {
         feature.set(this, feature.default)
-        updateSettings(soon = false) { it.copy(featureScopes = it.featureScopes - feature.id, tweakOptions = it.tweakOptions - feature.id) }
+        updateSettings(soon = false) { it.copy(featureScopes = it.featureScopes - feature.id) }
     }
     fun setPageScrub(value: Boolean) = updateSettings(soon = false) { it.copy(pageScrub = value) }
     fun setReduceMotion(value: Boolean) = updateSettings(soon = false) { it.copy(reduceMotion = value) }
     fun setWallpaperMotion(value: Boolean) = updateSettings(soon = false) { it.copy(wallpaperMotion = value) }
     fun setLiveIcons(value: Boolean) = updateSettings(soon = false) { it.copy(liveIcons = value) }
-    fun setLiveIconLook(value: String) = updateSettings(soon = false) { it.copy(liveIcons = true, liveIconLook = value) }
     fun setTriggerAction(trigger: FolioTrigger, action: FolioAction) = updateSettings(soon = false) {
         it.copy(triggerActions = if (action == FolioAction.NONE) it.triggerActions - trigger.name else it.triggerActions + (trigger.name to action.name))
     }
@@ -1078,7 +986,6 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
             widgetRestores = next.widgetRestores,
             // Keep stacks of the undoable previous layout too, so undoing a removal brings the whole stack back.
             widgetStacks = WidgetStacks.prune(old.widgetStacks, (next.widgetPlacements + old.widgetPlacements).map { it.slot }.toSet()),
-            bigClockStyles = old.bigClockStyles.filterKeys { slot -> slot in (next.widgetPlacements + old.widgetPlacements).map { it.slot }.toSet() },
             editRevision = old.editRevision + 1, canUndoEdit = true)
         persist()
         return true
@@ -1094,9 +1001,8 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
             leadingSlots = before.leadingSlots.map { it?.takeIf(installed::contains) },
             dock = trimmedDock(before.dock.map { it?.takeIf(installed::contains) }), widgetPlacements = before.widgetPlacements, folders = before.folders,
             widgetStacks = WidgetStacks.prune(old.widgetStacks + stacksForUndo(), before.widgetPlacements.map { it.slot }.toSet()),
-            bigClockStyles = old.bigClockStyles.filterKeys { slot -> slot in before.widgetPlacements.map { it.slot }.toSet() },
             widgetRestores = before.widgetRestores, compact = settings?.compact ?: old.compact,
-            expanded = settings?.expanded ?: old.expanded, portrait = if (settings != null) settings.portrait else old.portrait, labels = settings?.labels ?: old.labels,
+            expanded = settings?.expanded ?: old.expanded, labels = settings?.labels ?: old.labels,
             googleSearch = settings?.googleSearch ?: old.googleSearch, verticalStatus = settings?.verticalStatus ?: old.verticalStatus,
             canUndoEdit = false,
             editRevision = old.editRevision + 1)
@@ -1120,14 +1026,8 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
     fun setSearchCustomUrl(url: String) = updateSettings(soon = true) { it.copy(searchCustomUrl = url.take(500)) }
     fun setLibraryCategories(value: Boolean) = updateSettings(soon = false) { it.copy(libraryCategories = value) }
     fun setLibraryWork(value: Boolean) = updateSettings(soon = false) { it.copy(libraryWork = value) }
-    fun setFoldSnapshot(value: Boolean) = updateSettings(soon = false) { it.copy(foldSnapshot = value) }
-    fun setIconStyle(style: IconStyle, tint: Long) = updateSettings(soon = false) { it.copy(iconStyle = style, iconTint = tint) }
-    fun setIconShape(shape: IconShape) = updateSettings(soon = false) { it.copy(iconShape = shape) }
     fun setIconPack(pack: String?) = updateSettings(soon = false) { it.copy(iconPack = pack) }
     fun setBadgeStyle(style: BadgeStyle) = updateSettings(soon = false) { it.copy(badgeStyle = style) }
-    fun setBadgeColor(color: BadgeColor) = updateSettings(soon = false) { it.copy(badgeColor = color) }
-    fun setBadgeLook(look: BadgeLook) = updateSettings(soon = false) { it.copy(badgeLook = look) }
-    fun setBadgeSize(size: BadgeSize) = updateSettings(soon = false) { it.copy(badgeSize = size) }
     /** Clear Badges When Opened; turning it off forgets the counts it remembered, so every badge comes back. */
     fun setBadgesWhenOpened(value: Boolean) = updateSettings(soon = false) {
         it.copy(badgesWhenOpened = value, badgesSeen = if (value) it.badgesSeen else emptyMap()) }
@@ -1146,22 +1046,12 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
     fun setMessagesApp(pkg: String?) = updateSettings(soon = false) { it.copy(messagesApp = pkg) }
     fun setFolderColor(folderId: String, color: Long?) = updateSettings(soon = false) {
         it.copy(folderColors = if (color == null) it.folderColors - folderId else it.folderColors + (folderId to color)) }
-    fun setFolderSize(folderId: String, size: FolderSize?) = updateSettings(soon = false) {
-        it.copy(folderSizes = if (size == null) it.folderSizes - folderId else it.folderSizes + (folderId to size)) }
     // soon = true: the weight slider's onValueChange fires on every pixel of drag, each one a call here - soon
     // coalesces those into one write after they stop (persistSoon's own purpose), instead of a synchronous
     // persist() blocking the UI thread on every tick, which is what made the slider look stuck.
-    fun setBigClockStyle(slot: Int, style: BigClockStyle?) = updateSettings(soon = true) {
-        it.copy(bigClockStyles = if (style == null) it.bigClockStyles - slot else it.bigClockStyles + (slot to style)) }
     fun setButtonBar(value: Boolean) = updateSettings(soon = false) { it.copy(buttonBar = value) }
-    fun setButtonBarHeight(value: Float) = updateSettings(soon = false) { it.copy(buttonBarHeight = value.coerceIn(44f, 60f)) }
-    fun setButtonBarWidth(value: Float) = updateSettings(soon = false) { it.copy(buttonBarWidth = value.coerceIn(.3f, .8f)) }
-    fun setButtonBarAndroidOrder(value: Boolean) = updateSettings(soon = false) { it.copy(buttonBarAndroidOrder = value) }
-    fun setButtonBarLight(value: Boolean) = updateSettings(soon = false) { it.copy(buttonBarLight = value) }
-    fun setButtonBarFade(value: Boolean) = updateSettings(soon = false) { it.copy(buttonBarFade = value) }
 
     fun setDockEverywhere(value: Boolean) = updateSettings(soon = false) { it.copy(dockEverywhere = value) }
-    fun setHomeRows(value: Int) = updateSettings(soon = false) { it.copy(homeRows = if (value in BASE_APP_ROWS..MAX_APP_ROWS) value else 0) }
     /** Remembers how many app rows fit this screen class's full-screen Home (see [effectiveHomeRows]). */
     fun recordHomeFit(screen: LayoutScreen, rows: Int) {
         val value = rows.coerceIn(BASE_APP_ROWS, MAX_APP_ROWS)
@@ -1169,12 +1059,8 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
         if (old.homeFitFor(screen) == value) return
         updateSettings(soon = false) { it.withHomeFit(screen, value) }
     }
-    fun setPanelBlur(value: Float) = updateSettings(soon = true) { it.copy(panelBlur = value) }
     fun setFoldEffect(value: Boolean) = updateSettings(soon = false) { it.copy(foldEffect = value) }
-    fun setFoldIntensity(value: Float) = updateSettings(soon = true) { it.copy(foldIntensity = value) }
-    internal fun setDuet(value: com.mccal.folio.duet.DuetOptions) = updateSettings(soon = true) { it.copy(duet = value) }
     fun setStayAwakeOnFold(value: Boolean) = updateSettings(soon = false) { it.copy(stayAwakeOnFold = value) }
-    fun setStatusStyle(style: StatusStyle) = updateSettings(soon = true) { it.copy(statusStyle = style) }
     fun setHidden(id: String, hidden: Boolean) = updateSettings(soon = false) { it.copy(hiddenApps = if (hidden) it.hiddenApps + id else it.hiddenApps - id) }
     /** Renames one app everywhere it appears; a blank name puts the name Android reports back. */
     fun setAppIconStyle(id: String, override: AppIconOverride) {
@@ -1190,25 +1076,13 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
     fun setLeftHanded(value: Boolean) = updateSettings(soon = false) { it.copy(leftHanded = value) }
     fun setVerticalStatus(value: Boolean) { if (statePayloadInvalid) return; undoLayout = null; undoImportSettings = null; mutable.update { it.copy(verticalStatus = value, canUndoEdit = false) }; persist() }
     fun setGoogleSearch(value: Boolean) { if (statePayloadInvalid) return; undoLayout = null; undoImportSettings = null; mutable.update { it.copy(googleSearch = value, canUndoEdit = false) }; persist() }
-    fun setPreset(expanded: Boolean, value: LayoutPreset) = setPreset(if (expanded) LayoutScreen.INNER else LayoutScreen.COVER, value)
-
     fun setPreset(screen: LayoutScreen, value: LayoutPreset) {
         if (statePayloadInvalid) return
         undoLayout = null; undoImportSettings = null
-        mutable.update {
-            when (screen) {
-                LayoutScreen.COVER -> it.copy(compact = value.sanitized(), canUndoEdit = false)
-                LayoutScreen.INNER -> it.copy(expanded = value.sanitized(), canUndoEdit = false)
-                // Only a layout that exists can be edited; asking for the upright one without it changes the inner one.
-                LayoutScreen.INNER_UPRIGHT -> if (it.portrait != null) it.copy(portrait = value.sanitized(), canUndoEdit = false)
-                    else it.copy(expanded = value.sanitized(), canUndoEdit = false)
-            }
-        }
-        // Home updates on every slider step; the write waits until the slider rests.
-        persistSoon()
+        mutable.update { it.withPreset(screen, value).copy(canUndoEdit = false) }
+        persist()
     }
 
-    /** The upright inner screen gets a layout of its own, starting as a copy of the inner one, or goes back to sharing it. */
     /** Full-Width Home for [screen] on or off, as one change that remembers and restores what it replaced. */
     fun setFullWidthHome(screen: LayoutScreen, on: Boolean) {
         if (statePayloadInvalid) return
@@ -1217,15 +1091,6 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
         persist()
     }
 
-    fun setSeparatePortrait(on: Boolean) {
-        if (statePayloadInvalid) return
-        undoLayout = null; undoImportSettings = null
-        mutable.update {
-            val next = it.copy(portrait = if (on) (it.portrait ?: it.expanded) else null, canUndoEdit = false)
-            if (on) next else next.withoutFullWidthEntry(LayoutScreen.INNER_UPRIGHT)
-        }
-        persist()
-    }
     val retainedWidgetIds: Set<Int> get() {
         val state = mutable.value
         val undoPlacements = if (state.canUndoEdit) undoLayout?.first?.widgetPlacements.orEmpty() else emptyList()
@@ -1335,10 +1200,7 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
 
     private fun writeState() {
         val s = mutable.value
-        fun preset(p: LayoutPreset) = JSONObject().put("iconSize", p.iconSize).put("rowGap", p.rowGap)
-            .put("dockWidth", p.dockWidth).put("dockPosition", p.dockPosition).put("dockAlignToGrid", p.dockAlignToGrid)
-            .put("dockPlacement", p.dockPlacement.name).put("statusAlignToGrid", p.statusAlignToGrid).put("statusPosition", p.statusPosition)
-            .put("columnGap", p.columnGap).put("dockSpacing", p.dockSpacing).put("pageTop", p.pageTop)
+        fun preset(p: LayoutPreset) = JSONObject().put("dockPlacement", p.dockPlacement.name)
         val widgets = JSONArray().also { array -> s.widgetPlacements.forEach { w -> array.put(JSONObject()
             .put("slot", w.slot).put("id", w.id).put("page", w.page).put("column", w.column).put("row", w.row)
             .put("spanX", w.spanX).put("spanY", w.spanY)
@@ -1360,48 +1222,30 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
             .put(SettingKeys.LEFT_HANDED, s.leftHanded)
             .put("hiddenApps", JSONArray(s.hiddenApps.toList()))
             .put("minPages", s.minPages)
-            .put("statusStyle", s.statusStyle.toJson())
-            .put("foldEffect", s.foldEffect).put("foldSnapshot", s.foldSnapshot).put("foldIntensity", s.foldIntensity.toDouble()).put("duet", s.duet.toJson()).put("stayAwakeOnFold", s.stayAwakeOnFold)
-            .put("panelBlur", s.panelBlur.toDouble())
+            .put("foldEffect", s.foldEffect).put("stayAwakeOnFold", s.stayAwakeOnFold)
             .put("searchCustomUrl", s.searchCustomUrl).put("spotlightHidden", JSONArray(s.spotlightHidden.toList())).put("searchEngine", s.searchEngine)
-            .put("libraryCategories", s.libraryCategories).put("libraryWork", s.libraryWork).put("iconStyle", s.iconStyle.name).put("iconTint", s.iconTint)
-            .put("iconShape", s.iconShape.name).put("iconPack", s.iconPack ?: JSONObject.NULL).put("badgeStyle", s.badgeStyle.name).put("badgeColor", s.badgeColor.name).put("badgeLook", s.badgeLook.name).put("badgeSize", s.badgeSize.name).put("badgesWhenOpened", s.badgesWhenOpened)
+            .put("libraryCategories", s.libraryCategories).put("libraryWork", s.libraryWork)
+            .put("iconPack", s.iconPack ?: JSONObject.NULL).put("badgeStyle", s.badgeStyle.name).put("badgesWhenOpened", s.badgesWhenOpened)
             .put("badgesSeen", JSONObject().apply { s.badgesSeen.forEach { (pkg, count) -> put(pkg, count) } }).put("searchPill", s.searchPill).put("homeStrip", s.homeStrip.key).put("swipeDownHome", s.swipeDownHome).put("messagesApp", s.messagesApp ?: JSONObject.NULL)
             .put("widgetStacks", JSONObject().apply { s.widgetStacks.forEach { (slot, ids) -> put(slot.toString(), JSONArray(ids)) } })
             .put("stackRotate", s.stackRotate).put("addNewAppsToHome", s.addNewAppsToHome)
             .put("layoutHistory", s.layoutHistory).put("dockRecentDots", s.dockRecentDots)
-            .put("folderColumns", s.folderColumns)
-            .put("labelSize", s.labelSize.name).put("motionSpeed", s.motionSpeed.name).put("holdDelay", s.holdDelay.name).put("pageEffect", s.pageEffect.name)
-            .put("lastPageEffect", s.lastPageEffect.name)
             .put("systemWallpaper", s.systemWallpaper).put("homeInk", s.homeInk)
-            .put("roundedCorners", s.roundedCorners).put("cornerRadius", s.cornerRadius.toDouble())
-            .put("homeScrim", s.homeScrim).put("iconTintFromWallpaper", s.iconTintFromWallpaper)
+            .put("homeScrim", s.homeScrim)
             .put("dockMagnify", s.dockMagnify).put("appPanels", s.appPanels).put("haptics", s.haptics)
             .put("featureScopes", JSONObject().apply { s.featureScopes.forEach { (id, m) -> put(id, JSONObject(m as Map<*, *>)) } })
-            .put("tweakOptions", JSONObject().apply { s.tweakOptions.forEach { (id, m) -> put(id, JSONObject(m as Map<*, *>)) } })
-            .put("pageScrub", s.pageScrub).put("reduceMotion", s.reduceMotion).put("wallpaperMotion", s.wallpaperMotion).put("liveIcons", s.liveIcons).put("liveIconLook", s.liveIconLook)
+            .put("pageScrub", s.pageScrub).put("reduceMotion", s.reduceMotion).put("wallpaperMotion", s.wallpaperMotion).put("liveIcons", s.liveIcons)
             .put("triggerActions", JSONObject().apply { s.triggerActions.forEach { (k, v) -> put(k, v) } })
             .put("folderColors", JSONObject().apply { s.folderColors.forEach { (id, c) -> put(id, c) } })
-            .put("folderSizes", JSONObject().apply { s.folderSizes.forEach { (id, sz) -> put(id, JSONObject().put("w", sz.width.toDouble()).put("h", sz.height.toDouble())) } })
-            .put("bigClockStyles", JSONObject().apply { s.bigClockStyles.forEach { (slot, st) ->
-                put(slot.toString(), JSONObject().put("mode", st.mode).put("customIndex", st.customIndex).put("weight", st.weight)
-                    .put("size", st.size.toDouble()).put("face", st.face).put("shadow", st.shadow).put("date", st.date)
-                    .put("showNext", st.showNext).put("align", st.align)
-                    .put("stacked", st.stacked).put("hours", st.hours).put("ampm", st.ampm)) } })
             .put("iconStacks", JSONObject().apply { s.iconStacks.forEach { (id, apps) -> put(id, JSONArray(apps)) } })
             .put("appNames", JSONObject().apply { s.appNames.forEach { (id, name) -> put(id, name) } })
             .put("appIconStyles", appIconStylesToJson(s.appIconStyles))
             // Only when there are some, so a save from before this existed keeps its shape.
             .also { o -> if (s.iconActions.isNotEmpty()) o.put("iconActions", iconActionsToJson(s.iconActions)) }
-            .put("pageStyles", JSONObject().apply { s.pageStyles.forEach { (page, style) -> put(page.toString(), JSONObject().put("scale", style.iconScale.toDouble())
-                .apply { style.labels?.let { put("labels", it) } }) } })
             .put(SettingKeys.DOCK_EVERYWHERE, s.dockEverywhere)
-            .put(SettingKeys.BUTTON_BAR, s.buttonBar).put(SettingKeys.BUTTON_BAR_HEIGHT, s.buttonBarHeight.toDouble())
-            .put(SettingKeys.BUTTON_BAR_WIDTH, s.buttonBarWidth.toDouble()).put(SettingKeys.BUTTON_BAR_ANDROID_ORDER, s.buttonBarAndroidOrder)
-            .put(SettingKeys.BUTTON_BAR_LIGHT, s.buttonBarLight).put(SettingKeys.BUTTON_BAR_FADE, s.buttonBarFade)
+            .put(SettingKeys.BUTTON_BAR, s.buttonBar)
             .put("compact", preset(s.compact)).put("expanded", preset(s.expanded))
-            .also { o -> s.portrait?.let { o.put("portrait", preset(it)) } }
-            .put("homeRows", s.homeRows).put("homeFitCompact", s.homeFitCompact).put("homeFitExpanded", s.homeFitExpanded).put("homeFitUpright", s.homeFitUpright)
+            .put("homeFitCompact", s.homeFitCompact).put("homeFitExpanded", s.homeFitExpanded).put("homeFitUpright", s.homeFitUpright)
         val editor = prefs.edit()
         if (legacyRaw != null && sourceSchema == 2 && !prefs.contains("state_v2_backup"))
             editor.putString("state_v2_backup", legacyRaw)
@@ -1465,20 +1309,7 @@ private fun launcherIcon(drawable: Drawable): Bitmap {
  */
 internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState {
     val j = JSONObject(raw)
-    fun preset(key: String, default: LayoutPreset): LayoutPreset {
-        val p = j.optJSONObject(key) ?: return default
-        val loaded = LayoutPreset(p.optDouble("iconSize", default.iconSize.toDouble()).toFloat(),
-            p.optDouble("rowGap", default.rowGap.toDouble()).toFloat(),
-            p.optDouble("dockWidth", default.dockWidth.toDouble()).toFloat(),
-            p.optDouble("dockPosition", default.dockPosition.toDouble()).toFloat(),
-            p.optBoolean("dockAlignToGrid", true), DockPlacement.parse(p.optString("dockPlacement")),
-            // 0.6.5 development builds saved "statusTop" (the top of the screen).
-            p.optBoolean("statusAlignToGrid", !p.optBoolean("statusTop", false)),
-            p.optDouble("statusPosition", 0.0).toFloat(),
-            p.optDouble("columnGap", DEFAULT_COLUMN_GAP.toDouble()).toFloat(), p.optDouble("dockSpacing", 0.0).toFloat(),
-            p.optBoolean("pageTop", false)).sanitized()
-        return upgradePreset(loaded, j.optInt("schema", 1), key == "expanded")
-    }
+    fun preset(key: String) = LayoutPreset(DockPlacement.parse(j.optJSONObject(key)?.optString("dockPlacement")))
     val order = j.optJSONArray(if (j.optInt("schema", 1) >= 2) "pinned" else "order") ?: JSONArray()
     val cells = j.optJSONArray("homeSlots").takeIf { j.optInt("schema", 1) >= 4 } ?: order
     val schema = j.optInt("schema", 1)
@@ -1595,30 +1426,21 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         dock = loadedDock,
         widgetPlacements = placements, folders = folders, widgetRestores = restores,
         googleSearch = j.optBoolean("googleSearch", true),
-        labels = j.optBoolean("labels", true), compact = preset("compact", LayoutPreset()),
-        expanded = preset("expanded", LayoutPreset()), fullWidthRestore = j.optJSONObject("fullWidthRestore")?.let { o -> o.keys().asSequence().associateWith { o.optString(it) }.filterValues(String::isNotBlank) }.orEmpty(),
-        portrait = j.optJSONObject("portrait")?.let { preset("portrait", LayoutPreset()) }, verticalStatus = j.optBoolean("verticalStatus", true),
+        labels = j.optBoolean("labels", true), compact = preset("compact"),
+        expanded = preset("expanded"), fullWidthRestore = j.optJSONObject("fullWidthRestore")?.let { o -> o.keys().asSequence().associateWith { o.optString(it) }.filterValues(String::isNotBlank) }.orEmpty(),
+        verticalStatus = j.optBoolean("verticalStatus", true),
         leftHanded = j.optBoolean("leftHanded", false),
         hiddenApps = j.optJSONArray("hiddenApps")?.let { a -> (0 until a.length()).map(a::getString).toSet() } ?: emptySet(),
         minPages = j.optInt("minPages", 1).coerceIn(1, 20),
-        statusStyle = StatusStyle.fromJson(j.optJSONObject("statusStyle")),
-        foldEffect = j.optBoolean("foldEffect", true), foldSnapshot = j.optBoolean("foldSnapshot", false), foldIntensity = j.optDouble("foldIntensity", 1.0).toFloat().coerceIn(.3f, 1.5f), // A save from before Duet had today's fold, which is the Duo style; only a new save carries a choice.
-        duet = if (j.has("duet") || j.length() == 0) com.mccal.folio.duet.DuetOptions.fromJson(j.optJSONObject("duet")) else com.mccal.folio.duet.DuetOptions(style = com.mccal.folio.duet.DuetStyles.DUO.id),
+        foldEffect = j.optBoolean("foldEffect", true),
         stayAwakeOnFold = j.optBoolean("stayAwakeOnFold", true),
-        panelBlur = j.optDouble("panelBlur", 1.0).toFloat().coerceIn(0f, 1f),
         spotlightHidden = j.optJSONArray("spotlightHidden")?.let { a -> (0 until a.length()).map(a::getString).toSet() } ?: emptySet(),
         searchEngine = j.optString("searchEngine", "GOOGLE").takeIf { it == CUSTOM_SEARCH || runCatching { WebSearchTarget.valueOf(it) }.isSuccess } ?: "GOOGLE",
         searchCustomUrl = j.optString("searchCustomUrl", "").take(500),
         libraryCategories = j.optBoolean("libraryCategories", true),
         libraryWork = j.optBoolean("libraryWork", true),
-        iconStyle = runCatching { IconStyle.valueOf(j.optString("iconStyle")) }.getOrDefault(IconStyle.DEFAULT),
-        iconTint = j.optLong("iconTint", FolioColors.Value.Warning),
-        iconShape = runCatching { IconShape.valueOf(j.optString("iconShape")) }.getOrDefault(IconShape.DEFAULT),
         iconPack = j.optString("iconPack").takeIf { it.isNotBlank() && it != "null" },
         badgeStyle = runCatching { BadgeStyle.valueOf(j.optString("badgeStyle")) }.getOrDefault(BadgeStyle.DOT),
-        badgeColor = runCatching { BadgeColor.valueOf(j.optString("badgeColor")) }.getOrDefault(BadgeColor.RED),
-        badgeLook = runCatching { BadgeLook.valueOf(j.optString("badgeLook")) }.getOrDefault(BadgeLook.IOS),
-        badgeSize = runCatching { BadgeSize.valueOf(j.optString("badgeSize")) }.getOrDefault(BadgeSize.STANDARD),
         badgesWhenOpened = j.optBoolean("badgesWhenOpened", false),
         badgesSeen = j.optJSONObject("badgesSeen")?.let { o -> o.keys().asSequence().associateWith { o.getInt(it) }.filterValues { it > 0 } } ?: emptyMap(),
         homeStrip = HomeStrip.read(j.optString("homeStrip").takeIf { it.isNotEmpty() }, j.optBoolean("searchPill", true)),
@@ -1632,52 +1454,17 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         stackRotate = j.optBoolean("stackRotate", true),
         addNewAppsToHome = j.optBoolean("addNewAppsToHome", false),
         layoutHistory = j.optBoolean("layoutHistory", false), dockRecentDots = j.optBoolean("dockRecentDots", false),
-        folderColumns = j.optInt("folderColumns", 0).takeIf { it in setOf(0, 3, 4) } ?: 0,
-        labelSize = runCatching { LabelSize.valueOf(j.optString("labelSize")) }.getOrDefault(LabelSize.STANDARD),
-        motionSpeed = runCatching { MotionSpeed.valueOf(j.optString("motionSpeed")) }.getOrDefault(MotionSpeed.STANDARD),
-        holdDelay = runCatching { HoldDelay.valueOf(j.optString("holdDelay")) }.getOrDefault(HoldDelay.STANDARD),
-        // A save from before Page Effects, and anything unrecognised, reads as the flat swipe.
-        pageEffect = PageEffect.of(j.optString("pageEffect")),
-        // Before 0.6.7.2 this wasn't saved: the effect in use, else the cube.
-        lastPageEffect = PageEffect.of(j.optString("lastPageEffect", j.optString("pageEffect"))).takeIf { it != PageEffect.NONE } ?: PageEffect.CUBE,
         systemWallpaper = j.optBoolean("systemWallpaper", false),
         homeInk = j.optString("homeInk", "AUTO").takeIf { it in setOf("AUTO", "LIGHT", "DARK") } ?: "AUTO",
-        roundedCorners = j.optBoolean("roundedCorners", false), cornerRadius = j.optDouble("cornerRadius", 40.0).toFloat().coerceIn(16f, 72f),
         homeScrim = j.optBoolean("homeScrim", true),
-        iconTintFromWallpaper = j.optBoolean("iconTintFromWallpaper", false),
         dockMagnify = j.optBoolean("dockMagnify", false), appPanels = j.optBoolean("appPanels", false), haptics = j.optBoolean("haptics", true),
         featureScopes = j.optJSONObject("featureScopes")?.let { o -> o.keys().asSequence().associateWith { id ->
             o.optJSONObject(id)?.let { inner -> inner.keys().asSequence().associateWith { inner.getString(it) } }.orEmpty()
         } } ?: emptyMap(),
-        tweakOptions = TweakOptions.cleaned(j.optJSONObject("tweakOptions")?.let { o -> o.keys().asSequence().associateWith { id ->
-            o.optJSONObject(id)?.let { inner -> inner.keys().asSequence().associateWith { inner.optString(it) } }.orEmpty()
-        } } ?: emptyMap()),
         pageScrub = j.optBoolean("pageScrub", true), reduceMotion = j.optBoolean("reduceMotion", false),
         wallpaperMotion = j.optBoolean("wallpaperMotion", true), liveIcons = j.optBoolean("liveIcons", true),
-        liveIconLook = j.optString("liveIconLook", "AUTO").takeIf { it in setOf("AUTO", "LIGHT", "DARK") } ?: "AUTO",
         triggerActions = j.optJSONObject("triggerActions")?.let { o -> o.keys().asSequence().associateWith { o.getString(it) } } ?: emptyMap(),
         folderColors = j.optJSONObject("folderColors")?.let { o -> o.keys().asSequence().associateWith { o.getLong(it) } } ?: emptyMap(),
-        // Defensive against a hand-edited or older-build settings file, the same way pageStyles coerces iconScale.
-        folderSizes = j.optJSONObject("folderSizes")?.let { o -> o.keys().asSequence().mapNotNull { id ->
-            val sz = o.optJSONObject(id) ?: return@mapNotNull null
-            id to FolderSize(sz.optDouble("w", -1.0).toFloat().coerceIn(100f, 2000f), sz.optDouble("h", -1.0).toFloat().coerceIn(100f, 2000f))
-        }.toMap() } ?: emptyMap(),
-        bigClockStyles = j.optJSONObject("bigClockStyles")?.let { o -> o.keys().asSequence().mapNotNull { key ->
-            val slot = key.toIntOrNull() ?: return@mapNotNull null
-            val st = o.optJSONObject(key) ?: return@mapNotNull null
-            val mode = st.optString("mode", "AUTO").takeIf { it in setOf("AUTO", "WALLPAPER", "WHITE", "CUSTOM") } ?: "AUTO"
-            fun pick(key: String, allowed: Set<String>, fallback: String) = st.optString(key, fallback).takeIf { it in allowed } ?: fallback
-            slot to BigClockStyle(mode, st.optInt("customIndex", 0).coerceIn(0, 4), st.optInt("weight", 600).coerceIn(100, 900),
-                st.optDouble("size", 1.0).toFloat().coerceIn(.7f, 1.3f), pick("face", setOf("SANS", "ROUNDED", "SERIF", "MONO"), "SANS"),
-                pick("shadow", setOf("OFF", "SOFT", "GLOW"), "SOFT"), pick("date", setOf("LONG", "SHORT", "OFF"), "LONG"),
-                st.optBoolean("showNext", true), pick("align", setOf("LEFT", "CENTER", "RIGHT"), "CENTER"),
-                st.optBoolean("stacked", false), pick("hours", setOf("SYSTEM", "12", "24"), "SYSTEM"), st.optBoolean("ampm", false))
-        }.toMap() } ?: emptyMap(),
-        pageStyles = j.optJSONObject("pageStyles")?.let { o -> o.keys().asSequence().mapNotNull { key ->
-            val page = key.toIntOrNull()?.takeIf { it >= 0 } ?: return@mapNotNull null
-            val style = o.optJSONObject(key) ?: return@mapNotNull null
-            page to PageStyle(style.optDouble("scale", 1.0).toFloat().coerceIn(.7f, 1.3f), if (style.has("labels")) style.optBoolean("labels") else null)
-        }.toMap() } ?: emptyMap(),
         // Held to the same shape as a name typed into the rename field: settings written by an older build, or a
         // file someone edited by hand, shouldn't be able to hang a paragraph under an icon.
         appNames = j.optJSONObject("appNames")?.let { o -> o.keys().asSequence()
@@ -1690,28 +1477,11 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         }.filterValues { it.isNotEmpty() } } ?: emptyMap(),
         dockEverywhere = j.optBoolean("dockEverywhere", false),
         buttonBar = j.optBoolean(SettingKeys.BUTTON_BAR, false),
-        buttonBarHeight = j.optDouble(SettingKeys.BUTTON_BAR_HEIGHT, 52.0).toFloat().coerceIn(44f, 60f),
-        buttonBarWidth = j.optDouble(SettingKeys.BUTTON_BAR_WIDTH, .5).toFloat().coerceIn(.3f, .8f),
-        buttonBarAndroidOrder = j.optBoolean(SettingKeys.BUTTON_BAR_ANDROID_ORDER, false),
-        buttonBarLight = j.optBoolean(SettingKeys.BUTTON_BAR_LIGHT, false),
-        buttonBarFade = j.optBoolean(SettingKeys.BUTTON_BAR_FADE, true),
-        // Automatic is the new default, but it must not rearrange a Home that already exists: a save written before
-        // this release comes back fixed at the four rows it was drawn with, and Settings › Home Screen & Dock offers
-        // Automatic to anyone who wants the taller screens filled.
-        homeRows = j.optInt("homeRows", if (j.optInt("schema", 1) in 1 until MORE_ROWS_SCHEMA) BASE_APP_ROWS else 0)
-            .takeIf { it == BASE_APP_ROWS } ?: 0,
         homeFitCompact = j.optInt("homeFitCompact", 0).takeIf { it in BASE_APP_ROWS..MAX_APP_ROWS } ?: 0,
         homeFitExpanded = j.optInt("homeFitExpanded", 0).takeIf { it in BASE_APP_ROWS..MAX_APP_ROWS } ?: 0,
         homeFitUpright = j.optInt("homeFitUpright", 0).takeIf { it in BASE_APP_ROWS..MAX_APP_ROWS } ?: 0)
+        .withoutFullWidthEntry(LayoutScreen.INNER_UPRIGHT)
 }
-
-/** Choosing an effect also remembers it, unless it's None, so Flipbook's switch has something to bring back. */
-internal fun LauncherState.withPageEffect(value: PageEffect): LauncherState =
-    copy(pageEffect = value, lastPageEffect = if (value == PageEffect.NONE) lastPageEffect else value)
-
-/** Flipbook's switch: on brings back the last effect chosen, off is the flat swipe. */
-internal fun LauncherState.withPageEffectOn(on: Boolean): LauncherState =
-    copy(pageEffect = if (on) lastPageEffect else PageEffect.NONE)
 
 /**
  * Android counts changes to installed themes and overlays (Samsung's Theme Park among them) in the configuration's

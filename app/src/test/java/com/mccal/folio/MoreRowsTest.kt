@@ -72,27 +72,25 @@ class MoreRowsTest {
         assertEquals(layout, LayoutHistory.decodeLayout(LayoutHistory.encodeLayout(layout)))
     }
 
-    @Test fun `automatic rows are the fewest any measured screen fits, and fixed 4 is always 4`() {
-        assertEquals(4, effectiveHomeRows(0, 0, 0))
-        assertEquals(5, effectiveHomeRows(0, 5, 0))
-        assertEquals(6, effectiveHomeRows(0, 0, 6))
-        assertEquals(5, effectiveHomeRows(0, 7, 5))
-        assertEquals(5, effectiveHomeRows(0, 5, 7))
-        assertEquals(4, effectiveHomeRows(4, 7, 7))
-        assertEquals(7, effectiveHomeRows(0, 9, 9))
+    @Test fun `rows are the fewest any measured screen fits`() {
+        assertEquals(4, effectiveHomeRows(0, 0))
+        assertEquals(5, effectiveHomeRows(5, 0))
+        assertEquals(6, effectiveHomeRows(0, 6))
+        assertEquals(5, effectiveHomeRows(7, 5))
+        assertEquals(5, effectiveHomeRows(5, 7))
+        assertEquals(7, effectiveHomeRows(9, 9))
         assertEquals(5, LauncherState(homeFitCompact = 5, homeFitExpanded = 6).homeAppRows)
-        assertEquals(4, LauncherState(homeRows = 4, homeFitCompact = 5, homeFitExpanded = 6).homeAppRows)
     }
 
-    @Test fun `the upright inner screen records its own fit and Automatic takes the fewest of all three`() {
+    @Test fun `the upright inner screen records its own fit and Home takes the fewest of all three`() {
         val s = LauncherState(homeFitCompact = 6, homeFitExpanded = 6)
         assertEquals(6, s.homeAppRows)
         val measured = s.withHomeFit(LayoutScreen.INNER_UPRIGHT, 5)
         assertEquals(6, measured.homeFitExpanded) // upright no longer overwrites the sideways inner fit
         assertEquals(5, measured.homeFitFor(LayoutScreen.INNER_UPRIGHT))
         assertEquals(5, measured.homeAppRows)
-        assertEquals(4, effectiveHomeRows(0, 6, 6, 4))
-        assertEquals(6, effectiveHomeRows(0, 6, 6, 0)) // not measured yet doesn't count
+        assertEquals(4, effectiveHomeRows(6, 6, 4))
+        assertEquals(6, effectiveHomeRows(6, 6, 0)) // not measured yet doesn't count
     }
 
     @Test fun `new apps skip rows Home doesn't show and continue on the next page`() {

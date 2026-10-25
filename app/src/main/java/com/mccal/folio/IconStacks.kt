@@ -125,8 +125,7 @@ internal fun IconStackFan(anchor: AppEntry, apps: List<AppEntry>, onDismiss: () 
             val below = top + size + pitch * apps.size < with(density) { maxHeight.toPx() - 24.dp.toPx() }
             // Names go on the side with more room.
             val labelsRight = left + size / 2 < with(density) { maxWidth.toPx() / 2 }
-            AppIcon(anchor, null, Modifier.offset { IntOffset(left.roundToInt(), top.roundToInt()) }.size(with(density) { size.toDp() }),
-                shape = RoundedCornerShape(with(density) { (size * .24f).toDp() }), badge = false)
+            AppIcon(anchor, null, Modifier.offset { IntOffset(left.roundToInt(), top.roundToInt()) }.size(with(density) { size.toDp() }))
             apps.forEachIndexed { i, app ->
                 val p = progress[i]
                 val targetY = if (below) top + pitch * (i + 1) else top - pitch * (i + 1)
@@ -143,7 +142,7 @@ internal fun IconStackFan(anchor: AppEntry, apps: List<AppEntry>, onDismiss: () 
                         }
                     }
                     if (!labelsRight) label()
-                    AppIcon(app, null, Modifier.size(iconSize), shape = RoundedCornerShape(iconSize * .24f))
+                    AppIcon(app, null, Modifier.size(iconSize), badge = true)
                     if (labelsRight) label()
                 }
             }
@@ -158,7 +157,7 @@ internal fun IconStackEditor(anchor: AppEntry, apps: List<AppEntry>, chosen: Lis
     val shown = remember(apps, query) { apps.filter { it.id != anchor.id && !it.isWork && appMatches(it, query.trim()) } }
     Column(Modifier.fillMaxWidth().fillMaxHeight(.85f).padding(horizontal = FolioSpace.LARGE.dp).testTag("icon-stack-editor")) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AppIcon(anchor, null, Modifier.size(36.dp), shape = RoundedCornerShape(9.dp), badge = false)
+            AppIcon(anchor, null, Modifier.size(36.dp))
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.stack_1, anchor.label), color = Color.White, fontSize = FolioType.TITLE3.sp, fontWeight = FontWeight.Bold)

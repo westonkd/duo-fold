@@ -87,37 +87,6 @@ class ShadeZonesTest {
     }
 }
 
-class StatusStyleJsonTest {
-    @Test fun roundTrip() {
-        val style = StatusStyle(showTime = false, showDate = true, showBatteryPercent = false, glyph = StatusGlyph.ICONS,
-            colorfulBattery = false, showSilent = false, background = true, spacing = 9f)
-        assertEquals(style, StatusStyle.fromJson(style.toJson()))
-        assertEquals(StatusStyle(spacing = StatusStyle.COMPACT_SPACING), StatusStyle.fromJson(StatusStyle(spacing = 0f).toJson()))
-        for (glyph in StatusGlyph.entries) assertEquals(glyph, StatusStyle.fromJson(StatusStyle(glyph = glyph).toJson()).glyph)
-    }
-
-    @Test fun savedSpacingChoicesKeepTheirLook() {
-        // Before the Status spacing slider: Standard or Compact.
-        assertEquals(StatusStyle.COMPACT_SPACING, StatusStyle.fromJson(org.json.JSONObject().put("compactSpacing", true)).spacing)
-        assertEquals(StatusStyle.STANDARD_SPACING, StatusStyle.fromJson(org.json.JSONObject().put("compactSpacing", false)).spacing)
-        assertEquals(StatusStyle.STANDARD_SPACING, StatusStyle.fromJson(org.json.JSONObject()).spacing)
-        assertEquals(true, StatusStyle(spacing = StatusStyle.COMPACT_SPACING).tight)
-        assertEquals(false, StatusStyle().tight)
-        assertEquals(16f, StatusStyle.fromJson(org.json.JSONObject().put("spacing", 99.0)).spacing)
-    }
-
-    @Test fun olderSavedStylesShowTheSilentIcon() {
-        assertEquals(true, StatusStyle.fromJson(org.json.JSONObject().put("glyph", "RING")).showSilent)
-    }
-
-    @Test fun unknownGlyphFallsBackAndTheOldFrostIsIgnored() {
-        val json = org.json.JSONObject().put("glyph", "SPARKLES").put("railGlass", 3.0)
-        val style = StatusStyle.fromJson(json)
-        assertEquals(StatusGlyph.RING, style.glyph)
-        assertEquals(StatusStyle(), StatusStyle.fromJson(null))
-    }
-}
-
 class PagesTest {
     private fun layout(slots: Int, minPages: Int) =
         HomeLayout(List(slots) { "app$it" }, List(4) { null }, minPages = minPages)
@@ -142,21 +111,6 @@ class CameraAreaTest {
         assertEquals(listOf(18, 2448 - 1901, 96, 2448 - 1823), listOf(top, w - right, bottom, w - left))
         // ROTATION_180 keeps the camera's size
         assertEquals(78, (w - left) - (w - right)); assertEquals(78, (h - top) - (h - bottom))
-    }
-}
-
-class BadgeAccentTest {
-    private fun icon(vararg colors: Int) = IntArray(576) { colors[it % colors.size] }
-
-    @Test fun picksTheMainColor() {
-        val blue = 0xFF1E88E5.toInt(); val white = 0xFFFFFFFF.toInt()
-        val c = dominantAccent(icon(blue, blue, blue, white))!!
-        assertEquals(0x1E, c shr 16 and 255); assertEquals(0xE5, c and 255)
-    }
-
-    @Test fun grayOrTransparentIconsHaveNoAccent() {
-        assertNull(dominantAccent(icon(0xFF808080.toInt(), 0xFFFFFFFF.toInt(), 0xFF000000.toInt())))
-        assertNull(dominantAccent(icon(0x00FF0000)))
     }
 }
 
@@ -191,26 +145,6 @@ class WidgetStacksTest {
     @Test fun showFirstReorders() {
         assertEquals(9 to listOf(5, 7), WidgetStacks.showFirst(5, listOf(7, 9), 9))
         assertNull(WidgetStacks.showFirst(5, listOf(7), 5))
-    }
-}
-
-class SoftBadgeTest {
-    private fun hsv(argb: Int): Pair<Float, Float> {
-        val r = (argb shr 16 and 255) / 255f; val g = (argb shr 8 and 255) / 255f; val b = (argb and 255) / 255f
-        val max = maxOf(r, g, b); val min = minOf(r, g, b)
-        return (if (max == 0f) 0f else (max - min) / max) to max
-    }
-
-    @Test fun softColorsArePastel() {
-        val icon = IntArray(576) { if (it % 3 == 0) 0xFF1E88E5.toInt() else if (it % 3 == 1) 0xFFE53935.toInt() else 0xFFFFFFFF.toInt() }
-        val (s, v) = hsv(softBadgeColor(icon)!!)
-        assertTrue(s <= .41f); assertTrue(v >= .89f)
-    }
-
-    @Test fun softenKeepsHueFamily() {
-        val soft = softened(0xFF0000FF.toInt())
-        assertTrue((soft and 255) > (soft shr 16 and 255)) // still bluer than red
-        assertNull(softBadgeColor(IntArray(576) { 0xFF808080.toInt() }))
     }
 }
 

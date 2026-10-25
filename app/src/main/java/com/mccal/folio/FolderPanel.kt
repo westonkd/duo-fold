@@ -4,7 +4,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -20,7 +19,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.OpenInFull
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -55,7 +53,6 @@ internal fun FolderPanel(
     onRename: (String) -> Unit, onLaunch: (AppEntry, android.graphics.Rect?) -> Unit,
     onMoveOut: (String, DropTarget) -> Unit,
     color: Long? = null, onColor: (Long?) -> Unit = {}, onAddApps: () -> Unit = {},
-    size: FolderSize? = null, onSize: (FolderSize?) -> Unit = {},
     onReorder: (String, Int) -> Unit = { _, _ -> }, onSortAlphabetically: (() -> Unit)? = null,
     /**
      * Carrying an app out of the folder, like iPhone: once it crosses the card's edge the folder steps aside and Home's own
@@ -113,9 +110,8 @@ internal fun FolderPanel(
             if (!still) launch { kotlinx.coroutines.delay(FolderOpening.FIRST_APP_MS + i * FolderOpening.STAGGER_MS); a.animateTo(1f, FolioMotion.spring(FolioMotion.Quick)) }
         }
     }
-    val folderLook = LocalFolderLook.current
     // Mirrors Configuration.fitsRegularHomeLayout() (SizeClass.kt): the same signal every other screen already
-    // uses to tell the cover screen apart from the unfolded inner screen, so a resized folder stays hinge-safe -
+    // uses to tell the cover screen apart from the unfolded inner screen, so a folder stays hinge-safe -
     // never past the inner screen's own ceiling, and never past the cover screen's narrower one.
     val config = LocalConfiguration.current
     val regular = remember(config) { config.fitsRegularHomeLayout() }
@@ -127,9 +123,8 @@ internal fun FolderPanel(
     // height (it can wrap, grow with text scale, etc.) plus the real inset-adjusted window below, not a flat
     // fraction of the screen - a flat fraction is what used to leave the card with almost no bottom margin, its
     // rounded corners reading as hard edges because there was no visible gap left to round into.
-    var folderW by remember(folder.id) { mutableFloatStateOf(size?.width?.coerceIn(minFolderW, maxFolderW) ?: -1f) }
-    var folderH by remember(folder.id) { mutableFloatStateOf(size?.height?.coerceIn(minFolderH, maxFolderH) ?: -1f) }
-    val density = LocalDensity.current.density
+    var folderW by remember(folder.id) { mutableFloatStateOf(-1f) }
+    var folderH by remember(folder.id) { mutableFloatStateOf(-1f) }
     // A real Dialog (its own window), not an inline overlay in MainActivity's shared window: measured directly
     // (Compose onGloballyPositioned on this scrim), the shared window's content stopped 104 dp short of the true
     // top and 39 dp short of the bottom here specifically - a genuine measure constraint, immune to
@@ -294,7 +289,7 @@ internal fun FolderPanel(
             color = Color.Transparent, contentColor = Color.White, shape = cardShape) {
             Column(Modifier.padding(FolioSpace.XL.dp)) {
                 val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
-                LazyVerticalGrid(if (folderLook.columns > 0) FolderColumns(folderLook.columns) else GridCells.Adaptive(84.dp), Modifier.fillMaxWidth().weight(1f).edgeFade(gridState), state = gridState,
+                LazyVerticalGrid(GridCells.Adaptive(84.dp), Modifier.fillMaxWidth().weight(1f).edgeFade(gridState), state = gridState,
                     contentPadding = PaddingValues(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp),
                     verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) {
                     items(order, key = { it }) { appId ->
@@ -387,37 +382,10 @@ internal fun FolderPanel(
                 }
             }
         }
-        // Resize, the same corner-drag gesture as a Home widget (LauncherScreen.kt's resize handle) - free-form
-        // in dp rather than snapped to grid cells, since a folder doesn't live on Home's app grid. Committed once
-        // on release, like the widget gesture, not on every frame; the box itself already tracks live during drag.
-        Box(Modifier.align(Alignment.BottomEnd).size(FolioTouch.MIN.dp)
-            .pointerInput(folder.id, minFolderW, maxFolderW, minFolderH, maxFolderH) {
-                detectDragGestures(
-                    onDragEnd = { onSize(FolderSize(folderW, folderH)) },
-                    onDragCancel = { onSize(FolderSize(folderW, folderH)) },
-                ) { change, dragAmount ->
-                    change.consume()
-                    folderW = (folderW + dragAmount.x / density).coerceIn(minFolderW, maxFolderW)
-                    folderH = (folderH + dragAmount.y / density).coerceIn(minFolderH, maxFolderH)
-                }
-            }
-            .testTag("folder-resize-handle"), contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.OpenInFull, stringResource(R.string.resize_folder),
-                tint = Color.White.copy(alpha = .85f), modifier = Modifier.size(18.dp))
-        }
         }
         }
         }
     }
-    }
-}
-
-/** The chosen number of columns, but never cells too narrow for an icon and its name (small cover screens). */
-private data class FolderColumns(val columns: Int) : GridCells {
-    override fun androidx.compose.ui.unit.Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
-        val count = columns.coerceAtMost(((availableSize + spacing) / (76.dp.roundToPx() + spacing)).coerceAtLeast(1))
-        val cells = availableSize - spacing * (count - 1)
-        return List(count) { cells / count + if (it < cells % count) 1 else 0 }
     }
 }
 
@@ -437,7 +405,7 @@ private fun FolderChild(
                 folderId = folderId, scope = folderId).clickable { onLaunch(app, null) }
                 .padding(horizontal = FolioSpace.SNUG.dp, vertical = FolioSpace.COMPACT.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 // The badge goes where FolderBadge.CORNER says, kept clear of the "..." button below (#362).
-                AppIcon(app, null, Modifier.size(FolderBadge.ICON.dp), shape = RoundedCornerShape(FolioRadius.CARD.dp),
+                AppIcon(app, null, Modifier.size(FolderBadge.ICON.dp), badge = true,
                     badgePlacement = badgePlacement)
                 Text(app.label, Modifier.padding(top = FolioSpace.SNUG.dp), maxLines = 2, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.labelMedium)
