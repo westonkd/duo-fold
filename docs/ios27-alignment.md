@@ -4,6 +4,41 @@ Where Folio stands against iOS 27 and iPhone Duo as of 24 Oct 2026, and what to 
 [README](../README.md): look and move like the iPhone, and get there through consistency and motion rather than
 features.
 
+## Status
+
+The first pass landed on `dev/ios27-polish`: items 1 to 5 and 7 below, most of 6, and the stale docs. What is left:
+
+- **Settings and sheets are still dark.** Menus, folders, the App Library and Home are light; Settings, sheets and
+  alerts need their own light pass, with iOS 26's capsule buttons in alerts (design.md Gap 7).
+- **Spring durations are unchanged.** `FolioMotion.apple(duration, bounce)` exists for tuning, but the values should be
+  set on the phone against an iPhone recording, not here.
+- **The dock does not slide out and back on fold**, the extra-large widget question is open, and the App Library has no
+  "Hidden"-style placeholder yet.
+- **The Home Search pill and the strip's pill path** (`HomeSearchPill`, `StripView.PILL`) are now unreachable and can
+  be deleted with `HomeStrip`.
+- **Icon corners** stay at `ICON_CORNER_FRACTION` .2237 on continuous corners. One measurement puts iOS 26's mask at
+  about .258; worth checking against a screenshot before changing every icon.
+
+## Corner radii
+
+iOS 26 and 27 values, from Apple's three shape kinds (fixed, capsule, concentric) and third-party measurements where
+Apple publishes none. Values marked ~ are estimates.
+
+| Element | iOS | Folio |
+|---|---|---|
+| Spotlight and App Library search fields, the Settings and widget search fields | Capsule | `CircleShape` in `IosSearchField` |
+| Buttons, chips, toasts, edit-mode pills, toolbars | Capsule | `CircleShape` (`FolioButton`, `IosChip`, `JigglePill`, `toolbarGlass`) |
+| Segmented control track and thumb | Capsule, 32 pt | `CircleShape`, 32 dp |
+| Context and pop-up menus | 26 pt continuous | `FolioRadius.FLOATING` 26 |
+| Inset grouped lists, Spotlight platters, the A to Z list | 26 pt | `FolioRadius.GROUPED_CARD` 26 |
+| Widgets | 28 pt (21 pt before iOS 26) | `FolioRadius.WIDGET` 28 |
+| App Library category tile | ~ concentric with its icons | icon corner + 12 dp inset, continuous |
+| Open folder, opened category | ~ 38 to 40 pt | `FolioRadius.FOLDER` 38 |
+| Alert | ~ 34 to 40 pt | `FolioRadius.ALERT` 34 |
+| Sheet | display radius minus the inset (~ 54 pt on a 62 pt display) | `FolioRadius.SHEET_TOP` 38 |
+| Dock | ~ concentric with the icons and the display | `dockCornerRadius` (icon corner + inset) |
+| App icon | continuous, .2237 of the size (~ .258 measured on iOS 26) | `IconContinuousShape` |
+
 ## Sources
 
 - Photos of iPadOS 27 on a real iPad (an open folder and the App Library), Apple's iPhone Duo marketing and HIG art,

@@ -22,7 +22,6 @@ lock: the real state is `gh pr list` and `git worktree list`. Keep it honest rat
 
 | Branch | What it changes | Files it holds |
 |---|---|---|
-| `dev/streamline` | Makes the personal fork opinionated and smaller: light and Liquid glass only, no island, panels, Market, Focus, StandBy, Discover or setup, fixed sizes, and Settings as five flat pages with no search or Tweaks | Most of `app/src/main`, `strings.xml`, `CHANGELOG.md`, `README.md`, `docs/` |
 
 Dependabot's open bumps are left out: they touch only `gradle/libs` or `build.gradle.kts`, and
 [REL-27](standards/releases.md) says when to take them.

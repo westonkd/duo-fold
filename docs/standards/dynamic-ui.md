@@ -68,7 +68,7 @@ Animation owner: HomeTiles dock row
 - **DYN-5 MUST** have a reason to move: causality (the icon travels into the folder), continuity (the island is one
   object growing), hierarchy (a sheet rises over its source), feedback (a switch settles), or state (the gauge fills).
   Decoration alone isn't a reason.
-- **DYN-6 MUST** take springs from `FolioMotion` and apply `MotionSpeed` (new code). A new motion need gets a new named
+- **DYN-6 MUST** take springs from `FolioMotion` (new code). A new motion need gets a new named
   spring in `FolioTokens.kt` with a one-line comment on what it's for; call sites don't pick numbers.
 - **DYN-7 SHOULD** prefer springs over `tween` for anything spatial. `tween` is for opacity, color, and fixed-length
   loops (jiggle, the offline sweep).
