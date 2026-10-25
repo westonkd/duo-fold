@@ -136,6 +136,7 @@ internal fun ExpandedWorkspace(
     libraryBack: () -> Float = { 0f },
     /** A tap on the message Home shows when apps or the layout couldn't be loaded. */
     onProblem: () -> Unit,
+    onAddWidget: (() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
     val viewportWidth = motion.pageWidth
@@ -192,7 +193,7 @@ internal fun ExpandedWorkspace(
                         widgets, drag, target, insertionTarget, showLargeWidget = true,
                         onLaunch = onLaunchFrom, onActions = onActions, onWidget = onWidget,
                         onFolder = onFolder, onEmptyWidget = onEmptyWidget, onMove = onMove, onProblem = onProblem,
-                        modifier = Modifier,
+                        modifier = Modifier, onAddWidget = onAddWidget,
                     )
                 }
             }
@@ -260,6 +261,7 @@ internal fun HomePagePane(
     /** A tap on the message Home shows when apps or the layout couldn't be loaded. */
     onProblem: () -> Unit,
     modifier: Modifier = Modifier,
+    onAddWidget: (() -> Unit)? = null,
 ) {
     val homeOptionsLabel = stringResource(R.string.home_options)
     val homeScroll = rememberScrollState()
@@ -333,6 +335,11 @@ internal fun HomePagePane(
             if (state.error != null) Text(state.error, color = Color.White,
                 modifier = Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = stringResource(R.string.fix_saved_layout), onClick = onProblem)
                     .heightIn(min = FolioTouch.MIN.dp).padding(FolioSpace.MEDIUM.dp))
+        }
+        val emptyWidgetsPage = page == -1 && onAddWidget != null && !drag.active && !edit.active && state.homeReady &&
+            state.widgetPlacements.none { it.page == -1 } && state.leadingSlots.all { it == null }
+        if (emptyWidgetsPage) Box(Modifier.align(Alignment.Center).offset(x = 8.dp).testTag("widgets-page-empty")) {
+            JigglePill(stringResource(R.string.add_widgets_here), Icons.Rounded.Add, onClick = onAddWidget!!)
         }
     }
 }
