@@ -143,39 +143,44 @@ internal object FolioSpace {
 
 /** Folio's corner radii, in dp. Inner corners are concentric: outer radius minus the padding between them (DES-8). */
 internal object FolioRadius {
-    /** Small controls: chips, search fields, inline buttons. */
+    /** A small pressed highlight: a back button or a row inside a sheet. Chips, search fields and buttons are capsules (iOS 26). */
     const val CONTROL = 10
-    /** Menus, alerts, form sheets and cards. */
+    /** Small cards and thumbnails. */
     const val CARD = 14
     /** Groups inside a sheet. */
     const val GROUP = 16
-    /** Grouped settings cards. */
-    const val GROUPED_CARD = 20
+    /** Grouped settings cards, Spotlight's platters and the A to Z list: iOS 26's inset grouped 26 pt. */
+    const val GROUPED_CARD = 26
     /** Panels and large surfaces. */
     const val PANEL = 24
-    /** The top corners of a bottom sheet. */
-    const val SHEET_TOP = 28
-    /** List rows, search fields and small cards that sit on a sheet. */
+    /** The top corners of a bottom sheet and a form sheet's corners. */
+    const val SHEET_TOP = 38
+    /** An alert's card. */
+    const val ALERT = 34
+    /** List rows and small cards that sit on a sheet. */
     const val ROW = 12
-    /** Floating menus and action sheets. */
-    const val FLOATING = 18
+    /** Floating menus and action sheets: iOS 26's 26 pt. */
+    const val FLOATING = 26
     /** Home Screen widgets, iOS 26's 28 pt. */
     const val WIDGET = 28
     /** An open folder's card, and an App Library category opened the same way. */
     const val FOLDER = 38
     /** The dock and the side rail: a capsule. */
     const val RAIL = 30
-    /** A segmented control's track. */
-    const val SEGMENT = 9
-    /** A segmented control's thumb: the track's radius minus its 2 dp inset, so the corners stay concentric (DES-8). */
-    const val SEGMENT_THUMB = 7
 }
 
 /**
  * Folio's type scale, in sp, following iOS's text styles. Home app labels use [HOME_LABEL_SP] instead.
  */
 internal object FolioType {
+    /** iOS Large Title: a sheet's or page's title, an open folder's name. */
+    const val LARGE_TITLE = 34
+    /** iOS Title 1. */
     const val TITLE = 28
+    /** iOS Title 2. */
+    const val TITLE2 = 22
+    /** The big number on a Home widget: a clock's time, a calendar's date. */
+    const val WIDGET_HERO = 40
     const val BODY = 17
     const val SUBHEAD = 15
     const val FOOTNOTE = 13

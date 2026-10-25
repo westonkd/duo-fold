@@ -98,7 +98,7 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 internal fun GlassCard(modifier: Modifier = Modifier, onClick: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
-    val cardShape = RoundedCornerShape(FolioRadius.PANEL.dp)
+    val cardShape = RoundedCornerShape(FolioRadius.WIDGET.dp)
     Surface(modifier.fillMaxSize().clip(cardShape).liquidGlass(cardShape, LIQUID_FROST, GlassRole.PANEL).clickable(onClick = onClick),
         color = Color.Transparent, shape = cardShape) {
         // Like iOS widgets, the whole card scales with its size, so a smaller card shrinks the text instead of clipping it.
@@ -126,7 +126,7 @@ internal fun ClockCard(onClick: () -> Unit) {
     GlassCard(onClick = onClick) {
         Text(stringResource(R.string.local_time), color = LocalHomeInk.current.secondary, fontSize = FolioType.CAPTION.sp, fontWeight = FontWeight.SemiBold, letterSpacing = .6.sp,
             modifier = Modifier.semantics { contentDescription = clockWidgetTapToOpenLabel })
-        Text(time.format(DateTimeFormatter.ofPattern(format)), color = LocalHomeInk.current.primary, fontWeight = FontWeight.SemiBold, fontSize = 34.sp, maxLines = 1,
+        Text(time.format(DateTimeFormatter.ofPattern(format)), color = LocalHomeInk.current.primary, fontWeight = FontWeight.SemiBold, fontSize = FolioType.WIDGET_HERO.sp, maxLines = 1,
             style = androidx.compose.ui.text.TextStyle(fontFeatureSettings = "tnum"))
         Text(time.format(DateTimeFormatter.ofPattern(if (format == "HH:mm") "EEE" else "a · EEE")), color = LocalHomeInk.current.secondary, fontSize = FolioType.GROUP_LABEL.sp, fontWeight = FontWeight.Medium)
     }
@@ -138,7 +138,7 @@ internal fun DateCard(onClick: () -> Unit) {
     GlassCard(onClick = onClick) {
         Text(date.format(DateTimeFormatter.ofPattern("EEEE")).uppercase(), color = LocalHomeInk.current.secondary, fontSize = FolioType.CAPTION.sp,
             fontWeight = FontWeight.Bold, letterSpacing = .6.sp, maxLines = 1)
-        Text(date.dayOfMonth.toString(), color = LocalHomeInk.current.primary, fontWeight = FontWeight.SemiBold, fontSize = 44.sp, lineHeight = 46.sp)
+        Text(date.dayOfMonth.toString(), color = LocalHomeInk.current.primary, fontWeight = FontWeight.SemiBold, fontSize = FolioType.WIDGET_HERO.sp, lineHeight = (FolioType.WIDGET_HERO + 2).sp)
         Text(date.format(DateTimeFormatter.ofPattern("MMMM")), color = LocalHomeInk.current.secondary, fontSize = FolioType.GROUP_LABEL.sp, fontWeight = FontWeight.Medium)
     }
 }
@@ -148,7 +148,7 @@ internal fun ExpandedCard(onClick: () -> Unit) {
     val date = currentTime()
     GlassCard(onClick = onClick) {
         Column {
-            Text(date.format(DateTimeFormatter.ofPattern("EEEE")), color = LocalHomeInk.current.primary, fontSize = 22.sp)
+            Text(date.format(DateTimeFormatter.ofPattern("EEEE")), color = LocalHomeInk.current.primary, fontSize = FolioType.TITLE2.sp)
             Text(date.format(DateTimeFormatter.ofPattern(stringResource(R.string.mmmm_d))), color = LocalHomeInk.current.secondary, fontSize = FolioType.CALLOUT.sp)
         }
         Column {
@@ -167,7 +167,7 @@ internal fun ExpandedCard(onClick: () -> Unit) {
 internal fun WidgetSlot(id: Int, slot: Int, controller: WidgetController, modifier: Modifier, onAdd: () -> Unit, fallback: @Composable () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var restoreMessage by remember(slot) { mutableStateOf<String?>(null) }
-    BoxWithConstraints(modifier.clip(RoundedCornerShape(FolioRadius.PANEL.dp)).testTag("widget-slot-$slot")) {
+    BoxWithConstraints(modifier.clip(RoundedCornerShape(FolioRadius.WIDGET.dp)).testTag("widget-slot-$slot")) {
         val displayedContentSize = WidgetContentSize(maxWidth.value, maxHeight.value)
         if (id == NEEDS_BINDING_WIDGET) {
             val restore = controller.restoreDescriptor(slot)
@@ -227,7 +227,7 @@ internal fun MovableWidget(id: Int, slot: Int, controller: WidgetController, dra
         val chrome = Modifier.fillMaxSize().then(if (id < 0) Modifier.jiggle("widget-$slot", .35f) else Modifier)
             .alpha(if (drag.source?.target == cell) .3f else 1f)
             .border(if (drag.active && target == cell) 2.dp else 0.dp,
-                if (drag.active && target == cell) Color.White else Color.Transparent, RoundedCornerShape(FolioRadius.PANEL.dp))
+                if (drag.active && target == cell) Color.White else Color.Transparent, RoundedCornerShape(FolioRadius.WIDGET.dp))
             .semantics { onLongClick(context.getString(R.string.move_or_replace_widget)) { onAdd(); true } }
         if (cards.size > 1) SmartStack(cards, slot, controller, chrome, onAdd)
         else WidgetSlot(id, slot, controller, chrome, onAdd) { BuiltinWidgetCard(id, slot, opensApp = true, onAdd = onAdd) }
@@ -340,7 +340,7 @@ internal fun SmartStack(cards: List<Int>, slot: Int, controller: WidgetControlle
     var dotsVisible by remember { mutableStateOf(false) }
     LaunchedEffect(pager.isScrollInProgress) { if (pager.isScrollInProgress) dotsVisible = true else { delay(1_200); dotsVisible = false } }
     Box(modifier) {
-        androidx.compose.foundation.pager.VerticalPager(pager, Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.PANEL.dp)),
+        androidx.compose.foundation.pager.VerticalPager(pager, Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.WIDGET.dp)),
             key = { cards[it] }, beyondViewportPageCount = 0) { page ->
             val card = cards[page]
             WidgetSlot(card, slot, controller, Modifier.fillMaxSize(), onAdd) { BuiltinWidgetCard(card, slot, opensApp = true, onAdd = onAdd) }
@@ -404,7 +404,7 @@ internal fun WidgetActions(
         verticalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
         Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(if (stackCards.size > 1) stringResource(R.string.smart_stack) else stringResource(R.string.widget), Modifier.weight(1f), color = Color.White,
-                fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                fontSize = FolioType.TITLE2.sp, fontWeight = FontWeight.Bold)
             // The circle is still 32 dp; the tap is 48 (A11Y-1). The target is the box around it, not the circle.
             Box(Modifier.size(FolioTouch.MIN.dp).clickable(onClickLabel = stringResource(R.string.close_widget_options), onClick = onClose),
                 contentAlignment = Alignment.Center) {

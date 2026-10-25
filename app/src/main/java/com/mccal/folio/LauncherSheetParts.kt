@@ -121,7 +121,7 @@ internal fun AppPicker(apps: List<AppEntry>, dockSlot: Int?, onSelect: (AppEntry
                     .combinedClickable(enabled = enabled, onClick = { onSelect(app) }, onLongClick = { onLongClick(app) })
                     .alpha(if (enabled) 1f else .45f)
                     .padding(vertical = FolioSpace.COMPACT.dp), verticalAlignment = Alignment.CenterVertically) {
-                    AppIcon(app, null, Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)))
+                    AppIcon(app, null, Modifier.size(44.dp))
                     // A greyed-out app says why when the reason is its own (in a folder); a full dock is said once, above.
                     val inFolder = if (enabled) null else refusal(app) as? DockRefusal.InFolder
                     Column(Modifier.padding(start = FolioSpace.LARGE.dp).weight(1f)) {
@@ -141,14 +141,14 @@ internal fun AppPicker(apps: List<AppEntry>, dockSlot: Int?, onSelect: (AppEntry
 /** iOS grouped-list section header inside Folio's dark sheets. */
 @Composable
 internal fun SheetGroupLabel(text: String) {
-    Text(text.uppercase(), color = Color.White.copy(alpha = .55f), fontSize = FolioType.GROUP_LABEL.sp, fontWeight = FontWeight.SemiBold,
+    Text(text.uppercase(), color = FolioColors.SecondaryLabel, fontSize = FolioType.GROUP_LABEL.sp, fontWeight = FontWeight.SemiBold,
         letterSpacing = .4.sp, modifier = Modifier.padding(start = FolioSpace.LARGE.dp, top = FolioSpace.COMPACT.dp))
 }
 
 /** iOS inset grouped list: rounded dark card holding rows separated by thin dividers. */
 @Composable
 internal fun SheetGroup(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.GROUP.dp)).background(FolioColors.SheetSurface), content = content)
+    Column(modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)).background(FolioColors.SheetSurface), content = content)
 }
 
 /** Side-rail placement; the rail sits on the right unless the left-handed layout is on. */

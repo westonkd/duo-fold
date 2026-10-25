@@ -276,14 +276,14 @@ internal class EverywhereOverlay(private val service: AccessibilityService) {
                             .padding(vertical = FolioSpace.MEDIUM.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(FolioSpace.MEDIUM.dp)) {
                             apps.forEach { app ->
                                 val hostView = androidx.compose.ui.platform.LocalView.current
-                                Image(app.icon.asImageBitmap(), null, Modifier.size(50.dp).clip(RoundedCornerShape(13.dp))
+                                Image(app.icon.asImageBitmap(), null, Modifier.size(50.dp).clip(IconContinuousShape)
                                     .combinedClickable(onClick = { closeDock(); launch(app) }, onLongClick = {
                                         // Drag beside the current app for split screen.
                                         if (startSplitDrag(hostView, service, app.component, app.user, "", app.icon)) closeDock()
                                     }))
                             }
                             if (apps.isNotEmpty()) HorizontalDivider(Modifier.width(40.dp), color = Color.White.copy(alpha = .2f))
-                            Box(Modifier.size(50.dp).clip(RoundedCornerShape(13.dp)).background(Color.White.copy(alpha = .16f)).clickable {
+                            Box(Modifier.size(50.dp).clip(IconContinuousShape).background(Color.White.copy(alpha = .16f)).clickable {
                                 closeDock(); service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
                             }, contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Home, stringResource(R.string.home_label), tint = Color.White) }
                         }

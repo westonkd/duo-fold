@@ -201,7 +201,7 @@ internal fun FolderPanel(
                 .graphicsLayer { alpha = FolderOpening.contentAlpha(appear.value) }) {
             androidx.compose.foundation.text.BasicTextField(title, { title = it },
                 Modifier.weight(1f).testTag("folder-name"), singleLine = true,
-                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = FolioType.TITLE.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = FolioType.LARGE_TITLE.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Start),
                 cursorBrush = androidx.compose.ui.graphics.SolidColor(Color.White),
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
@@ -397,7 +397,7 @@ private fun FolderChild(
 ) {
     var menu by remember { mutableStateOf(false) }
     Surface(reorderModifier.fillMaxWidth().testTag("folder-child-${app.id}"), color = Color.Transparent, contentColor = Color.White,
-        shape = RoundedCornerShape(18.dp)) {
+        shape = RoundedCornerShape(FolioRadius.GROUP.dp)) {
         androidx.compose.foundation.layout.BoxWithConstraints {
             val badgePlacement = FolderBadge.placement(maxWidth.value)
             Column(Modifier.fillMaxWidth().dropRegion(drag, DropTarget.Library(app.id), app.id, page,

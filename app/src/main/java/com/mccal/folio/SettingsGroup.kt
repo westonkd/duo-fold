@@ -112,7 +112,7 @@ private class FloatArrayList {
 @Composable
 internal fun CardPrimaryAction(label: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
     androidx.compose.foundation.layout.Box(modifier.then(Modifier.fillMaxWidth().padding(vertical = FolioSpace.SMALL.dp).heightIn(min = 48.dp))
-        .clip(androidx.compose.foundation.shape.RoundedCornerShape(FolioRadius.PANEL.dp))
+        .clip(androidx.compose.foundation.shape.RoundedCornerShape(FolioRadius.GROUPED_CARD.dp))
         .background(if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = .12f))
         .clickable(enabled = enabled, role = Role.Button, onClick = onClick), contentAlignment = Alignment.Center) {
         Text(label, color = if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = .6f),

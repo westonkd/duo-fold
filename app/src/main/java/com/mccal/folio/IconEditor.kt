@@ -1,5 +1,6 @@
 package com.mccal.folio
 
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -39,7 +40,7 @@ internal fun AppIconEditor(app: AppEntry, current: AppIconOverride, onChange: (A
             Spacer(Modifier.width(12.dp))
             Text(stringResource(R.string.edit_icon_for_1, app.label), color = Color.White, fontSize = FolioType.TITLE.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             Text(stringResource(R.string.done), color = LocalAccent.current.ink, fontSize = FolioType.BODY.sp, fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.clip(RoundedCornerShape(FolioRadius.CONTROL.dp)).clickable(onClick = onDone).padding(FolioSpace.SMALL.dp).testTag("icon-editor-done"))
+                modifier = Modifier.clip(CircleShape).clickable(onClick = onDone).padding(FolioSpace.SMALL.dp).testTag("icon-editor-done"))
         }
         // Your own picture: Android's photo picker (it hands over only the one picture), cropped to a square from its middle.
         SheetGroupLabel(stringResource(R.string.your_picture))

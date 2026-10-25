@@ -61,7 +61,7 @@ internal fun IosSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, mod
 @Composable
 internal fun IosChip(selected: Boolean, onClick: () -> Unit, label: @Composable () -> Unit, modifier: Modifier = Modifier) {
     val background by animateColorAsState(if (selected) Color.White else Color.White.copy(alpha = .1f), label = "chip")
-    Box(modifier.heightIn(min = 36.dp).clip(RoundedCornerShape(FolioRadius.CONTROL.dp)).background(background)
+    Box(modifier.heightIn(min = 36.dp).clip(CircleShape).background(background)
         .selectable(selected, role = Role.RadioButton, onClick = onClick).padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.SMALL.dp),
         contentAlignment = Alignment.Center) {
         androidx.compose.material3.ProvideTextStyle(TextStyle(color = if (selected) Color.Black else Color.White, fontSize = FolioType.COMPACT.sp,
@@ -75,7 +75,7 @@ internal fun IosSearchField(query: String, onQuery: (String) -> Unit, placeholde
     fieldModifier: Modifier = Modifier, ink: Color = Color.White, glass: Boolean = false, onSearch: (() -> Unit)? = null) {
     // 40 dp at the normal text size, taller only when larger text needs it (A11Y-12). The row is as tall as its
     // content (IntrinsicSize.Min), so the clear button's fillMaxHeight fills the field, not the space around it.
-    val fieldShape = RoundedCornerShape(FolioRadius.ROW.dp)
+    val fieldShape = CircleShape
     Row(modifier.fillMaxWidth().clip(fieldShape).then(if (glass) Modifier.liquidGlass(fieldShape, LIBRARY_FIELD_FROST, GlassRole.CAPSULE)
             else Modifier.background(ink.copy(alpha = SEARCH_FIELD_FROST)))
         .heightIn(min = 40.dp).height(IntrinsicSize.Min).padding(start = FolioSpace.COMPACT.dp, end = FolioSpace.HAIR.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -170,7 +170,7 @@ internal fun <T> IosMenuRow(title: String, options: List<Pair<T, String>>, selec
         androidx.compose.material3.Text(title, color = Color.White, fontSize = FolioType.BODY.sp, modifier = Modifier.weight(1f))
         Box {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.material3.Text(current, color = Color.White.copy(alpha = .55f), fontSize = FolioType.BODY.sp, maxLines = 1)
+                androidx.compose.material3.Text(current, color = FolioColors.SecondaryLabel, fontSize = FolioType.BODY.sp, maxLines = 1)
                 androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.UnfoldMore, null, tint = Color.White.copy(alpha = .4f),
                     modifier = Modifier.padding(start = FolioSpace.HAIR.dp).size(18.dp))
             }
@@ -255,7 +255,7 @@ internal fun FolioButton(
     }
     Row(
         modifier
-            .clip(RoundedCornerShape(FolioRadius.CARD.dp))
+            .clip(CircleShape)
             .background(background)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             // 48 dp tall, so a finger has the whole button rather than just its text (A11Y-1).
@@ -284,15 +284,15 @@ internal fun FolioButton(
 internal fun <T> IosSegmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier, tag: String? = null) {
     val haptic = LocalHapticFeedback.current
     val index = options.indexOfFirst { it.first == selected }.coerceAtLeast(0)
-    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth().height(36.dp).clip(RoundedCornerShape(FolioRadius.SEGMENT.dp))
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth().height(32.dp).clip(CircleShape)
         .background(Color.White.copy(alpha = .12f)).padding(FolioSpace.HAIR.dp).then(if (tag != null) Modifier.testTag(tag) else Modifier)) {
         val segment = maxWidth / options.size
         val x by animateDpAsState(segment * index, FolioMotion.spring(FolioMotion.calm(FolioMotion.Control, LocalReduceMotion.current)), label = "segment")
         Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(x.roundToPx(), 0) }.width(segment).fillMaxHeight()
-            .shadow(2.dp, RoundedCornerShape(FolioRadius.SEGMENT_THUMB.dp)).clip(RoundedCornerShape(FolioRadius.SEGMENT_THUMB.dp)).background(FolioColors.SegmentThumb))
+            .shadow(2.dp, CircleShape).clip(CircleShape).background(FolioColors.SegmentThumb))
         Row(Modifier.fillMaxSize()) {
             options.forEach { (value, label) ->
-                Box(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(FolioRadius.SEGMENT_THUMB.dp))
+                Box(Modifier.weight(1f).fillMaxHeight().clip(CircleShape)
                     .selectable(value == selected, role = Role.RadioButton) {
                         if (value != selected) { haptic.perform(FolioHaptic.Step); onSelect(value) }
                     }, contentAlignment = Alignment.Center) {

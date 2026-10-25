@@ -1323,14 +1323,14 @@ fun LauncherScreen(
                 }
                 widgetPlacementMessage?.let { message ->
                     Surface(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(FolioSpace.XL.dp),
-                        color = Glass, shape = RoundedCornerShape(FolioRadius.FLOATING.dp)) { Text(message, Modifier.padding(FolioSpace.LARGE.dp), color = Ink) }
+                        color = Glass, shape = CircleShape) { Text(message, Modifier.padding(horizontal = FolioSpace.XL.dp, vertical = FolioSpace.MEDIUM.dp), color = Ink) }
                 }
             }
         }
         val landing = drag.landing
         (if (drag.active && landing.lifted) drag.source?.appId else landing.flyingId)?.let { appsById[it] }?.let { app ->
             val side = with(LocalDensity.current) { landing.size.toDp() }
-            val shape = RoundedCornerShape(side * .24f)
+            val shape = IconContinuousShape
             AppIcon(app, stringResource(R.string.moving_named, app.label), Modifier
                 .offset {
                     val p = if (drag.active) landing.heldAt(drag.pointer - drag.rootOrigin) else landing.position.value
@@ -1346,16 +1346,16 @@ fun LauncherScreen(
         if (drag.active) {
             if (drag.moved) {
                 if (pager.currentPage > 0) Box(Modifier.align(Alignment.CenterStart).width(6.dp).height(112.dp)
-                    .background(Color.White.copy(alpha = if (edge < 0) .9f else .3f), RoundedCornerShape(6.dp)).testTag("drag-edge-left"))
+                    .background(Color.White.copy(alpha = if (edge < 0) .9f else .3f), CircleShape).testTag("drag-edge-left"))
                 if (pager.currentPage < homePages) Box(Modifier.align(Alignment.CenterEnd).width(6.dp).height(112.dp)
-                    .background(Color.White.copy(alpha = if (edge > 0) .9f else .3f), RoundedCornerShape(6.dp)).testTag("drag-edge-right"))
+                    .background(Color.White.copy(alpha = if (edge > 0) .9f else .3f), CircleShape).testTag("drag-edge-right"))
             }
             appsById[drag.source?.appId]?.takeUnless { drag.landing.lifted }?.let { app ->
                 val size = 66.dp
                 val px = with(LocalDensity.current) { size.toPx() }
                 AppIcon(app, stringResource(R.string.moving_named, app.label), Modifier
                     .offset { IntOffset((drag.pointer.x - drag.rootOrigin.x - px / 2).roundToInt(), (drag.pointer.y - drag.rootOrigin.y - px * .65f).roundToInt()) }
-                    .size(size).shadow(16.dp, RoundedCornerShape(FolioRadius.GROUP.dp)).clip(RoundedCornerShape(FolioRadius.GROUP.dp)).testTag("drag-ghost"))
+                    .size(size).shadow(16.dp, IconContinuousShape).clip(IconContinuousShape).testTag("drag-ghost"))
             }
             drag.source?.appId?.let { state.layout.folder(it) }?.let { folder ->
                 Surface(Modifier.offset { IntOffset((drag.pointer.x - drag.rootOrigin.x - 42.dp.toPx()).roundToInt(),
@@ -1428,7 +1428,7 @@ fun LauncherScreen(
                     with(density) { 18.dp.toPx() }).coerceAtLeast(resize.pitchY)
                 Box(Modifier.offset { IntOffset(bounds.left.roundToInt(), bounds.top.roundToInt()) }
                     .size(with(density) { widthPx.toDp() }, with(density) { heightPx.toDp() })
-                    .border(3.dp, if (valid) Color.White else FolioColors.InvalidDrop, RoundedCornerShape(FolioRadius.PANEL.dp))
+                    .border(3.dp, if (valid) Color.White else FolioColors.InvalidDrop, RoundedCornerShape(FolioRadius.WIDGET.dp))
                     .testTag("widget-resize-preview-$slot")) {
                     Box(Modifier.align(Alignment.BottomEnd).offset(12.dp, 12.dp).size(44.dp)
                         .background(if (valid) Color.White else FolioColors.InvalidDrop, CircleShape)
@@ -1455,7 +1455,7 @@ fun LauncherScreen(
                         }) { Text(stringResource(R.string.apply)) }
                     }
                     if (!feasible) Text(stringResource(R.string.move_this_widget_into_the_six_row_grid_b),
-                        color = Color.White, modifier = Modifier.align(Alignment.Center).clip(RoundedCornerShape(FolioRadius.CARD.dp)).background(Color.Black.copy(alpha = .65f)).padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.COMPACT.dp))
+                        color = Color.White, modifier = Modifier.align(Alignment.Center).clip(CircleShape).background(Color.Black.copy(alpha = .65f)).padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.COMPACT.dp))
                 }
             }
         }
@@ -1690,7 +1690,7 @@ private fun PreviewBar(onUseAsHome: () -> Unit, onExit: () -> Unit) {
         Text(stringResource(R.string.preview), color = ink.secondary, fontSize = FolioType.SUBHEAD.sp, modifier = Modifier.semantics { heading() })
         Spacer(Modifier.width(12.dp))
         Text(stringResource(R.string.use_as_home), color = LocalAccent.current.ink, fontSize = FolioType.SUBHEAD.sp, fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.clip(RoundedCornerShape(FolioRadius.ROW.dp)).clickable(onClick = onUseAsHome)
+            modifier = Modifier.clip(CircleShape).clickable(onClick = onUseAsHome)
                 .heightIn(min = 48.dp).wrapContentHeight().padding(horizontal = FolioSpace.SMALL.dp).testTag("preview-use-as-home"))
         IconButton(onClick = onExit, Modifier.size(48.dp).testTag("preview-exit")) {
             Icon(Icons.Rounded.Close, stringResource(R.string.exit_preview), tint = ink.secondary, modifier = Modifier.size(18.dp))

@@ -1,5 +1,6 @@
 package com.mccal.folio
 
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -64,10 +65,10 @@ internal fun FolderAppsEditor(folder: FolderEntry, apps: List<AppEntry>, onDone:
             Column(Modifier.weight(1f)) {
                 Text(if (folder.title.isBlank()) stringResource(R.string.add_apps) else stringResource(R.string.add_apps_to_1, folder.title),
                     color = Color.White, fontSize = FolioType.TITLE.sp, fontWeight = FontWeight.Bold)
-                Text(stringResource(R.string.n_selected, picked.size), color = Color.White.copy(alpha = .6f), fontSize = FolioType.FOOTNOTE.sp)
+                Text(stringResource(R.string.n_selected, picked.size), color = FolioColors.SecondaryLabel, fontSize = FolioType.FOOTNOTE.sp)
             }
             Text(stringResource(R.string.done), color = LocalAccent.current.ink, fontSize = FolioType.BODY.sp, fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.clip(RoundedCornerShape(FolioRadius.CONTROL.dp)).clickable { onDone(picked.toList()) }
+                modifier = Modifier.clip(CircleShape).clickable { onDone(picked.toList()) }
                     .padding(FolioSpace.SMALL.dp).testTag("folder-apps-done"))
         }
         AppCheckList(shown, query, { query = it }, checked = { it.id in folder.appIds || it.id in picked }, enabled = { it.id !in folder.appIds },

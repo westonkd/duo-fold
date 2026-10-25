@@ -271,7 +271,7 @@ internal fun RenameAppAlert(app: AppEntry, onDismiss: () -> Unit, onRename: (Str
             Column {
                 Text(stringResource(R.string.leave_it_empty_to_use_s_again, app.systemLabel), fontSize = FolioType.FOOTNOTE.sp)
                 androidx.compose.foundation.text.BasicTextField(name, { name = it.takeAppName() },
-                    Modifier.padding(top = FolioSpace.MEDIUM.dp).fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                    Modifier.padding(top = FolioSpace.MEDIUM.dp).fillMaxWidth().clip(RoundedCornerShape(FolioRadius.CONTROL.dp))
                         .background(ink.copy(alpha = .08f)).padding(horizontal = FolioSpace.COMPACT.dp, vertical = FolioSpace.COMPACT.dp)
                         .focusRequester(focus).testTag("app-name"),
                     singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(color = ink, fontSize = FolioType.BODY.sp),

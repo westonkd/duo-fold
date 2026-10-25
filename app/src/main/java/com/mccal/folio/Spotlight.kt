@@ -255,7 +255,7 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
                     }
                 })
             Text(stringResource(R.string.cancel), color = ink.primary, fontSize = FolioType.BODY.sp,
-                modifier = Modifier.padding(start = FolioSpace.HAIR.dp).heightIn(min = 48.dp).clip(RoundedCornerShape(FolioRadius.CONTROL.dp))
+                modifier = Modifier.padding(start = FolioSpace.HAIR.dp).heightIn(min = 48.dp).clip(CircleShape)
                     .clickable { focusManager.clearFocus(force = true); keyboard?.hide(); onClose() }
                     .padding(horizontal = FolioSpace.MEDIUM.dp, vertical = FolioSpace.COMFY.dp).testTag("spotlight-cancel"))
             }
@@ -332,7 +332,7 @@ private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) 
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
         Text(title, color = LocalHomeInk.current.secondary, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(start = FolioSpace.TINY.dp))
-        val shape = RoundedCornerShape(FolioRadius.PANEL.dp)
+        val shape = RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)
         Column(Modifier.fillMaxWidth().clip(shape)
             .liquidGlass(shape, LIBRARY_TILE_FROST, GlassRole.TILE)
             .padding(FolioSpace.MEDIUM.dp),
@@ -414,7 +414,7 @@ private fun ResultRow(icon: ImageVector, title: String, subtitle: String?, trail
     val ink = LocalHomeInk.current
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.ROW.dp)).clickable(onClick = onClick).padding(horizontal = FolioSpace.SMALL.dp, vertical = FolioSpace.COMPACT.dp),
         verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(34.dp).clip(RoundedCornerShape(FolioRadius.SEGMENT.dp)).background(ink.primary.copy(alpha = SPOTLIGHT_CHIP)), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(34.dp).clip(IconContinuousShape).background(ink.primary.copy(alpha = SPOTLIGHT_CHIP)), contentAlignment = Alignment.Center) {
             Icon(icon, null, tint = ink.primary, modifier = Modifier.size(20.dp))
         }
         Spacer(Modifier.width(12.dp))
