@@ -52,12 +52,12 @@ internal class DragLanding {
     fun liftProgress() = ((scale.value - 1f) / (PressFeedback.LIFT - 1f)).coerceIn(0f, 1f)
 
     /**
-     * A drag started. Uses the pass only when it is on and the app's icon is on screen to start from (Home or the dock);
-     * anything else (a folder, a widget, an app pulled out of the Library or a folder) keeps the drag as it was.
+     * A drag started. Lifts only when the app's icon is on screen to start from (Home or the dock); anything else (a
+     * folder, a widget, an app pulled out of the Library or a folder) keeps the drag as it was.
      */
-    fun begin(scope: CoroutineScope, appId: String?, pointer: Offset, pass: Boolean, reduceMotion: Boolean) {
+    fun begin(scope: CoroutineScope, appId: String?, pointer: Offset, reduceMotion: Boolean) {
         flight?.cancel(); flyingId = null
-        val icon = if (pass && appId != null) iconTopLeft(appId) else null
+        val icon = if (appId != null) iconTopLeft(appId) else null
         lifted = icon != null
         if (icon == null) return
         reduced = reduceMotion
@@ -100,7 +100,7 @@ internal class DragLanding {
                 if (target == null) { last = now; if (frames > 10) break else continue }
                 // One spring steered toward wherever the icon is this frame: Home slides down as jiggle mode starts right after a
                 // drop, so the place moves while the copy flies, and restarting an animation on every move would stall it.
-                position.snapTo(spring.step(target, ((now - last) / 1e9f).coerceIn(0f, .05f), MotionSpeed.current.factor))
+                position.snapTo(spring.step(target, ((now - last) / 1e9f).coerceIn(0f, .05f)))
                 last = now
                 if (spring.arrived(target) || frames > MAX_FLIGHT_FRAMES) break
             }
@@ -129,8 +129,8 @@ internal class DragLanding {
 }
 
 /**
- * The landing's spring, stepped by hand so its target can move mid-flight: [FolioMotion.Bounce]'s damping and stiffness, the
- * stiffness scaled by Settings › Animation Speed like every other Folio spring ([MotionSpeed]). It starts with the finger's speed.
+ * The landing's spring, stepped by hand so its target can move mid-flight: [FolioMotion.Bounce]'s damping and stiffness.
+ * It starts with the finger's speed.
  */
 internal class BounceFlight(start: Offset, velocity: Offset) {
     var position = start
@@ -138,9 +138,8 @@ internal class BounceFlight(start: Offset, velocity: Offset) {
     var velocity = velocity
         private set
 
-    fun step(target: Offset, seconds: Float, speed: Float): Offset {
-        val (damping, stiffness) = FolioMotion.Bounce
-        val k = stiffness * speed
+    fun step(target: Offset, seconds: Float): Offset {
+        val (damping, k) = FolioMotion.Bounce
         val c = 2f * damping * sqrt(k)
         repeat(SUBSTEPS) {
             val h = seconds / SUBSTEPS

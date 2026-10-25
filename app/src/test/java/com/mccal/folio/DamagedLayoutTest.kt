@@ -38,7 +38,7 @@ class DamagedLayoutTest {
     private val layout = HomeLayout(List(HOME_CELLS) { null }, listOf(mail, null, null, null))
     private val defaults = LauncherState()
     private val backup = LayoutImportPreview(layout, missingApps = emptyList(), profileIssues = emptyList(), appCount = 1,
-        folderCount = 0, widgetCount = 0, compact = defaults.compact, expanded = defaults.expanded,
+        folderCount = 0, widgetCount = 0, coverDock = defaults.coverDock, innerDock = defaults.innerDock,
         labels = false, googleSearch = true, verticalStatus = true)
     private lateinit var model: LauncherModel
 

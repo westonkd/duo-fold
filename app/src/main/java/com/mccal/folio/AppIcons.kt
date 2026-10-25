@@ -5,51 +5,40 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.compose.ui.graphics.asImageBitmap
 
-/**
- * Alternate app icons, like iOS's setAlternateIconName: each icon is its own launcher entry (an activity-alias of
- * MainActivity), and exactly one is enabled. Only Folio's app entry changes; the Home app itself isn't touched.
- */
 /** Folio's Kotlin package: class names stay the same in the Folio Dev build, whose app ID ends in ".dev". */
 internal const val FOLIO_CLASSES = "com.mccal.folio"
 
-internal enum class AppIconChoice(@androidx.annotation.StringRes val label: Int, val alias: String, private val background: Int, private val foreground: Int) {
-    TEAL(R.string.teal, "FolioSettingsApp", R.drawable.folio_icon_teal_background, R.drawable.ic_launcher_foreground), // english-only
-    SOFT(R.string.soft, "FolioSettingsAppSoft", R.drawable.folio_icon_soft_background, R.drawable.ic_launcher_soft_foreground), // english-only
-    OLIVE(R.string.olive, "FolioSettingsAppOlive", R.drawable.ic_launcher_olive_background, R.drawable.ic_launcher_olive_foreground); // english-only
+/** Folio's app entry's class name (an activity-alias of MainActivity), so Folio can recognize its own app entry. */
+internal const val FOLIO_SETTINGS_ALIAS = "FolioSettingsApp"
 
-    /**
-     * The icon as Folio draws it in its own screens: the real artwork (never Folio Dev's launcher tint) as an iOS
-     * rounded square, drawn from the adaptive layers rather than through the device's icon mask.
-     */
-    fun artwork(context: Context, size: Int): androidx.compose.ui.graphics.ImageBitmap? = runCatching<androidx.compose.ui.graphics.ImageBitmap> {
+/**
+ * Whether Folio's app entry was left switched off. Choosing the Soft or Olive app icon, which are gone now, turned the
+ * default entry off and theirs on, so a phone that had one has no Folio icon until the default is turned back on.
+ */
+internal fun launcherEntryNeedsReset(state: Int) =
+    state != PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && state != PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+
+/** Puts Folio's app entry back to what the manifest says, if an old app icon choice switched it off. */
+internal fun restoreLauncherEntry(context: Context) {
+    runCatching {
+        val entry = ComponentName(context, "$FOLIO_CLASSES.$FOLIO_SETTINGS_ALIAS")
+        val pm = context.packageManager
+        if (launcherEntryNeedsReset(pm.getComponentEnabledSetting(entry)))
+            pm.setComponentEnabledSetting(entry, PackageManager.COMPONENT_ENABLED_STATE_DEFAULT, PackageManager.DONT_KILL_APP)
+    }
+}
+
+/**
+ * Folio's app icon as Folio draws it in its own screens: the real artwork (never Folio Dev's launcher tint) as an iOS
+ * rounded square, drawn from the adaptive layers rather than through the device's icon mask.
+ */
+internal fun folioIconBitmap(context: android.content.Context, size: Int = 216): androidx.compose.ui.graphics.ImageBitmap? =
+    runCatching<androidx.compose.ui.graphics.ImageBitmap> {
         android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888).also { bitmap ->
             val canvas = android.graphics.Canvas(bitmap)
-            listOf(background, foreground).mapNotNull(context::getDrawable).forEach { layer ->
+            listOf(R.drawable.folio_icon_teal_background, R.drawable.ic_launcher_foreground).mapNotNull(context::getDrawable).forEach { layer ->
                 // Adaptive layers are 108dp with the visible icon in the middle 72dp.
                 layer.setBounds(-size / 4, -size / 4, size * 5 / 4, size * 5 / 4); layer.draw(canvas)
             }
         }.asImageBitmap()
     }.getOrNull()
-
-    companion object {
-        /** Every alias class name starts with this, so Folio can recognize its own app entry. */
-        const val ALIAS_PREFIX = "FolioSettingsApp"
-
-        fun current(context: Context): AppIconChoice = entries.firstOrNull { choice ->
-            val state = context.packageManager.getComponentEnabledSetting(ComponentName(context, "$FOLIO_CLASSES.${choice.alias}"))
-            state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED ||
-                (state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && choice == TEAL)
-        } ?: TEAL
-
-        fun set(context: Context, choice: AppIconChoice) {
-            val pm = context.packageManager
-            // Enable the new entry before disabling the old one, so there's never a moment with no app icon.
-            pm.setComponentEnabledSetting(ComponentName(context, "$FOLIO_CLASSES.${choice.alias}"),
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
-            entries.filter { it != choice }.forEach {
-                pm.setComponentEnabledSetting(ComponentName(context, "$FOLIO_CLASSES.${it.alias}"),
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
-            }
-        }
-    }
-}

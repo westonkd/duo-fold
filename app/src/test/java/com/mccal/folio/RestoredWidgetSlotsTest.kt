@@ -54,15 +54,13 @@ class RestoredWidgetSlotsTest {
         val model = home()
         val defaults = LauncherState()
         assertTrue(model.applyImportedLayout(LayoutImportPreview(backup, emptyList(), emptyList(), appCount = 0, folderCount = 0,
-            widgetCount = 2, compact = defaults.compact, expanded = defaults.expanded, labels = true, googleSearch = true, verticalStatus = true)))
+            widgetCount = 2, coverDock = defaults.coverDock, innerDock = defaults.innerDock, labels = true, googleSearch = true, verticalStatus = true)))
 
         val state = model.state.value
         val restoredWeather = state.widgetPlacements.single { it.id == NEEDS_BINDING_WIDGET }
-        val restoredClock = state.widgetPlacements.single { it.id == BIG_CLOCK_WIDGET }
         state.widgetPlacements.forEach { assertEquals("no old stack on ${it.slot}", listOf(it.id), model.stackCards(it.slot)) }
         assertTrue("restored widgets are on numbers the old Home never used", state.widgetPlacements.none { it.slot in setOf(0, 1) })
         assertEquals("the widget waiting to be bound still finds its provider", weather, state.layout.widgetRestore(restoredWeather.slot)?.providerComponent)
-        assertEquals("the same Big Clock keeps its look", "WHITE", state.bigClockStyles[restoredClock.slot]?.mode)
 
         // Undo puts the old widget back with its stack.
         assertTrue(model.undoEdit())
@@ -76,7 +74,7 @@ class RestoredWidgetSlotsTest {
         val defaults = LauncherState()
         assertTrue(model.applyImportedLayout(LayoutImportPreview(HomeLayout(List(HOME_CELLS) { null }, listOf(null, null, null, null),
             widgetPlacements = listOf(overflow)), emptyList(), emptyList(), appCount = 0, folderCount = 0, widgetCount = 1,
-            compact = defaults.compact, expanded = defaults.expanded, labels = true, googleSearch = true, verticalStatus = true)))
+            coverDock = defaults.coverDock, innerDock = defaults.innerDock, labels = true, googleSearch = true, verticalStatus = true)))
 
         assertEquals("the old stack isn't on the restored widget", listOf(CLOCK_WIDGET), model.stackCards(5))
         assertTrue("its widgets stay bound while Undo can bring them back", model.retainedWidgetIds.containsAll(setOf(51, 52)))

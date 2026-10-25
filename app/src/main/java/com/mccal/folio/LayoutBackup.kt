@@ -27,21 +27,13 @@ data class LayoutImportPreview(
     val appCount: Int,
     val folderCount: Int,
     val widgetCount: Int,
-    val compact: LayoutPreset,
-    val expanded: LayoutPreset,
-    /** The upright inner screen's own layout (since 0.6.8); null when it shares the inner screen's, as every older backup does. */
-    val portrait: LayoutPreset? = null,
+    val coverDock: DockPlacement,
+    val innerDock: DockPlacement,
     val labels: Boolean,
     val googleSearch: Boolean,
     val verticalStatus: Boolean,
-    /** What the Market installed on the phone this backup came from, for `InstalledStore` to read. */
-    val packages: String? = null,
-    /** How many packages that is. Only the Market can count them, so [BackupController] fills this in. */
-    val packageCount: Int = 0,
     /** Names people typed themselves. They exist nowhere else on the phone, so a backup that left them out lost them. */
     val appNames: Map<String, String> = emptyMap(),
-    /** Icon looks chosen for single apps (since 0.6.8); a backup from before has none, and the ones on the phone stay. */
-    val appIconStyles: Map<String, AppIconOverride> = emptyMap(),
     /** Icon swipe and double tap actions; a backup from before has none, and the ones on the phone stay. */
     val iconActions: Map<String, IconActions> = emptyMap(),
 )
@@ -55,17 +47,14 @@ fun encodeLayoutBackup(
     state: LauncherState,
     widgetDescriptors: List<BackupWidgetDescriptor>,
     sourceScope: String,
-    /** What the Market installed, from `InstalledStore.export()`, or null when this phone has no packages to carry. */
-    packages: String? = null,
 ): String {
     require(sourceScope.isNotBlank())
     require(state.leadingSlots.size == HOME_CELLS) { "Unfolded-only page must contain exactly $HOME_CELLS cells" }
     val descriptorBySlot = widgetDescriptors.associateBy(BackupWidgetDescriptor::slot)
-    val iconStyles = withoutPictures(state.appIconStyles)
     // Only the apps this file names, which are all a restore reads. Every app on the phone, in every profile and
     // including the ones behind the Hidden Apps lock, is not the layout's to hand to whoever gets the file.
     val named = (state.homeSlots + state.leadingSlots + state.dock).filterNotNullTo(mutableSetOf()) +
-        state.folders.flatMap { it.appIds } + state.appNames.keys + iconStyles.keys + state.iconActions.keys
+        state.folders.flatMap { it.appIds } + state.appNames.keys + state.iconActions.keys
     val apps = JSONArray().also { array -> state.apps.filter { it.id in named }.forEach { app -> array.put(JSONObject()
         .put("id", app.id).put("label", backupLabel(app.label, app.component.packageName.ifBlank { app.id })).put("component", app.component.flattenToString())
         .put("userSerial", app.userSerial).put("profileLabel", backupProfileLabel(app.profileLabel, app.isWork)).put("work", app.isWork)
@@ -92,25 +81,15 @@ fun encodeLayoutBackup(
         }
         array.put(item)
     } }
-    fun preset(value: LayoutPreset) = JSONObject().put("iconSize", value.iconSize).put("rowGap", value.rowGap)
-        .put("dockWidth", value.dockWidth).put("dockPosition", value.dockPosition).put("dockAlignToGrid", value.dockAlignToGrid)
-        .put("dockPlacement", value.dockPlacement.name).put("statusAlignToGrid", value.statusAlignToGrid).put("statusPosition", value.statusPosition)
-        .put("columnGap", value.columnGap).put("dockSpacing", value.dockSpacing).put("widgetScale", value.widgetScale).put("pageTop", value.pageTop)
+    fun preset(value: DockPlacement) = JSONObject().put("dockPlacement", value.name)
     val root = JSONObject().put("version", LAYOUT_BACKUP_VERSION).put("sourceScope", sourceScope).put("apps", apps)
         .put("homeSlots", JSONArray(state.homeSlots)).put("leadingSlots", JSONArray(state.leadingSlots))
         .put("dock", JSONArray(state.dock)).put("folders", folders).put("widgets", widgets)
         .put("labels", state.labels).put("googleSearch", state.googleSearch).put("verticalStatus", state.verticalStatus)
-        .put("compact", preset(state.compact)).put("expanded", preset(state.expanded))
-        // Only when there is one, so a backup from a phone that never made one is exactly what it was, and older Folio reads it.
-        .also { o -> state.portrait?.let { o.put("portrait", preset(it)) } }
+        .put("compact", preset(state.coverDock)).put("expanded", preset(state.innerDock))
     // The names people typed themselves (since 0.6.5): they exist nowhere else on the phone.
     root.put("appNames", JSONObject().apply { state.appNames.forEach { (id, name) -> put(id, name) } })
-    // Only when there are some, so a backup from a phone that uses none is exactly what it was before this existed.
-    if (iconStyles.isNotEmpty()) root.put("appIconStyles", appIconStylesToJson(iconStyles))
     if (state.iconActions.isNotEmpty()) root.put("iconActions", iconActionsToJson(state.iconActions))
-    // Added in 0.7.0, and deliberately not a new backup version: a Folio that has never heard of the Market reads
-    // everything else in this file and ignores a key it doesn't know, so backups still travel backwards.
-    packages?.let { root.put("packages", JSONObject(it)) }
     val text = root.toString(2)
     // A backup over the limit can never be imported, here or anywhere else, so say so while there is still someone
     // to tell rather than writing a file that only fails later.
@@ -259,27 +238,11 @@ fun decodeLayoutBackup(raw: String, currentApps: List<AppEntry>, currentProfiles
         layout = layout.copy(widgetPlacements = (layout.widgetPlacements + placement).sortedBy { it.slot },
             widgetRestores = layout.widgetRestores + listOfNotNull(restore))
     }
-    fun preset(key: String): LayoutPreset {
-        val item = root.getJSONObject(key)
-        val loaded = LayoutPreset(item.strictFloat("iconSize"), item.strictFloat("rowGap"),
-            item.strictFloat("dockWidth"), item.strictFloat("dockPosition"), item.strictBoolean("dockAlignToGrid"),
-            // Added in 0.6.5: older backups don't have them.
-            DockPlacement.parse(item.optString("dockPlacement")), item.optBoolean("statusAlignToGrid", true),
-            item.optDouble("statusPosition", 0.0).toFloat(),
-            // Added with More rows.
-            item.optDouble("columnGap", DEFAULT_COLUMN_GAP.toDouble()).toFloat(), item.optDouble("dockSpacing", 0.0).toFloat(),
-            item.optDouble("widgetScale", 1.0).toFloat(), item.optBoolean("pageTop", false))
-        require(loaded == loaded.sanitized()) { "Invalid layout preset" }
-        return loaded
-    }
-    // Validate settings eagerly even though HomeLayout contains placement data only.
-    val compact = preset("compact"); val expanded = preset("expanded")
-    val portrait = if (root.has("portrait")) preset("portrait") else null
+    // Added in 0.6.5: older backups don't have it.
+    fun preset(key: String) = DockPlacement.parse(root.getJSONObject(key).optString("dockPlacement"))
+    val coverDock = preset("compact"); val innerDock = preset("expanded")
     val labels = root.strictBoolean("labels"); val googleSearch = root.strictBoolean("googleSearch")
     val verticalStatus = root.strictBoolean("verticalStatus")
-    // Added in 0.7.0; an older backup leaves the key out and carries no packages. Read but not understood here:
-    // what is inside belongs to `:market`, and only the Market can say what to do with it.
-    val packages = root.optJSONObject("packages")?.toString()
     // Written since 0.6.5; a backup made before that simply has none, and the names already on the phone stay.
     val appNames = root.optJSONObject("appNames")?.let { o ->
         o.keys().asSequence().mapNotNull { id -> o.optString(id).takeIf { it.isNotBlank() }?.let { id to it.take(60) } }.toMap()
@@ -288,8 +251,8 @@ fun decodeLayoutBackup(raw: String, currentApps: List<AppEntry>, currentProfiles
         appCount = (slots + leadingSlots).count { it != null && !isReservedFolderId(it) } +
             dock.count { it != null } + folders.sumOf { it.appIds.size },
         folderCount = folders.size, widgetCount = layout.widgetPlacements.size,
-        compact = compact, expanded = expanded, portrait = portrait, labels = labels, googleSearch = googleSearch, verticalStatus = verticalStatus,
-        packages = packages, appNames = appNames, appIconStyles = appIconStylesFromJson(root.optJSONObject("appIconStyles")),
+        coverDock = coverDock, innerDock = innerDock, labels = labels, googleSearch = googleSearch, verticalStatus = verticalStatus,
+        appNames = appNames,
         iconActions = iconActionsFromJson(root.optJSONObject("iconActions")))
 }
 
@@ -305,7 +268,7 @@ internal fun legacyOverflowPlacement(value: WidgetPlacement) = value.page > 0 &&
     value.slot % 3 == 2 && value.column == 0 && value.row == GRID_ROWS && value.spanX == GRID_COLUMNS && value.spanY == 4
 
 /**
- * Gives a restored backup's widgets slot numbers from [firstFree] on, so a Smart Stack or Big Clock look this Home still
+ * Gives a restored backup's widgets slot numbers from [firstFree] on, so a Smart Stack this Home still
  * keeps for Undo can't land on an unrelated restored widget. Each new number keeps the old one's remainder by 3, which
  * older layouts and the Your Widgets card still read; a [legacyOverflowPlacement] keeps its number. Returns the layout
  * and each restored slot's new number.
@@ -337,11 +300,6 @@ private fun JSONObject.strictLong(key: String): Long {
     val number = get(key) as? Number ?: error("$key must be an integer")
     val text = number.toString()
     return text.toLongOrNull()?.takeIf { it >= 0 } ?: error("$key must be a non-negative integer")
-}
-
-private fun JSONObject.strictFloat(key: String): Float {
-    val number = get(key) as? Number ?: error("$key must be a number")
-    return number.toFloat().takeIf(Float::isFinite) ?: error("$key must be finite")
 }
 
 private fun JSONObject.strictBoolean(key: String) = get(key) as? Boolean ?: error("$key must be a boolean")

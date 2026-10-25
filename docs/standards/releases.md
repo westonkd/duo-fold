@@ -36,21 +36,12 @@ what they were testing. Every rule below is aimed at that shape of mistake.
 - **REL-4 MUST NOT** build, tag or publish anything from a topic branch. If supporters need it, it goes to `main`
   first. There is no stable branch and no beta branch: one trunk, and the two audiences are separated by a gate in the
   build ([ADR 0007](../adr/0007-release-trains.md)).
-- **REL-4a MUST** gate a feature that is not ready for everyone on the `beta` scope rather than holding it on a
-  branch. A supporter sees it the day it merges; opening the gate is what shipping it means. Gate it at the entry
-  point, not only in the UI, so hidden work costs nobody battery.
-- **REL-4b** A stable release ships the same app as the beta before it, with gates open: the same code and resources
-  under `app/` and `market/`, the same built-in Market source (`docs/sdk/source`, which the APK bundles) and the same
-  Gradle setup, with only the version, the roadmap and the notes moved
-  (REL-13). Nothing is ported, cherry-picked or rebuilt between the two. Docs, tools and tests may change in between,
-  since nobody installs them. (Until 2 Oct 2026 this said "the same tree", which held a fix to a tool or a note back a
-  whole release.)
 - **REL-4c** A `hotfix/x.y.z.n` branch from a tag is the last resort, only when a breaking migration is mid-flight on
   `main`. It ships and merges back the same day.
 - **REL-5 MUST** name branches after the change, never after the agent, the session or the tool. No AI attribution
   in branch names, commit messages, pull request text or code comments.
 - **REL-6 MUST** check [docs/in-flight.md](../in-flight.md), the other worktrees and the open pull requests before
-  editing a file more than one change is likely to touch, and add a row there when starting on one: `CHANGELOG.md`, `app/src/main/assets/roadmap.json`, `strings.xml`, `app/build.gradle.kts`.
+  editing a file more than one change is likely to touch, and add a row there when starting on one: `CHANGELOG.md`, `strings.xml`, `app/build.gradle.kts`.
   Several sessions work on Folio at once.
 - **REL-6a SHOULD** run `bash tools/check-branches.sh` at the start and the end of a working session: at the start to
   see what is already open before adding to it, at the end to delete the branches and worktrees that have landed.
@@ -74,11 +65,7 @@ what they were testing. Every rule below is aimed at that shape of mistake.
   release for them: `(MAJOR * 10000 + MINOR * 100 + PATCH) * 10 + HOTFIX` ([ADR 0007](../adr/0007-release-trains.md)).
   A fix release never has to consume the number a feature release wanted, which is what went wrong on 23 Sep 2026.
 - **REL-13 MUST** make the version bump its own commit, the last one before the tag, touching only the version, the
-  changelog date, the roadmap's statuses for that release and its release doc.
-- **REL-14 MUST** give every release a section in `app/src/main/assets/roadmap.json` matching its version, so
-  `RoadmapTest` passes and Settings › Roadmap agrees with What's New. A stable's own section has no item still
-  Building or Planned: each is marked done, or moved to the release it now belongs to, in the bump
-  (`tools/check-release-rules.sh`, REL-14b). A section may carry an optional `subtitle`, its theme.
+  changelog date and its release doc.
 - **REL-15 MUST NOT** publish a stable release carrying less than a beta of the same version. Either the stable
   includes everything its betas had, or the beta line is renumbered before the stable goes out.
 - **REL-16** A version number means one build. If what ships has to change after a beta, the number moves; the
@@ -94,8 +81,7 @@ what they were testing. Every rule below is aimed at that shape of mistake.
 - **REL-18 MUST** sign every build, beta included, with the release keystore. A different signer does not install
   over what is already on the phone, and Android's message for that says almost nothing useful.
 - **REL-19** `versionCode` is the same across `beta.1`, `beta.2` and the stable, because neither the patch number nor
-  the hotfix digit has changed. That is fine: Android refuses only a *lower* versionCode, and `SoftwareUpdate.isNewer` orders by the
-  version name, so `beta.1 < beta.2 < x.y.z`.
+  the hotfix digit has changed. That is fine: Android refuses only a *lower* versionCode.
 - **REL-20 MUST** ship a beta first for anything that changes how Folio updates, installs or checks a supporter
   code, and let it sit with supporters for at least a day. Those paths cannot be tested any other way.
 - **REL-21 SHOULD** say in the beta's notes what is worth trying, most-likely-broken first, and ask for the device,
@@ -121,7 +107,6 @@ what they were testing. Every rule below is aimed at that shape of mistake.
 
 ### Dependencies
 
-- **REL-31 MUST** keep the roadmap's marks in step with the tags. A release section whose items are all `done` names a release that has its stable tag, and an item marked `beta` belongs to a release that has a `-beta.N` tag. Every install reads `roadmap.json` from `main`, so "done" for a release nobody can install is a promise the page cannot keep: shipped means tagged, not merged. `tools/check-release-rules.sh` checks it whenever a pull request changes the roadmap; the `release-exception` label waives it.
 - **REL-27 MUST NOT** take a dependency bump that reaches the APK into a release already carrying a lot. Test-only
   dependencies (`baselineprofile`, `androidTest`) are safe whenever, because they never ship.
 - **REL-28 MUST** bump the Android Gradle plugins together. `com.android.application` and `com.android.library` are
@@ -132,23 +117,16 @@ what they were testing. Every rule below is aimed at that shape of mistake.
 - `main` is protected by CI (build, tests, lint) and every merge is a squash, so the history reads one change per
   line. Good.
 - `versionCode` carries REL-12's hotfix digit since 0.6.7 (`app/build.gradle.kts`), checked by `VersionCodeTest`
-  against the packaged manifest rather than a copy of the arithmetic, and `RoadmapTest`
-  already fails when the app's version has no roadmap section. Good.
-- `SoftwareUpdate.isNewer` (`SoftwareUpdate.kt:222`) implements semver ordering including pre-releases, with a test.
-  Good.
+  against the packaged manifest rather than a copy of the arithmetic. Good.
 - **0.6.7 broke REL-4, REL-7 and REL-8 at once**: `folio-beta-source` ran 12 commits ahead and 5 behind `main`,
   published `0.6.7-beta.2` from the branch, and grew its own `## [0.6.7]` section while a second section for the
   same version was written elsewhere. The fix was to merge the two rather than pick one ([#88](https://github.com/McCal-Codes/folio/pull/88)).
 - Release runbooks exist for 0.6.5, 0.6.6, 0.6.7-beta.2 and 0.6.7, and they are genuinely written before the build.
   Good.
-- Nothing yet connects a layout change to the pictures it makes wrong, which is why REL-29 exists. The Market's pane
-  rule (#72, `THREE_PANES_DP`) is on `main` and in no tag, so 0.6.6, which is what the site documents and what people
-  download, still draws three panes on a Fold's inner screen. The site's Fold screenshot is a real capture from
-  22 Sep and is correct until 0.6.7 ships, at which point it has to be re-taken.
-- REL-4b (on the stable's bump), REL-5 (AI credit in commits, the branch name and the description), REL-7, REL-10, REL-13 and REL-16 are checked by machine now: `tools/check-release-rules.sh` in CI, and guards at
+- Nothing yet connects a layout change to the pictures it makes wrong, which is why REL-29 exists.
+- REL-5 (AI credit in commits, the branch name and the description), REL-7, REL-10, REL-13 and REL-16 are checked by machine now: `tools/check-release-rules.sh` in CI, and guards at
   the top of `scripts/release-signed.sh`. Both name the rule they are enforcing in the failure, so the message is
   useful without opening this file.
-- One feature is gated today: the Market, shut since 19 Sep 2026, due to open in 0.7.0.
 - `docs/in-flight.md` lists what each open branch is holding. It is a courtesy rather than a lock, and it only works
   if a row is deleted in the pull request that finishes the work.
 
@@ -168,10 +146,6 @@ what they were testing. Every rule below is aimed at that shape of mistake.
 - REL-12's hotfix digit is in the build, and `VersionCodeTest` checks the packaged manifest against the formula, that
   a fix sorts above its release and below the next one, that a pre-release shares its release's code, and that every
   code already published is below this build's.
-- REL-4a's gates are `FeatureGate` (`FeatureGate.kt`), one entry per feature held back, each naming the day it was
-  gated and the release it should open in. `FeatureGateTest` fails once that release arrives and the gate is still
-  shut, so a finished feature cannot sit hidden and forgotten. The Market is the first entry, and
-  `MarketAccess.isOpen` asks the gate now.
 - REL-10, REL-16 and a reproducibility check are enforced by `scripts/release-signed.sh`, which refuses to build when
   the version's tag already exists on a different commit (building the tagged commit itself is fine), when the changelog has no section for the version, when a **stable** version's section
   still says `Unreleased` (a beta may be built undated), or when the working tree is dirty. `FOLIO_SKIP_RELEASE_CHECKS=1`

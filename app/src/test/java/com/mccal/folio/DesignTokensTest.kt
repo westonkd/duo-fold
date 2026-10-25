@@ -13,14 +13,14 @@ import org.junit.Test
  *
  * Run with `LIST_TOKENS=1` to print every hit with its file and line.
  *
- * [tokenFiles] are where a raw value belongs: the token files themselves, the theme and appearance models, and the
+ * [tokenFiles] are where a raw value belongs: the token files themselves, the Home palette, and the
  * drawings whose colors are the artwork (`DuneWallpaper`, `LiveIcons`, `AppIcons`).
  */
 class DesignTokensTest {
     private val root = generateSequence(java.io.File("").absoluteFile) { it.parentFile }.first { java.io.File(it, "CHANGELOG.md").exists() }
 
     private val tokenFiles = setOf(
-        "FolioTokens.kt", "FolioGlass.kt", "Appearance.kt", "Themes.kt", "LiveIcons.kt", "DuneWallpaper.kt", "AppIcons.kt",
+        "FolioTokens.kt", "FolioGlass.kt", "Appearance.kt", "LiveIcons.kt", "DuneWallpaper.kt", "AppIcons.kt",
     )
 
     private val patterns = mapOf(
@@ -70,17 +70,17 @@ class DesignTokensTest {
         // The segmented control's corners are concentric: its thumb is the track's radius minus the 2 dp inset (DES-8).
         assertEquals(FolioRadius.SEGMENT - FolioSpace.HAIR, FolioRadius.SEGMENT_THUMB)
         assertEquals(listOf(14, 16, 20, 11), listOf(FolioType.COMPACT, FolioType.CALLOUT, FolioType.TITLE3, FolioType.CAPTION))
-        assertEquals(listOf(12, 18, 22, 30), listOf(FolioRadius.ROW, FolioRadius.FLOATING, FolioRadius.NOTIFICATION, FolioRadius.RAIL))
+        assertEquals(listOf(12, 18, 30), listOf(FolioRadius.ROW, FolioRadius.FLOATING, FolioRadius.RAIL))
         // The sheet scheme's colors are named once, and the glass card is the surface card at 82%.
         assertEquals(FolioColors.SurfaceCard.copy(alpha = .82f), FolioGlass.card)
         assertEquals(FolioColors.SurfaceCard, FolioSheetColors.surfaceContainer)
         assertEquals(FolioColors.OutlineVariant, FolioSheetColors.outlineVariant)
-        assertEquals(listOf(48, 52), listOf(FolioRow.ACTION, FolioRow.NAV))
+        assertEquals(48, FolioRow.ACTION)
         assertEquals(
-            listOf(2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32),
-            listOf(FolioSpace.HAIR, FolioSpace.TINY, FolioSpace.SNUG, FolioSpace.SMALL, FolioSpace.COMPACT, FolioSpace.MEDIUM, FolioSpace.COMFY, FolioSpace.LARGE, FolioSpace.XL, FolioSpace.XXL, FolioSpace.HUGE),
+            listOf(2, 4, 6, 8, 10, 12, 14, 16, 20, 24),
+            listOf(FolioSpace.HAIR, FolioSpace.TINY, FolioSpace.SNUG, FolioSpace.SMALL, FolioSpace.COMPACT, FolioSpace.MEDIUM, FolioSpace.COMFY, FolioSpace.LARGE, FolioSpace.XL, FolioSpace.XXL),
         )
         // Every row a finger touches clears Android's 48dp minimum (A11Y-1).
-        assertTrue(FolioRow.ACTION >= 48 && FolioRow.NAV >= 48)
+        assertTrue(FolioRow.ACTION >= 48)
     }
 }

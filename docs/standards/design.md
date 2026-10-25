@@ -70,11 +70,10 @@ These are the values Folio already used most, so adopting them changed nothing o
 
 ### Color and materials
 
-- **DES-12 MUST** reserve the accent color for what needs attention: selection, badges, an active Focus, unfinished
+- **DES-12 MUST** reserve the accent color for what needs attention: selection, badges, unfinished
   setup. If everything is blue, nothing is.
 - **DES-13 MUST** use `FolioColors.Red` (or `RedLight` on light surfaces) only for destructive actions and errors.
-- **DES-14 MUST** give every glass surface a solid fallback through `LocalSolidGlass` for Reduce Transparency and high
-  contrast.
+- **DES-14 MUST** draw Home's glass surfaces with Liquid glass (`liquidGlass`), the one glass Folio has.
 - **DES-15 MUST NOT** run a per-frame Compose blur. Blur comes from the window (`FolioDialogWindow`) or a cached
   shader pass.
 - **DES-16 MUST** keep text readable over any wallpaper: use `HomeInk` on Home, and a scrim or glass behind text that
@@ -88,9 +87,8 @@ These are the values Folio already used most, so adopting them changed nothing o
 
 ### Theming
 
-- **DES-19 MUST** support light and dark on Home surfaces through `LocalDuoPalette`. Sheets and overlays are dark by
+- **DES-19 MUST** draw Home surfaces in the light appearance through `LocalDuoPalette`. Sheets and overlays are dark by
   design (`FolioSheetColors`); a new sheet follows that unless a Gap item changes it.
-- **DES-20 MUST** keep community themes (`themes/`, `Themes.kt`) data only, validated by `CommunityThemesTest`.
 
 ### Words
 
@@ -105,7 +103,7 @@ Good:
 - `FolioColors`, `FolioGlass`, `FolioMotion`, `MotionSpeed`, `LabelSize` exist (`FolioTokens.kt`, `FolioGlass.kt`).
 - A real iOS component set: `IosSwitch`, `IosSegmented`, `IosMenuRow`, `GroupedCard`, `SheetGroup`, and
   `ModalBottomSheet` / `AlertDialog` replacements that shadow Material's by name (`FolioSheet.kt:89`, `:243`).
-- Glass has a solid fallback (`LocalSolidGlass`), blur is window-level, and there's no per-frame blur.
+- Glass is Liquid glass everywhere on Home, blur is window-level, and there's no per-frame blur.
 - Icon looks, shapes, badges, live icons and icon packs all flow through `AppIcon` and `LocalIconLook`.
 
 Not yet:

@@ -34,14 +34,14 @@ makes that enforceable, and it's why Folio can be ready for tri-folds and flip c
   - **Tier A** (≥ 320 wide, ≥ 480 high): the full experience, and the Home page fits without scrolling at text
     scale ≤ 1.3.
   - **Tier B** (≥ 320 wide, 320 to 479 high): everything works, reflowed (split columns); content may scroll.
-  - **Tier C** (< 320 wide, or a micro cover): focused `MicroHome` mode.
+  - **Tier C** (< 320 wide, or a micro cover): the regular layout, scrolling where it must.
   - **600+**: the adaptive large layout.
 - **ADP-6 MUST** add boundary and sweep cases to `ScreenCoverageTest` / `ScreenMatrixTest` for any layout change, not
   device names.
 
 ### One continuous interface
 
-- **ADP-7 MUST** keep the same hierarchy folded and unfolded. Unfolding reveals more (Today View beside Home, a
+- **ADP-7 MUST** keep the same hierarchy folded and unfolded. Unfolding reveals more (the leading workspace, a
   Settings sidebar, a second page); it never turns into a different launcher.
 - **ADP-8 MUST NOT** stretch. With regular width: one column becomes two, a navigation stack becomes a split view,
   a tab bar becomes a sidebar.
@@ -58,8 +58,7 @@ makes that enforceable, and it's why Folio can be ready for tri-folds and flip c
   avoid it (`FoldAvoidingBox`, `foldSafeSpan`). Scrollable content may cross it.
 - **ADP-13 MUST** put controls on the bottom half in tabletop, information on the top (`FoldRole.CONTROLS` /
   `INFO`), and the list and detail either side of a book hinge.
-- **ADP-14 MUST** treat postures as adaptations, never as the only place a feature exists. StandBy is an extra, not
-  the one way to see the clock.
+- **ADP-14 MUST** treat postures as adaptations, never as the only place a feature exists.
 - **ADP-15 MUST** keep the layout correct when fold information is missing: use window geometry alone.
 
 ### Insets
@@ -113,7 +112,7 @@ Not yet:
   doesn't report, so it's a recorded exception, but `DisplayCutout` and `getDisplayShape()` should be read first.
 - Bare breakpoints: 650 in four files, 700 / 920 in Settings and `MarketScreen.kt:331-337`, 560 in `TodayView.kt:59`,
   500 height in `LauncherScreen.kt:788` and `DiscoverActivity.kt:406`, 360 in `CustomizationSheet.kt:959`.
-- Width-vs-height comparisons inline in `TopPanels.kt:105`, `LockCover.kt:89`, `LayoutModel.kt:215`.
+- Width-vs-height comparisons inline in `LockCover.kt:89`, `LayoutModel.kt:215`.
 - `rememberHinge` still uses `firstOrNull` in places; posture variants aren't in the coverage test.
 - No hover, wheel, right-click or focus rings; no desktop-specific handling.
 
@@ -122,14 +121,13 @@ Not yet:
 | Site | Rule | Why | Remove when |
 |---|---|---|---|
 | `CameraArea.kt:22-33` | ADP-1 | The Fold8 (SM-F971) inner camera isn't in `DisplayCutout` | The platform reports it |
-| `DiscoverBounds.kt` | ADP-1 | Window Extensions 8 to 10 alignment hint, audited | Those versions age out |
 
 ## Gaps
 
 | # | Work | Size |
 |---|---|---|
 | 1 | ~~Name the bare breakpoints~~ (done: `EXPANDED_HOME_MIN_WIDTH_DP`, `COMPACT_DOCK_MAX_HEIGHT_DP`, `TODAY_TWO_COLUMN_MIN_WIDTH_DP` in `LayoutModel.kt`, beside `ANDROID_MEDIUM_WIDTH_DP`). The 560 dp and 520 dp values left are maximum widths for content, not breakpoints | S |
-| 2 | ~~`CameraArea` after the reported cutout~~ (already so: `CutoutIsland` reads `displayCutout` first and falls back to `CameraArea` only when the platform reports nothing, and Home unions the two, so a camera the platform does report is never inset twice) | S |
+| 2 | ~~`CameraArea` after the reported cutout~~ (already so: Home reads `displayCutout` first and falls back to `CameraArea` only when the platform reports nothing, and unions the two, so a camera the platform does report is never inset twice) | S |
 | 3 | Multi-hinge everywhere (drop `firstOrNull`), and posture variants in `ScreenCoverageTest` | M |
 | 4 | Geometry fuzz (Screen Coverage v2 step 5): assert icon ≥ 32dp, rows ≥ 48dp, no negative sizes | M |
 | 5 | Keyboard, pointer and focus support (shared with INT gaps 2 and 3) | M |

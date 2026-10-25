@@ -110,9 +110,6 @@ internal fun DockAppColumn(
     onLaunch: (AppEntry, android.graphics.Rect?) -> Unit,
     onChoose: (Int) -> Unit,
     magnify: Boolean = false,
-    /** How far the icon under the finger swells at its peak (Harborline's Amount), and whether crossing apps ticks. */
-    magnifyAmount: Float = .38f,
-    magnifyTick: Boolean = true,
     leftHanded: Boolean = false,
     /** Lay the dock out left to right (the bottom bar) instead of top to bottom (the side rail). */
     horizontal: Boolean = false,
@@ -142,11 +139,11 @@ internal fun DockAppColumn(
     LaunchedEffect(launchingSlot) { if (launchingSlot >= 0) { delay(PressFeedback.HOLD_MS); launchingSlot = -1 } }
     val slotScales = savedDock.indices.map { index ->
         val pressed by interactions[index].collectIsPressedAsState()
-        animateFloatAsState(PressFeedback.scale(pressed || launchingSlot == index, false, reduceMotion, PressFeedback.Kind.DOCK, FolioMotion.v2), FolioMotion.spring(PressFeedback.springFor(PressFeedback.Kind.DOCK, FolioMotion.v2)), label = "dock press $index")
+        animateFloatAsState(PressFeedback.scale(pressed || launchingSlot == index, false, reduceMotion), FolioMotion.spring(FolioMotion.Quick), label = "dock press $index")
     }
     val slotAlphas = savedDock.indices.map { index ->
         val pressed by interactions[index].collectIsPressedAsState()
-        animateFloatAsState(PressFeedback.alpha(pressed || launchingSlot == index, false, PressFeedback.Kind.DOCK, FolioMotion.v2), FolioMotion.spring(PressFeedback.springFor(PressFeedback.Kind.DOCK, FolioMotion.v2)), label = "dock press alpha")
+        animateFloatAsState(PressFeedback.alpha(pressed || launchingSlot == index, false), FolioMotion.spring(FolioMotion.Quick), label = "dock press alpha")
     }
     val density = LocalDensity.current
     val rowHeightPx = with(density) { rowHeight.dp.toPx() }
@@ -155,7 +152,7 @@ internal fun DockAppColumn(
     val haptic = LocalHapticFeedback.current
     fun along(position: Offset) = if (horizontal) position.x else position.y
     Box((if (horizontal) Modifier.fillMaxHeight().width((rowHeight * savedDock.size).dp) else Modifier.fillMaxWidth().height((rowHeight * savedDock.size).dp))
-        .then(if (!magnify) Modifier else Modifier.pointerInput(horizontal, magnifyTick) {
+        .then(if (!magnify) Modifier else Modifier.pointerInput(horizontal) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
             touchY = along(down.position)
@@ -166,7 +163,7 @@ internal fun DockAppColumn(
                 if (!change.pressed) break
                 touchY = along(change.position)
                 val row = (along(change.position) / rowHeightPx).toInt()
-                if (row != lastRow) { lastRow = row; if (magnifyTick) haptic.perform(FolioHaptic.Scrub) }
+                if (row != lastRow) { lastRow = row; haptic.perform(FolioHaptic.Scrub) }
             }
             touchY = null
         }
@@ -187,7 +184,7 @@ internal fun DockAppColumn(
                     previewId == null -> Icon(Icons.Rounded.Add, null, tint = Color.White, modifier = Modifier.size(24.dp))
                 }
             }
-            val dockClick = { if (savedApp != null) { if (!edit.active) { if (FolioMotion.v2) launchingSlot = index; onLaunch(savedApp, launchBounds[index]) } } else onChoose(index) }
+            val dockClick = { if (savedApp != null) { if (!edit.active) { launchingSlot = index; onLaunch(savedApp, launchBounds[index]) } } else onChoose(index) }
             val indication = LocalIndication.current
             val dockGestures = rememberIconGestures(savedApp, interactions[index], indication, null, null, dockClick,
                 plain = Modifier.combinedClickable(interactionSource = interactions[index], indication = indication, role = Role.Button, onClick = dockClick, onLongClick = null))
@@ -224,18 +221,18 @@ internal fun DockAppColumn(
                         .jiggle(id).foldMotionIcon()) {
                         val magnification by animateFloatAsState(touchY?.let { y ->
                             val center = (renderIndex + .5f) * rowHeightPx
-                            1f + magnifyAmount * (1f - kotlin.math.abs(center - y) / (rowHeightPx * 1.5f)).coerceAtLeast(0f)
+                            1f + .38f * (1f - kotlin.math.abs(center - y) / (rowHeightPx * 1.5f)).coerceAtLeast(0f)
                         } ?: 1f, FolioMotion.spring(FolioMotion.Control), label = "dock magnify $id") // english-only
                         AppIcon(app, null, Modifier.fillMaxSize().graphicsLayer {
                             val s = slotScales[renderIndex].value * magnification; scaleX = s; scaleY = s; alpha = slotAlphas[renderIndex].value
                             // Grow toward the screen, away from the edge the dock sits on.
                             transformOrigin = if (horizontal) androidx.compose.ui.graphics.TransformOrigin(.5f, 1f)
                                 else androidx.compose.ui.graphics.TransformOrigin(if (leftHanded) 0f else 1f, .5f)
-                        }, shape = IconContinuousShape)
+                        }, badge = true)
                         if (edit.active && savedIndex >= 0) JiggleRemoveButton(stringResource(R.string.remove_from_dock, app.label), inset = 6.dp) { edit.onRemove(DropTarget.Dock(savedIndex)) }
                     }
                     // Recent-app dot (Beta): below the icon in a horizontal dock, on the screen side of a side dock.
-                    if (!edit.active && app.iconFrom == null && app.packageName in LocalRecentPackages.current) Box(Modifier
+                    if (!edit.active && app.packageName in LocalRecentPackages.current) Box(Modifier
                         .align(if (horizontal) Alignment.BottomCenter else if (leftHanded) Alignment.CenterEnd else Alignment.CenterStart)
                         .size(5.dp).background(Color.White.copy(alpha = .8f), CircleShape)
                         .semantics { contentDescription = usedRecentlyLabel })
@@ -261,7 +258,7 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
     var opening by remember { mutableStateOf(false) }
     LaunchedEffect(opening) { if (opening) { delay(PressFeedback.HOLD_MS / 2); opening = false } }
     val lifted = LocalOpenMenuId.current == folder.id
-    Column(modifier.clickable(interactionSource = interaction, indication = null, onClick = { if (FolioMotion.v2) opening = true; onClick() }).dropRegion(drag, DropTarget.Folder(folder.id), page = page, folderId = folder.id)
+    Column(modifier.clickable(interactionSource = interaction, indication = null, onClick = { opening = true; onClick() }).dropRegion(drag, DropTarget.Folder(folder.id), page = page, folderId = folder.id)
         .semantics(mergeDescendants = true) {
         contentDescription = folderLabel
     }, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -271,11 +268,11 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
         val hovered = drag.moved && drag.source?.appId?.let { !isFolderId(it) } == true &&
             drag.destination(drag.pointer, setOf(page))?.target == DropTarget.Folder(folder.id)
         val lift by animateFloatAsState(if (hovered) 1.12f else 1f, FolioMotion.spring(FolioMotion.Quick), label = "folder hover")
-        // With the motion pass, the tile hands over to the open folder's panel (FolderOpening).
+        // The tile hands over to the open folder's panel (FolderOpening).
         Box(Modifier.size(size.dp).graphicsLayer { scaleX = lift; scaleY = lift
-                if (FolioMotion.v2) alpha = FolderOpening.tileAlpha(folder.id, FolderOpening.id, FolderOpening.progress) }
+                alpha = FolderOpening.tileAlpha(folder.id, FolderOpening.id, FolderOpening.progress) }
             .onGloballyPositioned { bounds.set(it.boundsInWindow().toAndroidBounds()); IconBounds.update(folder.id, bounds) }
-            .jiggle(folder.id).foldMotionIcon().pressFeedback(pressed || opening, lifted, size * ICON_CORNER_FRACTION, kind = PressFeedback.Kind.FOLDER)) {
+            .jiggle(folder.id).foldMotionIcon().pressFeedback(pressed || opening, lifted, size * ICON_CORNER_FRACTION)) {
             // Like iOS: a folder's badge is the total of its apps' badges (each app counted once).
             val look = LocalIconLook.current
             val counts = LocalBadgeCounts.current
@@ -283,8 +280,7 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
                 else folder.appIds.mapNotNull { apps[it]?.packageName }.distinct().sumOf { counts[it] ?: 0 }
             val tileShape = IconContinuousShape
             Box(Modifier.fillMaxSize().clip(tileShape)
-                .liquidGlassOr(tileShape, if (tint != null) .78f else .72f, GlassRole.TILE, tint ?: Glass) {
-                    background(tint?.copy(alpha = .78f) ?: Glass.copy(alpha = .72f)).border(1.dp, Color.White.copy(alpha = .55f), tileShape) }
+                .liquidGlass(tileShape, if (tint != null) .78f else .72f, GlassRole.TILE, tint ?: Glass)
                 .testTag("folder-drop-${folder.id}")) {
             folder.appIds.take(4).forEachIndexed { index, id ->
                 apps[id]?.let { app ->
@@ -294,9 +290,9 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
                 }
             }
             }
-            if (total > 0) IconBadge(total, look.badges, look.badgeColor.fixed?.let { Color(it) } ?: BadgeRed, look.badgeLook, look.badgeSize.scale)
+            if (total > 0) IconBadge(total, look.badges, BadgeRed)
         }
-        if (labels) Text(folder.title, color = LocalHomeInk.current.primary, fontSize = LocalLabelSize.current.sp.sp, maxLines = 1,
+        if (labels) Text(folder.title, color = LocalHomeInk.current.primary, fontSize = HOME_LABEL_SP.sp, maxLines = 1,
             overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = FolioSpace.TINY.dp))
     }
 }
@@ -321,7 +317,7 @@ internal fun AppTile(app: AppEntry, size: Float, labels: Boolean, modifier: Modi
     // exactly the code it always did (see rememberIconGestures).
     val stack = if (app.id in LocalStackedApps.current) LocalIconStack.current else null
     // A tap holds the icon dipped while the app starts (press feedback), whichever path the tap takes.
-    val tap = { if (onRemove == null && FolioMotion.v2) launching = true; onClick(bounds) }
+    val tap = { if (onRemove == null) launching = true; onClick(bounds) }
     val gestures = rememberIconGestures(app, interaction, null, openPanel, stack, tap,
         plain = Modifier.iconSwipes(openPanel?.let { { it(app) } }, stack?.let { { it(app) } })
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = tap))
@@ -342,18 +338,17 @@ internal fun AppTile(app: AppEntry, size: Float, labels: Boolean, modifier: Modi
                 val p = plate()
                 alpha = if (still) p else if (p > .001f) 1f else 0f
                 val grown = 1f + FolderOrRoom.PLATE_GROWTH * (if (still) 1f else p); scaleX = grown; scaleY = grown
-            }.liquidGlassOr(IconContinuousShape, .72f, GlassRole.TILE) {
-                background(Glass.copy(alpha = .72f), IconContinuousShape).border(1.dp, Color.White.copy(alpha = .55f), IconContinuousShape) })
+            }.liquidGlass(IconContinuousShape, .72f, GlassRole.TILE))
             if (app.id in LocalStackedApps.current) StackPeek(iconSize)
             AppIcon(app, null, Modifier.fillMaxSize()
                 .graphicsLayer { if (plate != null && !still) { val inside = 1f - (1f - FolderOrRoom.ICON_INSIDE) * plate(); scaleX = inside; scaleY = inside } }
-                .pressFeedback(pressed || launching, lifted, size * ICON_CORNER_FRACTION, kind = PressFeedback.Kind.APP), shape = IconContinuousShape)
+                .pressFeedback(pressed || launching, lifted, size * ICON_CORNER_FRACTION), badge = true)
             if (onRemove != null) JiggleRemoveButton(stringResource(R.string.remove_from_home_2, app.label), onRemove = onRemove)
         }
         val ink = LocalHomeInk.current
         if (labels) Row(Modifier.padding(top = FolioSpace.TINY.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (app.iconFrom == null) NewAppDot(app.packageName)
-            Text(app.label, color = ink.primary, fontSize = LocalLabelSize.current.sp.sp, lineHeight = LocalLabelSize.current.lineSp.sp, maxLines = 1,
+            NewAppDot(app.packageName)
+            Text(app.label, color = ink.primary, fontSize = HOME_LABEL_SP.sp, lineHeight = HOME_LABEL_LINE_SP.sp, maxLines = 1,
                 overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, style = TextStyle(shadow = ink.labelShadow))
         }
     }

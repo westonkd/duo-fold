@@ -30,12 +30,6 @@ class SafeModeExitsTest {
         assertTrue(SafeModeExits.quick(listOf(ExitRecord(native, 10_000)), previousStartMs = 0, seenUntilMs = 0, windowMs = 30_000).isEmpty())
     }
 
-    @Test fun `the newest unseen ending decides whether the last run crashed`() {
-        assertTrue(SafeModeExits.crashedLast(listOf(ExitRecord(native, 20_000), ExitRecord(ApplicationExitInfo.REASON_USER_REQUESTED, 10_000)), 0))
-        assertFalse(SafeModeExits.crashedLast(listOf(ExitRecord(ApplicationExitInfo.REASON_USER_REQUESTED, 20_000), ExitRecord(native, 10_000)), 0))
-        assertFalse(SafeModeExits.crashedLast(listOf(ExitRecord(native, 20_000)), seenUntilMs = 20_000))
-    }
-
     @Test fun `two native crashes in a row at the start put Folio in Safe Mode on the next start`() {
         SafeMode.onStart(context) { emptyList() }
         val first = ExitRecord(native, System.currentTimeMillis() + 5_000)
@@ -44,7 +38,6 @@ class SafeModeExitsTest {
         val second = ExitRecord(anr, System.currentTimeMillis() + 6_000)
         SafeMode.onStart(context) { listOf(second, first) }
         assertTrue(SafeMode.active)
-        assertTrue(SafeMode.takeCrashedLastRun())
     }
 
     @Test fun `the same ending is never counted at two starts`() {
@@ -53,18 +46,6 @@ class SafeModeExitsTest {
         SafeMode.onStart(context) { listOf(one) }
         SafeMode.onStart(context) { listOf(one) }
         assertFalse(SafeMode.active)
-    }
-
-    @Test fun `a native crash Android recorded survives a process that never reaches Home`() {
-        val exits = listOf(ExitRecord(native, 10_000))
-        // The first start after the crash: a background job, killed before Home exists, never asks.
-        SafeMode.onStart(context) { exits }
-        // The next start, with the same record already seen: Home still learns the last run crashed.
-        SafeMode.onStart(context) { exits }
-        assertTrue(SafeMode.takeCrashedLastRun())
-        assertFalse(SafeMode.takeCrashedLastRun())
-        SafeMode.onStart(context) { exits }
-        assertFalse("and it is gone once Home has read it", SafeMode.takeCrashedLastRun())
     }
 
     @Test fun `a failed start counts without an earlier start marker, once, and only while it is recent`() {

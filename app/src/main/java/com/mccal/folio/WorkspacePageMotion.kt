@@ -8,7 +8,6 @@ import kotlin.math.abs
  * Home still enter and leave across the full pager width.
  */
 internal data class WorkspacePageMotion(
-    val firstHome: Int,
     val homePages: Int,
     val pageWidth: Float,
     val homeStride: Float,
@@ -22,24 +21,18 @@ internal data class WorkspacePageMotion(
     private val lastHome = homePages - 1
     private val lastHomeOffset = lastHome * homeStride
 
-    /** Visual scroll offset for a physical (and possibly fractional) pager position. */
-    fun offset(position: Float): Float {
-        val logical = position - firstHome
-        return when {
-            logical < 0f -> logical * pageWidth
-            logical <= lastHome -> logical * homeStride
-            else -> lastHomeOffset + (logical - lastHome) * pageWidth
-        }
+    /** Visual scroll offset for a (possibly fractional) pager position. */
+    fun offset(position: Float): Float = when {
+        position < 0f -> position * pageWidth
+        position <= lastHome -> position * homeStride
+        else -> lastHomeOffset + (position - lastHome) * pageWidth
     }
 
-    /** Physical pager position for a visual scroll offset. */
-    fun position(offset: Float): Float {
-        val logical = when {
-            offset < 0f -> offset / pageWidth
-            offset <= lastHomeOffset && lastHome > 0 -> offset / homeStride
-            else -> lastHome + (offset - lastHomeOffset) / pageWidth
-        }
-        return logical + firstHome
+    /** Pager position for a visual scroll offset. */
+    fun position(offset: Float): Float = when {
+        offset < 0f -> offset / pageWidth
+        offset <= lastHomeOffset && lastHome > 0 -> offset / homeStride
+        else -> lastHome + (offset - lastHomeOffset) / pageWidth
     }
 
     fun positionAfterVisualDelta(position: Float, delta: Float): Float =

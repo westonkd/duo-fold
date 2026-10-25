@@ -91,7 +91,7 @@ class DockSlotsTest {
     }
 
     @Test fun `more places make a taller dock and a wider bar, and four are exactly as before`() {
-        val preset = LayoutPreset()
+        val preset = DockPlacement.AUTOMATIC
         val four = homeGeometry(704f, 932f, preset, true, statusHeight = 160f)
         assertEquals(four, homeGeometry(704f, 932f, preset, true, statusHeight = 160f, dockSlots = 4))
         val six = homeGeometry(704f, 932f, preset, true, statusHeight = 160f, dockSlots = 6)
@@ -104,11 +104,11 @@ class DockSlotsTest {
     }
 
     @Test fun `a bottom bar with more apps than fit is held to the room it has`() {
-        val phone = homeGeometry(360f, 780f, LayoutPreset(dockPlacement = DockPlacement.BOTTOM), true, statusHeight = 160f, dockSlots = 6)
+        val phone = homeGeometry(360f, 780f, DockPlacement.BOTTOM, true, statusHeight = 160f, dockSlots = 6)
         assertTrue(phone.horizontalDock)
         assertTrue(phone.dockBarRoom in 1f..360f)
         assertTrue("six apps need more than the room here, so the bar scrolls", 6 * phone.dockPitch + 16f > phone.dockBarRoom)
-        val roomy = homeGeometry(704f, 932f, LayoutPreset(), true, statusHeight = 160f, dockSlots = 6)
+        val roomy = homeGeometry(704f, 932f, DockPlacement.AUTOMATIC, true, statusHeight = 160f, dockSlots = 6)
         assertTrue("on the upright inner screen it all fits", 6 * roomy.dockPitch + 16f <= roomy.dockBarRoom + .5f)
     }
 }

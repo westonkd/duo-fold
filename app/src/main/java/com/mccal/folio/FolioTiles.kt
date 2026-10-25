@@ -11,8 +11,8 @@ import org.json.JSONObject
 import java.lang.ref.WeakReference
 
 /**
- * Quick Settings tiles for Samsung's pull-down: Spotlight, and switches for the island and dock over other
- * apps and StandBy. Toggles go through the running [LauncherModel] when there is one (so Home never writes
+ * Quick Settings tiles for Samsung's pull-down: Spotlight, and a switch for the dock over other
+ * apps. Toggles go through the running [LauncherModel] when there is one (so Home never writes
  * an older value back), otherwise straight into the saved launcher state that Folio reads on start.
  */
 internal object FolioSettingsBridge {
@@ -43,6 +43,13 @@ private fun TileService.openAndCollapse(intent: Intent) {
         startActivityAndCollapse(PendingIntent.getActivity(this, intent.hashCode(), intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
     } else startActivityAndCollapse(intent)
+}
+
+/** In-process request to open Spotlight; unlike an intent extra, other apps can't trigger it. */
+internal object SpotlightRequest {
+    @Volatile private var pending = false
+    fun request() { pending = true }
+    fun consume(): Boolean = pending.also { pending = false }
 }
 
 class SpotlightTileService : TileService() {
@@ -85,25 +92,14 @@ abstract class FolioToggleTile(private val key: String, private val default: Boo
         }
     }
 
-    /** The island and dock over other apps need Folio's accessibility service. */
+    /** The dock over other apps needs Folio's accessibility service. */
     protected fun openAccessibilityIfNeeded() {
         if (!SystemShadeAccessibilityService.isConnected()) openAndCollapse(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
     }
-}
-
-class IslandTileService : FolioToggleTile(SettingKeys.ISLAND_EVERYWHERE, false) {
-    override fun read(state: LauncherState) = state.islandEverywhere
-    override fun write(model: LauncherModel, value: Boolean) = model.setIslandEverywhere(value)
-    override fun afterEnable() = openAccessibilityIfNeeded()
 }
 
 class DockTileService : FolioToggleTile(SettingKeys.DOCK_EVERYWHERE, false) {
     override fun read(state: LauncherState) = state.dockEverywhere
     override fun write(model: LauncherModel, value: Boolean) = model.setDockEverywhere(value)
     override fun afterEnable() = openAccessibilityIfNeeded()
-}
-
-class StandByTileService : FolioToggleTile("standBy", true) {
-    override fun read(state: LauncherState) = state.standBy
-    override fun write(model: LauncherModel, value: Boolean) = model.setStandBy(value)
 }

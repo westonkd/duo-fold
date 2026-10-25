@@ -18,8 +18,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class LauncherIntegrationTest {
-    val compose = createAndroidComposeRule<MainActivity>()
-    @get:Rule val rules = org.junit.rules.RuleChain.outerRule(WithoutNativeFeed()).around(compose)
+    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     private fun model() = ViewModelProvider(compose.activity)[LauncherModel::class.java]
     private fun ready() { compose.waitUntil(15000) { !model().state.value.loading } }
     private fun restoreLayout(before: HomeLayout) {
@@ -296,7 +295,7 @@ class LauncherIntegrationTest {
         ready()
         compose.onNodeWithTag("status-rail").assertIsDisplayed()
         compose.openHomeCustomization()
-        compose.onNodeWithTag("customization-gestures").performClick()
+        compose.onNodeWithTag("customization-home").performClick()
         compose.onNodeWithTag("status-switch").performScrollTo().performClick()
         compose.onNodeWithContentDescription("Close customization").performClick()
         compose.onNodeWithTag("status-rail").assertDoesNotExist()

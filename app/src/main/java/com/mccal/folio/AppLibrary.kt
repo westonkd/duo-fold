@@ -6,7 +6,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
@@ -26,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -52,9 +50,7 @@ internal fun AppLibrary(
 ) {
     val appOptionsLabel = stringResource(R.string.app_options)
     val glass = !editing
-    val liquid = glass && liquidGlassOn()
-    val palette = LocalDuoPalette.current
-    val ink = if (liquid) LocalHomeInk.current.primary else if (glass) Ink else MaterialTheme.colorScheme.onSurface
+    val ink = if (glass) LocalHomeInk.current.primary else MaterialTheme.colorScheme.onSurface
     val pinned = remember(state.homeSlots, state.leadingSlots) {
         (state.homeSlots.asSequence() + state.leadingSlots.asSequence()).filterNotNull().toSet()
     }
@@ -109,7 +105,7 @@ internal fun AppLibrary(
             val byId = visibleApps.associateBy { it.id }
             val suggestions = RecentApps.load(context).mapNotNull(byId::get).take(8)
             val collator = java.text.Collator.getInstance()
-            val grouped = visibleApps.groupBy { LibraryCategory.of(pm, (it.iconFrom ?: it).component.packageName) }
+            val grouped = visibleApps.groupBy { LibraryCategory.of(pm, it.component.packageName) }
                 .mapValues { (_, apps) -> apps.sortedWith(compareBy(collator) { it.label }) }
             buildMap {
                 if (suggestions.isNotEmpty()) put(LibraryCategory.SUGGESTIONS, suggestions)
@@ -129,12 +125,9 @@ internal fun AppLibrary(
     }
     val panelShape = RoundedCornerShape(FolioRadius.PANEL.dp)
     Surface(modifier, shape = panelShape,
-        color = if (liquid) Color.Transparent else if (glass) Glass.copy(alpha = LIBRARY_PANEL_FROST) else MaterialTheme.colorScheme.surface,
-        contentColor = ink,
-        border = if (glass && !liquid) BorderStroke(1.dp, Color.White.copy(alpha = .38f)) else null) {
-        Column(Modifier.background(Brush.verticalGradient(if (glass && !liquid)
-            listOf(Color.White.copy(alpha = .09f), Color.Transparent) else listOf(Color.Transparent, Color.Transparent)))
-            .padding(horizontal = FolioSpace.LARGE.dp).padding(top = 18.dp)) {
+        color = if (glass) Color.Transparent else MaterialTheme.colorScheme.surface,
+        contentColor = ink) {
+        Column(Modifier.padding(horizontal = FolioSpace.LARGE.dp).padding(top = 18.dp)) {
             // iOS App Library has no title bar, just its search field; choosing Home apps keeps a title and count.
             if (editing) Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.choose_home_apps_title), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -146,7 +139,7 @@ internal fun AppLibrary(
             }
             IosSearchField(query, onQuery, if (editing) stringResource(R.string.search_apps) else stringResource(R.string.app_library), Modifier.padding(vertical = FolioSpace.MEDIUM.dp),
                 fieldModifier = (if (editing) Modifier else Modifier.focusRequester(searchFocus)).testTag(if (editing) "pin-search" else "library-search"),
-                ink = ink, glass = liquid, onSearch = {
+                ink = ink, glass = glass, onSearch = {
                     if (!editing && query.isNotBlank()) openEnterSearch(context, state, query)
                 })
             var libraryWidth by remember { mutableStateOf(360.dp) }
@@ -182,7 +175,7 @@ internal fun AppLibrary(
                         Row(Modifier.fillMaxWidth().padding(top = FolioSpace.SMALL.dp, bottom = FolioSpace.SNUG.dp), verticalAlignment = Alignment.CenterVertically) {
                             // An opaque small chip prevents text from showing through the sticky letter.
                             Box(Modifier.size(width = 32.dp, height = 28.dp).background(
-                                if (glass) (if (palette.dark) Color(0xFF314852) else Color(0xFFB7CBD3))
+                                if (glass) Color(0xFFB7CBD3)
                                 else MaterialTheme.colorScheme.surfaceContainer,
                                 RoundedCornerShape(FolioRadius.CONTROL.dp)), contentAlignment = Alignment.Center) {
                                 Text(letter, color = ink, fontWeight = FontWeight.SemiBold, fontSize = FolioType.GROUP_LABEL.sp)
@@ -210,12 +203,11 @@ internal fun AppLibrary(
                             AppIcon(app, null, Modifier.size(40.dp)
                                 .onGloballyPositioned { iconPlace[0] = it }.clip(RoundedCornerShape(FolioRadius.CONTROL.dp)))
                             Row(Modifier.weight(1f).padding(start = FolioSpace.MEDIUM.dp), verticalAlignment = Alignment.CenterVertically) {
-                                if (app.iconFrom == null) NewAppDot(app.packageName, 7.dp)
+                                NewAppDot(app.packageName, 7.dp)
                                 // A clone sits right beside its original with the same name; the line under it tells them apart.
-                                // Not while Screenshot Mode swaps it: the profile's name would give the swap away.
                                 Column {
                                     Text(app.label, maxLines = 2, fontSize = FolioType.COMPACT.sp)
-                                    if (app.kind == ProfileKind.CLONE && app.iconFrom == null) Text(profileName(app), color = ink.copy(alpha = .6f),
+                                    if (app.kind == ProfileKind.CLONE) Text(profileName(app), color = ink.copy(alpha = .6f),
                                         fontSize = FolioType.FOOTNOTE.sp, maxLines = 1, modifier = Modifier.testTag("library-profile-${app.id}"))
                                 }
                             }

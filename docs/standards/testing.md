@@ -7,7 +7,7 @@ split and says what "done" means.
 
 ```
         real devices         (fold, hinge timing, 120 Hz frames, vendor quirks)
-      emulator integration   (app/src/androidTest: widgets, profiles, Discover, shade, Back)
+      emulator integration   (app/src/androidTest: widgets, profiles, shade, Back)
     Compose UI and render    (Robolectric + compose test rule, screenshots)
   JVM rules                  (app/src/test, market tests: layout, gestures, sizing, migrations, parsing)
 ```
@@ -25,7 +25,7 @@ Push each check as low as it can go. A placement rule belongs in a JVM test, not
 - **TST-3 MUST** add window cases to `ScreenCoverageTest` / `ScreenMatrixTest` for layout changes
   ([ADP-6](adaptive-layout.md)).
 - **TST-4 MUST** add a load test for every saved-format change ([STA-7](state-data.md)).
-- **TST-5 MUST** test native widget, profile, Back and Discover behaviour on an emulator (`androidTest`), since JVM
+- **TST-5 MUST** test native widget, profile and Back behaviour on an emulator (`androidTest`), since JVM
   tests can't see them.
 - **TST-6 SHOULD** test dynamic elements with injected time, not real delays ([DYN-20](dynamic-ui.md)).
 - **TST-7 SHOULD** fuzz any parser of imported data.
@@ -59,7 +59,7 @@ Good:
 - 89 JVM test files (~476 tests), Robolectric in 10, Compose render tests in 3; `:market` has 144 tests with JUnit 5
   and Jazzer fuzzing.
 - 41 `androidTest` files (~120 tests): Home drag, pager gestures, widgets (picker, move, resize, process death),
-  layout backup, work profiles, Discover, the shade, folders, setup.
+  layout backup, work profiles, the shade, folders, setup.
 - CI on every PR and push: secrets check, unit tests and lint for both modules, a debug build; a weekly fuzz job;
   SHA-pinned actions.
 - Coverage tests over thousands of windows.

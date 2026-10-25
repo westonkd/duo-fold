@@ -10,7 +10,7 @@ data class LayoutSnapshot(val time: Long, val reason: String, val layout: HomeLa
 
 /**
  * Layout History (Beta, after Icon Restore): Folio saves Home automatically before big changes (a restored backup,
- * Arrange Like iPhone, restoring an older layout) and on request, so any of those can be undone later. Stored on
+ * restoring an older layout) and on request, so any of those can be undone later. Stored on
  * the phone only; the newest [MAX] are kept.
  */
 internal object LayoutHistory {

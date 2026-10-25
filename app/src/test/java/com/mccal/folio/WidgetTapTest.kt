@@ -3,15 +3,11 @@ package com.mccal.folio
 import android.app.Application
 import android.content.Intent
 import android.provider.AlarmClock
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTouchInput
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -33,11 +29,9 @@ class WidgetTapTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
     private var options = 0
 
-    private fun show(id: Int, opensApp: Boolean = true, edit: HomeEditMode = HomeEditMode(), hold: (() -> Unit)? = null) =
+    private fun show(id: Int, opensApp: Boolean = true, edit: HomeEditMode = HomeEditMode()) =
         compose.setContent {
-            ProvideJiggle(edit) {
-                CompositionLocalProvider(LocalWidgetHold provides hold) { BuiltinWidgetCard(id, 0, opensApp) { options++ } }
-            }
+            ProvideJiggle(edit) { BuiltinWidgetCard(id, 0, opensApp) { options++ } }
         }
 
     private fun tap() = compose.onNode(hasClickAction()).performClick()
@@ -84,14 +78,5 @@ class WidgetTapTest {
         tap()
         assertNull(opened())
         assertEquals(1, options)
-    }
-
-    @Test fun `in the Today View, holding a card starts editing`() {
-        var held = false
-        show(DATE_WIDGET, hold = { held = true })
-        compose.onNode(hasClickAction()).performTouchInput { longClick() }
-        assertTrue(held)
-        assertNull("holding isn't tapping", opened())
-        assertFalse(options > 0)
     }
 }

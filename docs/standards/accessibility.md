@@ -30,9 +30,7 @@ guidelines, WCAG 2.2 AA and Apple's HIG.
 - **A11Y-9 MUST** meet contrast of 4.5:1 for normal text and 3:1 for large text, icons and control boundaries,
   including over a bright wallpaper. `FolioColors.SecondaryLabel` (white at .6) and white at .55 need a scrim or a
   stronger value on light backgrounds.
-- **A11Y-10 MUST NOT** use color as the only signal (a red dot also has a shape or label; an active Focus also has
-  text).
-- **A11Y-11 MUST** support Reduce Transparency and high contrast through `LocalSolidGlass`.
+- **A11Y-10 MUST NOT** use color as the only signal (a red dot also has a shape or label).
 
 ### Text size
 
@@ -65,7 +63,6 @@ guidelines, WCAG 2.2 AA and Apple's HIG.
 - [ ] 200% font scale in the cover and inner windows
 - [ ] Contrast checked over a white and a black wallpaper
 - [ ] Animations off
-- [ ] Reduce Transparency / high contrast
 - [ ] Keyboard only
 
 ## Where Folio is today
@@ -74,7 +71,7 @@ Good:
 
 - 48dp rows and dock minimums (`LayoutModel.kt`), 44dp jiggle remove, `minimumInteractiveComponentSize` in 7 files.
 - 77 content descriptions, 62 semantics blocks, custom move actions mirrored on the keyboard.
-- `LocalReduceMotion` and `LocalSolidGlass` exist and are used.
+- `LocalReduceMotion` exists and is used.
 - `getRecommendedTimeoutMillis` for Market notices and for everything the island shows for a moment.
 
 Not yet:
@@ -101,4 +98,4 @@ Not yet:
 | 4 | ~~Live regions for island notices and page changes~~ (done) | S |
 | 5 | ~~TalkBack labels for the editor~~ (done: every jiggle-mode pill has one; Today View's "Add widget" was hard-coded English and is a string now; the page dots have one per slice since #144) | S |
 | 6 | `enableAccessibilityChecks()` in Compose UI tests. Blocked: Compose BOM 2025.06.01 does not expose it on `createComposeRule()`; revisit when the BOM bump (Dependabot #5) lands | S |
-| 7 | RTL: ~~back and disclosure chevrons~~ (done: `Modifier.mirroredForRtl()`). Left: the six chevrons in `CustomizationSheet.kt` and `MarketScreen.kt` (open in other pull requests), and a product decision: whether Home's page order (Discover and Today View to the left) flips in a right-to-left language the way iOS's does. The Home page arrows and Discover's arrow follow that order, so they stay as they are until it is decided | M |
+| 7 | RTL: ~~back and disclosure chevrons~~ (done: `Modifier.mirroredForRtl()`). Left: the six chevrons in `CustomizationSheet.kt` and `MarketScreen.kt` (open in other pull requests), and a product decision: whether Home's page order flips in a right-to-left language the way iOS's does. The Home page arrows follow that order, so they stay as they are until it is decided | M |

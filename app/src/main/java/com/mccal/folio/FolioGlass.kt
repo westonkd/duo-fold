@@ -21,23 +21,17 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.addOutline
 
 /**
- * One glass language for every Folio overlay (Control Center, Notification Center, Spotlight,
+ * One glass language for every Folio overlay (Spotlight,
  * pickers): a darker, more solid frost than the Home rail, so busy blurred icons behind never
  * compete with the content, plus a hairline light edge like iOS materials.
  */
 internal object FolioGlass {
     /** Dim over the blurred Home behind an overlay. */
     val scrim = Color.Black.copy(alpha = .42f)
-    /** Large tiles (Control Center modules). */
-    val module = FolioColors.SecondaryBackground.copy(alpha = .76f)
-    /** Cards and rows (notifications, Spotlight sections, search field). */
+    /** Cards and rows (Spotlight sections, search field). */
     val card = FolioColors.SurfaceCard.copy(alpha = .82f)
-    /** Controls sitting on a card (inactive toggles, pills, chips). */
-    val raised = Color.White.copy(alpha = .14f)
     /** Hairline edge that separates glass from glass. */
     val edge = BorderStroke(1.dp, Color.White.copy(alpha = .08f))
-    /** Secondary text on glass. */
-    val secondary = FolioColors.SecondaryLabel
 }
 
 /** Dark, iOS-like colors for Folio's sheets (settings, app options, setup). */
@@ -68,7 +62,6 @@ internal class OpenWindows {
     fun close(entry: Entry) { entries.remove(entry) }
     fun closeAllOf(owner: Any?) { entries.removeAll { it.owner === owner } }
     fun isOpen(owner: Any?): Boolean = entries.any { it.owner === owner }
-    fun anyOpen(): Boolean = entries.isNotEmpty()
 }
 
 /** Open while any launcher sheet is up, so Home blurs behind it like the other overlays. */
@@ -90,12 +83,6 @@ internal fun RegisterOpenWindow(windows: OpenWindows, active: Boolean = true) {
 /** How far a back swipe has gone over the full-screen Settings page (0–1), for predictive back. */
 internal val SheetBackProgress = androidx.compose.runtime.mutableFloatStateOf(0f)
 
-/** A Home layout slider being dragged in Settings, with its bounds in the Settings window (see [SettingsPeek]). */
-internal data class PeekSlider(val label: String, val valueLabel: String, val fraction: Float, val bounds: androidx.compose.ui.geometry.Rect)
-
-/** Set while a Home layout slider is dragged: Settings fades so the real Home shows the change, like iOS. */
-internal val SettingsPeek = androidx.compose.runtime.mutableStateOf<PeekSlider?>(null)
-
 /**
  * Top-safe insets that respect the real camera cutout. Folio hides the status bar on Home, which
  * makes `statusBarsPadding()` zero, so content slid under the camera; the display cutout is still
@@ -107,38 +94,20 @@ internal val WindowInsets.Companion.folioSafeTop: WindowInsets
 /** Per-folder tint colors, provided from saved settings. */
 internal val LocalFolderColors = androidx.compose.runtime.compositionLocalOf { emptyMap<String, Long>() }
 
-/** Velvet/ColorFlow tint options, provided from settings. */
-@androidx.compose.runtime.Immutable
-internal data class TintOptions(val notifications: Boolean = false, val media: Boolean = true, val notificationAppRow: Boolean = true, val mediaIsland: Boolean = true)
-internal val LocalTintOptions = androidx.compose.runtime.staticCompositionLocalOf { TintOptions() }
-
-/** How strong Home's glass is: widget frost and the outline around widgets and Side Bar capsules (Settings › Glass). */
-internal data class GlassLook(val widget: Float = .26f, val outline: Float = .16f, val liquid: Boolean = false, val backdropBlur: Boolean = false) {
-    val outlineColor get() = androidx.compose.ui.graphics.Color.White.copy(alpha = outline)
-}
+internal data class GlassLook(val backdropBlur: Boolean = false)
 internal val LocalGlassLook = androidx.compose.runtime.staticCompositionLocalOf { GlassLook() }
 
-/** Settings › Home Screen & Dock › Folders. */
-enum class FolderBackground(@androidx.annotation.StringRes val label: Int) { GLASS(R.string.glass), SOLID(R.string.solid), CLEAR(R.string.clear) }
-internal data class FolderLook(val columns: Int = 0, val background: FolderBackground = FolderBackground.GLASS)
-internal val LocalFolderLook = androidx.compose.runtime.staticCompositionLocalOf { FolderLook() }
+/** Strength of the thin light outline around widgets and Side Bar capsules. */
+internal const val GLASS_OUTLINE = .16f
+internal val GlassOutlineColor = Color.White.copy(alpha = GLASS_OUTLINE)
 
-/** App name size on Home (Settings › Icons & Side Bar). */
-enum class LabelSize(@androidx.annotation.StringRes val label: Int, val sp: Float, val lineSp: Float) { SMALL(R.string.small, 10f, 13f), STANDARD(R.string.standard, 11f, 14f), LARGE(R.string.large, 13f, 16f) }
-internal val LocalLabelSize = androidx.compose.runtime.staticCompositionLocalOf { LabelSize.STANDARD }
+/** How strongly Home's glass takes the wallpaper's main color (iOS-style tinted materials). */
+internal const val GLASS_TINT = .28f
 
-/**
- * Animation Speed (Settings › Gestures & Actions): scales the stiffness of Folio's springs, so panels, folders, menus
- * and page snaps all move faster or slower together. Android's Remove animations still turns motion off.
- */
-enum class MotionSpeed(@androidx.annotation.StringRes val label: Int, val factor: Float) {
-    RELAXED(R.string.relaxed, .55f), STANDARD(R.string.standard, 1f), SNAPPY(R.string.snappy, 1.8f);
-    companion object {
-        @Volatile var current: MotionSpeed = STANDARD
-        fun <T> spring(dampingRatio: Float, stiffness: Float, visibilityThreshold: T? = null) =
-            androidx.compose.animation.core.spring(dampingRatio = dampingRatio, stiffness = stiffness * current.factor, visibilityThreshold = visibilityThreshold)
-    }
-}
+
+/** App name size on Home. */
+internal const val HOME_LABEL_SP = 11f
+internal const val HOME_LABEL_LINE_SP = 14f
 
 /**
  * Soft edges on scrolling content, like iOS: rows fade out toward an edge where there's more to scroll. The fade
@@ -201,30 +170,6 @@ internal fun androidx.compose.ui.Modifier.fadingVerticalScroll() = composed {
     edgeFade(state).verticalScroll(state)
 }
 
-/** Reduce Transparency is in effect (the setting, or Android's high contrast): glass controls show as nearly solid. */
-internal val LocalSolidGlass = androidx.compose.runtime.staticCompositionLocalOf { false }
-
-/** Android 14+ high contrast (Settings › Accessibility › Contrast). Earlier versions don't expose it, so it's off. */
-@androidx.compose.runtime.Composable
-internal fun rememberSystemHighContrast(): Boolean {
-    if (android.os.Build.VERSION.SDK_INT < 34) return false
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val ui = androidx.compose.runtime.remember { context.getSystemService(android.app.UiModeManager::class.java) }
-    val contrast = androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(ui?.contrast ?: 0f) }
-    androidx.compose.runtime.DisposableEffect(ui) {
-        val listener = android.app.UiModeManager.ContrastChangeListener { contrast.floatValue = it }
-        ui?.addContrastChangeListener(context.mainExecutor, listener)
-        onDispose { ui?.removeContrastChangeListener(listener) }
-    }
-    // Android's levels are 0 (standard), 0.5 (medium) and 1 (high).
-    return contrast.floatValue >= .5f
-}
-
-enum class GlassMaterial { CLASSIC, LIQUID }
-
-internal fun usesLiquidGlass(material: GlassMaterial, gateOpen: Boolean, solid: Boolean): Boolean =
-    material == GlassMaterial.LIQUID && gateOpen && !solid
-
 internal enum class GlassRole(val rim: Float, val light: Float, val inset: Boolean = false, val lift: Float = 0f) {
     PANEL(1f, 1f), TILE(.9f, .8f), CAPSULE(1f, .9f), FIELD(.7f, 0f, inset = true), FLOATING(1f, .7f, lift = 1f)
 }
@@ -234,7 +179,6 @@ internal data class GlassSpec(val bodyStart: Color, val bodyEnd: Color, val ligh
     val rimLead: Color, val rimSide: Color, val rimTrail: Color, val lift: Float)
 
 internal const val LIQUID_FROST = .30f
-internal const val LIBRARY_PANEL_FROST = .48f
 internal const val SEARCH_FIELD_FROST = .12f
 internal const val LIQUID_OVERLAY_FROST = .72f
 internal const val LIBRARY_TILE_FROST = .22f
@@ -301,14 +245,13 @@ internal object LiquidGlass {
     const val LIFT = .22f
 }
 
-internal fun liquidGlassSpec(base: Color, frost: Float, role: GlassRole, outline: Float, primary: Int? = null, secondary: Int? = null): GlassSpec {
+internal fun liquidGlassSpec(base: Color, frost: Float, role: GlassRole, primary: Int? = null, secondary: Int? = null): GlassSpec {
     val alpha = frost.coerceIn(0f, 1f)
     val start = tintedGlass(base, primary, LiquidGlass.TONE_MIX).copy(alpha = alpha)
     val end = tintedGlass(base, secondary ?: primary, LiquidGlass.TONE_MIX).copy(alpha = alpha * LiquidGlass.END_FROST)
-    val edge = (outline / GlassLook().outline).coerceIn(0f, 2f)
-    val bright = Color.White.copy(alpha = (LiquidGlass.RIM_BRIGHT * role.rim * edge).coerceIn(0f, 1f))
-    val faint = Color.White.copy(alpha = (LiquidGlass.RIM_FAINT * role.rim * edge).coerceIn(0f, 1f))
-    val side = Color.White.copy(alpha = (LiquidGlass.RIM_SIDE * edge).coerceIn(0f, 1f))
+    val bright = Color.White.copy(alpha = LiquidGlass.RIM_BRIGHT * role.rim)
+    val faint = Color.White.copy(alpha = LiquidGlass.RIM_FAINT * role.rim)
+    val side = Color.White.copy(alpha = LiquidGlass.RIM_SIDE)
     return GlassSpec(start, end, LiquidGlass.LIGHT * role.light, LiquidGlass.GRAIN,
         if (role.inset) faint else bright, side, if (role.inset) bright else faint, LiquidGlass.LIFT * role.lift)
 }
@@ -328,20 +271,11 @@ private object GlassGrain {
 }
 
 @androidx.compose.runtime.Composable
-internal fun liquidGlassOn(): Boolean = LocalGlassLook.current.liquid && !LocalSolidGlass.current
-
-@androidx.compose.runtime.Composable
-internal fun androidx.compose.ui.Modifier.liquidGlassOr(shape: androidx.compose.ui.graphics.Shape, frost: Float, role: GlassRole,
-    base: Color = Glass, classic: @androidx.compose.runtime.Composable androidx.compose.ui.Modifier.() -> androidx.compose.ui.Modifier): androidx.compose.ui.Modifier =
-    if (liquidGlassOn()) liquidGlass(shape, frost, role, base) else classic()
-
-@androidx.compose.runtime.Composable
 internal fun androidx.compose.ui.Modifier.liquidGlass(shape: androidx.compose.ui.graphics.Shape, frost: Float, role: GlassRole,
     base: Color = Glass): androidx.compose.ui.Modifier {
     val tone = LocalWallpaperTone.current
-    val outline = LocalGlassLook.current.outline
-    val spec = androidx.compose.runtime.remember(base, frost, role, outline, tone.primary, tone.secondary) {
-        liquidGlassSpec(base, frost, role, outline, tone.primary, tone.secondary)
+    val spec = androidx.compose.runtime.remember(base, frost, role, tone.primary, tone.secondary) {
+        liquidGlassSpec(base, frost, role, tone.primary, tone.secondary)
     }
     return drawLiquidGlass(shape, spec)
 }

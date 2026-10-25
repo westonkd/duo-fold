@@ -34,8 +34,8 @@ data class DeviceStatus(
 
 /**
  * Charging as Home shows it: on the cable. At a charge limit, like Samsung's battery protection holding at 80%, Android
- * reports the battery as not charging while the phone is still plugged in, and Home used to show it as on battery
- * (StandBy dropping out with it). Plugged in counts now, as iOS shows the bolt while charging is on hold.
+ * reports the battery as not charging while the phone is still plugged in, and Home used to show it as on battery.
+ * Plugged in counts now, as iOS shows the bolt while charging is on hold.
  */
 internal fun isCharging(status: Int, plugged: Int): Boolean =
     plugged != 0 || status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL

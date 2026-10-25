@@ -20,14 +20,10 @@ class WidgetRequestTest {
         assertEquals("com.example.weather", back.packageName)
         assertEquals(10L, back.profileSerial)
         assertEquals(null, back.stackSlot)
-        assertEquals(false, back.toToday)
     }
 
-    @Test fun `adding to a stack and adding to Today stay told apart`() {
+    @Test fun `adding to a stack survives the round trip`() {
         assertEquals(9, roundTrip(WidgetRequest(stackSlot = 9)).stackSlot)
-        assertEquals(null, roundTrip(WidgetRequest(stackSlot = 9)).toToday.takeIf { it })
-        assertEquals(true, roundTrip(WidgetRequest(toToday = true)).toToday)
-        assertEquals(null, roundTrip(WidgetRequest(toToday = true)).stackSlot)
     }
 
     @Test fun `showing every app again keeps the spot it was going to`() {

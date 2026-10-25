@@ -5,7 +5,6 @@ import androidx.compose.foundation.combinedClickable
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -81,7 +80,7 @@ internal enum class LibraryCategory(@androidx.annotation.StringRes val title: In
 
 /** What a screen reader says for an icon with no label beside it: a clone adds Dual, so it isn't read as its original. */
 @Composable
-private fun spokenName(app: AppEntry): String = if (app.kind == ProfileKind.CLONE && app.iconFrom == null) "${app.label}, ${profileName(app)}" else app.label
+private fun spokenName(app: AppEntry): String = if (app.kind == ProfileKind.CLONE) "${app.label}, ${profileName(app)}" else app.label
 
 /** iOS App Library tile: three big icons and a mini cluster that opens the whole category. */
 @Composable
@@ -90,7 +89,7 @@ internal fun CategoryCard(title: String, apps: List<AppEntry>, modifier: Modifie
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         val tileShape = RoundedCornerShape(FolioRadius.PANEL.dp)
         BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(1f).clip(tileShape)
-            .liquidGlassOr(tileShape, LIBRARY_TILE_FROST, GlassRole.TILE) { background(FolioGlass.card).border(FolioGlass.edge, tileShape) }
+            .liquidGlass(tileShape, LIBRARY_TILE_FROST, GlassRole.TILE)
             .padding(FolioSpace.MEDIUM.dp)) {
             val gap = 10.dp
             val cell = (maxWidth - gap) / 2
@@ -102,7 +101,7 @@ internal fun CategoryCard(title: String, apps: List<AppEntry>, modifier: Modifie
                         val index = row * 2 + col
                         when {
                             index < big.size -> AppIcon(big[index], spokenName(big[index]), Modifier.size(cell)
-                                .clickable { onLaunch(big[index]) }, shape = RoundedCornerShape(cell * .24f))
+                                .clickable { onLaunch(big[index]) }, badge = true)
                             index == 3 && rest.isNotEmpty() -> Box(Modifier.size(cell).clip(RoundedCornerShape(cell * .24f))
                                 .clickable(onClick = onOpen).semantics { contentDescription = showAllText }) {
                                 val mini = (cell - 4.dp) / 2
@@ -133,7 +132,7 @@ internal fun CategoryFolder(title: String, apps: List<AppEntry>, onDismiss: () -
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         FolioDialogWindow(dim = 0f, blurRadiusDp = 24)
-        val appear = rememberEntrance(FolioMotion.pick(old = .82f to 600f, new = FolioMotion.Menu), scenario = PerfScenario.MENU)
+        val appear = rememberEntrance(FolioMotion.Menu, scenario = PerfScenario.MENU)
         val fade = rememberReducedFade()
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = appear.value * fade.value }.background(Color.Black.copy(alpha = .45f)).clickable(androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null, onClick = onDismiss)
             .testTag("category-folder-scrim"))
@@ -150,14 +149,12 @@ internal fun CategoryFolder(title: String, apps: List<AppEntry>, onDismiss: () -
                         modifier = Modifier.padding(start = FolioSpace.SMALL.dp, bottom = FolioSpace.MEDIUM.dp))
                     // Lazy, so a category with dozens of apps only builds the rows on screen as it opens.
                     val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
-                    val liquid = liquidGlassOn()
                     val cardShape = RoundedCornerShape(36.dp)
                     androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
                         androidx.compose.foundation.lazy.grid.GridCells.Fixed(columns),
                         Modifier.fillMaxWidth().heightIn(max = availableHeight - 64.dp)
-                            .then(if (liquid) Modifier.liquidGlass(cardShape, LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.SheetSurface) else Modifier)
+                            .liquidGlass(cardShape, LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.SheetSurface)
                             .clip(cardShape)
-                            .then(if (liquid) Modifier else Modifier.background(FolioColors.SheetSurface.copy(alpha = .96f)).border(FolioGlass.edge, cardShape))
                             .pointerInput(Unit) { detectTapGestures() }
                             .edgeFade(gridState).testTag("category-folder"),
                         state = gridState, contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
@@ -167,11 +164,11 @@ internal fun CategoryFolder(title: String, apps: List<AppEntry>, onDismiss: () -
                             Column(Modifier.clip(RoundedCornerShape(FolioRadius.CARD.dp))
                                 .combinedClickable(onLongClick = { onActions(app) }) { onLaunch(app) }.padding(vertical = FolioSpace.TINY.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally) {
-                                AppIcon(app, null, Modifier.size(54.dp), shape = RoundedCornerShape(13.dp))
+                                AppIcon(app, null, Modifier.size(54.dp), badge = true)
                                 Text(app.label, color = Color.White, fontSize = FolioType.CAPTION.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.padding(top = FolioSpace.TINY.dp, start = FolioSpace.HAIR.dp, end = FolioSpace.HAIR.dp))
                                 // A clone sits beside its original with the same name, as in the A to Z list.
-                                if (app.kind == ProfileKind.CLONE && app.iconFrom == null) Text(profileName(app), color = Color.White.copy(alpha = .6f), style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                                if (app.kind == ProfileKind.CLONE) Text(profileName(app), color = Color.White.copy(alpha = .6f), style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
                                     maxLines = 1, modifier = Modifier.testTag("category-profile-${app.id}"))
                             }
                         }

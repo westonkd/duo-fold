@@ -31,7 +31,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,8 +60,8 @@ import java.time.format.DateTimeFormatter
 /*
  * The wallpaper picker: one grid of everything Folio can put behind Home.
  *
- * **Why one grid.** A photo you picked, a print that shipped with Folio and a piece installed from the Market are the
- * same kind of thing now: a picture, with a file and a credit. They used to need separate UI because Folio's own
+ * **Why one grid.** A photo you picked and a print that shipped with Folio are the same kind of thing now: a
+ * picture. They used to need separate UI because Folio's own
  * backgrounds were code that drew a scene. Under [DES-2a] they are pictures, so they belong in one grid with one
  * behaviour, the way iOS shows you wallpapers rather than sorting them by where they came from. The headings say
  * where a picture came from because that is worth knowing, not because the tiles behave differently.
@@ -76,7 +75,7 @@ import java.time.format.DateTimeFormatter
  *
  * Dynamic class: D5 Ambient, and D1 Reactive.
  * Source of truth: [currentTime] for the clock on each tile; [backgroundChoice] for which tile is ticked;
- *   [BackgroundLibrary] for what there is to choose from, re-read when [LauncherBackgroundCache.revision] moves.
+ *   [BackgroundLibrary] for what there is to choose from.
  * Persistent state: none of its own. Choosing writes through [setBackgroundChoice], whose owner is the controller.
  * Reduce Motion: nothing here moves. The clock changes a digit once a minute, which is a value changing rather than
  *   an animation, so there is nothing to reduce.
@@ -102,17 +101,11 @@ internal fun BackgroundPicker(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    // The cache's revision moves whenever the background changes, from here or from a package installing one, so
-    // reading the choice against it keeps the ticks honest without this owning any state of its own (STA-1).
+    // The cache's revision moves whenever the background changes, so reading the choice against it keeps the ticks
+    // honest without this owning any state of its own (STA-1).
     val revision = LauncherBackgroundCache.revision.intValue
     val choice = remember(revision, controller.photoSelected) { backgroundChoice(context) }
     val builtIn = BackgroundLibrary.builtIn()
-    // Installed art is a file on disk, so it is read off the main thread (STA-8). The art Folio ships is a constant
-    // and needs no such thing, which is why the two are not loaded together: the grid should not wait on a disk read
-    // to show the pieces it already knows about.
-    val installed = produceState(emptyList(), revision) {
-        value = withContext(Dispatchers.IO) { BackgroundLibrary.installed(context).filter { it.credited } }
-    }.value
 
     // A tap stages; the controller owns the candidate and Set is what writes it (see LauncherBackgroundController).
     val pending = controller.pendingArt
@@ -135,13 +128,6 @@ internal fun BackgroundPicker(
             SheetGroupLabel(stringResource(R.string.from_folio))
             BackgroundGrid(builtIn) { ArtTile(it, choice == BackgroundChoice.Art(it.id), pending?.id == it.id) { stage(it.id) } }
         }
-
-        if (installed.isNotEmpty()) {
-            SheetGroupLabel(stringResource(R.string.installed))
-            BackgroundGrid(installed) { ArtTile(it, choice == BackgroundChoice.Art(it.id), pending?.id == it.id) { stage(it.id) } }
-        }
-
-        CardNote(stringResource(R.string.wallpapers_you_install_from_the_market), Modifier.padding(top = FolioSpace.SMALL.dp))
     }
 }
 
@@ -312,17 +298,12 @@ private const val THUMB_WIDTH = 420
  * reads the header, `inSampleSize` asks the decoder for a power-of-two fraction, which is what every launcher that
  * shows wallpaper thumbnails does (PRF).
  */
-internal fun backgroundThumbnail(context: Context, id: String): Bitmap? =
-    if (BackgroundLibrary.isBuiltIn(id)) {
-        runCatching {
-            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            context.assets.open(BackgroundLibrary.assetPath(id)).use { BitmapFactory.decodeStream(it, null, bounds) }
-            val options = BitmapFactory.Options().apply { inSampleSize = sampleFor(bounds.outWidth) }
-            context.assets.open(BackgroundLibrary.assetPath(id)).use { BitmapFactory.decodeStream(it, null, options) }
-        }.getOrNull()
-    } else {
-        decodeThumbnail(BackgroundLibrary.artFile(context, id))
-    }
+internal fun backgroundThumbnail(context: Context, id: String): Bitmap? = runCatching {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    context.assets.open(BackgroundLibrary.assetPath(id)).use { BitmapFactory.decodeStream(it, null, bounds) }
+    val options = BitmapFactory.Options().apply { inSampleSize = sampleFor(bounds.outWidth) }
+    context.assets.open(BackgroundLibrary.assetPath(id)).use { BitmapFactory.decodeStream(it, null, options) }
+}.getOrNull()
 
 private fun decodeThumbnail(file: File): Bitmap? = runCatching {
     if (!file.isFile) return null

@@ -12,7 +12,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.util.concurrent.TimeUnit
 
-/** S-4 in the beta 4 audit: staying in Safe Mode keeps Market refresh and auto-update paused past the first 30 seconds. */
+/** S-4 in the beta 4 audit: staying in Safe Mode past the first 30 seconds keeps it on for the next launch. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class SafeModeStableTest {
@@ -22,7 +22,7 @@ class SafeModeStableTest {
 
     private fun pastTheWindow() = shadowOf(Looper.getMainLooper()).idleFor(31, TimeUnit.SECONDS)
 
-    @Test fun `a while without a crash does not end Safe Mode for background work while the user stays in it`() {
+    @Test fun `a while without a crash does not end Safe Mode while the user stays in it`() {
         SafeMode.onStart(context) { emptyList() }
         SafeMode.onCrash(context)
         SafeMode.onStart(context) { emptyList() }
@@ -32,10 +32,12 @@ class SafeModeStableTest {
 
         pastTheWindow()
         SafeMode.markStable(context)
-        assertTrue("Market refresh and auto-update still see Safe Mode", SafeMode.isOn(context))
+        SafeMode.onStart(context) { emptyList() }
+        assertTrue("still on for the next launch", SafeMode.active)
 
         SafeMode.exit(context)
-        assertFalse("Restart Normally is the way out", SafeMode.isOn(context))
+        SafeMode.onStart(context) { emptyList() }
+        assertFalse("Restart Normally is the way out", SafeMode.active)
     }
 
     @Test fun `a crash after a long run in Safe Mode keeps Safe Mode on for the next launch`() {
@@ -48,7 +50,6 @@ class SafeModeStableTest {
 
         pastTheWindow()
         SafeMode.onCrash(context)
-        assertTrue("still on for background work", SafeMode.isOn(context))
         SafeMode.onStart(context) { emptyList() }
         assertTrue("and for the next launch", SafeMode.active)
     }

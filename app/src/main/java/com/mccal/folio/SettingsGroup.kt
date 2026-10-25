@@ -114,7 +114,7 @@ internal fun CardPrimaryAction(label: String, modifier: Modifier = Modifier, ena
     androidx.compose.foundation.layout.Box(modifier.then(Modifier.fillMaxWidth().padding(vertical = FolioSpace.SMALL.dp).heightIn(min = 48.dp))
         .clip(androidx.compose.foundation.shape.RoundedCornerShape(FolioRadius.PANEL.dp))
         .background(if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = .12f))
-        .settingsFocus(label).clickable(enabled = enabled, role = Role.Button, onClick = onClick), contentAlignment = Alignment.Center) {
+        .clickable(enabled = enabled, role = Role.Button, onClick = onClick), contentAlignment = Alignment.Center) {
         Text(label, color = if (enabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = .6f),
             fontSize = FolioType.BODY.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
     }
@@ -124,5 +124,5 @@ internal fun CardPrimaryAction(label: String, modifier: Modifier = Modifier, ena
 @Composable
 internal fun CardAction(label: String, modifier: Modifier = Modifier, enabled: Boolean = true, destructive: Boolean = false, onClick: () -> Unit) {
     Text(label, color = Color(if (destructive) FolioColors.Value.Red else FolioColors.Value.Blue).copy(alpha = if (enabled) 1f else .4f), fontSize = FolioType.BODY.sp,
-        modifier = modifier.heightIn(min = FolioRow.ACTION.dp).settingsFocus(label).clickable(enabled = enabled, role = Role.Button, onClick = onClick).wrapContentHeight(Alignment.CenterVertically))
+        modifier = modifier.heightIn(min = FolioRow.ACTION.dp).clickable(enabled = enabled, role = Role.Button, onClick = onClick).wrapContentHeight(Alignment.CenterVertically))
 }

@@ -11,7 +11,7 @@ import org.junit.Test
  */
 class PageRowPlacementTest {
     /** The Fold8's inner screen, open: a wide window where Home shares the room with the page beside it. */
-    private fun geometry(width: Float, height: Float) = homeGeometry(width, height, LayoutPreset(), labels = true)
+    private fun geometry(width: Float, height: Float) = homeGeometry(width, height, DockPlacement.AUTOMATIC, labels = true)
 
     @Test fun `unfolded, the row is centred on Home and clear of the page beside it`() {
         val width = 932.6f

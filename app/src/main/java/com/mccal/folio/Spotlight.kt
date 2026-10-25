@@ -26,7 +26,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -125,7 +124,7 @@ internal fun SpotlightOverlay(visible: Boolean, progress: () -> Float, state: La
     }
     if (!composed) return
     val lift = with(androidx.compose.ui.platform.LocalDensity.current) { 24.dp.toPx() }
-    val look = spotlightLook(liquidGlassOn(), LocalHomeInk.current, state.panelBlur > 0f)
+    val look = spotlightLook(LocalHomeInk.current)
     Box(Modifier.fillMaxSize().graphicsLayer { alpha = progress() }.background(look.backdrop)
         .then(if (visible) Modifier.clickable(remember { MutableInteractionSource() }, null, onClick = onClose) else Modifier))
     Box(Modifier.fillMaxSize().graphicsLayer {
@@ -149,8 +148,8 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
     val imeVisible = WindowInsets.isImeVisible
     /** Focus the field and raise the keyboard, falling back to the window's IME controller. */
     suspend fun raiseKeyboard() {
-        // Android ignores keyboard requests from a window without focus (e.g. right after the side-key
-        // picker, a panel or a menu closes), so wait for it first.
+        // Android ignores keyboard requests from a window without focus (e.g. right after a panel
+        // or a menu closes), so wait for it first.
         snapshotFlow { windowInfo.isWindowFocused }.first { it }
         withFrameNanos { }
         // Up to about 1.5 s: a busy first frame (just after Home starts) can leave the field unattached for a while.
@@ -249,7 +248,7 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
                 // The whole capsule is the tap target, not just the text line.
                 Modifier.weight(1f).clickable(remember { MutableInteractionSource() }, null) { fieldScope.launch { raiseKeyboard() } },
                 fieldModifier = Modifier.focusRequester(focus).onFocusChanged { fieldFocused = it.isFocused }.testTag("spotlight-field"),
-                ink = ink.primary, glass = liquidGlassOn(), onSearch = {
+                ink = ink.primary, glass = true, onSearch = {
                     when {
                         appHits.isNotEmpty() -> launch(appHits.first())
                         q.isNotEmpty() -> { onClose(); openEnterSearch(context, state, q) }
@@ -335,7 +334,7 @@ private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) 
             modifier = Modifier.padding(start = FolioSpace.TINY.dp))
         val shape = RoundedCornerShape(FolioRadius.PANEL.dp)
         Column(Modifier.fillMaxWidth().clip(shape)
-            .liquidGlassOr(shape, LIBRARY_TILE_FROST, GlassRole.TILE) { background(SpotGlass).border(FolioGlass.edge, shape) }
+            .liquidGlass(shape, LIBRARY_TILE_FROST, GlassRole.TILE)
             .padding(FolioSpace.MEDIUM.dp),
             verticalArrangement = Arrangement.spacedBy(FolioSpace.HAIR.dp), content = content)
     }
@@ -587,7 +586,6 @@ private fun settingShortcuts(context: android.content.Context) = listOf(
     SettingShortcut(context.getString(R.string.settings), Settings.ACTION_SETTINGS, listOf("settings", "preferences")),
 )
 
-private val SpotGlass = FolioGlass.card
 
 internal const val SPOTLIGHT_ICON_DP = 60
 internal const val SPOTLIGHT_CELL_DP = 80
@@ -596,8 +594,8 @@ internal const val SPOTLIGHT_CHIP = .14f
 @androidx.compose.runtime.Immutable
 internal data class SpotlightLook(val ink: HomeInk, val backdrop: Color)
 
-internal fun spotlightLook(liquid: Boolean, homeInk: HomeInk, blurred: Boolean): SpotlightLook =
-    if (liquid) SpotlightLook(homeInk, libraryWash(homeInk.dark, blurred)) else SpotlightLook(HomeInk(dark = false), FolioGlass.scrim)
+internal fun spotlightLook(homeInk: HomeInk): SpotlightLook =
+    SpotlightLook(homeInk, libraryWash(homeInk.dark, blurred = true))
 
 /** Whether the IME is actually on screen for [view]'s window. */
 private object WindowInsetsHolderIme {

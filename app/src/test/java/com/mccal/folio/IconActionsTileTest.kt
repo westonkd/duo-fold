@@ -121,12 +121,11 @@ class IconActionsTileTest {
         assertEquals(listOf("Swipe up: Flashlight", "Swipe down: Spotlight", "Double tap: Lock Screen"), labels)
     }
 
-    @Test fun `Home provides no host while editing, in Safe Mode, with the gate shut or with nothing saved`() {
-        assertTrue(iconActionsAvailable(editing = false, safeMode = false, anySaved = true, gateOpen = true))
-        assertFalse("editing", iconActionsAvailable(editing = true, safeMode = false, anySaved = true, gateOpen = true))
-        assertFalse("Safe Mode", iconActionsAvailable(editing = false, safeMode = true, anySaved = true, gateOpen = true))
-        assertFalse("nothing saved", iconActionsAvailable(editing = false, safeMode = false, anySaved = false, gateOpen = true))
-        assertFalse("gate shut", iconActionsAvailable(editing = false, safeMode = false, anySaved = true, gateOpen = false))
+    @Test fun `Home provides no host while editing, in Safe Mode or with nothing saved`() {
+        assertTrue(iconActionsAvailable(editing = false, safeMode = false, anySaved = true))
+        assertFalse("editing", iconActionsAvailable(editing = true, safeMode = false, anySaved = true))
+        assertFalse("Safe Mode", iconActionsAvailable(editing = false, safeMode = true, anySaved = true))
+        assertFalse("nothing saved", iconActionsAvailable(editing = false, safeMode = false, anySaved = false))
     }
 
     /** The dock builds its own slot but uses the same helper, so an app in the dock keeps its actions. */

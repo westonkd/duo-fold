@@ -36,12 +36,8 @@ class LayoutLoadTest {
         val overflow = state.widgetPlacements.first { it.slot == 5 }
         assertEquals(GRID_ROWS, overflow.row)
         assertEquals(0, state.widgetPlacements.first { it.slot == 0 }.row)
-        // Per-screen settings keep their values, and new ones start at today's defaults.
-        assertEquals(60f, state.compact.iconSize); assertEquals(12f, state.compact.rowGap); assertEquals(false, state.compact.dockAlignToGrid)
-        assertEquals(DEFAULT_COLUMN_GAP, state.compact.columnGap); assertEquals(false, state.compact.pageTop)
-        // Rows are the exception: Automatic is the default for a new Folio, but a Home that already exists keeps the
-        // four rows it was arranged in until someone asks for more (McCal, 2026-09-20).
-        assertEquals(BASE_APP_ROWS, state.homeRows)
+        // The old size settings are read past; the dock placement starts at today's default.
+        assertEquals(DockPlacement.AUTOMATIC, state.coverDock)
     }
 
     @Test fun `an upgraded layout saved again loads the same`() {
@@ -73,7 +69,7 @@ class LayoutLoadTest {
         assertTrue(state.homeSlots.all { it == null })
         assertNull(state.error)
         // Only Duet: the fold animation was built in and on before it became a tweak.
-        assertEquals(setOf(DUET_ID), state.installedTweaks)
+        assertEquals(listOf(true, false, false), listOf(state.foldEffect, state.appPanels, state.dockMagnify))
     }
 }
 
@@ -91,16 +87,7 @@ class UpgradeKeepsItsRowsTest {
         return schema8().put("schema", STATE_SCHEMA).put("homeSlots", slots).put("leadingSlots", leading).put("widgets", widgets)
     }
 
-    @Test fun `a save from before this release comes back at four rows, not automatic`() {
-        assertEquals(BASE_APP_ROWS, decodeLauncherState(schema8().toString(), legacyRaw = null).homeRows)
-    }
-
-    @Test fun `a save from this release keeps automatic`() {
-        assertEquals(0, decodeLauncherState(schema9().toString(), legacyRaw = null).homeRows)
-    }
-
-    @Test fun `a choice that was made is kept either way`() {
-        val chosen = schema9().put("homeRows", BASE_APP_ROWS).toString()
-        assertEquals(BASE_APP_ROWS, decodeLauncherState(chosen, legacyRaw = null).homeRows)
+    @Test fun `old saves with a rows choice still load`() {
+        assertEquals(BASE_APP_ROWS, decodeLauncherState(schema9().put("homeRows", BASE_APP_ROWS).toString(), legacyRaw = null).homeAppRows)
     }
 }

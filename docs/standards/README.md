@@ -53,15 +53,12 @@ Nobody has to fix the whole tree before shipping a feature.
 | [State and data](state-data.md) | `STA` | Who owns each piece of state, persistence, migrations |
 | [Performance](performance.md) | `PRF` | Critical journeys, budgets, measuring |
 | [Accessibility](accessibility.md) | `A11Y` | TalkBack, targets, contrast, text size, Reduce Motion, RTL |
-| [Privacy and permissions](privacy-permissions.md) | `PRV` | Access, network, data, the System Bridge tier |
+| [Privacy and permissions](privacy-permissions.md) | `PRV` | Access, network, data, privilege tiers |
 | [Testing](testing.md) | `TST` | What gets tested where, and what "done" means |
 | [Releases](releases.md) | `REL` | Branches, the changelog, version numbers, betas, and what goes out beside a build |
-| [Market](market.md) | `MKT` | Bridges to other repositories, what a package page may contain, editorial |
-| [Site and docs](site.md) | `WEB` | foliolauncher.com and public pages: where facts come from, voice, pictures, privacy, checks |
 
 Where standards overlap, the more specific one wins: Dynamic UI over Design for motion, Accessibility over Design for
-contrast and size, Privacy over everything for what leaves the phone, and Privacy over Market for anything a package
-or a bridge can reach. Releases owns anything about how a change reaches a phone.
+contrast and size, Privacy over everything for what leaves the phone, and Privacy for anything a bridge can reach. Releases owns anything about how a change reaches a phone.
 
 ## What "Folio quality" means
 
@@ -85,8 +82,7 @@ Breaking a MUST is sometimes right: a vendor bug, a platform gap, an audited wor
 - If it shapes more than one file or is meant to last, write an ADR in [docs/adr](../adr/README.md).
 - List it in the standard's **Recorded exceptions** section.
 
-`CameraArea.kt`'s SM-F971 camera rectangle and `DiscoverBounds.kt`'s Window Extensions 8 to 10 guard are the model:
-narrow, versioned, and they fall back to normal behaviour.
+`CameraArea.kt`'s SM-F971 camera rectangle is the model: narrow, recorded, and it falls back to normal behaviour.
 
 ## Changing a standard
 
@@ -110,4 +106,3 @@ standard's checklist is met, and report any rule you couldn't meet instead of sk
   accessibility, layout, materials).
 - W3C: [WCAG 2.2](https://www.w3.org/TR/WCAG22/) for contrast and target size.
 - [Laws of UX](https://lawsofux.com), as applied in the 17 to 19 Sep 2026 review.
-- Web: [Core Web Vitals](https://web.dev/articles/vitals) for the LCP, INP and CLS limits in WEB-22.

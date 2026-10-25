@@ -4,7 +4,6 @@ package com.mccal.folio
 
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import android.appwidget.AppWidgetProviderInfo
 import android.content.Intent
 import android.os.UserManager
 import android.provider.AlarmClock
@@ -14,7 +13,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -98,29 +96,12 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-/**
- * Holding a built-in widget where nothing around it takes the hold: the Today View, where it starts editing. Null on
- * Home, whose own long press picks the widget up or opens its options.
- */
-internal val LocalWidgetHold = staticCompositionLocalOf<(() -> Unit)?> { null }
-
-/** A built-in widget's tap, and its hold where [LocalWidgetHold] gives one. */
-@Composable
-internal fun Modifier.widgetTap(onClick: () -> Unit): Modifier {
-    val hold = LocalWidgetHold.current ?: return clickable(onClick = onClick)
-    return combinedClickable(onLongClickLabel = stringResource(R.string.edit), onLongClick = hold, onClick = onClick)
-}
-
 @Composable
 internal fun GlassCard(modifier: Modifier = Modifier, onClick: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
-    val look = LocalGlassLook.current
-    val liquid = liquidGlassOn()
     val cardShape = RoundedCornerShape(FolioRadius.PANEL.dp)
-    Surface(modifier.fillMaxSize().clip(cardShape).then(if (liquid) Modifier.liquidGlass(cardShape, look.widget, GlassRole.PANEL) else Modifier).widgetTap(onClick),
-        color = if (liquid) Color.Transparent else Glass.copy(alpha = look.widget), shape = cardShape,
-        border = if (look.outline > 0f && !liquid) androidx.compose.foundation.BorderStroke(1.dp, look.outlineColor) else null) {
-        // Like iOS widgets, the whole card scales with its size, so a narrower column (the Today View beside
-        // Home in portrait) shrinks the text instead of clipping it.
+    Surface(modifier.fillMaxSize().clip(cardShape).liquidGlass(cardShape, LIQUID_FROST, GlassRole.PANEL).clickable(onClick = onClick),
+        color = Color.Transparent, shape = cardShape) {
+        // Like iOS widgets, the whole card scales with its size, so a smaller card shrinks the text instead of clipping it.
         BoxWithConstraints {
             val scale = (minOf(maxWidth, maxHeight) / 150.dp).coerceIn(.6f, 1f)
             val density = LocalDensity.current
@@ -212,13 +193,7 @@ internal fun WidgetSlot(id: Int, slot: Int, controller: WidgetController, modifi
             return@BoxWithConstraints
         }
         val info = remember(id) { if (id >= 0) controller.manager.getAppWidgetInfo(id) else null }
-        // Screenshot Mode: a swapped app's widget would show its real content, so it is a plain card instead.
-        val standIn = info?.provider?.packageName?.let { LocalSwappedApps.current[it] }
         if (info == null) fallback()
-        else if (standIn != null) Surface(Modifier.fillMaxSize().testTag("widget-swapped-$slot"), color = Glass.copy(alpha = .88f),
-            shape = RoundedCornerShape(FolioRadius.PANEL.dp)) {
-            Box(contentAlignment = Alignment.Center) { Text(standIn.label, color = Ink, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center) }
-        }
         else {
             key(id) {
                 AndroidView(factory = { context -> controller.host.createView(context, id, info) },
@@ -228,7 +203,7 @@ internal fun WidgetSlot(id: Int, slot: Int, controller: WidgetController, modifi
     }
 }
 
-internal fun widgetLabel(context: android.content.Context, id: Int, controller: WidgetController, swapped: Map<String, AppEntry> = emptyMap()) = when (id) {
+internal fun widgetLabel(context: android.content.Context, id: Int, controller: WidgetController) = when (id) {
     CLOCK_WIDGET -> context.getString(R.string.clock)
     DATE_WIDGET -> context.getString(R.string.date)
     UP_NEXT_WIDGET -> context.getString(R.string.up_next)
@@ -236,7 +211,7 @@ internal fun widgetLabel(context: android.content.Context, id: Int, controller: 
     BIG_CLOCK_WIDGET -> context.getString(R.string.big_clock)
     INFO_WIDGET -> context.getString(R.string.widget_panel)
     EMPTY_WIDGET -> context.getString(R.string.add_widget)
-    else -> controller.manager.getAppWidgetInfo(id)?.provider?.packageName?.let { swapped[it]?.label } ?: controller.label(id)
+    else -> controller.label(id)
 }
 
 @Composable
@@ -271,8 +246,8 @@ internal fun builtinWidgetApp(id: Int): Intent? = when (id) {
 }
 
 /**
- * One of Folio's own widgets. With [opensApp] (Home and the Today View) tapping a clock or a date opens that app, and
- * holding the card is the way to its options, or in the Today View to editing. A tap while editing still does [onAdd],
+ * One of Folio's own widgets. With [opensApp] (Home) tapping a clock or a date opens that app, and holding the card is
+ * the way to its options. A tap while editing still does [onAdd],
  * as does one on a phone with nothing to open it with; the preview in Settings leaves [opensApp] off.
  */
 @Composable
@@ -290,7 +265,7 @@ internal fun BuiltinWidgetCard(id: Int, slot: Int, opensApp: Boolean = false, on
         DATE_WIDGET -> DateCard(onTap)
         UP_NEXT_WIDGET -> UpNextCard(onTap)
         SUGGESTIONS_WIDGET -> SuggestionsCard(onAdd)
-        BIG_CLOCK_WIDGET -> BigClockCard(onTap, slot, home = opensApp)
+        BIG_CLOCK_WIDGET -> BigClockCard(onTap)
         INFO_WIDGET -> if (slot % 3 == 2) ExpandedCard(onAdd) else GlassCard(onClick = onAdd) {
             Icon(Icons.Rounded.Widgets, null, tint = Color.White, modifier = Modifier.size(28.dp))
             Text(stringResource(R.string.your_widgets), color = Color.White, fontSize = FolioType.SUBHEAD.sp, maxLines = 1)
@@ -396,10 +371,6 @@ internal fun WidgetActions(
     onReplace: () -> Unit,
     onRemove: () -> Unit,
     onClose: () -> Unit,
-    /** A built-in widget's own look (today, only Big Clock's color and weight). Real AppWidgets configure
-     * through [onConfigure] instead - that gate only ever fires for a real `AppWidgetProviderInfo`, which a
-     * built-in widget's negative id never has, so this is a separate entry rather than folded into it. */
-    onCustomize: (() -> Unit)? = null,
     onPlace: (() -> Unit)? = null,
     stackCards: List<Int> = emptyList(),
     stackLabel: (Int) -> String? = { null },
@@ -495,7 +466,6 @@ internal fun WidgetActions(
         SheetGroupLabel(stringResource(R.string.widget))
         SheetGroup {
             if (canConfigure) { MenuRow(stringResource(R.string.edit_widget), Icons.Rounded.Settings) { onConfigure() }; MenuDivider() }
-            if (onCustomize != null) { MenuRow(stringResource(R.string.customize), Icons.Rounded.Palette) { onCustomize() }; MenuDivider() }
             if (onPlace != null) { MenuRow(stringResource(R.string.place_freely), Icons.Rounded.OpenWith) { onPlace() }; MenuDivider() }
             MenuRow(stringResource(R.string.replace_widget), Icons.Rounded.FindReplace) { onReplace() }
             if (homePages > 1) {

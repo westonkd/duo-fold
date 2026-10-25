@@ -15,8 +15,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import com.mccal.folio.market.InstallResult
-import com.mccal.folio.market.PackageInstaller
 
 /**
  * What happened before a problem, kept only on the phone (shared only if you choose to): Android's own record of why
@@ -45,11 +43,6 @@ internal object Diagnostics {
         while (trail.size > TRAIL_SIZE) trail.removeFirst()
     }
 
-    /** The automatic package updates (M1), in the trail so Recent Activity can say what happened in the background. */
-    fun autoUpdated(id: String, version: Any) = event("Updated $id to $version in the background")
-    fun autoUpdateStale(id: String) = event("A staged update for $id was no longer valid")
-    fun autoUpdateFailed(id: String, what: String) = event("The update for $id failed: $what")
-
     @Synchronized fun trailText(): String = trail.joinToString("\n")
 
     private var lastCaught: String? = null
@@ -61,12 +54,10 @@ internal object Diagnostics {
      * its line instead of pushing the rest of the trail out.
      *
      * Cancellation is rethrown, not noted: it's a coroutine being stopped on purpose, and swallowing it (as a bare
-     * `runCatching` does) leaves work running that was meant to stop. A caller whose scope is never cancelled passes
-     * [rethrowCancellation] false: there a cancellation can only come from inside the work, and the user should
-     * still be told it failed.
+     * `runCatching` does) leaves work running that was meant to stop.
      */
-    @Synchronized fun caught(where: String, error: Throwable, rethrowCancellation: Boolean = true) {
-        if (error is CancellationException && rethrowCancellation) throw error
+    @Synchronized fun caught(where: String, error: Throwable) {
+        if (error is CancellationException) throw error
         val what = "$where failed: ${error.javaClass.simpleName}"
         if (what == lastCaught && trail.isNotEmpty()) {
             caughtRepeats++
@@ -184,12 +175,8 @@ internal object Diagnostics {
             "density ${metrics.densityDpi} (default ${android.util.DisplayMetrics.DENSITY_DEVICE_STABLE})",
             "font ${config.fontScale}×",
             "animations ${scale}×",
-            "left page ${state?.optString("leftPage", "TODAY") ?: "?"}",
             "wallpaper ${if (state?.optBoolean("systemWallpaper", false) == true) "Android" else "Folio"}",
-            "fold effect ${if (state?.optBoolean("foldEffect", true) != false) "on" else "off"}" +
-                " (Duet ${state?.optJSONObject("duet")?.optString("style")?.ifBlank { null } ?: "duo"}," +
-                " plays ${state?.optJSONObject("duet")?.optString("direction")?.ifBlank { null } ?: "both"})",
-            "page effect ${state?.optString("pageEffect")?.ifBlank { PageEffect.NONE.name } ?: "?"}",
+            "fold effect ${if (state?.optBoolean("foldEffect", true) != false) "on" else "off"}",
             "safe mode ${if (SafeMode.active) "on" else "off"}",
         ).joinToString(", ")
     }
@@ -239,9 +226,8 @@ internal object Diagnostics {
     }.trimEnd()
 
     /**
-     * What Android shares about its wallpaper, and which background Folio puts behind Home (#353). With Android's
-     * wallpaper the Big Clock's colors come from the home colors here, then from the system palette when Android shares
-     * none; "none" means neither gave Folio any colors.
+     * What Android shares about its wallpaper, and which background Folio puts behind Home (#353); "none" means Android
+     * gave Folio no colors.
      */
     fun wallpaperReport(context: Context): String {
         val manager = runCatching { android.app.WallpaperManager.getInstance(context) }.getOrNull()
@@ -261,19 +247,12 @@ internal object Diagnostics {
     internal fun wallpaperReportText(systemWallpaper: Boolean, folioPictureSaved: Boolean, home: List<Int>?, lock: List<Int>?,
         palette: List<Int>? = null, themeColorSource: String? = null): String = buildString {
         fun text(colors: List<Int>?) = colors?.takeIf { it.isNotEmpty() }?.joinToString(" ") { String.format(java.util.Locale.ROOT, "#%06X", it and 0xFFFFFF) } ?: "none"
-        val clockSource = WallpaperTone(primary = home?.firstOrNull(), fromAndroid = systemWallpaper,
-            palette = palette?.takeIf { it.size >= 3 }?.let { SystemPalette(it[0], it[1], it[2]) }).colorSource()
         appendLine("Wallpaper:")
         appendLine("  behind Home: ${if (systemWallpaper) "Android's wallpaper" else "Folio's background"}" +
             " (a Folio picture is ${if (folioPictureSaved) "saved" else "not saved"})")
         appendLine("  Android's colors, home: ${text(home)}")
         appendLine("  Android's colors, lock: ${text(lock)}")
-        appendLine("  system palette (accent 1, 2, 3 at 500): ${text(palette)}, theme color source: ${themeColorSource ?: "not set"}")
-        append("  Big Clock colors: " + if (!systemWallpaper) "from Folio's background" else when (clockSource) {
-            WallpaperColorSource.ANDROID_COLORS -> "from Android's wallpaper colors"
-            WallpaperColorSource.SYSTEM_PALETTE -> "from the system palette"
-            WallpaperColorSource.NONE -> "none"
-        })
+        append("  system palette (accent 1, 2, 3 at 500): ${text(palette)}, theme color source: ${themeColorSource ?: "not set"}")
     }
 
     fun buildDisplay(): String = "${Build.DISPLAY} (${Build.HARDWARE}, ${Build.SOC_MODEL})"
@@ -312,137 +291,36 @@ internal object Diagnostics {
      */
     suspend fun bundleOffMain(context: Context): String = withContext(Dispatchers.IO) { bundle(context) }
 
-    /** Where an emailed report goes: no GitHub account needed, and nothing passes through a server of Folio's. */
-    const val SUPPORT_EMAIL = "contact@mcc-cal.com"
-
     /**
-     * The report as a file, handed to whatever app the person picks. An email app attaches it, so it arrives as one
-     * readable file instead of pages of pasted text, and they can open it before anything is sent. [email] addresses
-     * it to [SUPPORT_EMAIL]; without it, the share sheet leaves the choice of where entirely to them.
+     * The report as a file, handed to whatever app the person picks, so it arrives as one readable file instead of
+     * pages of pasted text.
      */
-    suspend fun reportIntent(context: Context, email: Boolean, note: String? = null): Intent = withContext(Dispatchers.IO) {
-        // Old reports are cleared, but not one a mail app may still be reading: only those more than ten minutes old,
+    private suspend fun reportIntent(context: Context): Intent = withContext(Dispatchers.IO) {
+        // Old reports are cleared, but not one an app may still be reading: only those more than ten minutes old,
         // and every report gets a name of its own, so two in the same minute don't overwrite each other.
         val dir = File(context.cacheDir, "reports").apply { mkdirs() }
         val now = System.currentTimeMillis()
         dir.listFiles()?.filter { now - it.lastModified() > 10 * 60_000 }?.forEach { it.delete() }
         val stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmmss"))
-        val file = File(dir, "folio-report-$stamp-${(1000..9999).random()}.txt").apply { writeText((note?.let { "Test: $it\n\n" } ?: "") + bundle(context)) }
+        val file = File(dir, "folio-report-$stamp-${(1000..9999).random()}.txt").apply { writeText(bundle(context)) }
         val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.reports", file)
-        val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty()
-        val send = Intent(Intent.ACTION_SEND).setType(mimeFor(email))
+        val send = Intent(Intent.ACTION_SEND).setType("text/plain")
             .putExtra(Intent.EXTRA_STREAM, uri)
-            .putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.folio_bug_report_1, version))
-            .putExtra(Intent.EXTRA_TEXT, context.getString(R.string.report_email_body) + (note?.let { "\n\nTest: $it" } ?: ""))
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         // The chooser only passes read access on if the file is also in clipData.
         send.clipData = ClipData.newRawUri("", uri)
-        // No selector: a mail selector inside a chooser left Android's share sheet with "No apps can perform this action"
-        // on a phone with Gmail installed. The email type (message/rfc822) is the one every mail app declares, so the
-        // chooser lists mail apps only.
-        if (email) send.putExtra(Intent.EXTRA_EMAIL, arrayOf(SUPPORT_EMAIL))
-        Intent.createChooser(send, context.getString(if (email) R.string.email_a_report else R.string.share_diagnostics))
+        Intent.createChooser(send, context.getString(R.string.share_diagnostics))
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 
-    /** The type a report is sent as: email apps declare message/rfc822, and anything else takes plain text. */
-    fun mimeFor(email: Boolean) = if (email) "message/rfc822" else "text/plain"
-
-    /** Whether any mail app can take a report. Needs the `<queries>` entry for SEND message/rfc822 in the manifest. */
-    fun hasMailApp(context: Context): Boolean = runCatching {
-        context.packageManager.queryIntentActivities(Intent(Intent.ACTION_SEND).setType(mimeFor(true)), 0).isNotEmpty()
-    }.getOrDefault(false)
-
-    /**
-     * Opens the report for sending. With [email] it goes to the mail apps; when this phone has none it opens the ordinary
-     * share sheet instead of one that says nothing can take it. Returns whether something opened.
-     */
-    suspend fun send(context: Context, email: Boolean): Boolean {
-        val asEmail = email && hasMailApp(context)
-        return runCatching { context.startActivity(reportIntent(context, asEmail)) }.isSuccess
-    }
+    /** Opens the report in the share sheet. Returns whether something opened. */
+    suspend fun send(context: Context): Boolean = runCatching { context.startActivity(reportIntent(context)) }.isSuccess
 
     suspend fun copy(context: Context) {
         val text = bundleOffMain(context)
         context.getSystemService(android.content.ClipboardManager::class.java)
             ?.setPrimaryClip(ClipData.newPlainText("Folio diagnostics", text))
     }
-
-    private const val ASKED = "report_asked_name"
-
-    /**
-     * Worth asking about: a crash, a freeze, or a native crash. Not Android closing Folio to free memory, which a
-     * launcher in the background has happen to it routinely, and which telling someone "Folio closed unexpectedly"
-     * about would only alarm them.
-     */
-    internal fun worthAsking(report: File): Boolean = when (report.name.substringBefore('-')) {
-        "crash" -> true
-        "exit" -> runCatching { report.useLines { it.firstOrNull() } }.getOrNull()?.let { first ->
-            first == "Folio ${label(ApplicationExitInfo.REASON_ANR)}" || first == "Folio ${label(ApplicationExitInfo.REASON_CRASH_NATIVE)}"
-        } == true
-        else -> false
-    }
-
-    /**
-     * The newest crash or freeze nobody has been asked about yet, or null. It remembers the report it last offered,
-     * not a time, so a clock that is wrong in either direction can't hide one or offer one twice. The first time this
-     * runs it only takes note of what is already there, so someone updating Folio isn't greeted by a report from
-     * weeks ago.
-     */
-    fun unaskedFailure(context: Context): File? {
-        val prefs = context.getSharedPreferences(PREFS, 0)
-        val newest = CrashLog.reports(context).firstOrNull(::worthAsking)
-        if (!prefs.contains(ASKED)) { prefs.edit().putString(ASKED, newest?.name.orEmpty()).apply(); return null }
-        return newest?.takeIf { it.name != prefs.getString(ASKED, "") }
-    }
-
-    /** Asked about [report], whatever the answer: it is never offered again. */
-    fun markAsked(context: Context, report: File) {
-        context.getSharedPreferences(PREFS, 0).edit().putString(ASKED, report.name).apply()
-    }
-
-    // The Market and the background, in the trail. The words are here, in the one file McCal reads rather than people,
-    // so callers hand over facts and a bug report reads the same in every language. Ids, versions and sizes only:
-    // never a picture, a path, or what a package contains.
-
-    /** A package fetched and applied, or why not. [id] is null for a file that didn't install, whose id is not known. */
-    fun marketGot(id: String?, result: InstallResult) = event("Market get ${id ?: "from a file"}: ${describe(result)}")
-
-    fun marketRemoved(id: String, ok: Boolean) = event("Market remove $id: ${if (ok) "removed" else "nothing changed"}")
-
-    fun marketUndone(id: String, ok: Boolean) = event("Market undo $id: ${if (ok) "put back" else "couldn't put back"}")
-
-    fun marketTurnedOff(id: String, ok: Boolean, bySafeMode: Boolean) =
-        event("Market ${if (bySafeMode) "Safe Mode turned off" else "turn off"} $id: ${if (ok) "off" else "nothing changed"}")
-
-    fun marketTurnedOn(id: String, ok: Boolean) = event("Market Try Again $id: ${if (ok) "on" else "still off"}")
-
-    fun marketRestored(restore: PackageInstaller.Restore?) = event(
-        if (restore == null) "Market backup: no packages"
-        else "Market backup: ${restore.on.size} on, ${restore.off.size} off, ${restore.failed.size} failed" +
-            restore.failed.joinToString(prefix = " (", postfix = ")") { it.id }.takeIf { restore.failed.isNotEmpty() }.orEmpty(),
-    )
-
-    private fun describe(result: InstallResult) = when (result) {
-        is InstallResult.Installed -> "installed ${result.installed.version.text}" +
-            (result.replaced?.let { " over ${it.version.text}" } ?: "")
-        is InstallResult.NeedsNewerFolio -> "needs a newer Folio (${result.missing.joinToString()})"
-        is InstallResult.NeedsHost -> "needs its tweak first (${result.tweaks.joinToString()})"
-        is InstallResult.Failed -> "failed, ${result.reason.name}: ${result.message}"
-    }
-
-    /** A wallpaper package's picture went on. [shown] is whether it is behind Home now (see ArtSelection). */
-    fun artOn(id: String, fresh: Boolean, shown: Boolean) =
-        event("Wallpaper $id on (${if (fresh) "new" else "again"}), ${if (shown) "behind Home" else "user's choice kept"}")
-
-    /** A wallpaper package's picture came off. [putBack] is whether the earlier background went back behind Home. */
-    fun artOff(id: String, putBack: Boolean) =
-        event("Wallpaper $id off, ${if (putBack) "earlier background put back" else "user's choice kept"}")
-
-    /** Why a wallpaper couldn't go on. The installer shows people one general message, so the reason is kept here. */
-    fun artRefused(id: String, why: String?) = event("Wallpaper $id refused: ${why ?: "no reason given"}")
-
-    fun artPruned(ids: List<String>) { if (ids.isNotEmpty()) event("Wallpaper art cleared: ${ids.joinToString()}") }
 
     fun backgroundSet(choice: BackgroundChoice) = event("Background set: ${choice.save()}")
 
@@ -463,8 +341,8 @@ internal object Diagnostics {
  * cancellation is rethrown rather than swallowed. For the places Folio recovers from a failure the user would
  * otherwise never hear about; an expected miss (an optional file that isn't there) stays a plain `runCatching`.
  */
-internal inline fun <T> caught(where: String, rethrowCancellation: Boolean = true, block: () -> T): Result<T> =
-    runCatching(block).onFailure { Diagnostics.caught(where, it, rethrowCancellation) }
+internal inline fun <T> caught(where: String, block: () -> T): Result<T> =
+    runCatching(block).onFailure { Diagnostics.caught(where, it) }
 
 /**
  * A named section in a system trace, for Perfetto and Macrobenchmark's TraceSectionMetric. When nothing is tracing
@@ -474,4 +352,52 @@ internal inline fun <T> caught(where: String, rethrowCancellation: Boolean = tru
 internal inline fun <T> traced(section: String, block: () -> T): T {
     androidx.tracing.Trace.beginSection(section)
     try { return block() } finally { androidx.tracing.Trace.endSection() }
+}
+
+/**
+ * What Folio can reach on this phone, by the tiers in ADR 0008 (docs/adr/0008-platform-architecture.md): A0 needs nothing, A1 is
+ * notification access, A2 is Folio's accessibility service.
+ */
+internal enum class CapabilityTier(val code: String, val risk: OperationRisk) {
+    /** Home and folders: every change has an Undo. */
+    STANDARD("A0", OperationRisk.REVERSIBLE),
+    /** Reads notifications; replying and dismissing one are changes that stay. */
+    NOTIFICATIONS("A1", OperationRisk.STATEFUL),
+    /** Global gestures and the shade over other apps: they end when you let go. */
+    ACCESSIBILITY("A2", OperationRisk.REVERSIBLE),
+}
+
+internal data class CapabilityRow(val tier: CapabilityTier, val on: Boolean) {
+    /** The most that Folio does with this tier. */
+    val risk get() = tier.risk
+}
+
+internal object Capabilities {
+    /** The rows for this phone: Standard is always on; the other two follow what the person has allowed. */
+    fun rows(notificationAccess: Boolean, accessibilityConnected: Boolean): List<CapabilityRow> = listOf(
+        CapabilityRow(CapabilityTier.STANDARD, true),
+        CapabilityRow(CapabilityTier.NOTIFICATIONS, notificationAccess),
+        CapabilityRow(CapabilityTier.ACCESSIBILITY, accessibilityConnected),
+    )
+
+    /** Which tiers still need the person's permission, in the order to offer them. */
+    fun needsPermission(rows: List<CapabilityRow>) = rows.filter { !it.on }.map { it.tier }
+}
+
+/** One line of Folio's own activity trail, read back for the Inspector: when, what, and whether it was a failure Folio carried on from. */
+internal data class InspectorEntry(val time: String, val text: String, val failed: Boolean)
+
+internal object Inspector {
+    private val line = Regex("""^(\d{2}:\d{2}:\d{2}\.\d{3})\s{2}(.*)$""")
+
+    /** The trail (see [Diagnostics.trailText]) newest first. A line that doesn't look like a trail line is kept as it is, with no time. */
+    fun entries(trail: String): List<InspectorEntry> = trail.lineSequence().filter { it.isNotBlank() }.map { raw ->
+        line.matchEntire(raw)?.let { m -> InspectorEntry(m.groupValues[1], m.groupValues[2], isFailure(m.groupValues[2])) }
+            ?: InspectorEntry("", raw.trim(), isFailure(raw))
+    }.toList().asReversed()
+
+    /** [Diagnostics.caught] writes "<where> failed: <Type>"; that is what marks a failure. */
+    fun isFailure(text: String) = " failed: " in text || text.startsWith("failed")
+
+    fun filter(entries: List<InspectorEntry>, failedOnly: Boolean) = if (failedOnly) entries.filter { it.failed } else entries
 }

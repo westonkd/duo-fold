@@ -82,9 +82,9 @@ internal fun AppPanel(app: AppEntry, onDismiss: () -> Unit, onOpen: () -> Unit) 
     val appear = remember { Animatable(0f) }
     LaunchedEffect(Unit) { appear.animateTo(1f, FolioMotion.spring(FolioMotion.Appear)) }
     RegisterOpenWindow(LauncherSheets)
-    val actions by produceState(emptyList<QuickAction>(), app.id, app.iconFrom) { value = withContext(Dispatchers.IO) { loadQuickActions(context, app, 4) } }
-    val notifications = IslandListenerService.notifications.collectAsStateWithLifecycle().value.filter { it.packageName == app.component.packageName }.take(3)
-    val media = (IslandListenerService.activity.collectAsStateWithLifecycle().value as? IslandActivity.Media)?.takeIf { it.packageName == app.component.packageName }
+    val actions by produceState(emptyList<QuickAction>(), app.id) { value = withContext(Dispatchers.IO) { loadQuickActions(context, app, 4) } }
+    val notifications = NotificationListener.notifications.collectAsStateWithLifecycle().value.filter { it.packageName == app.component.packageName }.take(3)
+    val media = NotificationListener.media.collectAsStateWithLifecycle().value?.takeIf { it.packageName == app.component.packageName }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         val view = LocalView.current
@@ -122,7 +122,7 @@ internal fun AppPanel(app: AppEntry, onDismiss: () -> Unit, onOpen: () -> Unit) 
                 .clickable(remember { MutableInteractionSource() }, null) {}.padding(FolioSpace.COMFY.dp),
                 verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    AppIcon(app, null, Modifier.size(36.dp), shape = RoundedCornerShape(9.dp), badge = false)
+                    AppIcon(app, null, Modifier.size(36.dp))
                     Spacer(Modifier.width(10.dp))
                     Text(app.label, color = Color.White, fontSize = FolioType.BODY.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
                         overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
@@ -150,7 +150,7 @@ internal fun AppPanel(app: AppEntry, onDismiss: () -> Unit, onOpen: () -> Unit) 
                 if (notifications.isNotEmpty()) Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.GROUP.dp)).background(Color.White.copy(alpha = .08f))) {
                     notifications.forEachIndexed { index, item ->
                         if (index > 0) MenuDivider()
-                        Column(Modifier.fillMaxWidth().clickable { onDismiss(); IslandListenerService.openNotification(context, item) }
+                        Column(Modifier.fillMaxWidth().clickable { onDismiss(); NotificationListener.openNotification(context, item) }
                             .padding(horizontal = FolioSpace.MEDIUM.dp, vertical = 9.dp)) {
                             Text(item.title ?: item.appLabel, color = Color.White, fontSize = FolioType.COMPACT.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             item.text?.let { Text(it, color = Color.White.copy(alpha = .7f), fontSize = FolioType.FOOTNOTE.sp, maxLines = 2, overflow = TextOverflow.Ellipsis) }

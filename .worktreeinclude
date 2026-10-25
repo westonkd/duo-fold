@@ -2,9 +2,6 @@
 # including the throwaway one a subagent gets, so what's named here should be small.
 # Same syntax as .gitignore, and only files that match here *and* are ignored are copied, so nothing
 # tracked is ever duplicated. See https://code.claude.com/docs/en/worktrees
-#
-# Deliberately not here: supporter-key.pem and supporter-codes*.txt. A signing key belongs in one place
-# outside the repository (docs/releases/kofi.md), not copied into every checkout on the disk.
 
 # Where the SDK is, so :app builds without being set up again.
 local.properties

@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.asStateFlow
 internal data class PerfStatus(val running: Boolean = false, val readings: Int = 0, val elapsedMs: Long = 0, val hasReport: Boolean = false)
 
 /**
- * The Performance log (Settings › Advanced › Diagnostics): off until you start it, it reads Folio's CPU time, memory,
+ * The Performance log (Settings › General): off until you start it, it reads Folio's CPU time, memory,
  * threads, the battery and the frame times every few seconds, and writes one plain-text report. Nothing is sent
  * anywhere and it asks for no permission; the numbers stay in memory until you copy or share them. It stops itself
  * after [PerfMath.LIMIT_MS].

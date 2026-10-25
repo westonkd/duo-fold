@@ -41,15 +41,15 @@ class DragLandingTest {
         assertEquals(.6f, DragLanding.cellAlpha("gmail", flyingId = "gmail", reduced = true, copyAlpha = .4f), .001f)
     }
 
-    private fun fly(flight: BounceFlight, target: (Int) -> Offset, speed: Float = 1f, frames: Int = 120): Int {
-        repeat(frames) { f -> flight.step(target(f), 1f / 60f, speed); if (flight.arrived(target(f))) return f }
+    private fun fly(flight: BounceFlight, target: (Int) -> Offset, frames: Int = 120): Int {
+        repeat(frames) { f -> flight.step(target(f), 1f / 60f); if (flight.arrived(target(f))) return f }
         return -1
     }
 
     @Test fun `the landing settles on its cell with Bounce's small overshoot`() {
         val flight = BounceFlight(Offset(0f, 0f), Offset.Zero)
         var furthest = 0f
-        val done = (0 until 120).firstOrNull { flight.step(Offset(100f, 0f), 1f / 60f, 1f); furthest = maxOf(furthest, flight.position.x); flight.arrived(Offset(100f, 0f)) }
+        val done = (0 until 120).firstOrNull { flight.step(Offset(100f, 0f), 1f / 60f); furthest = maxOf(furthest, flight.position.x); flight.arrived(Offset(100f, 0f)) }
         assertEquals(true, done != null && done < 60)
         // Damping .7 passes the line by about 4.6%: visible, never a wobble.
         assertEquals(true, furthest in 103f..106f)
@@ -62,21 +62,7 @@ class DragLandingTest {
         assertEquals(true, done in 1..70)
         assertEquals(1392f, flight.position.y, .5f)
         val early = BounceFlight(Offset(0f, 0f), Offset.Zero)
-        repeat(3) { f -> early.step(Offset(140f, 1360f + f * 4f), 1f / 60f, 1f) }
+        repeat(3) { f -> early.step(Offset(140f, 1360f + f * 4f), 1f / 60f) }
         assertEquals(true, early.position.x > 10f)
-    }
-
-    @Test fun `Animation Speed reaches the landing`() {
-        val standard = fly(BounceFlight(Offset.Zero, Offset.Zero), { Offset(100f, 0f) })
-        val snappy = fly(BounceFlight(Offset.Zero, Offset.Zero), { Offset(100f, 0f) }, speed = MotionSpeed.SNAPPY.factor)
-        assertEquals(true, snappy in 1 until standard)
-    }
-
-    @Test fun `without the motion pass a drag keeps the old copy`() {
-        val landing = DragLanding()
-        landing.begin(kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), "gmail", Offset(10f, 10f), pass = false, reduceMotion = false)
-        assertEquals(false, landing.lifted)
-        landing.land(kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), "gmail", Offset(10f, 10f), Offset.Zero)
-        assertEquals(null, landing.flyingId)
     }
 }

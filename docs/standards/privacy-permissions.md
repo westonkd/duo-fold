@@ -45,18 +45,14 @@ Put the answers in the PR and in PERMISSIONS.md before it ships:
 
 ### Packages and code
 
-- **PRV-13 MUST NOT** download or run executable code: no DEX, JAR or native libraries ([ADR 0004](../adr/0004-declarative-first.md)).
-  Market packages are data applied through Folio's own APIs.
-- **PRV-14 MUST** verify Market sources by signature and pinned key ([ADR 0001](../adr/0001-repo-format.md),
-  [0002](../adr/0002-signing.md)).
+- **PRV-13 MUST NOT** download or run executable code: no DEX, JAR or native libraries.
 - **PRV-15 MUST** treat imported files (themes, layouts, packages) as untrusted input: validate, bound sizes, and fuzz
   the parser.
 - **PRV-16 MUST** accept widget pin and other system requests only from the system.
 
 ### Tiers
 
-- **PRV-17 MUST** make every feature work without root. Root, Shizuku or ADB grants may only add optional extras, and
-  only in the separate System Bridge tier, clearly labelled and off by default.
+- **PRV-17 MUST** make every feature work without root, Shizuku or ADB grants. Folio uses none of them.
 - **PRV-18 MUST** keep the accessibility service, notification listener and similar powerful services to what their
   PERMISSIONS.md row says, and explain them plainly, including why some banking apps react to accessibility services.
 

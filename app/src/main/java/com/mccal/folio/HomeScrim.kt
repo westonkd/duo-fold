@@ -16,11 +16,10 @@ import androidx.compose.ui.draw.drawWithCache
  *
  * Both ends, and only the ends, because of what Home really draws:
  *
- * - The top holds the clock and date. The Side Bar's own text sits on frosted glass, but not with the capsule turned
- *   off (`StatusStyle.background`), and the Clock and Date widgets draw straight on the wallpaper with no shadow at
- *   all ([HomeWidgets.kt]).
- * - The bottom holds the page dots ([HomeInk.faint], white at .4), the Discover and App Library buttons (white at .6
- *   and .65) and the "3 / 7" page counter. A11Y-9 names white at .55 over a bright wallpaper as the case that needs a
+ * - The top holds the clock and date. The Side Bar's own text has no capsule behind it, and the Clock and Date widgets
+ *   draw straight on the wallpaper with no shadow at all ([HomeWidgets.kt]).
+ * - The bottom holds the page dots ([HomeInk.faint], white at .4), the App Library button (white at .6) and the
+ *   "3 / 7" page counter. A11Y-9 names white at .55 over a bright wallpaper as the case that needs a
  *   scrim, and these are below it.
  * - The middle is the grid, and its app labels already carry [HomeInk.labelShadow] per glyph (black at .55, 3px
  *   blur), so they need no wash. That middle third is also the part of a wallpaper worth looking at, so it is left
@@ -48,10 +47,9 @@ internal data class HomeScrim(
         const val BAND = .34f
 
         /**
-         * Darkest values, at the very edges. Deliberately no stronger than the .3 black that
-         * "Dark appearance dims wallpaper" has shipped over the whole screen since 0.6.x: whatever else is true, a
-         * gradient that peaks below that only at the two edges and reaches nothing across the middle darkens Home
-         * strictly less than a setting Folio already calls a dim rather than a filter.
+         * Darkest values, at the very edges. Deliberately no stronger than a .3 black over the whole screen: a
+         * gradient that peaks below that only at the two edges and reaches nothing across the middle is a dim
+         * rather than a filter.
          *
          * The bottom is the stronger of the two because the weakest text is there: the page dots and the two round
          * controls beside them have no shadow and no glass behind them.
@@ -79,25 +77,9 @@ internal data class HomeScrim(
          * are the two halves of one job and never both fire: a pale wallpaper that reports
          * `HINT_SUPPORTS_DARK_TEXT` gets dark text, and a pale wallpaper that doesn't (or a Light choice made by hand)
          * gets the scrim.
-         *
-         * [dim] is the black that "Dark appearance dims wallpaper" is already drawing over the same pixels, so the
-         * scrim gives way to it instead of darkening twice: see [under].
          */
-        fun of(on: Boolean, darkText: Boolean, dim: Float): HomeScrim =
-            if (!on || darkText) None else HomeScrim(under(TOP, dim), under(BOTTOM, dim))
-
-        /**
-         * How dark the scrim has to be to reach [target] over a wallpaper that [dim] has already darkened, so the two
-         * together land on [target] rather than on the sum of both.
-         *
-         * Two blacks at a and b compose to `a + b - ab`, so solving that for b gives `(target - dim) / (1 - dim)`. At
-         * the dim's full .3 both of Folio's targets are already met and the scrim is nothing.
-         */
-        fun under(target: Float, dim: Float): Float {
-            val already = dim.coerceIn(0f, 1f)
-            if (already >= 1f) return 0f
-            return ((target - already) / (1f - already)).coerceIn(0f, 1f)
-        }
+        fun of(on: Boolean, darkText: Boolean): HomeScrim =
+            if (!on || darkText) None else HomeScrim(TOP, BOTTOM)
 
         /** [peak] darkness [fraction] of the way through a band: a raised cosine, [peak] at 0 and nothing at 1. */
         fun alphaAt(peak: Float, fraction: Float): Float {

@@ -76,5 +76,5 @@ internal fun buttonsRoomDp(stateJson: String, liftDp: Float): Float = runCatchin
     val state = JSONObject(stateJson)
     if (!state.optBoolean(SettingKeys.BUTTON_BAR, false)) return@runCatching 0f
     if (liftDp > ButtonsRoomProvider.LIFTED_DP) return@runCatching 0f
-    state.optDouble(SettingKeys.BUTTON_BAR_HEIGHT, 52.0).toFloat().coerceIn(44f, 60f)
+    BUTTON_BAR_HEIGHT_DP
 }.getOrDefault(0f)

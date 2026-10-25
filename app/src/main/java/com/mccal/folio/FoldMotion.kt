@@ -1,12 +1,7 @@
 package com.mccal.folio
 
-import android.content.Context
-import android.content.SharedPreferences
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -24,7 +19,7 @@ import kotlin.math.sin
 
 /**
  * Fold motion: three small touches on the open screen as the hinge moves, none of them blur. Each follows the same value the fold
- * effect already follows (so they run both ways, and a half-closed phone opened again is one motion), and each has its own switch.
+ * effect already follows (so they run both ways, and a half-closed phone opened again is one motion).
  *
  *  - **Ripple**: icons settle in a wave that starts at the hinge and spreads outward, a little smaller and dimmer at first.
  *  - **Depth**: the wallpaper and the icons move by slightly different amounts, so the content feels locked in space.
@@ -33,40 +28,6 @@ import kotlin.math.sin
  * All of it is a transform in a graphics layer or one gradient in a draw lambda, read per frame without recomposing, and nothing at
  * all is applied at rest. Mocked in the Lab (scene fold-motion) on 7 Oct 2026.
  */
-internal data class FoldMotionOptions(val ripple: Boolean = true, val depth: Boolean = true, val light: Boolean = true) {
-    val any get() = ripple || depth || light
-
-    companion object {
-        const val KEY_RIPPLE = "fold_motion_ripple"
-        const val KEY_DEPTH = "fold_motion_depth"
-        const val KEY_LIGHT = "fold_motion_light"
-
-        fun read(prefs: SharedPreferences) = FoldMotionOptions(
-            ripple = prefs.getBoolean(KEY_RIPPLE, true), depth = prefs.getBoolean(KEY_DEPTH, true), light = prefs.getBoolean(KEY_LIGHT, true))
-
-        fun write(prefs: SharedPreferences, options: FoldMotionOptions) {
-            prefs.edit().putBoolean(KEY_RIPPLE, options.ripple).putBoolean(KEY_DEPTH, options.depth).putBoolean(KEY_LIGHT, options.light).apply()
-        }
-
-        fun prefs(context: Context): SharedPreferences = context.applicationContext.getSharedPreferences("folio", Context.MODE_PRIVATE)
-    }
-}
-
-/** The options as a live value: changing a switch in Settings is seen by Home at once. */
-@Composable
-internal fun rememberFoldMotionOptions(context: Context): State<FoldMotionOptions> {
-    val prefs = remember { FoldMotionOptions.prefs(context) }
-    val state = remember { mutableStateOf(FoldMotionOptions.read(prefs)) }
-    DisposableEffect(prefs) {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
-            if (key == FoldMotionOptions.KEY_RIPPLE || key == FoldMotionOptions.KEY_DEPTH || key == FoldMotionOptions.KEY_LIGHT) state.value = FoldMotionOptions.read(p)
-        }
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
-    }
-    return state
-}
-
 internal data class RippleValues(val scale: Float, val translateYDp: Float, val alpha: Float)
 
 internal object FoldMotionMath {
@@ -109,7 +70,7 @@ internal object FoldMotionMath {
 
 /** What the motion needs to know about the screen: the live amount (read only in layer and draw lambdas) and where the hinge is. */
 internal class FoldMotionScope(
-    val amount: () -> Float, val options: FoldMotionOptions,
+    val amount: () -> Float,
     val hingeIsHorizontal: Boolean, val hingePx: Float, val farthestPx: Float,
 ) {
     /** 0 on the hinge, 1 at the farthest edge, for a point at window position ([x], [y]) in pixels. */
@@ -122,18 +83,15 @@ internal val LocalFoldMotion = compositionLocalOf<FoldMotionScope?> { null }
 @Composable
 internal fun Modifier.foldMotionIcon(): Modifier {
     val scope = LocalFoldMotion.current ?: return this
-    if (!scope.options.ripple && !scope.options.depth) return this
     val center = remember { FloatArray(2) }
     return this
         .onGloballyPositioned { c -> val p = c.positionInWindow(); center[0] = p.x + c.size.width / 2f; center[1] = p.y + c.size.height / 2f }
         .graphicsLayer {
             val a = scope.amount()
             if (a <= .001f) return@graphicsLayer
-            if (scope.options.ripple) {
-                val v = FoldMotionMath.ripple(a, scope.distance(center[0], center[1]))
-                scaleX = v.scale; scaleY = v.scale; translationY = v.translateYDp * density; alpha = v.alpha
-            }
-            if (scope.options.depth) translationX = FoldMotionMath.iconShiftDp(a) * density
+            val v = FoldMotionMath.ripple(a, scope.distance(center[0], center[1]))
+            scaleX = v.scale; scaleY = v.scale; translationY = v.translateYDp * density; alpha = v.alpha
+            translationX = FoldMotionMath.iconShiftDp(a) * density
         }
 }
 
@@ -141,7 +99,6 @@ internal fun Modifier.foldMotionIcon(): Modifier {
 @Composable
 internal fun Modifier.foldMotionWallpaper(): Modifier {
     val scope = LocalFoldMotion.current ?: return this
-    if (!scope.options.depth) return this
     return graphicsLayer {
         val a = scope.amount()
         if (a <= .001f) return@graphicsLayer

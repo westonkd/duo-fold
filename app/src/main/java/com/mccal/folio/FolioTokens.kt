@@ -3,25 +3,20 @@ package com.mccal.folio
 import androidx.compose.ui.graphics.Color
 
 /**
- * Folio's shared colors: Apple's dark-appearance system colors, named once so screens, themes and Market packages all
- * point at the same values. Use these instead of writing hex colors in a screen.
+ * Folio's shared colors: Apple's dark-appearance system colors, named once so screens and themes all point at the
+ * same values. Use these instead of writing hex colors in a screen.
  */
 internal object FolioColors {
     /**
      * The palette as ARGB numbers, for the places that hold a color as a value rather than a `Color`: a tweak's
-     * tint, a Focus mode, a saved layout's icon tint. One source of truth, so a number and a color can't drift.
+     * tint, a saved layout's icon tint. One source of truth, so a number and a color can't drift.
      */
     object Value {
         const val Blue = 0xFF0A84FFL
-        const val BlueDeep = 0xFF0A6FD6L
         const val BlueOnDark = 0xFF6CB4FFL
         const val Red = 0xFFFF453AL
         const val RedLight = 0xFFFF3B30L
         const val RedOnDark = 0xFFFF8A80L
-        const val StandByNight = 0xFFB3261EL
-        const val StandByNightText = 0xFFFF453AL
-        const val StandByNightSoft = 0xFFE63B30L
-        const val StandByNightCard = 0xFF1A0605L
         const val RedSoft = 0xFFFF6961L
         const val Green = 0xFF30D158L
         const val GreenLight = 0xFF34C759L
@@ -42,11 +37,6 @@ internal object FolioColors {
     }
 
     val Blue = Color(Value.Blue)
-    /**
-     * Blue deep enough for white text to clear 4.5:1 (4.93): filled buttons. iOS puts white on [Blue] itself, which
-     * measures 3.65 and fails WCAG AA for text this size, so Folio's filled buttons sit a shade deeper (A11Y-9).
-     */
-    val BlueDeep = Color(Value.BlueDeep)
     /** Blue for text and links on a dark surface, where [Blue] is too dark to read (6.19:1 on a sheet). */
     val BlueOnDark = Color(Value.BlueOnDark)
     val Red = Color(Value.Red)
@@ -54,14 +44,6 @@ internal object FolioColors {
     val RedLight = Color(Value.RedLight)
     /** Destructive text on dark menus and sheets: [Red] measures 3.33 on a menu's grey, this one 4.97 (A11Y-9). */
     val RedOnDark = Color(Value.RedOnDark)
-    /** StandBy at night, the big clock: a dim red, 3.2:1 on black, enough for text that large (WCAG 1.4.3). */
-    val StandByNight = Color(Value.StandByNight)
-    /** StandBy's smaller night text: 6.2:1 on black and 5.7:1 on [StandByNightCard], over the 4.5:1 small text needs. */
-    val StandByNightText = Color(Value.StandByNightText)
-    /** StandBy's secondary night text (dates, artists, times): 5.0:1 on black and 4.7:1 on [StandByNightCard]. */
-    val StandByNightSoft = Color(Value.StandByNightSoft)
-    /** StandBy's cards at night (Up Next, Now Playing). */
-    val StandByNightCard = Color(Value.StandByNightCard)
     /** A softer red, for a state that is wrong rather than destructive: a source that failed, a paused profile. */
     val RedSoft = Color(Value.RedSoft)
     val Green = Color(Value.Green)
@@ -114,10 +96,6 @@ internal object FolioColors {
     val InvalidDrop = Color(0xFFFF6B6B)
     /** The bezel drawn around a phone in the Customization previews. */
     val PreviewBezel = Color(0xFF0B0B0C)
-    /** Supporting text on [SecondaryBackground]-style cards in dark appearance (iOS secondaryLabel). */
-    val SecondaryLabelOnDark = Color(0xFF98989F)
-    /** Supporting text on [LightBackground]-style cards in light appearance (iOS secondaryLabel). */
-    val SecondaryLabelOnLight = Color(0xFF6C6C70)
     /** Supporting text on dark glass and sheets. */
     val SecondaryLabel = Color.White.copy(alpha = .62f)
 }
@@ -128,21 +106,12 @@ internal object FolioColors {
  */
 internal data class FolioAccent(val fill: Color, val ink: Color)
 
-/** What Settings offers under Accent. Folio's own teal is the default; Apple's blue is there for whoever wants it. */
-enum class AccentChoice(val id: String) { FOLIO_TEAL("teal"), APPLE_BLUE("blue") }
-
 internal object FolioAccents {
     /** Folio's app icon, which ships in teal (#173D43 to #2E5E66), and the soft icon's mint for text. */
     val Teal = FolioAccent(fill = Color(0xFF2A6A70), ink = Color(0xFF6DB7B4))
-    /** iOS's blue, deep enough for white text to pass AA. */
-    val Blue = FolioAccent(fill = FolioColors.BlueDeep, ink = FolioColors.BlueOnDark)
-    fun of(choice: AccentChoice) = when (choice) {
-        AccentChoice.FOLIO_TEAL -> Teal
-        AccentChoice.APPLE_BLUE -> Blue
-    }
 }
 
-/** The accent in force, from Settings › Wallpaper & Appearance › Accent. */
+/** The accent in force. */
 internal val LocalAccent = androidx.compose.runtime.staticCompositionLocalOf { FolioAccents.Teal }
 
 /**
@@ -162,7 +131,6 @@ internal object FolioSpace {
     const val LARGE = 16
     const val XL = 20
     const val XXL = 24
-    const val HUGE = 32
 }
 
 /** Folio's corner radii, in dp. Inner corners are concentric: outer radius minus the padding between them (DES-8). */
@@ -183,8 +151,6 @@ internal object FolioRadius {
     const val ROW = 12
     /** Floating menus and action sheets. */
     const val FLOATING = 18
-    /** Notification cards and the stack behind them. */
-    const val NOTIFICATION = 22
     /** The dock and the side rail: a capsule. */
     const val RAIL = 30
     /** A segmented control's track. */
@@ -194,8 +160,7 @@ internal object FolioRadius {
 }
 
 /**
- * Folio's type scale, in sp, following iOS's text styles. Home app labels come from [LabelSize] instead, because they
- * follow the user's icon size.
+ * Folio's type scale, in sp, following iOS's text styles. Home app labels use [HOME_LABEL_SP] instead.
  */
 internal object FolioType {
     const val TITLE = 28
@@ -208,7 +173,7 @@ internal object FolioType {
     const val CALLOUT = 16
     /** iOS Title 3: sheet and card headings. */
     const val TITLE3 = 20
-    /** iOS Caption 2: timestamps and the smallest supporting text. Home app labels use [LabelSize] instead. */
+    /** iOS Caption 2: timestamps and the smallest supporting text. Home app labels use [HOME_LABEL_SP] instead. */
     const val CAPTION = 11
     /** Uppercase group labels, SemiBold with .4sp tracking. */
     const val GROUP_LABEL = 12
@@ -225,17 +190,12 @@ internal object FolioTouch {
 /** Row heights, in dp: iOS's list metrics, and never below the 48dp touch target (A11Y-1). */
 internal object FolioRow {
     const val ACTION = 48
-    const val NAV = 52
 }
 
 /**
- * Folio's shared springs as (damping, stiffness) pairs. Always run them through [MotionSpeed.spring] so they follow
- * Settings › Gestures › Animation Speed; Reduce Motion is handled by the callers.
+ * Folio's shared springs as (damping, stiffness) pairs, run through [FolioMotion.spring]; Reduce Motion is handled by the callers.
  */
 internal object FolioMotion {
-    /** How long the Gauge takes to sweep to a new battery level: long enough to read as movement, short enough to ignore. */
-    const val GAUGE_MS = 650
-
     /** Sheets and panels settling into place. */
     val Settle = .86f to 420f
     /** Quick responses to a touch (buttons, toggles, closing). */
@@ -258,42 +218,8 @@ internal object FolioMotion {
     /** A settle that starts with the finger's speed (a flick, a drop): visibly passes the line and eases back. Never for a tap. */
     val Bounce = .7f to 480f
 
-    /**
-     * True while the 0.6.9 motion pass is on for this phone. It follows [FeatureGate.MOTION_V2] when the app starts, and
-     * on a beta or Folio Dev build a switch in Settings › Advanced can override it, to compare the old motion with the
-     * new. It is Compose state, so a screen that reads it redraws the moment the switch is flipped.
-     */
-    private val v2State = androidx.compose.runtime.mutableStateOf(false)
-    val v2: Boolean get() = v2State.value
-
-    /** What the switch says, if it was ever used: on, off, or null for "follow the gate". */
-    fun resolve(override: Boolean?, gateOpen: Boolean) = override ?: gateOpen
-
-    private const val PREFS = "folio_motion"
-    private const val OVERRIDE = "motionPassOverride"
-
-    /** Sets [v2] from the gate and the saved switch; called once when the app starts. */
-    fun initialize(context: android.content.Context) {
-        val saved = context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
-        val override = if (saved.contains(OVERRIDE)) saved.getBoolean(OVERRIDE, false) else null
-        use(resolve(override, FeatureGate.MOTION_V2.isOpen(context)))
-    }
-
-    /** The switch in Settings › Advanced. Takes effect at once for what is on screen and for everything opened after. */
-    fun setEnabled(context: android.content.Context, on: Boolean) {
-        context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE).edit().putBoolean(OVERRIDE, on).apply()
-        use(on)
-    }
-
-    /** Turns the pass on or off in memory only. The switch and the tests both go through here. */
-    internal fun use(on: Boolean) { v2State.value = on }
-
-    /** Whether the switch is shown: only while the pass is still on trial, on a beta or Folio Dev build. */
-    fun switchVisible(context: android.content.Context) = !FeatureGate.MOTION_V2.open && FeatureGate.MOTION_V2.isOpen(context)
-
-    /** The new spring when the motion pass is on, and the numbers the caller used before it when it is not. */
-    fun pick(old: Pair<Float, Float>, new: Pair<Float, Float>) = if (v2) new else old
-    fun <T> spring(pair: Pair<Float, Float>, visibilityThreshold: T? = null) = MotionSpeed.spring(pair.first, pair.second, visibilityThreshold)
+    fun <T> spring(pair: Pair<Float, Float>, visibilityThreshold: T? = null) =
+        androidx.compose.animation.core.spring(dampingRatio = pair.first, stiffness = pair.second, visibilityThreshold = visibilityThreshold)
 
     /** Reduce Motion's stand-in for anything that would slide or grow in: a fade where it lands, this long. */
     const val FADE_MS = 150

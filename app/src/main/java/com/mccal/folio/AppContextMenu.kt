@@ -5,11 +5,9 @@ import android.content.pm.ShortcutInfo
 import android.graphics.Bitmap
 import android.graphics.Rect
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -64,8 +62,6 @@ internal data class QuickAction(val label: String, val icon: Bitmap?, val info: 
 
 /** The app's own shortcuts (Folio can read them as the default Home app). Call off the main thread. */
 internal fun loadQuickActions(context: android.content.Context, app: AppEntry, limit: Int = 4): List<QuickAction> = runCatching {
-    // Screenshot Mode: a swapped app's own shortcuts would name the real app.
-    if (app.iconFrom != null) return@runCatching emptyList()
     val apps = context.getSystemService(LauncherApps::class.java)
     if (!apps.hasShortcutHostPermission()) return@runCatching emptyList()
     val query = LauncherApps.ShortcutQuery().setPackage(app.component.packageName).setActivity(app.component)
@@ -82,7 +78,7 @@ internal fun loadQuickActions(context: android.content.Context, app: AppEntry, l
  */
 internal fun startQuickAction(context: android.content.Context, app: AppEntry, action: QuickAction) {
     runCatching { context.getSystemService(LauncherApps::class.java).startShortcut(action.info, null, null) }
-        .onFailure { IslandEvents.notice(context, context.getString(R.string.app_is_unavailable, action.label.ifBlank { app.label }), app.icon) }
+        .onFailure { FolioNotice.show(context, context.getString(R.string.app_is_unavailable, action.label.ifBlank { app.label })) }
 }
 
 /**
@@ -92,8 +88,6 @@ internal fun startQuickAction(context: android.content.Context, app: AppEntry, a
 @Composable
 internal fun AppContextMenu(
     app: AppEntry, onHome: Boolean, hidden: Boolean,
-    /** The Focus locking Home editing, if any: editing rows are replaced by a note. */
-    lockedBy: String? = null,
     onDismiss: () -> Unit, onMove: () -> Unit, onAddOrRemove: () -> Unit, onCreateFolder: () -> Unit, hasFolders: Boolean = false,
     onWidgets: (() -> Unit)?, onToggleHidden: () -> Unit, onInfo: () -> Unit, onRename: () -> Unit,
     /** This app's own icon look; null where an icon has none to change. */
@@ -109,16 +103,15 @@ internal fun AppContextMenu(
     val density = LocalDensity.current
     val appear = remember { Animatable(0f) }
     var more by remember { mutableStateOf(false) }
-    // The 0.6.9 motion pass (MO5, the Lab's "Grow from the icon"): the menu opens on the Menu token instead of its own numbers,
-    // closes back into the icon instead of vanishing, and under Reduce Motion only fades. Without the pass it is as before.
-    val pass = FolioMotion.v2
-    val still = pass && LocalReduceMotion.current
+    // The 0.6.9 motion pass (MO5, the Lab's "Grow from the icon"): the menu opens on the Menu token, closes back into
+    // the icon instead of vanishing, and under Reduce Motion only fades.
+    val still = LocalReduceMotion.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var closing by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { appear.animateTo(1f, FolioMotion.spring(FolioMotion.pick(old = .72f to Spring.StiffnessMediumLow, new = FolioMotion.Menu))) }
-    /** Tapping outside or going back: with the pass the menu goes back into the icon first. An action closes it at once. */
+    LaunchedEffect(Unit) { appear.animateTo(1f, FolioMotion.spring(FolioMotion.Menu)) }
+    /** Tapping outside or going back: the menu goes back into the icon first. An action closes it at once. */
     val dismiss: () -> Unit = {
-        if (!pass) onDismiss() else if (!closing) {
+        if (!closing) {
             closing = true
             scope.launch {
                 appear.animateTo(0f, if (still) androidx.compose.animation.core.tween(MENU_FADE_MS) else FolioMotion.spring(FolioMotion.Firm))
@@ -128,7 +121,7 @@ internal fun AppContextMenu(
     }
     RegisterOpenWindow(LauncherSheets)
 
-    val actions by produceState(emptyList<QuickAction>(), app.id, app.iconFrom) { if (!app.isShortcut) value = withContext(Dispatchers.IO) { loadQuickActions(context, app) } }
+    val actions by produceState(emptyList<QuickAction>(), app.id) { if (!app.isShortcut) value = withContext(Dispatchers.IO) { loadQuickActions(context, app) } }
 
     Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         val view = LocalView.current
@@ -155,8 +148,7 @@ internal fun AppContextMenu(
             // Lifted icon, exactly where it was.
             AppIcon(app, null, Modifier.offset { IntOffset(iconLeft.roundToInt(), iconTop.roundToInt()) }
                 .size(with(density) { iconSize.toDp() })
-                .graphicsLayer { if (!still) { val s = 1f + .1f * appear.value; scaleX = s; scaleY = s } }
-                , shape = RoundedCornerShape(with(density) { (iconSize * .24f).toDp() }))
+                .graphicsLayer { if (!still) { val s = 1f + .1f * appear.value; scaleX = s; scaleY = s } }, badge = true)
 
             // Menu below the icon, or above when there's no room; aligned to the icon, kept on screen.
             val menuW = with(density) { 260.dp.toPx() }
@@ -166,7 +158,7 @@ internal fun AppContextMenu(
             val spaceBelow = screenH - (iconTop + iconSize * 1.1f + gap) - safeBottom
             val spaceAbove = iconTop - gap - safeTop
             // Folio's own rows: Edit Home Screen, Remove/Add, More, plus Clear Badge when the app has one.
-            val folioRows = 3 + if ((LocalBadgeCounts.current[app.packageName] ?: 0) > 0 && LocalIconLook.current.badges != BadgeStyle.OFF && lockedBy == null) 1 else 0
+            val folioRows = 3 + if ((LocalBadgeCounts.current[app.packageName] ?: 0) > 0 && LocalIconLook.current.badges != BadgeStyle.OFF) 1 else 0
             val estimatedH = with(density) { (49.dp * (actions.size + folioRows) + 8.dp).toPx() }
             // Prefer below (like iOS) when it fits; otherwise whichever side has more room, scrolling if needed.
             val below = estimatedH <= spaceBelow || spaceBelow >= spaceAbove
@@ -191,12 +183,10 @@ internal fun AppContextMenu(
                 .graphicsLayer {
                     if (!still) { val s = .7f + .3f * appear.value; scaleX = s; scaleY = s }
                     transformOrigin = TransformOrigin(origX, if (below) 0f else 1f)
-                    // With the pass the menu fades as it grows and shrinks, so closing reads as going back into the icon.
-                    if (pass) alpha = (appear.value * 1.4f).coerceIn(0f, 1f)
+                    // The menu fades as it grows and shrinks, so closing reads as going back into the icon.
+                    alpha = (appear.value * 1.4f).coerceIn(0f, 1f)
                 }
-                .liquidGlassOr(RoundedCornerShape(FolioRadius.FLOATING.dp), LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.PopoverSurface) {
-                    clip(RoundedCornerShape(FolioRadius.FLOATING.dp)).background(FolioColors.PopoverSurface.copy(alpha = .96f))
-                        .border(FolioGlass.edge, RoundedCornerShape(18.dp)) }
+                .liquidGlass(RoundedCornerShape(FolioRadius.FLOATING.dp), LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.PopoverSurface)
                 .clip(RoundedCornerShape(FolioRadius.FLOATING.dp))
                 .clickable(remember { MutableInteractionSource() }, null) {}
                 .fadingVerticalScroll()) {
@@ -208,11 +198,6 @@ internal fun AppContextMenu(
                     if (i == shownActions.lastIndex) Box(Modifier.fillMaxWidth().height(8.dp).background(Color.Black.copy(alpha = .25f)))
                     else MenuDivider()
                 }
-                if (lockedBy != null) {
-                    Text(stringResource(R.string.home_editing_is_off_while_1_is_on, lockedBy), color = Color.White.copy(alpha = .55f), fontSize = FolioType.FOOTNOTE.sp,
-                        modifier = Modifier.padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.MEDIUM.dp))
-                    MenuDivider()
-                } else {
                 MenuRow(stringResource(R.string.edit_home_screen), Icons.Rounded.AppRegistration) { onMove() }
                 MenuDivider()
                 if ((LocalBadgeCounts.current[app.packageName] ?: 0) > 0 && LocalIconLook.current.badges != BadgeStyle.OFF) {
@@ -233,19 +218,15 @@ internal fun AppContextMenu(
                     MenuRow(stringResource(R.string.delete_app), Icons.Rounded.DeleteOutline, destructive = true, tag = "menu-delete-app") { it() }
                     MenuDivider()
                 }
-                }
                 // iOS keeps context menus short: the less common actions sit behind "More".
                 if (!more) MenuRow(stringResource(R.string.more), Icons.Rounded.MoreHoriz) { more = true }
                 else {
-                    if (lockedBy == null) MenuRow(if (hasFolders) stringResource(R.string.add_to_folder) else stringResource(R.string.create_folder), Icons.Rounded.CreateNewFolder) { onCreateFolder() }
+                    MenuRow(if (hasFolders) stringResource(R.string.add_to_folder) else stringResource(R.string.create_folder), Icons.Rounded.CreateNewFolder) { onCreateFolder() }
                     onWidgets?.let { MenuDivider(); MenuRow(stringResource(R.string.widgets), Icons.Rounded.Widgets) { it() } }
                     onStack?.let { MenuDivider(); MenuRow(stringResource(R.string.stack_apps), Icons.Rounded.Layers) { it() } }
-                    // Screenshot Mode: Rename and Edit Icon would change the real app under the stand-in's name.
-                    if (app.iconFrom == null) {
-                        MenuDivider()
-                        MenuRow(stringResource(R.string.rename), Icons.Rounded.DriveFileRenameOutline) { onRename() }
-                        onEditIcon?.let { MenuDivider(); MenuRow(stringResource(R.string.edit_icon), Icons.Rounded.Palette) { it() } }
-                    }
+                    MenuDivider()
+                    MenuRow(stringResource(R.string.rename), Icons.Rounded.DriveFileRenameOutline) { onRename() }
+                    onEditIcon?.let { MenuDivider(); MenuRow(stringResource(R.string.edit_icon), Icons.Rounded.Palette) { it() } }
                     MenuDivider()
                     MenuRow(if (hidden) stringResource(R.string.show_in_app_library) else stringResource(R.string.hide_from_app_library), if (hidden) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff) { onToggleHidden() }
                     MenuDivider()
@@ -311,5 +292,5 @@ internal fun RenameAppAlert(app: AppEntry, onDismiss: () -> Unit, onRename: (Str
 // The buttons stay Material's TextButton: Folio's AlertDialog restyles them itself, the way its other alerts do.
 }
 
-/** Reduce Motion with the motion pass: the menu fades out over this long instead of going back into the icon. */
+/** Reduce Motion: the menu fades out over this long instead of going back into the icon. */
 private const val MENU_FADE_MS = 150

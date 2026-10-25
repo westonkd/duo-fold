@@ -20,11 +20,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Back in Settings goes up a page wherever Settings is open, and closes the sheet only from the top page.
+ * Back in Settings goes to the list wherever Settings is open, and closes the sheet only from the list.
  *
- * Found in the beta.4 smoke test (1 Oct 2026): opened from the Folio icon, Settings is the Market's Settings tab, and
- * that sheet's Back only knew how to close, so Back from General went all the way to Home. Built like the real one:
- * a dialog whose own Back closes it, with Settings inside it answering first.
+ * Built like the real one: a dialog whose own Back closes it, with Settings inside it answering first.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -32,7 +30,6 @@ class SettingsBackTest {
     @get:Rule val compose = createComposeRule()
 
     private var page by mutableStateOf(CustomizationPage.OVERVIEW)
-    private var settingsShown by mutableStateOf(true)
     private var closed = false
     private lateinit var dispatcher: OnBackPressedDispatcher
 
@@ -44,8 +41,7 @@ class SettingsBackTest {
                 dispatcher = (view.parent as DialogWindowProvider).window.decorView
                     .findViewTreeOnBackPressedDispatcherOwner()!!.onBackPressedDispatcher
                 ModalDialogBackHandler { closed = true }
-                // The Market draws Settings only while its Settings tab is open.
-                if (settingsShown) SettingsPageBack(page) { page = page.parent }
+                SettingsPageBack(page) { page = CustomizationPage.OVERVIEW }
             }
         }
         compose.waitForIdle()
@@ -56,11 +52,8 @@ class SettingsBackTest {
         compose.waitForIdle()
     }
 
-    @Test fun `Back goes up one page at a time, then closes the sheet`() {
-        sheet(CustomizationPage.BACKUP)
-        back()
-        assertEquals(CustomizationPage.GENERAL, page)
-        assertFalse(closed)
+    @Test fun `Back goes to the list, then closes the sheet`() {
+        sheet(CustomizationPage.GENERAL)
         back()
         assertEquals(CustomizationPage.OVERVIEW, page)
         assertFalse(closed)
@@ -73,19 +66,5 @@ class SettingsBackTest {
         back()
         assertTrue(closed)
         assertEquals(CustomizationPage.OVERVIEW, page)
-    }
-
-    @Test fun `Settings still answers first after another Market tab and back`() {
-        sheet(CustomizationPage.GENERAL)
-        settingsShown = false
-        compose.waitForIdle()
-        back()
-        assertTrue("on another tab Back closes the sheet", closed)
-        closed = false
-        settingsShown = true
-        compose.waitForIdle()
-        back()
-        assertEquals(CustomizationPage.OVERVIEW, page)
-        assertFalse(closed)
     }
 }

@@ -1,6 +1,6 @@
 # State and data standard (`STA`)
 
-Folio has many kinds of state: installed apps, layout, widgets, appearance, Focus modes, tweaks, Market packages,
+Folio has many kinds of state: installed apps, layout, widgets, appearance, tweaks, Market packages,
 system status, and a lot of short-lived interaction state. The rule that holds them together is **one owner per piece
 of state**, with every change flowing through that owner.
 
@@ -16,16 +16,13 @@ Every new piece of state gets a row here (or in its feature's KDoc) before it's 
 | Home layout, dock, folders, widget placements | `LauncherModel` | `launcher/state` JSON, schema 11 when Hide in Landscape is also set for the unfolded screen, 10 when icon actions are set and 9 otherwise (`stateSchemaFor`), with migration backups | Everything; exported by Layout Backup |
 | Widget bindings | Android (`AppWidgetHost`) + Folio's slot mapping | System + layout JSON | Reconnected on import, not copied |
 | Icon actions (a swipe up, swipe down or double tap per app) | `LauncherModel` | `launcher/state` JSON, key `iconActions`, only when some are set | Everything; exported by Layout Backup |
-| Appearance | `AppearanceStore` | `appearance` prefs | Everything; not in Layout Backup |
 | What is behind Home | `LauncherModel` (see Gap below: three owners today) | `launcher/state` JSON, mirrored to `launcher_background` prefs for the wallpaper service | Everything; the picked photo itself stays out of Layout Backup |
-| Focus modes and rules | `FocusController` | `focus_rules` prefs | Everything |
-| Screenshot Mode's swap list (apps shown as the phone's own apps) | `ScreenshotSwap` | `screenshot_swap` prefs, key `rules`, only when some are set; not in `launcher/state`, so no schema change | Everything; not in Layout Backup (the list is private) |
 | Suggestions cutoff (Clear Suggestions History) | `SuggestionsHistory` | `launcher` prefs, long `suggestionsClearedAt`, only after a clear; beside `state`, not in it, so no schema change and an older Folio ignores it | Everything; never moves back; not in Layout Backup |
 | Launch log and recent apps (feed Suggestions) | `RecentApps` | `folio` prefs, keys `launch_log` and `recent_apps`; emptied by Clear Suggestions History | Everything; not in Layout Backup |
 | Market packages | Market repository | `filesDir/market` + records in layout JSON | Backup keeps records, reapplies changes |
 | Hinge posture, window size | WindowManager (`LocalHinge`) | None | Recomputed |
 | Battery, signal, ringer | `DeviceStatus` | None | Recomputed on start |
-| Island activity | `Island` / `IslandEvents` | None | Recomputed |
+| Now playing, notifications | `NotificationListener` | None | Recomputed |
 | Crash reports | `CrashLog` | `filesDir/crashes`, last 5 | Until shared or rotated |
 
 ## Rules
@@ -67,7 +64,7 @@ Every new piece of state gets a row here (or in its feature's KDoc) before it's 
 ### Identity
 
 - **STA-13 MUST** include the Android profile in an app's identity, and use the address helpers in `HomeEditing.kt`
-  for cells (negative indices are real addresses: the leading workspace and Discover).
+  for cells (negative indices are real addresses: the leading workspace).
 
 ## Where Folio is today
 

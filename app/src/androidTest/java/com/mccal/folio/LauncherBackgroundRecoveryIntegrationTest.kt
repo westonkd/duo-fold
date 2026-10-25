@@ -18,13 +18,12 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 
 class LauncherBackgroundRecoveryIntegrationTest {
-    private val compose = createAndroidComposeRule<MainActivity>()
-    @get:Rule val rules = org.junit.rules.RuleChain.outerRule(WithoutNativeFeed()).around(compose)
+    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
     @Test fun readyLocalPreviewRecoversWithoutSourceAndDropsStaleGrantRecord() {
         val context = compose.activity.applicationContext
         val prefs = launcherBackgroundPreferences(context)
-        val committedFile = launcherBackgroundFile(context)
+        val committedFile = launcherPhotoFile(context)
         val oldPrefs = prefs.all.toMap()
         val oldCommitted = committedFile.takeIf(File::isFile)?.readBytes()
         val oldStaged = stagedFiles(context)
@@ -71,7 +70,7 @@ class LauncherBackgroundRecoveryIntegrationTest {
     @Test fun inaccessibleDecodingRecoveryFailsWithoutChangingCommittedBackground() {
         val context = compose.activity.applicationContext
         val prefs = launcherBackgroundPreferences(context)
-        val committedFile = launcherBackgroundFile(context)
+        val committedFile = launcherPhotoFile(context)
         val oldPrefs = prefs.all.toMap()
         val oldCommitted = committedFile.takeIf(File::isFile)?.readBytes()
         val oldStaged = stagedFiles(context)
@@ -126,14 +125,14 @@ class LauncherBackgroundRecoveryIntegrationTest {
     }.toByteArray()
 
     private fun stagedFiles(context: Context): Map<String, ByteArray> {
-        val committed = launcherBackgroundFile(context)
+        val committed = launcherPhotoFile(context)
         return committed.parentFile?.listFiles { file ->
             file.name.startsWith("${committed.name}.") && file.name.endsWith(".tmp")
         }?.associate { it.name to it.readBytes() }.orEmpty()
     }
 
     private fun restoreStagedFiles(context: Context, files: Map<String, ByteArray>) {
-        val committed = launcherBackgroundFile(context)
+        val committed = launcherPhotoFile(context)
         committed.parentFile?.listFiles { file ->
             file.name.startsWith("${committed.name}.") && file.name.endsWith(".tmp")
         }?.forEach(File::delete)

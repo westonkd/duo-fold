@@ -1,15 +1,9 @@
 package com.mccal.folio
 
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.drawscope.scale
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.platform.LocalDensity
-import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.asImageBitmap
@@ -43,38 +37,24 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
-import kotlin.math.roundToInt
-import androidx.compose.foundation.interaction.collectIsDraggedAsState
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
-/**
- * Where Settings was when it closed, so opening it again picks up there, like iPhone Settings. The page itself is
- * kept by Home; this holds the rest. In memory only, so a restart opens at the top.
- */
-/** A page to open Settings on, set by something outside Settings (the setup reminder on Home). */
-internal object SettingsLink { var page: CustomizationPage? = null }
-
+/** Where Settings was when it closed, so opening it again picks up there. In memory only, so a restart opens at the top. */
 internal object SettingsMemory {
-    var tweakId = ""
-    var focusId = ""
     var bodyScroll = 0
     var sidebarScroll = 0
-    /** How far down each page was when Settings last left it, so Back lands in the same place. */
-    val pageScroll = mutableMapOf<CustomizationPage, Int>()
+    /** How far down the list was when Settings last left it, so Back lands in the same place. */
+    var overviewScroll = 0
 }
 
 /**
- * The scroll of the page Settings shows. Each page gets a new one: the page Back returns to starts where it was left,
- * as in iPhone Settings, and any other page at its top. A new state is at its offset before the page is laid out;
+ * The scroll of the page Settings shows. Each page gets a new one: the list starts where it was left when Back returns
+ * to it, as in iPhone Settings, and any other page at its top. A new state is at its offset before the page is laid out;
  * scrolling the old one back could only have gone as far down as the page it was showing reached.
  */
 internal class SettingsScroll(private var page: CustomizationPage, offset: Int) {
@@ -84,216 +64,76 @@ internal class SettingsScroll(private var page: CustomizationPage, offset: Int) 
     /** The scroll for [next], as it opens. */
     fun show(next: CustomizationPage): ScrollState {
         if (next == page) return state
-        SettingsMemory.pageScroll[page] = state.value
-        state = ScrollState(if (next == page.parent) SettingsMemory.pageScroll[next] ?: 0 else 0)
+        if (page == CustomizationPage.OVERVIEW) SettingsMemory.overviewScroll = state.value
+        state = ScrollState(if (next == CustomizationPage.OVERVIEW) SettingsMemory.overviewScroll else 0)
         page = next
         return state
     }
 }
 
-internal enum class CustomizationPage { OVERVIEW, SETUP, WALLPAPER, HOME, STATUS, GESTURES, FOLD, BACKUP, HELP, SIDE_KEY, LOCK, CREDITS, TWEAKS, TWEAK, MARKET, ADVANCED, NOTIFICATIONS, SEARCH, TODAY, ISLAND, PERMISSIONS, FOCUS, FOCUS_MODE, THEMES, COMING_SOON, TWEAK_LIBRARY, SOFTWARE_UPDATE, LIBRARY_TWEAK, ISLAND_APPS, SUPPORTER, SUPPORTERS, GENERAL, SUPPORT, FOLD_TWEAK, ACCESSIBILITY, SYSTEM_BRIDGE, WHAT_TO_TEST, DEVELOPER, SCREENSHOT_SWAP;
-
-    /** The page Back returns to: the nav bar button and the system Back gesture both use it. */
-    val parent: CustomizationPage get() = when (this) {
-        TWEAK, TWEAK_LIBRARY -> TWEAKS
-        LIBRARY_TWEAK -> TWEAK_LIBRARY // a tweak opened from the Tweak Library goes back there
-        FOLD_TWEAK -> FOLD // Duet opened from Fold & Displays goes back there
-        FOCUS_MODE -> FOCUS
-        ISLAND_APPS -> ISLAND
-        // The pages you open once live under General, as iOS keeps them under General › About.
-        SOFTWARE_UPDATE, ADVANCED, BACKUP, HELP, COMING_SOON, CREDITS -> GENERAL
-        SUPPORTER, SUPPORTERS -> SUPPORT
-        SYSTEM_BRIDGE, SCREENSHOT_SWAP -> ADVANCED
-        WHAT_TO_TEST -> HELP
-        DEVELOPER -> ADVANCED
-        MARKET -> TWEAKS // where tweaks come from
-        THEMES -> WALLPAPER // a theme is a look: wallpaper, accent and icons together
-        else -> OVERVIEW
-    }
-
-    /** The top-level page this one lives under, highlighted in the split view's sidebar. */
-    val root: CustomizationPage get() = if (parent == OVERVIEW) this else parent.root
-
-    /** The page's name, over the page and on the Back of the pages under it; a tweak and a Focus show their own. */
-    @get:androidx.annotation.StringRes val title: Int get() = when (this) {
-        OVERVIEW -> R.string.folio
-        SETUP -> R.string.setup_checklist
-        WALLPAPER -> R.string.wallpaper_appearance
-        HOME -> R.string.home_screen_dock
-        STATUS -> R.string.icons_side_bar
-        GESTURES -> R.string.gestures_actions
-        FOLD -> R.string.fold_displays
-        BACKUP -> R.string.backup
-        HELP -> R.string.help
-        SIDE_KEY -> R.string.side_key
-        LOCK -> R.string.lock_cover
-        CREDITS -> R.string.credits
-        SUPPORTERS -> R.string.supporters
-        TWEAKS -> R.string.tweaks
-        MARKET -> R.string.market
-        FOCUS, FOCUS_MODE -> R.string.focus
-        THEMES -> R.string.themes
-        TWEAK, LIBRARY_TWEAK, FOLD_TWEAK -> R.string.tweak
-        ADVANCED -> R.string.advanced
-        SYSTEM_BRIDGE -> R.string.system_bridge
-        SCREENSHOT_SWAP -> R.string.screenshot_swap_apps
-        DEVELOPER -> R.string.developer
-        NOTIFICATIONS -> R.string.notifications_control_center
-        SEARCH -> R.string.search_app_library
-        TODAY -> R.string.today_view
-        ISLAND -> R.string.dynamic_island
-        ISLAND_APPS -> R.string.other_notifications
-        PERMISSIONS -> R.string.privacy_permissions
-        COMING_SOON -> R.string.roadmap
-        TWEAK_LIBRARY -> R.string.tweak_library
-        SOFTWARE_UPDATE -> R.string.software_update
-        GENERAL -> R.string.general
-        ACCESSIBILITY -> R.string.accessibility
-        SUPPORT -> R.string.support_folio
-        SUPPORTER -> R.string.supporter
-        WHAT_TO_TEST -> R.string.what_to_test
-    }
+/** Settings' pages: the list, and the five pages it opens. Every page goes back to the list. */
+internal enum class CustomizationPage(@get:androidx.annotation.StringRes val title: Int) {
+    OVERVIEW(R.string.folio), HOME(R.string.home), SEARCH(R.string.search), GESTURES(R.string.gestures), FOLD(R.string.fold), GENERAL(R.string.general)
 }
 
 /**
- * What Back says in Settings' nav bar: the name of the page it returns to, as iOS does. Null where there's no Back,
- * because that page is already on screen: the list beside a top-level page in two columns, or the middle of three.
- * [columns] is 1 on the phone and while the list slides over the page.
+ * What Back says in Settings' nav bar: the name of the list, as iOS does. Null where there's no Back: on the list
+ * itself, and in two columns, where the list is already on screen. [columns] is 1 on the phone and while the list
+ * slides over the page.
  */
 @androidx.annotation.StringRes
-internal fun settingsBackLabel(page: CustomizationPage, columns: Int): Int? = when {
-    page == CustomizationPage.OVERVIEW -> null
-    columns >= 3 || (columns == 2 && page.parent == CustomizationPage.OVERVIEW) -> null
-    else -> page.parent.title
-}
+internal fun settingsBackLabel(page: CustomizationPage, columns: Int): Int? =
+    if (page == CustomizationPage.OVERVIEW || columns >= 2) null else CustomizationPage.OVERVIEW.title
 
-/**
- * Back goes up a page, as the nav bar's Back does, wherever Settings is open: its own sheet or the Market's Settings
- * tab. Settings answers it here rather than leaving it to its host, because the Market's sheet only knew how to
- * close, so Back from any page there closed everything (beta.4 smoke test, 1 Oct 2026). On the top page the host
- * closes the sheet.
- */
+/** Back goes to the list, as the nav bar's Back does. On the list the host closes the sheet. */
 @Composable
 internal fun SettingsPageBack(page: CustomizationPage, onBack: () -> Unit) =
     ModalDialogBackHandler(enabled = page != CustomizationPage.OVERVIEW, onBack = onBack)
 
 @Composable
 internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, model: LauncherModel,
-    initiallyUpright: Boolean = false,
     isDefaultHome: Boolean, page: CustomizationPage, onPage: (CustomizationPage) -> Unit,
     onMakeDefault: () -> Unit, onClose: () -> Unit, onEditPins: () -> Unit, onWidget: (Int) -> Unit,
     onAddWidget: (Int) -> Unit, onRemoveWidget: (Int) -> Unit, onWallpaperPreview: () -> Unit,
     onExportLayout: () -> Unit, onImportLayout: () -> Unit, onSaveLayoutToFolder: (String) -> Unit = {},
-    appearance: AppearanceState, onAppearanceMode: (AppearanceMode) -> Unit, onAppearanceAccent: (AccentChoice) -> Unit = {},
-    onAppearanceManual: (String, Double, Double) -> Unit, onAppearanceDeviceLocation: () -> Unit,
-    onAppearanceClear: () -> Unit, backgrounds: LauncherBackgroundController, homePage: Int = 0,
+    backgrounds: LauncherBackgroundController, homePage: Int = 0,
     onShadeSetup: () -> Unit = {},
-    onOpenMarket: () -> Unit = {},
-    onShowWelcome: () -> Unit = {},
     onShowWhatsNew: () -> Unit = {},
 ) {
     var wide by rememberSaveable { mutableStateOf(initiallyWide) }
-    // Which inner layout the layout sliders edit, when the upright one is separate.
-    var upright by rememberSaveable { mutableStateOf(initiallyUpright) }
-    var tweakId by rememberSaveable { mutableStateOf(SettingsMemory.tweakId) }
-    var focusId by rememberSaveable { mutableStateOf(SettingsMemory.focusId) }
-    SideEffect { SettingsMemory.tweakId = tweakId; SettingsMemory.focusId = focusId }
-    // An added tweak opens under Tweaks; one not added yet opens in the Tweak Library, where it can be got.
-    val openTweak: (TweakFeature) -> Unit = { tweak ->
-        tweakId = tweak.id
-        onPage(if (tweak.id in state.installedTweaks) CustomizationPage.TWEAK else CustomizationPage.LIBRARY_TWEAK)
-    }
-    var settingsQuery by rememberSaveable { mutableStateOf("") }
     var namingBackup by remember { mutableStateOf(false) }
-    val title = when (page) {
-        CustomizationPage.FOCUS_MODE -> state.focusModes.firstOrNull { it.id == focusId }?.name
-        CustomizationPage.TWEAK, CustomizationPage.LIBRARY_TWEAK, CustomizationPage.FOLD_TWEAK -> TweakFeatures.firstOrNull { it.id == tweakId }?.name
-        else -> null
-    } ?: stringResource(page.title)
-    // Reopening Settings lands where it was, scrolled the same. Back lands where the page it returns to was left;
-    // any other page opens at its top.
+    // Reopening Settings lands where it was, scrolled the same. Back lands where the list was left; any other page
+    // opens at its top.
     val scroll = remember { SettingsScroll(page, SettingsMemory.bodyScroll) }
     val bodyScroll = remember(page) { scroll.show(page) }
     val sidebarScroll = rememberScrollState(SettingsMemory.sidebarScroll)
     DisposableEffect(Unit) { onDispose { SettingsMemory.bodyScroll = scroll.state.value; SettingsMemory.sidebarScroll = sidebarScroll.value } }
-    val setupSteps = rememberSetupSteps(isDefaultHome, onMakeDefault, onShadeSetup, state.messagesApp, model::setMessagesApp, state.systemWallpaper, model::setSystemWallpaper)
-    val setupLeft = setupSteps.count { it.required && !it.done }
-    val onBack = { onPage(page.parent) }
+    val onBack = { onPage(CustomizationPage.OVERVIEW) }
     SettingsPageBack(page, onBack)
-    val sheetContext = androidx.compose.ui.platform.LocalContext.current
-    // A search target whose row never shows (its option is hidden until a switch is on) is dropped, not saved for later.
-    LaunchedEffect(SettingsFocus.label) { if (SettingsFocus.label != null) { kotlinx.coroutines.delay(SettingsFocus.PATIENCE_MS); SettingsFocus.label = null } }
 
     // The settings list. On the phone it's the first page; in the split view it's the sidebar, with the open page highlighted.
     val overviewRows: @Composable ColumnScope.(selected: CustomizationPage?, sidebar: Boolean) -> Unit = { selected, sidebar ->
                     // Only the sidebar has an open page to mark; on the phone the rows are just places to go.
                     val pick = { row: CustomizationPage -> if (sidebar) selected == row else null }
                     SheetGroup {
-                        // General holds what you open once: updates, what's new, language, help, the roadmap, credits.
-                        val updateWaiting by SoftwareUpdate.status.collectAsState()
-                        TweakRow(Icons.Rounded.Settings, FolioColors.Value.Gray, stringResource(R.string.general), "customization-general",
-                            if (updateWaiting is SoftwareUpdate.Status.Available) "1" else null, selected = pick(CustomizationPage.GENERAL), chevron = !sidebar) { onPage(CustomizationPage.GENERAL) }
+                        TweakRow(Icons.Rounded.GridView, FolioColors.Value.Blue, stringResource(R.string.home), "customization-home",
+                            if (backgrounds.previewPending) stringResource(R.string.photo_ready) else null, selected = pick(CustomizationPage.HOME), chevron = !sidebar) { onPage(CustomizationPage.HOME) }
                         MenuDivider()
-                        TweakRow(Icons.Rounded.Accessibility, FolioColors.Value.Blue, stringResource(R.string.accessibility), "customization-accessibility", selected = pick(CustomizationPage.ACCESSIBILITY), chevron = !sidebar) { onPage(CustomizationPage.ACCESSIBILITY) }
-                    }
-                    SheetGroup {
-                        TweakRow(Icons.Rounded.Wallpaper, FolioColors.Value.CyanLight, stringResource(R.string.wallpaper_appearance), "customization-wallpaper",
-                            if (backgrounds.previewPending) stringResource(R.string.photo_ready) else null, selected = pick(CustomizationPage.WALLPAPER), chevron = !sidebar) { onPage(CustomizationPage.WALLPAPER) }
+                        TweakRow(Icons.Rounded.Search, FolioColors.Value.Gray, stringResource(R.string.search), "customization-search", selected = pick(CustomizationPage.SEARCH), chevron = !sidebar) { onPage(CustomizationPage.SEARCH) }
                         MenuDivider()
-                        TweakRow(Icons.Rounded.GridView, FolioColors.Value.Blue, stringResource(R.string.home_screen_dock), "customization-home", selected = pick(CustomizationPage.HOME), chevron = !sidebar) { onPage(CustomizationPage.HOME) }
+                        TweakRow(Icons.Rounded.Gesture, FolioColors.Value.Teal, stringResource(R.string.gestures), "customization-gestures", selected = pick(CustomizationPage.GESTURES), chevron = !sidebar) { onPage(CustomizationPage.GESTURES) }
                         MenuDivider()
-                        TweakRow(Icons.Rounded.Apps, FolioColors.Value.Indigo, stringResource(R.string.icons_side_bar), "customization-status", selected = pick(CustomizationPage.STATUS), chevron = !sidebar) { onPage(CustomizationPage.STATUS) }
+                        TweakRow(Icons.Rounded.Devices, FolioColors.Value.Pink, stringResource(R.string.fold), "customization-fold", selected = pick(CustomizationPage.FOLD), chevron = !sidebar) { onPage(CustomizationPage.FOLD) }
                         MenuDivider()
-                        TweakRow(Icons.Rounded.Today, FolioColors.Value.Orange, stringResource(R.string.today_view), "customization-today", selected = pick(CustomizationPage.TODAY), chevron = !sidebar) { onPage(CustomizationPage.TODAY) }
-                    }
-                    SheetGroup {
-                        TweakRow(Icons.Rounded.Circle, FolioColors.Value.SecondaryBackground, stringResource(R.string.dynamic_island), "customization-island", selected = pick(CustomizationPage.ISLAND), chevron = !sidebar) { onPage(CustomizationPage.ISLAND) }
-                        MenuDivider()
-                        TweakRow(Icons.Rounded.Notifications, FolioColors.Value.RedLight, stringResource(R.string.notifications_control_center), "customization-notifications", selected = pick(CustomizationPage.NOTIFICATIONS), chevron = !sidebar) { onPage(CustomizationPage.NOTIFICATIONS) }
-                        MenuDivider()
-                        TweakRow(Icons.Rounded.DarkMode, FolioColors.Value.Indigo, stringResource(R.string.focus), "customization-focus",
-                            state.focusModes.firstOrNull { it.id == state.activeFocus }?.name, selected = pick(CustomizationPage.FOCUS), chevron = !sidebar) { onPage(CustomizationPage.FOCUS) }
-                        MenuDivider()
-                        TweakRow(Icons.Rounded.Search, FolioColors.Value.Gray, stringResource(R.string.search_app_library), "customization-search", selected = pick(CustomizationPage.SEARCH), chevron = !sidebar) { onPage(CustomizationPage.SEARCH) }
-                        MenuDivider()
-                        TweakRow(Icons.Rounded.Gesture, FolioColors.Value.Teal, stringResource(R.string.gestures_actions), "customization-gestures", selected = pick(CustomizationPage.GESTURES), chevron = !sidebar) { onPage(CustomizationPage.GESTURES) }
-                    }
-                    SheetGroup {
-                        TweakRow(Icons.Rounded.Devices, FolioColors.Value.Pink, stringResource(R.string.fold_displays), "customization-fold", selected = pick(CustomizationPage.FOLD), chevron = !sidebar) { onPage(CustomizationPage.FOLD) }
-                        MenuDivider()
-                        TweakRow(Icons.Rounded.TouchApp, FolioColors.Value.Orange, stringResource(R.string.side_key), "customization-side-key", selected = pick(CustomizationPage.SIDE_KEY), chevron = !sidebar) { onPage(CustomizationPage.SIDE_KEY) }
-                        MenuDivider()
-                        TweakRow(Icons.Rounded.Lock, FolioColors.Value.Green, stringResource(R.string.lock_cover), "customization-lock",
-                            if (state.lockCover) stringResource(R.string.on) else stringResource(R.string.off), selected = pick(CustomizationPage.LOCK), chevron = !sidebar) { onPage(CustomizationPage.LOCK) }
-                    }
-                    // The Market sits inside Tweaks, where tweaks come from (McCal, 28 Sep 2026).
-                    SheetGroup {
-                        TweakRow(Icons.Rounded.AutoAwesome, FolioColors.Value.Purple, stringResource(R.string.tweaks), "customization-tweaks",
-                            pluralStringResource(R.plurals.count_installed, state.installedTweaks.size, state.installedTweaks.size), selected = pick(CustomizationPage.TWEAKS), chevron = !sidebar) { onPage(CustomizationPage.TWEAKS) }
-                    }
-                    SheetGroup {
-                        TweakRow(Icons.Rounded.PanTool, FolioColors.Value.Blue, stringResource(R.string.privacy_permissions), "customization-permissions", selected = pick(CustomizationPage.PERMISSIONS), chevron = !sidebar) { onPage(CustomizationPage.PERMISSIONS) }
-                    }
-                    // One row for Ko-fi, the supporter code and the Supporters list: a page of its own, not three rows here.
-                    SheetGroup {
-                        TweakRow(Icons.Rounded.LocalCafe, 0xFFFF5E5B, stringResource(R.string.support_folio), "customization-support-folio",
-                            selected = pick(CustomizationPage.SUPPORT), chevron = !sidebar) { onPage(CustomizationPage.SUPPORT) }
+                        TweakRow(Icons.Rounded.Settings, FolioColors.Value.Gray, stringResource(R.string.general), "customization-general", selected = pick(CustomizationPage.GENERAL), chevron = !sidebar) { onPage(CustomizationPage.GENERAL) }
                     }
     }
-    // Home-app actions and the setup reminder: above the list on the phone, on Folio's own page in the split view.
+    // Home-app actions, above the list.
     val overviewActions: @Composable ColumnScope.() -> Unit = {
                     if (!isDefaultHome || state.canUndoEdit) SheetGroup {
                         if (!isDefaultHome) IosActionRow(stringResource(R.string.set_as_home_app), "default-home-settings", onClick = onMakeDefault)
                         if (!isDefaultHome && state.canUndoEdit) MenuDivider()
                         if (state.canUndoEdit) IosActionRow(stringResource(R.string.undo_last_layout_change), onClick = { model.undoEdit(); onClose() })
-                    }
-                    if (setupLeft > 0) {
-                        val required = setupSteps.count { it.required }
-                        CustomizationDestination(Icons.Rounded.Checklist, stringResource(R.string.finish_setting_up_folio),
-                            pluralStringResource(R.plurals.setup_steps_left_full, setupLeft, setupLeft), "customization-setup",
-                            leading = { SetupRing(required - setupLeft, required, 40.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = .15f)) }) {
-                            onPage(CustomizationPage.PERMISSIONS)
-                        }
                     }
     }
 
@@ -302,44 +142,19 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     // Regular size class (both dimensions roomy), not a device check: the inner screen in either orientation.
     val fullWidth = maxWidth
     // The keyboard covers Settings; it doesn't make the window smaller (ADP-1, ADP-18). Measured out here, so that
-    // tapping the search field can't turn the unfolded screen into a phone-sized one for as long as the keyboard is
-    // up, take the sidebar away with it, and take the field you just tapped with the sidebar (#117).
+    // tapping a text field can't turn the unfolded screen into a phone-sized one for as long as the keyboard is up (#117).
     val keyboardDp = keyboardDpOverSheet()
-    // With only one pane to spare (inside the Market beside its sidebar), Settings is the iPhone's: the list, and a
-    // page pushed over it with Back.
-    val split = settingsSplits(maxWidth.value, maxHeight.value, androidx.compose.ui.platform.LocalConfiguration.current.classScale,
-        keyboardDp, LocalSettingsMaxColumns.current)
-    // Takes the page to draw rather than reading the open one, so the split view can show a list and the thing you
-    // picked from it side by side. Inside, `page` means "the page this column is drawing".
-    val pageContent: @Composable ColumnScope.(CustomizationPage) -> Unit = { page ->
-            when (page) {
-                CustomizationPage.OVERVIEW -> if (split) {
-                    TweakBanner()
+    val split = settingsSplits(maxWidth.value, maxHeight.value, androidx.compose.ui.platform.LocalConfiguration.current.classScale, keyboardDp)
+    // In the split view the list is always on screen, so the page beside it is Home until another is picked.
+    val shown = if (split && page == CustomizationPage.OVERVIEW) CustomizationPage.HOME else page
+    val pageContent: @Composable ColumnScope.() -> Unit = {
+            when (shown) {
+                CustomizationPage.OVERVIEW -> {
                     overviewActions()
-                    MiniHomePreview(backgrounds.previewBitmap, state, 260.dp)
-                } else {
-                    // Like iOS Settings: the header gets out of the way while searching.
-                    if (settingsQuery.isBlank()) TweakBanner()
-                    SettingsSearchField(settingsQuery) { settingsQuery = it }
-                    if (settingsQuery.isNotBlank()) SettingsSearchResults(settingsQuery, onOpen = { page, row -> settingsQuery = ""; SettingsFocus.label = row; onPage(page) }, onOpenTweak = { settingsQuery = ""; openTweak(it) })
-                    else {
-                        overviewActions()
-                        MiniHomePreview(backgrounds.previewBitmap, state, 176.dp)
-                        overviewRows(null, false)
-                        }
+                    overviewRows(null, false)
                 }
-                // The old Setup Checklist lives on in Privacy & Permissions (one list of everything Folio can use).
-                CustomizationPage.SETUP -> PermissionsPage(isDefaultHome, onMakeDefault, onShadeSetup)
-                CustomizationPage.COMING_SOON -> ComingSoonPage()
-                CustomizationPage.WHAT_TO_TEST -> WhatToTestPage(onOpenSetup = { onClose(); onShowWelcome() })
-                CustomizationPage.WALLPAPER -> {
+                CustomizationPage.HOME -> {
                     val wallpaperContext = androidx.compose.ui.platform.LocalContext.current
-                    // The order is the one every well-regarded product uses, sourced in docs/mockups/wallpaper-page.html:
-                    // the preview first because it is what the rest edits, then the picture, then the mode that dims it,
-                    // then the colors, then the things drawn over it. App Icon lives on the Icons page. That is the
-                    // iOS Wallpaper flow's shape rather than a Folio invention (DES-1), built from Folio's own rows,
-                    // groups and cards (DES-9), with the preview standing in for iOS's chrome-on-preview.
-                    //
                     // The preview shows the candidate when there is one, under Home's real chrome, which is what AOSP's
                     // small preview and iOS's Lock Screen preview both do. Art and photos apply the same way: a tap
                     // stages, Set writes.
@@ -348,7 +163,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                     val candidate = backgrounds.pendingArtBitmap ?: backgrounds.previewBitmap
                     val staging = backgrounds.pendingArt != null || backgrounds.previewPending
                     if (!state.systemWallpaper) {
-                        MiniHomePreview(candidate, state, 228.dp)
+                        MiniHomePreview(candidate, state, if (split) 240.dp else 228.dp)
                         if (staging) SheetGroup {
                             IosActionRow(stringResource(R.string.set), "background-set",
                                 enabled = candidate != null || backgrounds.pendingArt != null,
@@ -387,21 +202,6 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                             TextButton(onClick = backgrounds::clearMessage, Modifier.fillMaxWidth().testTag("background-message")) { Text(message) }
                         }
                     }
-                    // Themes change the look as a set (wallpaper, accent, icons), so they open here, just before the colors.
-                    SheetGroup {
-                        TweakRow(Icons.Rounded.Palette, FolioColors.Value.Pink, stringResource(R.string.themes), "customization-themes",
-                            FolioTheme.PRESETS.firstOrNull { state.looksLike(it) }?.name ?: stringResource(R.string.custom)) { onPage(CustomizationPage.THEMES) }
-                    }
-                    AppearanceSettings(appearance, onAppearanceMode, onAppearanceManual, onAppearanceDeviceLocation,
-                        onAppearanceClear, onAppearanceAccent) {
-                        // A property of the mode, not of the text: One UI files "Dim wallpaper when Dark mode is on"
-                        // right under its wallpaper and color entries, and that is where it reads correctly.
-                        MenuDivider()
-                        // The Appearance rows pad themselves (they're a SheetGroup, not a SettingsCard), so this one matches them.
-                        Box(Modifier.padding(horizontal = FolioSpace.LARGE.dp)) {
-                            SettingsSwitch(stringResource(R.string.dark_appearance_dims_wallpaper), state.dimWallpaperDark, model::setDimWallpaperDark, "dim-wallpaper-switch")
-                        }
-                    }
                     SettingsCard(stringResource(R.string.text_on_home)) {
                         IosMenuRow(stringResource(R.string.text_color), listOf("AUTO" to stringResource(R.string.automatic), "LIGHT" to stringResource(R.string.light), "DARK" to stringResource(R.string.dark)), state.homeInk, model::setHomeInk, tag = "home-ink")
                         // Beside the text colour it exists for: the scrim is the other half of the same job, for a pale
@@ -409,54 +209,10 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         SettingsSwitch(stringResource(R.string.darken_behind_text), state.homeScrim, model::setHomeScrim, "home-scrim-switch")
                         CardNote(stringResource(R.string.labels_status_page_dots_and_widget_text))
                     }
-                    GlassCardSettings(state, model)
-                    SettingsCard(stringResource(R.string.screen_corners)) {
-                        SettingsSwitch(stringResource(R.string.rounded_corners), state.roundedCorners, model::setRoundedCorners, "rounded-corners-switch")
-                        if (state.roundedCorners) CustomizationSlider(stringResource(R.string.size), stringResource(R.string.dp_value, state.cornerRadius.toInt()), state.cornerRadius, 16f..72f,
-                            onChange = model::setCornerRadius)
-                        CardNote(stringResource(R.string.draws_iphone_style_rounded_corners_over))
-                    }
+                    HomeLayoutSettings(state, wide, { wide = it }, model, homePage, onEditPins, onWidget, onAddWidget, onRemoveWidget)
                 }
-                CustomizationPage.HOME -> {
-                    HomeLayoutSettings(state, wide, { wide = it }, upright, { upright = it }, model, homePage, onEditPins, onWidget, onAddWidget, onRemoveWidget)
-                    SettingsCard(stringResource(R.string.folders)) {
-                        IosMenuRow(stringResource(R.string.columns), listOf(0 to stringResource(R.string.automatic), 3 to "3", 4 to "4"), state.folderColumns, model::setFolderColumns, tag = "folder-columns")
-                        IosMenuRow(stringResource(R.string.folder_background), FolderBackground.entries.map { it to stringResource(it.label) }, state.folderBackground, model::setFolderBackground, tag = "folder-background")
-                    }
-                    RecentDotsCard(state, model)
-                }
-                CustomizationPage.GESTURES, CustomizationPage.NOTIFICATIONS, CustomizationPage.SEARCH, CustomizationPage.TODAY -> {
-                    if (page == CustomizationPage.GESTURES) SettingsCard(stringResource(R.string.gestures)) {
-                        IosMenuRow(stringResource(R.string.animation_speed), MotionSpeed.entries.map { it to stringResource(it.label) }, state.motionSpeed, model::setMotionSpeed, tag = "motion-speed")
-                        IosMenuRow(stringResource(R.string.swipe_down_on_home), listOf("SPOTLIGHT" to stringResource(R.string.spotlight), "NOTIFICATIONS" to stringResource(R.string.notification_center), "OFF" to stringResource(R.string.nothing)),
-                            state.swipeDownHome, model::setSwipeDownHome, tag = "swipe-down-home")
-                        IosMenuRow(stringResource(R.string.touch_and_hold), HoldDelay.entries.map { it to stringResource(it.label) }, state.holdDelay, model::setHoldDelay, tag = "hold-delay")
-                        SettingsSwitch(stringResource(R.string.drag_page_dots_to_flip_pages), state.pageScrub, model::setPageScrub, "page-scrub-switch")
-                        SettingsSwitch(stringResource(R.string.haptic_feedback), state.haptics, model::setHaptics, "haptics-switch")
-                        CardNote(stringResource(R.string.pull_down_from_the_top_left_for_notifica))
-                        CardNote(stringResource(R.string.touch_and_hold_note))
-                    }
-                    // One page for the panels: the on/off switch and, when on, their options.
-                    if (page == CustomizationPage.NOTIFICATIONS) SettingsCard(stringResource(R.string.panels)) {
-                        SettingsSwitch(stringResource(R.string.iphone_style_control_center_and_notifica), state.folioPanels, model::setFolioPanels, "folio-panels-switch")
-                        if (state.folioPanels) {
-                        CustomizationSlider(stringResource(R.string.background_blur), "${(state.panelBlur * 100).toInt()}%", state.panelBlur, 0f..1f) { model.setPanelBlur(it) }
-                        SettingsSwitch(stringResource(R.string.shade_over_apps), state.shadeOverApps, model::setShadeOverApps, "shade-over-apps-switch")
-                        CardNote(stringResource(R.string.shade_over_apps_note))
-                        SettingsSwitch(stringResource(R.string.big_clock_in_notification_center), state.notificationClock, model::setNotificationClock, "notification-clock-switch")
-                        SettingsSwitch(stringResource(R.string.stack_notifications_by_app), state.groupNotifications, model::setGroupNotifications, "notification-group-switch")
-                        IosMenuRow(stringResource(R.string.nc_layout_title), NcLayout.entries.map { it to stringResource(it.label) }, state.ncLayout, model::setNcLayout, tag = "nc-layout")
-                        CardNote(stringResource(R.string.nc_layout_note))
-                        SettingsSwitch(stringResource(R.string.notification_sections), state.notificationSections, model::setNotificationSections, "notification-sections-switch")
-                        if (state.notificationSections) CardNote(stringResource(R.string.notification_sections_note))
-                        IosMenuRow(stringResource(R.string.control_center_size), PanelSize.entries.map { it to stringResource(it.label) }, state.ccSize, model::setCcSize, tag = "cc-size")
-                        // Side by side puts Control Center on the right itself, and a card sits under its own corner, so only Full screen can centre it.
-                        if (state.ncLayout == NcLayout.FULL_SCREEN) SettingsSwitch(stringResource(R.string.unfolded_control_center_in_the_middle), state.ccCentered, model::setCcCentered, "cc-centered-switch")
-                        CardNote(stringResource(R.string.tip_tap_at_the_top_of_control_center_to))
-                        CardNote(stringResource(R.string.to_restyle_samsungs_own_pull_down_colors))
-                        }
-                    }
-                    if (page == CustomizationPage.SEARCH) SettingsCard(stringResource(R.string.spotlight)) {
+                CustomizationPage.SEARCH -> {
+                    SettingsCard(stringResource(R.string.spotlight)) {
                         IosMenuRow(stringResource(R.string.search_with_enter),
                             WebSearchTarget.enterEngines.map { it.name to when (it) { WebSearchTarget.GOOGLE -> stringResource(R.string.google_no_ai); WebSearchTarget.DUCKDUCKGO -> stringResource(R.string.duckduckgo); else -> it.label } } +
                                 (CUSTOM_SEARCH to stringResource(R.string.custom_search_engine)),
@@ -473,7 +229,21 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                                 state.messagesApp, model::setMessagesApp, tag = "messages-app")
                         }
                     }
-                    if (page == CustomizationPage.SEARCH) SettingsCard(stringResource(R.string.suggestions)) {
+                    SettingsCard(stringResource(R.string.app_library)) {
+                        SettingsSwitch(stringResource(R.string.group_apps_into_categories), state.libraryCategories, model::setLibraryCategories, "library-categories-switch")
+                        if (state.profiles.any { it.isWork }) SettingsSwitch(stringResource(R.string.work_apps), state.libraryWork, model::setLibraryWork, "library-work-switch")
+                        HiddenAppsRow(state, model)
+                        SettingsSwitch(stringResource(R.string.add_new_apps_to_home_screen), state.addNewAppsToHome, model::setAddNewAppsToHome, "add-new-apps-switch")
+                        CardNote(stringResource(R.string.off_new_downloads_go_to_the_app_library))
+                    }
+                    SettingsCard(stringResource(R.string.search)) {
+                        // One choice instead of a switch: what sits above the dock at rest.
+                        IosMenuRow(stringResource(R.string.home_strip), HomeStrip.entries.map { it to stringResource(it.label) }, state.homeStrip, model::setHomeStrip, tag = "home-strip")
+                        CardNote(stringResource(R.string.home_strip_note))
+                        SettingsSwitch(stringResource(R.string.search_button_opens_the_google_app), state.googleSearch, model::setGoogleSearch, "google-search-switch")
+                        CardNote(stringResource(R.string.when_off_the_search_button_opens_spotlig))
+                    }
+                    SettingsCard(stringResource(R.string.suggestions)) {
                         val historyContext = androidx.compose.ui.platform.LocalContext.current
                         var askClearHistory by remember { mutableStateOf(false) }
                         CardAction(stringResource(R.string.clear_suggestions_history), Modifier.fillMaxWidth().testTag("clear-suggestions-history"), destructive = true, onClick = { askClearHistory = true })
@@ -485,195 +255,44 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                                 modifier = Modifier.testTag("clear-suggestions-history-confirm")) { Text(stringResource(R.string.clear), color = androidx.compose.ui.graphics.Color(FolioColors.Value.Red)) } },
                             dismissButton = { TextButton(onClick = { askClearHistory = false }) { Text(stringResource(R.string.cancel)) } })
                     }
-                    if (page == CustomizationPage.GESTURES) SettingsCard(stringResource(R.string.actions)) {
+                }
+                CustomizationPage.GESTURES -> {
+                    SettingsCard(stringResource(R.string.gestures)) {
+                        IosMenuRow(stringResource(R.string.swipe_down_on_home), listOf("SPOTLIGHT" to stringResource(R.string.spotlight), "NOTIFICATIONS" to stringResource(R.string.notifications_title), "OFF" to stringResource(R.string.nothing)),
+                            state.swipeDownHome, model::setSwipeDownHome, tag = "swipe-down-home")
+                        SettingsSwitch(stringResource(R.string.drag_page_dots_to_flip_pages), state.pageScrub, model::setPageScrub, "page-scrub-switch")
+                        SettingsSwitch(stringResource(R.string.haptic_feedback), state.haptics, model::setHaptics, "haptics-switch")
+                        CardNote(stringResource(R.string.pull_down_from_the_top_left_for_notifica))
+                    }
+                    SettingsCard(stringResource(R.string.actions)) {
                         CardNote(stringResource(R.string.pick_what_gestures_and_events_do_activat))
                         FolioTrigger.entries.forEach { trigger ->
                             val current = FolioAction.entries.firstOrNull { it.name == state.triggerActions[trigger.name] } ?: FolioAction.NONE
                             IosMenuRow(stringResource(trigger.label), FolioAction.entries.map { it to stringResource(it.label) }, current, { model.setTriggerAction(trigger, it) }, tag = "trigger-${trigger.name.lowercase()}")
                         }
                     }
-                    if (page == CustomizationPage.TODAY) SettingsCard(stringResource(R.string.left_of_home)) {
-                        // This used to ask for the screen to be rebuilt, through a cast that was always null in a
-                        // sheet, so it never happened — and the pager has been following the page count from state
-                        // on its own ever since. Restarting here would now throw you out of Settings to say so.
-                        IosSegmented(listOf("TODAY" to stringResource(R.string.today_view), "DISCOVER" to stringResource(R.string.google_discover), "NONE" to stringResource(R.string.none)), state.leftPage,
-                            { model.setLeftPage(it) }, Modifier.padding(vertical = FolioSpace.SNUG.dp), tag = "left-page")
-                        CardNote(if (state.leftPage == "NONE") stringResource(R.string.nothing_to_the_left_of_home_swiping_righ)
-                            else stringResource(R.string.today_view_is_iphone_s_widget_page_searc))
-                        if (state.leftPage == "TODAY") {
-                            IosMenuRow(stringResource(R.string.when_unfolded), listOf("PAGE" to stringResource(R.string.swipe_to_it), "BESIDE" to stringResource(R.string.beside_home), "OFF" to stringResource(R.string.none)),
-                                state.todayUnfolded, model::setTodayUnfolded, tag = "today-unfolded")
-                            CardNote(when (state.todayUnfolded) {
-                                "BESIDE" -> stringResource(R.string.like_ipad_today_view_stays_on_the_left_o)
-                                "OFF" -> stringResource(R.string.no_today_view_while_unfolded_it_s_still)
-                                else -> stringResource(R.string.swipe_right_from_your_first_home_page_to)
-                            })
-                            SettingsSwitch(stringResource(R.string.suggestions), state.todaySuggestions, model::setTodaySuggestions, "today-suggestions-switch")
-                            CardNote(stringResource(R.string.today_suggestions_note))
+                    SettingsCard(stringResource(R.string.accessibility)) {
+                        // Android's Remove animations already means no motion at all, so the switch shows on and waits.
+                        val removed = reduceMotionEnabled(androidx.compose.ui.platform.LocalContext.current)
+                        SettingsSwitch(stringResource(R.string.reduce_motion), state.reduceMotion || removed, model::setReduceMotion, "reduce-motion-switch", enabled = !removed)
+                        CardNote(stringResource(if (removed) R.string.reduce_motion_note_removed else R.string.reduce_motion_note))
+                    }
+                    SettingsCard(null) {
+                        // For people who find the system's buttons too small, especially on the inner screen.
+                        SettingsSwitch(stringResource(R.string.big_buttons), state.buttonBar, { on ->
+                            model.setButtonBar(on); if (on && !SystemShadeAccessibilityService.isConnected()) onShadeSetup()
+                        }, "button-bar-switch")
+                        // The footer says what the switch does, so it shows while the switch is off too.
+                        CardNote(stringResource(R.string.big_back_home_and_recents_buttons_float))
+                        if (state.buttonBar) {
+                            val buttonContext = androidx.compose.ui.platform.LocalContext.current
+                            CardAction(stringResource(R.string.put_the_buttons_back_at_the_bottom), onClick = { ButtonBarPosition.reset(buttonContext) })
+                            CardNote(stringResource(R.string.long_press_and_drag_the_bar_to_move_it_u))
+                            if (!gestureNavigation(androidx.compose.ui.platform.LocalContext.current))
+                                CardNote(stringResource(R.string.android_s_three_buttons_are_on_so_you_ll))
                         }
                     }
-                    if (page == CustomizationPage.SEARCH) SettingsCard(stringResource(R.string.app_library)) {
-                        SettingsSwitch(stringResource(R.string.group_apps_into_categories), state.libraryCategories, model::setLibraryCategories, "library-categories-switch")
-                        if (state.profiles.any { it.isWork }) SettingsSwitch(stringResource(R.string.work_apps), state.libraryWork, model::setLibraryWork, "library-work-switch")
-                        HiddenAppsRow(state, model)
-                        SettingsSwitch(stringResource(R.string.add_new_apps_to_home_screen), state.addNewAppsToHome, model::setAddNewAppsToHome, "add-new-apps-switch")
-                        CardNote(stringResource(R.string.off_new_downloads_go_to_the_app_library))
-                    }
-                    if (page == CustomizationPage.SEARCH) SettingsCard(stringResource(R.string.search)) {
-                        // One choice instead of a switch: what sits above the dock at rest. Nothing is still in beta.
-                        val stripContext = androidx.compose.ui.platform.LocalContext.current
-                        val nothingOpen = remember(stripContext) { FeatureGate.HOME_STRIP_NOTHING.isOpen(stripContext) }
-                        IosMenuRow(stringResource(R.string.home_strip), HomeStrip.entries.filter { it != HomeStrip.NOTHING || nothingOpen || state.homeStrip == it }
-                            .map { it to stringResource(it.label) }, state.homeStrip, model::setHomeStrip, tag = "home-strip")
-                        CardNote(stringResource(R.string.home_strip_note))
-                        SettingsSwitch(stringResource(R.string.search_button_opens_the_google_app), state.googleSearch, model::setGoogleSearch, "google-search-switch")
-                        CardNote(stringResource(R.string.when_off_the_search_button_opens_spotlig))
-                    }
-                }
-                CustomizationPage.STATUS, CustomizationPage.ISLAND -> {
-                    if (page == CustomizationPage.STATUS && !split) MiniHomePreview(backgrounds.previewBitmap, state, 210.dp)
-                    val st = state.statusStyle
-                    if (page == CustomizationPage.STATUS) AppIconCard(state, model, onChanged = { model.refresh() })
-                    if (page == CustomizationPage.STATUS) SettingsCard(stringResource(R.string.app_icons)) {
-                        val iconContext = androidx.compose.ui.platform.LocalContext.current
-                        // Reading the installed icon packs asks Android about every pack, so it happens off the main thread.
-                        val packs by androidx.compose.runtime.produceState(emptyList<IconPacks.Pack>(), iconContext) {
-                            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { IconPacks.installed(iconContext) }
-                        }
-                        // iOS Home Screen customization: Default, Dark and Tinted side by side.
-                        Text(stringResource(R.string.style), color = androidx.compose.ui.graphics.Color.White.copy(alpha = .6f), fontSize = FolioType.FOOTNOTE.sp, modifier = Modifier.padding(top = FolioSpace.SMALL.dp))
-                        IosSegmented(IconStyle.entries.map { it to stringResource(it.label) }, state.iconStyle, { model.setIconStyle(it, state.iconTint) }, Modifier.padding(vertical = FolioSpace.TINY.dp), tag = "icon-style")
-                        if (state.iconStyle == IconStyle.TINTED) Row(Modifier.fillMaxWidth().padding(vertical = FolioSpace.SNUG.dp), horizontalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) {
-                            // Wallpaper color (follows the wallpaper when it changes)
-                            val tone = LocalWallpaperTone.current
-                            Box(Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape)
-                                .background(wallpaperIconTint(tone)?.let { androidx.compose.ui.graphics.Color(it) } ?: androidx.compose.ui.graphics.Color.Gray)
-                                .then(if (state.iconTintFromWallpaper) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, androidx.compose.foundation.shape.CircleShape) else Modifier)
-                                .clickable(role = androidx.compose.ui.semantics.Role.RadioButton) { model.setIconTintFromWallpaper(true) }
-                                .description(R.string.wallpaper_color).semantics { selected = state.iconTintFromWallpaper },
-                                contentAlignment = Alignment.Center) {
-                                Icon(Icons.Rounded.Wallpaper, null, tint = androidx.compose.ui.graphics.Color.Black.copy(alpha = .6f), modifier = Modifier.size(18.dp))
-                            }
-                            listOf(FolioColors.Value.Warning, FolioColors.Value.RedSoft, 0xFFFF7EB6, 0xFFBF8CFF, 0xFF64B5FF, 0xFF5EE0C4, 0xFF9BE15D, 0xFFE8E8E8).forEach { c ->
-                                Box(Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(androidx.compose.ui.graphics.Color(c))
-                                    .then(if (!state.iconTintFromWallpaper && state.iconTint == c) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, androidx.compose.foundation.shape.CircleShape) else Modifier)
-                                    .clickable(role = androidx.compose.ui.semantics.Role.RadioButton) { model.setIconTintFromWallpaper(false); model.setIconStyle(IconStyle.TINTED, c) }
-                                    .description(R.string.tint_color).semantics { selected = !state.iconTintFromWallpaper && state.iconTint == c })
-                            }
-                        }
-                        IosMenuRow(stringResource(R.string.icon_pack), listOf<Pair<String?, String>>(null to stringResource(R.string.app_icons)) + packs.map { it.packageName to it.label },
-                            state.iconPack, { IconPacks.clear(); model.setIconPack(it) }, tag = "icon-pack")
-                        CardNote(stringResource(R.string.icon_packs_and_themes_are_made_by_indepe))
-                        if (packs.isEmpty()) CardNote(stringResource(R.string.install_any_icon_pack_made_for_nova_styl))
-                        IosMenuRow(stringResource(R.string.shape), IconShape.entries.map { it to stringResource(it.label) }, state.iconShape, model::setIconShape, tag = "icon-shape")
-                        // Live Clock and Calendar: the app's own icon, or live icons that match the others, or always light/dark.
-                        IosMenuRow(stringResource(R.string.clock_calendar), listOf("OFF" to stringResource(R.string.app_icons_2), "AUTO" to stringResource(R.string.live_automatic), "LIGHT" to stringResource(R.string.live_light), "DARK" to stringResource(R.string.live_dark)),
-                            if (state.liveIcons) state.liveIconLook else "OFF",
-                            { if (it == "OFF") model.setLiveIcons(false) else model.setLiveIconLook(it) }, tag = "live-icons-menu")
-                        IosMenuRow(stringResource(R.string.notification_badges), BadgeStyle.entries.map { it to stringResource(it.label) }, state.badgeStyle, model::setBadgeStyle, tag = "badge-style")
-                        if (state.badgeStyle != BadgeStyle.OFF) {
-                            IosMenuRow(stringResource(R.string.badge_color), BadgeColor.entries.map { it to stringResource(it.label) }, state.badgeColor, model::setBadgeColor, tag = "badge-color")
-                            IosMenuRow(stringResource(R.string.badge_look), BadgeLook.entries.map { it to stringResource(it.label) }, state.badgeLook, model::setBadgeLook, tag = "badge-look")
-                            IosMenuRow(stringResource(R.string.badge_size), BadgeSize.entries.map { it to stringResource(it.label) }, state.badgeSize, model::setBadgeSize, tag = "badge-size")
-                            BadgePreviewRow(state)
-                            // Clear Badges When Opened, for supporters until 0.6.8 (FeatureGate.BADGES_WHEN_OPENED).
-                            val badgesWhenOpenedOpen = remember { FeatureGate.BADGES_WHEN_OPENED.isOpen(iconContext) }
-                            if (badgesWhenOpenedOpen) {
-                                SettingsSwitch(stringResource(R.string.clear_badges_when_opened), state.badgesWhenOpened,
-                                    model::setBadgesWhenOpened, "badges-when-opened-switch")
-                                CardNote(stringResource(R.string.a_badge_goes_away_when_you_open_the_app))
-                            }
-                        }
-                        CardAction(stringResource(R.string.refresh_icons), onClick = model::reloadIcons)
-                        CardNote(stringResource(R.string.refresh_icons_note))
-                    }
-                    if (page == CustomizationPage.STATUS) SettingsCard(stringResource(R.string.side_rail)) {
-                        SettingsSwitch(stringResource(R.string.left_handed_layout_rail_on_the_left), state.leftHanded, model::setLeftHanded, "left-handed-switch")
-                        SettingsSwitch(stringResource(R.string.show_app_names), state.labels, model::setLabels, "label-switch")
-                        if (state.labels) IosMenuRow(stringResource(R.string.name_size), LabelSize.entries.map { it to stringResource(it.label) }, state.labelSize, model::setLabelSize, tag = "label-size")
-                        CardNote(stringResource(R.string.frost_and_outline_are_in_wallpaper_appea))
-                    }
-                    if (page == CustomizationPage.STATUS) SettingsCard(stringResource(R.string.status)) {
-                        SettingsSwitch(stringResource(R.string.show_status_in_the_rail), state.verticalStatus, model::setVerticalStatus, "status-switch")
-                        if (state.verticalStatus) {
-                            IosMenuRow(stringResource(R.string.icon_style), StatusGlyph.entries.map { it to stringResource(it.label) }, st.glyph, { model.setStatusStyle(st.copy(glyph = it)) }, tag = "status-glyph")
-                        if (st.glyph != StatusGlyph.ICONS && st.glyph != StatusGlyph.NONE) {
-                            SettingsSwitch(stringResource(R.string.stronger_rings), st.strongRings, { model.setStatusStyle(st.copy(strongRings = it)) }, "stronger-rings-switch")
-                            CardNote(stringResource(R.string.stronger_rings_note))
-                        }
-                            SettingsSwitch(stringResource(R.string.time), st.showTime, { model.setStatusStyle(st.copy(showTime = it)) }, "status-time")
-                            SettingsSwitch(stringResource(R.string.date), st.showDate, { model.setStatusStyle(st.copy(showDate = it)) }, "status-date")
-                            SettingsSwitch(stringResource(R.string.battery_percentage), st.showBatteryPercent, { model.setStatusStyle(st.copy(showBatteryPercent = it)) }, "status-percent")
-                            CustomizationSlider(stringResource(R.string.status_spacing), when (st.spacing.roundToInt()) {
-                                StatusStyle.COMPACT_SPACING.roundToInt() -> stringResource(R.string.compact); StatusStyle.STANDARD_SPACING.roundToInt() -> stringResource(R.string.standard)
-                                else -> stringResource(R.string.dp_value, st.spacing.roundToInt()) }, st.spacing, 0f..16f, StatusStyle.STANDARD_SPACING, peek = true) { model.setStatusStyle(st.copy(spacing = it)) }
-                            SettingsSwitch(stringResource(R.string.status_bar_background), st.background, { model.setStatusStyle(st.copy(background = it)) }, "status-background")
-                            SettingsSwitch(stringResource(R.string.silent_mode_icon), st.showSilent, { model.setStatusStyle(st.copy(showSilent = it)) }, "status-silent")
-                            SettingsSwitch(stringResource(R.string.color_battery_when_charging_or_low), st.colorfulBattery, { model.setStatusStyle(st.copy(colorfulBattery = it)) }, "status-color")
-                            CardNote(stringResource(R.string.status_colors_green_while_charging_orang))
-                        }
-                    }
-                    if (page == CustomizationPage.ISLAND) {
-                        // Why the island is or is not showing over other apps, with the fix when there is one.
-                        val statusContext = androidx.compose.ui.platform.LocalContext.current
-                        IslandStatusCard(state) { reason ->
-                            fun open(action: String) { runCatching { statusContext.startActivity(android.content.Intent(action).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) } }
-                            when (reason) {
-                                IslandReason.DO_NOT_DISTURB -> open(android.provider.Settings.ACTION_ZEN_MODE_PRIORITY_SETTINGS)
-                                IslandReason.ANDROID_POPUP -> model.setMessagesAvoidDouble(false)
-                                IslandReason.GESTURES_SERVICE_OFF -> onShadeSetup()
-                                IslandReason.NOTIFICATION_ACCESS_OFF -> open(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                                else -> Unit
-                            }
-                        }
-                    }
-                    if (page == CustomizationPage.ISLAND) SettingsCard(stringResource(R.string.island)) {
-                        val islandContext = androidx.compose.ui.platform.LocalContext.current
-                        SettingsSwitch(stringResource(R.string.music_and_live_progress), state.island, { on ->
-                            model.setIsland(on)
-                            if (on && !IslandListenerService.hasAccess(islandContext))
-                                runCatching { islandContext.startActivity(IslandListenerService.accessSettingsIntent(islandContext)) }
-                        }, "island-switch")
-                        if (state.island && state.verticalStatus) SettingsSwitch(stringResource(R.string.live_activities_under_the_status_bar), state.railActivities, model::setRailActivities, "rail-activities-switch")
-                        if (state.island && !IslandListenerService.hasAccess(islandContext)) CardAction(stringResource(R.string.allow_notification_access), onClick = {
-                            runCatching { islandContext.startActivity(IslandListenerService.accessSettingsIntent(islandContext)) }
-                        })
-                        if (state.island) {
-                            CardAction(stringResource(R.string.put_the_island_back_at_the_camera), onClick = { IslandPosition.reset(islandContext) })
-                            CardNote(stringResource(R.string.long_press_and_drag_the_island_to_move_i))
-                        }
-                    }
-                    if (page == CustomizationPage.ISLAND) SettingsCard(stringResource(R.string.brief_pop_ups)) {
-                        if (state.island) {
-                            listOf("CHARGING" to stringResource(R.string.charging), "SILENT" to stringResource(R.string.silent_mode), "FOCUS" to stringResource(R.string.do_not_disturb), "BLUETOOTH" to stringResource(R.string.headphones_speakers), "MESSAGE" to stringResource(R.string.new_messages_with_quick_reply), "CALL" to stringResource(R.string.calls_answer_decline_end)).forEach { (kind, label) ->
-                                SettingsSwitch(label, kind !in state.islandEventsOff, { model.setIslandEvent(kind, it) }, "island-event-${kind.lowercase()}")
-                            }
-                            if ("MESSAGE" !in state.islandEventsOff) MessageBannerSettings(state.messagesAvoidDouble, model::setMessagesAvoidDouble)
-                            IslandAlertSettings(state.islandAlerts, state.islandAlertAppsOff, model::setIslandAlerts) { onPage(CustomizationPage.ISLAND_APPS) }
-                        } else {
-                            SettingsSwitch(stringResource(R.string.headphones_speakers), "BLUETOOTH" !in state.islandEventsOff, { model.setIslandEvent("BLUETOOTH", it) }, "island-event-bluetooth")
-                            if (state.messagesAvoidDouble) {
-                                // Apps that were switched to the island show no pop-up at all while the island is off.
-                                CardNote(stringResource(R.string.message_pop_ups_come_from_the_island_whi))
-                                MessageChannelList()
-                            }
-                        }
-                        CardNote(stringResource(R.string.reads_only_music_calls_timers_navigation))
-                    }
-                    if (page == CustomizationPage.ISLAND) SettingsCard(stringResource(R.string.in_every_app)) {
-                        SettingsSwitch(stringResource(R.string.dynamic_island), state.islandEverywhere, { on ->
-                            model.setIslandEverywhere(on); if (on && !SystemShadeAccessibilityService.isConnected()) onShadeSetup()
-                        }, "island-everywhere-switch")
-                        if (state.islandEverywhere) {
-                            // A pill over a full-screen film or game is in the way, so it steps aside by default.
-                            SettingsSwitch(stringResource(R.string.hide_in_full_screen), state.islandHideFullScreen, model::setIslandHideFullScreen, "island-hide-full-screen-switch")
-                            SettingsSwitch(stringResource(R.string.hide_in_landscape), state.islandHideLandscape, model::setIslandHideLandscape, "island-hide-landscape-switch")
-                            if (state.islandHideLandscape) {
-                                SettingsSwitch(stringResource(R.string.also_on_the_unfolded_screen), state.islandHideLandscapeInner, model::setIslandHideLandscapeInner, "island-hide-landscape-inner-switch")
-                                CardNote(stringResource(R.string.the_unfolded_screen_is_always_wider_than_tall))
-                            }
-                            CardNote(stringResource(R.string.the_island_comes_back_as_soon_as_the_app))
-                        }
+                    SettingsCard(null) {
                         SettingsSwitch(stringResource(R.string.dock_handle_on_the_rail_edge), state.dockEverywhere, { on ->
                             model.setDockEverywhere(on); if (on && !SystemShadeAccessibilityService.isConnected()) onShadeSetup()
                         }, "dock-everywhere-switch")
@@ -681,6 +300,10 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                     }
                 }
                 CustomizationPage.FOLD -> {
+                    SettingsCard(stringResource(R.string.fold_animation)) {
+                        SettingsSwitch("Duet", state.foldEffect, model::setFoldEffect, "duet-switch") // english-only
+                        CardNote(stringResource(R.string.tweak_duet_detail))
+                    }
                     // What Folio has learned about how fast you fold (it adapts the animation to this).
                     val foldPrefs = androidx.compose.ui.platform.LocalContext.current.getSharedPreferences("folio", 0)
                     var learned by remember { mutableStateOf(foldPrefs.getFloat("fold_open_ms", 520f) to foldPrefs.getFloat("fold_close_ms", 650f)) }
@@ -693,117 +316,14 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         })
                         CardNote(stringResource(R.string.learned_from_your_last_folds_and_used_to))
                     }
-                    // The fold animation is the Duet tweak now; its styles and sliders live on its own page.
-                    SettingsCard(stringResource(R.string.fold_animation)) {
-                        val duetOn = DUET_ID in state.installedTweaks && state.foldEffect
-                        IosNavRow("Duet", if (duetOn) stringResource(state.duet.look.name) else stringResource(R.string.off), // english-only
-                            { tweakId = DUET_ID; onPage(CustomizationPage.FOLD_TWEAK) }, "fold-duet")
-                        CardNote(stringResource(R.string.duet_moved_note))
-                    }
-                    val standByMoreOpen = remember { FeatureGate.STANDBY_CHARGING.isOpen(sheetContext) }
-                    // Only the ways this phone can use: half-open and tent need a hinge.
-                    val standByOffered = remember { standByWaysOffered(hasHinge(sheetContext), standByMoreOpen) }
-                    if (standByOffered.isNotEmpty()) SettingsCard(stringResource(R.string.standby)) {
-                        if (StandByWay.HALF_OPEN in standByOffered)
-                            SettingsSwitch(stringResource(R.string.standby_half_open_like_a_laptop), state.standBy, model::setStandBy, "standby-switch")
-                        if (StandByWay.CHARGING in standByOffered)
-                            SettingsSwitch(stringResource(R.string.standby_while_charging_on_its_side), state.standByCharging, model::setStandByCharging, "standby-charging-switch")
-                        if (StandByWay.TENT in standByOffered)
-                            SettingsSwitch(stringResource(R.string.standby_standing_as_a_tent), state.standByTent, model::setStandByTent, "standby-tent-switch")
-                        CardNote(stringResource(R.string.big_clock_date_next_alarm_battery_and_mu))
-                        if (StandByWay.TENT in standByOffered) CardNote(stringResource(R.string.standby_ways_note))
-                    }
-                    // StandBy over the lock screen is Android's screen saver set to Folio StandBy: Folio can't choose
-                    // it, so the row says whether it's chosen and the setup alert says where to choose it.
-                    if (standByMoreOpen) {
-                        val saverChosen = rememberFolioScreenSaverChosen()
-                        var saverSetup by remember { mutableStateOf(false) }
-                        SettingsCard(stringResource(R.string.standby_on_the_lock_screen)) {
-                            IosNavRow(stringResource(R.string.screen_saver),
-                                stringResource(if (saverChosen) R.string.standby_screen_saver_name else R.string.not_set_up),
-                                { if (saverChosen) openScreenSaverSettings(sheetContext) else saverSetup = true }, "standby-screen-saver")
-                            CardNote(stringResource(if (saverChosen) R.string.standby_screen_saver_on_note else R.string.standby_screen_saver_off_note))
-                        }
-                        if (saverSetup) StandByScreenSaverAlert(onOpen = { saverSetup = false; openScreenSaverSettings(sheetContext) },
-                            onCancel = { saverSetup = false })
-                    }
                     SettingsCard(stringResource(R.string.closing_from_home)) {
                         SettingsSwitch(stringResource(R.string.stay_awake_on_the_cover_screen), state.stayAwakeOnFold, model::setStayAwakeOnFold, "fold-awake-switch")
                         CardNote(stringResource(R.string.samsung_locks_the_phone_when_you_fold_on))
                     }
                 }
-                CustomizationPage.BACKUP -> {
-                    if (namingBackup) BackupNameAlert(onCancel = { namingBackup = false }) { name -> namingBackup = false; onSaveLayoutToFolder(name) }
-                    SheetGroup {
-                        IosActionRow(stringResource(R.string.save_backup), "layout-save-folder", onClick = { namingBackup = true })
-                        MenuDivider()
-                        IosActionRow(stringResource(R.string.save_backup_to_files), "layout-export", onClick = onExportLayout)
-                        MenuDivider()
-                        IosActionRow(stringResource(R.string.restore_from_backup), "layout-import", onClick = onImportLayout)
-                    }
-                    // A backup carries Market packages too, but only a phone that has the Market is told so: the row
-                    // that leads to it is hidden here as well, and naming a store the reader can't open explains
-                    // nothing. What the backup actually saves doesn't change either way.
-                    CardNote(
-                        stringResource(
-                            if (MarketAccess.isOpen(sheetContext)) R.string.save_the_current_home_layout_folders_wid_2
-                            else R.string.save_the_current_home_layout_folders_wid,
-                        ) + stringResource(R.string.restore_shows_a_review_before_changing_h),
-                        Modifier.padding(horizontal = FolioSpace.TINY.dp),
-                    )
-                    LayoutHistoryCard(state, model, onClose)
-                }
-                CustomizationPage.ACCESSIBILITY -> {
-                    SettingsCard(null) {
-                        // Android's Remove animations already means no motion at all, so the switch shows on and waits.
-                        val removed = reduceMotionEnabled(androidx.compose.ui.platform.LocalContext.current)
-                        SettingsSwitch(stringResource(R.string.reduce_motion), state.reduceMotion || removed, model::setReduceMotion, "reduce-motion-switch", enabled = !removed)
-                        CardNote(stringResource(if (removed) R.string.reduce_motion_note_removed else R.string.reduce_motion_note))
-                        // The other half of "make Folio calmer": glass turns nearly solid. Android's high contrast does it too.
-                        SettingsSwitch(stringResource(R.string.reduce_transparency), state.reduceTransparency, model::setReduceTransparency, "reduce-transparency-switch")
-                        CardNote(stringResource(R.string.reduce_transparency_note))
-                    }
-                    SettingsCard(null) {
-                        // For people who find the system's buttons too small, especially on the inner screen.
-                        SettingsSwitch(stringResource(R.string.big_buttons), state.buttonBar, { on ->
-                            model.setButtonBar(on); if (on && !SystemShadeAccessibilityService.isConnected()) onShadeSetup()
-                        }, "button-bar-switch")
-                        // The footer says what the switch does, so it shows while the switch is off too.
-                        CardNote(stringResource(R.string.big_back_home_and_recents_buttons_float))
-                        if (state.buttonBar) {
-                            IosMenuRow(stringResource(R.string.size), listOf(44f to stringResource(R.string.standard), 52f to stringResource(R.string.large), 60f to stringResource(R.string.extra_large)), state.buttonBarHeight,
-                                model::setButtonBarHeight, tag = "button-bar-size")
-                            IosMenuRow(stringResource(R.string.width), listOf(.36f to stringResource(R.string.compact), .5f to stringResource(R.string.half_the_screen), .7f to stringResource(R.string.wide)), state.buttonBarWidth,
-                                model::setButtonBarWidth, tag = "button-bar-width")
-                            IosMenuRow(stringResource(R.string.order), listOf(false to stringResource(R.string.recents_home_back), true to stringResource(R.string.back_home_recents)), state.buttonBarAndroidOrder,
-                                model::setButtonBarAndroidOrder, tag = "button-bar-order")
-                            IosMenuRow(stringResource(R.string.look), listOf(false to stringResource(R.string.dark_glass), true to stringResource(R.string.light_glass)), state.buttonBarLight,
-                                model::setButtonBarLight, tag = "button-bar-look")
-                            SettingsSwitch(stringResource(R.string.fade_when_idle), state.buttonBarFade, model::setButtonBarFade, "button-bar-fade-switch")
-                            val buttonContext = androidx.compose.ui.platform.LocalContext.current
-                            CardAction(stringResource(R.string.put_the_buttons_back_at_the_bottom), onClick = { ButtonBarPosition.reset(buttonContext) })
-                            CardNote(stringResource(R.string.long_press_and_drag_the_bar_to_move_it_u))
-                            if (!gestureNavigation(androidx.compose.ui.platform.LocalContext.current))
-                                CardNote(stringResource(R.string.android_s_three_buttons_are_on_so_you_ll))
-                        }
-                    }
-                }
-                CustomizationPage.SIDE_KEY -> SideKeyPage()
-                CustomizationPage.LOCK -> {
-                    SettingsCard(stringResource(R.string.lock_cover)) {
-                        SettingsSwitch(stringResource(R.string.show_after_unlocking), state.lockCover, model::setLockCover, "lock-cover-switch")
-                        CardNote(stringResource(R.string.android_doesn_t_let_apps_replace_the_rea))
-                    }
-                }
-                CustomizationPage.CREDITS -> CreditsPage()
-                CustomizationPage.SUPPORTERS -> SupportersPage()
                 CustomizationPage.GENERAL -> {
                     val generalContext = androidx.compose.ui.platform.LocalContext.current
                     SheetGroup {
-                        val updateStatus by SoftwareUpdate.status.collectAsState()
-                        TweakRow(Icons.Rounded.SystemUpdate, FolioColors.Value.Gray, stringResource(R.string.software_update), "customization-software-update",
-                            if (updateStatus is SoftwareUpdate.Status.Available) "1" else null) { onPage(CustomizationPage.SOFTWARE_UPDATE) }
-                        MenuDivider()
                         TweakRow(Icons.Rounded.NewReleases, FolioColors.Value.Green, stringResource(R.string.what_s_new), "customization-whats-new",
                             "v" + WhatsNew.currentVersion(generalContext)) { onClose(); onShowWhatsNew() }
                         if (DevBuild.isDevApp(generalContext) && DevBuild.load(generalContext) != null) {
@@ -812,262 +332,49 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                                 DevBuild.load(generalContext)?.sha) { onClose(); DevBuild.reopen.intValue++ }
                         }
                     }
+                    if (namingBackup) BackupNameAlert(onCancel = { namingBackup = false }) { name -> namingBackup = false; onSaveLayoutToFolder(name) }
+                    SheetGroupLabel(stringResource(R.string.backup))
                     SheetGroup {
-                        // Android's own per-app language screen (13+), which lists every language Folio ships, as iOS does.
-                        if (android.os.Build.VERSION.SDK_INT >= 33) {
-                            TweakRow(Icons.Rounded.Translate, FolioColors.Value.Blue, stringResource(R.string.language), "customization-language",
-                                generalContext.resources.configuration.locales[0].let { it.getDisplayLanguage(it).replaceFirstChar { c -> c.titlecase(it) } }) {
-                                runCatching { generalContext.startActivity(android.content.Intent(android.provider.Settings.ACTION_APP_LOCALE_SETTINGS,
-                                    android.net.Uri.parse("package:${generalContext.packageName}")).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
-                            }
-                            MenuDivider()
-                        }
-                        TweakRow(Icons.Rounded.Save, FolioColors.Value.Gray, stringResource(R.string.backup), "customization-backup") { onPage(CustomizationPage.BACKUP) }
+                        IosActionRow(stringResource(R.string.save_backup), "layout-save-folder", onClick = { namingBackup = true })
                         MenuDivider()
-                        TweakRow(Icons.Rounded.Tune, FolioColors.Value.Gray, stringResource(R.string.advanced), "customization-advanced") { onPage(CustomizationPage.ADVANCED) }
-                    }
-                    SheetGroup {
-                        TweakRow(Icons.Rounded.HelpOutline, FolioColors.Value.Blue, stringResource(R.string.help), "customization-help") { onPage(CustomizationPage.HELP) }
+                        IosActionRow(stringResource(R.string.save_backup_to_files), "layout-export", onClick = onExportLayout)
                         MenuDivider()
-                        TweakRow(Icons.Rounded.Map, FolioColors.Value.Indigo, stringResource(R.string.roadmap), "customization-coming-soon") { onPage(CustomizationPage.COMING_SOON) }
-                        MenuDivider()
-                        TweakRow(Icons.Rounded.Favorite, FolioColors.Value.Red, stringResource(R.string.credits), "customization-credits") { onPage(CustomizationPage.CREDITS) }
+                        IosActionRow(stringResource(R.string.restore_from_backup), "layout-import", onClick = onImportLayout)
                     }
-                }
-                CustomizationPage.SUPPORT -> {
-                    val supportContext = androidx.compose.ui.platform.LocalContext.current
-                    SheetGroup {
-                        // "Ko-fi", not "Support Folio" again: the page already says that.
-                        TweakRow(Icons.Rounded.LocalCafe, 0xFFFF5E5B, stringResource(R.string.ko_fi), "customization-support") {
-                            runCatching { supportContext.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://ko-fi.com/mccal"))) }
-                        }
-                        if (Supporter.available(supportContext)) {
-                            MenuDivider()
-                            TweakRow(Icons.Rounded.Redeem, FolioColors.Value.Purple, stringResource(R.string.supporter), "customization-supporter",
-                                remember(supportContext) { Supporter.code(supportContext) }?.let { stringResource(R.string.code_added) }) { onPage(CustomizationPage.SUPPORTER) }
-                        }
-                    }
-                    SheetGroup {
-                        // The people who backed Folio.
-                        TweakRow(Icons.Rounded.Star, FolioColors.Value.Pink, stringResource(R.string.supporters), "customization-supporters") { onPage(CustomizationPage.SUPPORTERS) }
-                    }
-                    CardNote(stringResource(R.string.folio_is_free_and_always_will_be_if_it_m), Modifier.padding(horizontal = FolioSpace.LARGE.dp))
-                }
-                CustomizationPage.ISLAND_APPS -> IslandAlertApps(state.islandAlertAppsOff, state.messagesAvoidDouble, model::setIslandAlertApp)
-                CustomizationPage.HELP -> {
-                    // Getting help lives here rather than as more rows in the main list (fewer choices there).
-                    val helpContext = androidx.compose.ui.platform.LocalContext.current
-                    SheetGroup {
-                        var askDiagnostics by remember { mutableStateOf(false) }
-                        // Outside the dialog on purpose: closing the dialog is the first thing either button does, and
-                        // a scope that went with it cancelled the report before it had been written.
-                        val reportScope = rememberCoroutineScope()
-                        TweakRow(Icons.Rounded.BugReport, FolioColors.Value.Red, stringResource(R.string.report_a_bug), "customization-report-bug") { askDiagnostics = true }
-                        if (askDiagnostics) {
-                            fun openForm() { runCatching { helpContext.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(BugReport.url(helpContext)))) } }
-                            AlertDialog(onDismissRequest = { askDiagnostics = false },
-                                title = { Text(stringResource(R.string.how_should_this_report_go)) },
-                                text = { Text(stringResource(R.string.email_needs_no_account)) },
-                                confirmButton = { TextButton(onClick = { askDiagnostics = false
-                                    reportScope.launch { Diagnostics.send(helpContext, email = true) } },
-                                    modifier = Modifier.testTag("report-email")) { Text(stringResource(R.string.email_a_report)) } },
-                                dismissButton = { TextButton(onClick = { askDiagnostics = false
-                                    // Copied off the main thread first, so the form opens with the details ready to paste.
-                                    reportScope.launch { Diagnostics.copy(helpContext); openForm() } },
-                                    modifier = Modifier.testTag("report-copy-diagnostics")) { Text(stringResource(R.string.use_github_instead)) } })
-                        }
-                        MenuDivider()
-                        TweakRow(Icons.Rounded.WavingHand, FolioColors.Value.Orange, stringResource(R.string.show_welcome_again), "customization-onboarding") { onClose(); onShowWelcome() }
-                        // The testers' checklist: only on a beta build and Folio Dev.
-                        if (WhatToTest.available(SoftwareUpdate.installedVersion(helpContext), helpContext.packageName)) {
-                            MenuDivider()
-                            TweakRow(Icons.Rounded.Checklist, FolioColors.Value.Green, stringResource(R.string.what_to_test), "customization-what-to-test") { onPage(CustomizationPage.WHAT_TO_TEST) }
-                        }
-                    }
-                    CardNote(stringResource(R.string.report_a_bug_opens_github_in_your_browse), Modifier.padding(horizontal = FolioSpace.LARGE.dp))
-                    LauncherHelp(
-                        isDefaultHome = isDefaultHome,
-                        onHomeSettings = onMakeDefault,
-                        onAddWidget = { onAddWidget(homePage) },
-                        onShadeSetup = onShadeSetup,
+                    CardNote(
+                        stringResource(R.string.save_the_current_home_layout_folders_wid) + stringResource(R.string.restore_shows_a_review_before_changing_h),
+                        Modifier.padding(horizontal = FolioSpace.TINY.dp),
                     )
-                }
-                CustomizationPage.ADVANCED -> {
-                    SettingsCard(stringResource(R.string.screenshot_mode)) {
-                        val screenshot by ScreenshotMode.on.collectAsState()
-                        SettingsSwitch(stringResource(R.string.screenshot_mode), screenshot, ScreenshotMode::set, "screenshot-mode-switch")
-                        CardNote(stringResource(R.string.for_sharing_your_setup_folio_shows_9_41))
-                        IosNavRow(stringResource(R.string.screenshot_swap_apps), null, { onPage(CustomizationPage.SCREENSHOT_SWAP) }, "screenshot-swap-row")
-                    }
-                    if (FolioMotion.switchVisible(sheetContext)) SettingsCard(stringResource(R.string.motion_pass)) {
-                        SettingsSwitch(stringResource(R.string.motion_pass), FolioMotion.v2, { FolioMotion.setEnabled(sheetContext, it) }, "motion-pass-switch")
-                        CardNote(stringResource(R.string.motion_pass_note))
-                    }
+                    LayoutHistoryCard(state, model, onClose)
+                    PermissionsCard(isDefaultHome, onMakeDefault, onShadeSetup)
                     SettingsCard(stringResource(R.string.safe_mode)) {
                         CardNote(if (SafeMode.active) stringResource(R.string.folio_is_running_in_safe_mode_optional_f)
                             else stringResource(R.string.if_folio_closes_unexpectedly_twice_right))
                     }
-                    SettingsCard(null) {
-                        IosNavRow(stringResource(R.string.system_bridge), null, { onPage(CustomizationPage.SYSTEM_BRIDGE) }, "system-bridge-row")
-                    }
                     CapabilitiesCard()
                     RecentActivityCard()
-                    // Folio Dev only: the passphrase-locked developer actions. A release build never shows this row.
-                    if (DevBuild.isDevApp(androidx.compose.ui.platform.LocalContext.current)) SettingsCard(null) {
-                        IosNavRow(DevBuild.DEVELOPER_LABEL, null, { onPage(CustomizationPage.DEVELOPER) }, "developer-row")
-                    }
                     CrashReportsCard()
                     PerformanceCard()
+                    CreditsCard()
                 }
-                CustomizationPage.MARKET -> {
-                    Text(stringResource(R.string.market_page_intro),
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = FolioSpace.TINY.dp))
-                    SheetGroup { IosActionRow(stringResource(R.string.open_the_market), onClick = onOpenMarket) }
-                    SheetGroupLabel(stringResource(R.string.featured_style))
-                    val marketPrefs = remember(sheetContext) { rememberedMarketPrefs(sheetContext) }
-                    var featuredStyle by remember { mutableStateOf(marketPrefs.featuredStyle) }
-                    IosSegmented(
-                        options = com.mccal.folio.market.FeaturedStyle.entries.map { it to stringResource(it.label) },
-                        selected = featuredStyle,
-                        onSelect = { chosen -> featuredStyle = chosen; marketPrefs.featuredStyle = chosen },
-                        tag = "market-featured-style",
-                    )
-                    Text(stringResource(featuredStyle.description),
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = FolioSpace.TINY.dp))
-                    SheetGroup {
-                        IosActionRow(stringResource(R.string.show_the_introduction_again)) { marketPrefs.introductionSeen = false }
-                    }
-                    // A code is redeemed in one place, Settings > Supporter, and this points at it rather than
-                    // offering a second box that would take the same code for one feature only.
-                    SheetGroupLabel(stringResource(R.string.early_access))
-                    SheetGroup {
-                        IosActionRow(stringResource(R.string.supporter)) { onPage(CustomizationPage.SUPPORTER) }
-                    }
-                    CardNote(stringResource(R.string.the_market_is_here_early_for_supporters))
-                    SheetGroupLabel(stringResource(R.string.installing_apps))
-                    var installApps by remember { mutableStateOf(marketPrefs.installApps) }
-                    SheetGroup {
-                        SwitchRow(
-                            stringResource(R.string.installing_apps),
-                            stringResource(if (installApps) R.string.folio_downloads_and_installs else R.string.open_play_f_droid_or_obtainium_instead),
-                            installApps,
-                        ) { installApps = it; marketPrefs.installApps = it }
-                    }
-                    CardNote(stringResource(R.string.some_listings_are_apps_of_their_own))
-                    // The warning belongs on the switch, not buried in a sheet nobody reads twice.
-                    if (installApps) CardNote(stringResource(R.string.turn_it_on_only_for_sources_you_would))
-                    SheetGroupLabel(stringResource(R.string.market_refreshing_section))
-                    var background by remember { mutableStateOf(marketPrefs.backgroundRefresh) }
-                    var wifiOnly by remember { mutableStateOf(marketPrefs.refreshOnWifiOnly) }
-                    var notifyUpdates by remember { mutableStateOf(marketPrefs.notifyUpdates) }
-                    var autoUpdate by remember { mutableStateOf(marketPrefs.autoUpdatePackages) }
-                    var notifyRefused by remember { mutableStateOf(false) }
-                    val marketNotifyPermission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { granted ->
-                        // Android said no: the switch goes back off instead of staying on and never showing anything.
-                        if (!granted) { notifyUpdates = false; marketPrefs.notifyUpdates = false; notifyRefused = true }
-                    }
-                    SheetGroup {
-                        SwitchRow(stringResource(R.string.refresh_in_the_background), stringResource(if (background) R.string.once_a_day else R.string.off), background) {
-                            background = it
-                            marketPrefs.backgroundRefresh = it
-                            MarketRefreshJob.schedule(sheetContext)
-                        }
-                        if (background) {
-                            MenuDivider()
-                            if (FeatureGate.MARKET_AUTO_UPDATE.isOpen(sheetContext)) {
-                                SwitchRow(stringResource(R.string.update_packages_in_background), stringResource(R.string.update_packages_in_background_detail), autoUpdate) {
-                                    autoUpdate = it
-                                    marketPrefs.autoUpdatePackages = it
-                                }
-                                MenuDivider()
-                            }
-                            SwitchRow(stringResource(R.string.tell_me_about_updates), stringResource(R.string.market_updates_notice_detail), notifyUpdates) {
-                                notifyUpdates = it
-                                marketPrefs.notifyUpdates = it
-                                notifyRefused = false
-                                if (it && !SoftwareUpdate.canPostNotifications(sheetContext)) marketNotifyPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                            }
-                            MenuDivider()
-                            SwitchRow(stringResource(R.string.only_on_wifi), stringResource(if (wifiOnly) R.string.never_uses_mobile_data else R.string.any_network), wifiOnly) {
-                                wifiOnly = it
-                                marketPrefs.refreshOnWifiOnly = it
-                                MarketRefreshJob.schedule(sheetContext)
-                            }
-                        }
-                    }
-                    Text(stringResource(R.string.with_this_off_folio_only_goes_online),
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = FolioSpace.TINY.dp))
-                    if (notifyRefused) Text(stringResource(R.string.updates_notice_refused),
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = FolioSpace.TINY.dp, vertical = FolioSpace.TINY.dp))
-                }
-                CustomizationPage.TWEAKS -> {
-                    CardNote(stringResource(R.string.features_inspired_by_ios_jailbreak_tweak), Modifier.padding(horizontal = FolioSpace.TINY.dp))
-                    val tweaksContext = androidx.compose.ui.platform.LocalContext.current
-                    val offered = remember { visibleTweaks(tweaksContext) }
-                    val installed = offered.filter { it.id in state.installedTweaks }
-                    if (installed.isNotEmpty()) SheetGroup {
-                        installed.forEachIndexed { index, tweak ->
-                            if (index > 0) MenuDivider()
-                            TweakRow(tweak.icon, tweak.color, tweak.name, "tweak-${tweak.id}", if (tweak.get(state)) stringResource(R.string.on) else stringResource(R.string.off)) {
-                                tweakId = tweak.id; onPage(CustomizationPage.TWEAK)
-                            }
-                        }
-                    }
-                    SheetGroup {
-                        // The Market is where tweaks come from, so it opens from here (McCal, 28 Sep 2026).
-                        if (MarketAccess.isOpen(tweaksContext)) {
-                            TweakRow(Icons.Rounded.Storefront, FolioColors.Value.Blue, stringResource(R.string.market), "customization-market") { onPage(CustomizationPage.MARKET) }
-                            MenuDivider()
-                        }
-                        TweakRow(Icons.Rounded.Extension, FolioColors.Value.Purple, stringResource(R.string.tweak_library), "tweak-library",
-                            (offered.size - installed.size).let { pluralStringResource(R.plurals.count_available, it, it) }) { onPage(CustomizationPage.TWEAK_LIBRARY) }
-                    }
-                }
-                CustomizationPage.TWEAK_LIBRARY -> TweakLibraryPage(state, model) { tweakId = it.id; onPage(CustomizationPage.LIBRARY_TWEAK) }
-                CustomizationPage.SOFTWARE_UPDATE -> SoftwareUpdatePage()
-                CustomizationPage.SUPPORTER -> SupporterPage()
-                CustomizationPage.SYSTEM_BRIDGE -> SystemBridgePage()
-                // The model's apps, not the sheet's state: Home's state is disguised while Screenshot Mode is on.
-                CustomizationPage.SCREENSHOT_SWAP -> ScreenshotSwapPage(model.state.collectAsState().value.apps)
-                CustomizationPage.DEVELOPER -> DeveloperPage(onShowBuild = { onClose(); DevBuild.reopen.intValue++ }, onClose = onClose)
-                CustomizationPage.PERMISSIONS -> PermissionsPage(isDefaultHome, onMakeDefault, onShadeSetup)
-                CustomizationPage.THEMES -> ThemesPage(state, model, backgrounds.previewBitmap)
-                CustomizationPage.FOCUS -> FocusListPage(state, model) { focusId = it; onPage(CustomizationPage.FOCUS_MODE) }
-                CustomizationPage.FOCUS_MODE -> state.focusModes.firstOrNull { it.id == focusId }?.let { FocusModePage(it, state, model) }
-                    ?: LaunchedEffect(Unit) { onPage(CustomizationPage.FOCUS) }
-                CustomizationPage.TWEAK, CustomizationPage.LIBRARY_TWEAK, CustomizationPage.FOLD_TWEAK -> TweakFeatures.firstOrNull { it.id == tweakId }?.let { tweak -> TweakPage(tweak, state, model, backgrounds.previewBitmap) }
-                    ?: LaunchedEffect(Unit) { onPage(CustomizationPage.TWEAKS) }
             }
     }
     if (!split) Column(Modifier.fillMaxSize().padding(horizontal = FolioSpace.LARGE.dp)) {
         SettingsNavBar(settingsBackLabel(page, columns = 1)?.let { stringResource(it) }, onBack, onClose)
-        if (page != CustomizationPage.OVERVIEW) SettingsLargeTitle(title)
+        SettingsLargeTitle(stringResource(page.title))
         Column(Modifier.weight(1f).edgeFade(bodyScroll).verticalScroll(bodyScroll).padding(bottom = FolioSpace.XL.dp),
-            verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) { pageContent(page) }
+            verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) { pageContent() }
     } else {
         // Half folded with the fold running down the screen, the divider goes on the fold, so no row sits on the
         // crease (iPhone Duo: controls move away from the fold). Flat, it's a share of the width.
         val hinge = LocalHinge.current?.takeIf { it.active && it.vertical }
         val density = LocalDensity.current
         val onFold = hinge?.let { with(density) { it.startPx.toDp() } }?.takeIf { it >= 280.dp && it <= fullWidth * .7f }
-        val columns = settingsColumns(
-            maxWidth.value, maxHeight.value, androidx.compose.ui.platform.LocalConfiguration.current.classScale,
-            nested = page.parent != CustomizationPage.OVERVIEW,
-            onFold = onFold != null,
-            keyboardDp = keyboardDp,
-        ).coerceAtMost(LocalSettingsMaxColumns.current)
+        val columns = settingsColumns(maxWidth.value, maxHeight.value, androidx.compose.ui.platform.LocalConfiguration.current.classScale, keyboardDp)
         val tiled = columns >= 2
-        val threeColumns = columns == 3
-        // Tiled it shares the width; as an overlay it can be a little wider so rows don't wrap. With three, the list
-        // of settings gives up some width so the other two stay readable.
+        // Tiled it shares the width; as an overlay it can be a little wider so rows don't wrap.
         val sidebarWidth = onFold
-            ?: when {
-                threeColumns -> (fullWidth * .28f).coerceIn(260.dp, 320.dp)
-                tiled -> (fullWidth * .4f).coerceIn(280.dp, 380.dp)
-                else -> minOf(360.dp, fullWidth * .6f)
-            }
-        val middleWidth = ((fullWidth - sidebarWidth) * .44f).coerceIn(280.dp, 380.dp)
-        val middleScroll = rememberScrollState()
+            ?: if (tiled) (fullWidth * .4f).coerceIn(280.dp, 380.dp) else minOf(360.dp, fullWidth * .6f)
         var sidebarOpen by rememberSaveable { mutableStateOf(tiled || page == CustomizationPage.OVERVIEW) }
         var shownPage by remember { mutableStateOf(page) }
         // Opening a page slides the list away; coming back to the top brings it back, since the list is all that page has.
@@ -1076,13 +383,8 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
             Column(Modifier.width(sidebarWidth).fillMaxHeight().edgeFade(sidebarScroll).verticalScroll(sidebarScroll)
                 .padding(horizontal = FolioSpace.LARGE.dp).padding(top = 44.dp, bottom = FolioSpace.XL.dp).testTag("settings-sidebar"), verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) {
                 SettingsLargeTitle(stringResource(R.string.folio))
-                SettingsSearchField(settingsQuery) { settingsQuery = it }
-                if (settingsQuery.isNotBlank()) SettingsSearchResults(settingsQuery, onOpen = { page, row -> SettingsFocus.label = row; onPage(page) }, onOpenTweak = { openTweak(it) })
-                else {
-                    // Like the account card at the top of iPad Settings: Folio's own page.
-                    SheetGroup { SidebarAppRow(selected = page == CustomizationPage.OVERVIEW, setupLeft) { onPage(CustomizationPage.OVERVIEW) } }
-                    overviewRows(page.root, true)
-                }
+                overviewActions()
+                overviewRows(shown, true)
             }
         }
         val divider: @Composable () -> Unit = {
@@ -1093,33 +395,15 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                 sidebar()
                 divider()
             }
-            // The list you picked from stays where it was, and what you picked opens to the right of it - the way
-            // Mail and Notes use an iPad's width. Only for a page that came from a list, so a column is never empty.
-            if (threeColumns) {
-                Column(Modifier.width(middleWidth).fillMaxHeight().padding(horizontal = FolioSpace.XL.dp)) {
-                    Spacer(Modifier.height(44.dp))
-                    SettingsLargeTitle(stringResource(page.parent.title))
-                    Column(Modifier.weight(1f).edgeFade(middleScroll).verticalScroll(middleScroll).padding(bottom = FolioSpace.XL.dp),
-                        verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) { pageContent(page.parent) }
-                }
-                divider()
-            }
             Column(Modifier.weight(1f).fillMaxHeight().padding(horizontal = FolioSpace.XL.dp)) {
-                // With the list Back would return to still on screen there's nothing for Back to reveal, so the bar keeps
-                // only Done. Otherwise every page but the first gets a way back, named for where it goes, not only the
-                // sidebar button, which doesn't read as one.
+                // With the list beside it there's nothing for Back to reveal, so the bar keeps only Done. Otherwise every
+                // page gets a way back, named for where it goes, not only the sidebar button, which doesn't read as one.
                 SettingsNavBar(settingsBackLabel(page, columns)?.let { stringResource(it) }, onBack, onClose,
                     leading = if (tiled) null else ({ SidebarButton { sidebarOpen = !sidebarOpen } }))
-                if (page != CustomizationPage.OVERVIEW) SettingsLargeTitle(title)
+                SettingsLargeTitle(stringResource(shown.title))
                 Column(Modifier.weight(1f).edgeFade(bodyScroll).verticalScroll(bodyScroll).padding(bottom = FolioSpace.XL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Column(Modifier.widthIn(max = 720.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) {
-                        // The space beside the list shows what the page changes, drawn from your real Home.
-                        if (page == CustomizationPage.HOME && wide) UnfoldedHomePreview(backgrounds.previewBitmap, state, 200.dp,
-                            // The sliders edit the upright layout when it is separate and chosen, so the preview shows that one.
-                            state.presetFor(if (upright && state.portrait != null) LayoutScreen.INNER_UPRIGHT else LayoutScreen.INNER))
-                        else if (page == CustomizationPage.HOME || page == CustomizationPage.STATUS)
-                            MiniHomePreview(backgrounds.previewBitmap, state, 240.dp)
-                        pageContent(page)
+                        pageContent()
                     }
                 }
             }
@@ -1148,19 +432,6 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     }
 }
 
-/** A row with a title, a line under it and a switch: the shape most Folio settings take. */
-@Composable private fun SwitchRow(title: String, value: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.COMPACT.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(title, color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.BODY.sp)
-            value?.let {
-                Text(it, color = androidx.compose.ui.graphics.Color.White.copy(alpha = .55f), fontSize = FolioType.FOOTNOTE.sp)
-            }
-        }
-        IosSwitch(checked, onChange, Modifier.testTag("switch-${title.lowercase().replace(' ', '-')}"))
-    }
-}
-
 @Composable private fun SettingsNavBar(backLabel: String?, onBack: () -> Unit, onClose: () -> Unit, leading: (@Composable () -> Unit)? = null) {
     // iOS navigation bar: the sidebar button and "‹ Back" on the left, Done on the right.
     Box(Modifier.fillMaxWidth().heightIn(min = 44.dp)) {
@@ -1181,84 +452,6 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
 
 @Composable private fun SettingsLargeTitle(title: String) = Text(title, color = androidx.compose.ui.graphics.Color.White, fontSize = 32.sp,
     fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = FolioSpace.TINY.dp, bottom = FolioSpace.SMALL.dp))
-
-/** Sidebar header row: Folio's icon, name and setup state, like the account card in iPad Settings. */
-@Composable private fun SidebarAppRow(selected: Boolean, setupLeft: Int, onClick: () -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val icon = remember { folioIconBitmap(context) }
-    // iPad Settings: the selection is a rounded highlight inset from the group's edges, not a square band.
-    Row(Modifier.fillMaxWidth().padding(FolioSpace.TINY.dp).clip(RoundedCornerShape(FolioRadius.ROW.dp)).background(if (selected) LocalAccent.current.fill else androidx.compose.ui.graphics.Color.Transparent).clickable(onClick = onClick)
-        .padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.COMPACT.dp).testTag("settings-sidebar-folio"), verticalAlignment = Alignment.CenterVertically) {
-        icon?.let { Image(it, null, Modifier.size(52.dp).clip(RoundedCornerShape(12.dp))) }
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.folio), color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.TITLE3.sp, fontWeight = FontWeight.SemiBold)
-            Text(if (setupLeft > 0) pluralStringResource(R.plurals.setup_steps_left, setupLeft, setupLeft) else stringResource(R.string.home_panels_and_tweaks),
-                color = androidx.compose.ui.graphics.Color.White.copy(alpha = if (selected) .85f else .55f), fontSize = FolioType.COMPACT.sp)
-        }
-    }
-}
-
-@Composable
-private fun LauncherHelp(
-    isDefaultHome: Boolean,
-    onHomeSettings: () -> Unit,
-    onAddWidget: () -> Unit,
-    onShadeSetup: () -> Unit,
-) {
-    SheetGroup {
-        HelpTip(Icons.Rounded.Home, FolioColors.Value.Blue, stringResource(R.string.edit_home), stringResource(R.string.hold_an_app_for_its_menu_or_move_while_h))
-        MenuDivider()
-        HelpTip(Icons.Rounded.Widgets, FolioColors.Value.Indigo, stringResource(R.string.widgets_smart_stacks), stringResource(R.string.hold_a_widget_and_let_go_for_sizes_stack))
-        MenuDivider()
-        HelpTip(Icons.Rounded.SwipeDown, FolioColors.Value.RedLight, stringResource(R.string.notifications_control_center), stringResource(R.string.pull_down_from_the_top_left_or_top_right))
-        MenuDivider()
-        HelpTip(Icons.Rounded.Circle, FolioColors.Value.SecondaryBackground, stringResource(R.string.dynamic_island), stringResource(R.string.tap_it_for_details_hold_and_drag_to_move))
-        MenuDivider()
-        HelpTip(Icons.Rounded.Devices, FolioColors.Value.Pink, stringResource(R.string.folding), stringResource(R.string.folio_fades_between_screens_and_keeps_th))
-    }
-    SheetGroup {
-        IosActionRow(stringResource(R.string.add_widget_to_this_page_2), "help-add-widget", onClick = onAddWidget)
-    }
-    // The person behind Folio, for anything a bug report doesn't cover.
-    val helpContext = androidx.compose.ui.platform.LocalContext.current
-    SheetGroup {
-        IosActionRow(stringResource(R.string.email_the_developer), "help-contact-email") {
-            runCatching { helpContext.startActivity(android.content.Intent(android.content.Intent.ACTION_SENDTO, android.net.Uri.parse("mailto:contact@mcc-cal.com"))
-                .putExtra(android.content.Intent.EXTRA_SUBJECT, "Folio").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
-        }
-    }
-}
-
-@Composable
-private fun HelpTip(icon: ImageVector, color: Long, title: String, detail: String) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.COMPACT.dp), verticalAlignment = Alignment.Top) {
-        Box(Modifier.size(30.dp).clip(RoundedCornerShape(7.dp)).background(androidx.compose.ui.graphics.Color(color)), contentAlignment = Alignment.Center) {
-            Icon(icon, null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(19.dp))
-        }
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(title, color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.BODY.sp)
-            Text(detail, color = androidx.compose.ui.graphics.Color.White.copy(alpha = .55f), fontSize = FolioType.COMPACT.sp)
-        }
-    }
-}
-
-
-
-
-/** Tweak-style header: Folio's icon, name and version, like a jailbreak tweak's preference banner. */
-@Composable private fun TweakBanner() {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val version = remember { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "" }
-    Column(Modifier.fillMaxWidth().padding(top = FolioSpace.TINY.dp, bottom = FolioSpace.SNUG.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        // Folio's own launcher icon, like a tweak's preference banner.
-        val icon = remember { folioIconBitmap(context) }
-        if (icon != null) androidx.compose.foundation.Image(icon, null, Modifier.size(72.dp).clip(RoundedCornerShape(18.dp)))
-        Text(stringResource(R.string.folio), color = androidx.compose.ui.graphics.Color.White, fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = FolioSpace.SMALL.dp))
-        Text(stringResource(R.string.iphone_duo_for_your_fold_v, version), color = androidx.compose.ui.graphics.Color.White.copy(alpha = .55f), fontSize = FolioType.COMPACT.sp)
-    }
-}
 
 /** iOS Settings row: colored rounded icon square, title, optional value, chevron. */
 /**
@@ -1299,363 +492,8 @@ private fun HelpTip(icon: ImageVector, color: Long, title: String, detail: Strin
     }
 }
 
-/** Guided side key setup: hold → Folio's assistant picker, double press → Google Wallet. Samsung doesn't let apps change these, so each row checks and opens the right screen. */
-@Composable private fun SideKeyPage() {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var tick by remember { mutableIntStateOf(0) }
-    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(lifecycle) { lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) { tick++ } }
-    fun open(intent: android.content.Intent?) { intent?.let { runCatching { context.startActivity(it.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) } } }
-    val assistant = remember(tick) { AssistPickerActivity.isDefaultAssistant(context) }
-    val hold = remember(tick) { sideKeyHoldIsAssistant(context) }
-    val wallet = remember(tick) { sideKeyDoublePressIsWallet(context) }
-    SettingsCard(stringResource(R.string.press_and_hold)) {
-        SideKeyStep("1. Folio is your digital assistant", stringResource(R.string.settings_apps_default_apps_digital_assis), assistant) { open(AssistPickerActivity.settingsIntent()) }
-        SideKeyStep("2. Hold the side key: Digital assistant", stringResource(R.string.side_button_press_and_hold_digital_assis), hold) { open(sideKeySettings(context)) }
-        var holdTarget by remember { mutableStateOf(SideKeyHold.current(context)) }
-        val holdOptions = remember(tick) { SideKeyHold.available(context) }
-        IosMenuRow(stringResource(R.string.when_you_hold_it), holdOptions.map { it to it.label }, holdTarget,
-            { holdTarget = it; SideKeyHold.set(context, it) }, tag = "side-key-hold")
-        CardNote(stringResource(R.string.then_holding_the_side_key_opens_folio_s))
-        CardNote(stringResource(R.string.still_nothing_choose_a_different_digital))
-        // Good Lock's RegiStar can take over the side key before Android's assistant setting is used.
-        val registar = remember(tick) { runCatching { context.packageManager.getPackageInfo("com.samsung.android.app.galaxyregistry", 0) }.isSuccess }
-        if (registar) Text(stringResource(R.string.registar_good_lock_is_installed_if_it_h),
-            style = MaterialTheme.typography.bodySmall, color = FolioColors.Orange)
-    }
-    SettingsCard(stringResource(R.string.double_press)) {
-        SideKeyStep(stringResource(R.string.double_press_google_wallet), stringResource(R.string.side_button_double_press_open_app_wallet), wallet) { open(sideKeyDoublePressSettings(context) ?: sideKeySettings(context)) }
-        CardNote(stringResource(R.string.like_double_clicking_the_side_button_for))
-    }
-}
-
-@Composable private fun SideKeyStep(title: String, path: String, done: Boolean, onOpen: () -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(title)
-            CardNote(path)
-        }
-        if (done) Icon(Icons.Rounded.CheckCircle, stringResource(R.string.done), tint = FolioColors.Green)
-        else TextButton(onClick = onOpen) { Text(stringResource(R.string.open)) }
-    }
-}
-
-/** iOS Settings search field. */
-/** A row that just says something: a title and a line under it, with no control. */
-@Composable private fun SwitchlessRow(title: String, value: String) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.MEDIUM.dp)) {
-        Text(title, color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.BODY.sp)
-        Text(value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable private fun SettingsSearchField(query: String, onQuery: (String) -> Unit) =
-    IosSearchField(query, onQuery, stringResource(R.string.search), fieldModifier = Modifier.testTag("settings-search"))
-
-/** Where each setting lives, for Settings search: its title as shown, and words people search for (settings_keywords_*). */
-internal val SettingsIndex: List<Triple<Int, Int, CustomizationPage>> = listOf(
-    Triple(R.string.settings_background_wallpaper, R.string.settings_keywords_background_wallpaper, CustomizationPage.WALLPAPER),
-    Triple(R.string.text_on_home, R.string.settings_keywords_text_on_home, CustomizationPage.WALLPAPER),
-    Triple(R.string.settings_big_buttons_in_every_app, R.string.settings_keywords_big_buttons_in_every_app, CustomizationPage.ACCESSIBILITY),
-    Triple(R.string.settings_dock_and_status_position, R.string.settings_keywords_dock_and_status_position, CustomizationPage.HOME),
-    Triple(R.string.settings_rounded_screen_corners, R.string.settings_keywords_rounded_screen_corners, CustomizationPage.WALLPAPER),
-    Triple(R.string.glass, R.string.settings_keywords_glass, CustomizationPage.WALLPAPER),
-    Triple(R.string.folders, R.string.settings_keywords_folders, CustomizationPage.HOME),
-    Triple(R.string.software_update, R.string.settings_keywords_software_update, CustomizationPage.SOFTWARE_UPDATE),
-    Triple(R.string.tweak_library, R.string.settings_keywords_tweak_library, CustomizationPage.TWEAK_LIBRARY),
-    Triple(R.string.settings_animation_speed, R.string.settings_keywords_animation_speed, CustomizationPage.GESTURES),
-    Triple(R.string.reduce_motion, R.string.settings_keywords_reduce_motion, CustomizationPage.ACCESSIBILITY),
-    Triple(R.string.settings_app_name_size, R.string.settings_keywords_app_name_size, CustomizationPage.STATUS),
-    Triple(R.string.tint_glass_with_wallpaper_color, R.string.settings_keywords_tint_glass_with_wallpaper_color, CustomizationPage.WALLPAPER),
-    Triple(R.string.dark_appearance_dims_wallpaper, R.string.settings_keywords_dark_appearance_dims_wallpaper, CustomizationPage.WALLPAPER),
-    Triple(R.string.darken_behind_text, R.string.settings_keywords_darken_behind_text, CustomizationPage.WALLPAPER),
-    Triple(R.string.settings_appearance_light_dark_sunset, R.string.settings_keywords_appearance_light_dark_sunset, CustomizationPage.WALLPAPER),
-    Triple(R.string.settings_grid_icon_size_dock, R.string.settings_keywords_grid_icon_size_dock, CustomizationPage.HOME),
-    Triple(R.string.folder_background, R.string.settings_keywords_folder_background, CustomizationPage.HOME),
-    Triple(R.string.rows, R.string.settings_keywords_rows, CustomizationPage.HOME),
-    Triple(R.string.space_between_columns, R.string.settings_keywords_space_between_columns, CustomizationPage.HOME),
-    Triple(R.string.widget_size, R.string.settings_keywords_widget_size, CustomizationPage.HOME),
-    Triple(R.string.space_between_dock_apps, R.string.settings_keywords_space_between_dock_apps, CustomizationPage.HOME),
-    Triple(R.string.status_spacing, R.string.settings_keywords_status_spacing, CustomizationPage.STATUS),
-    Triple(R.string.widgets, R.string.settings_keywords_widgets, CustomizationPage.HOME),
-    Triple(R.string.settings_today_view_left_of_home, R.string.settings_keywords_today_view_left_of_home, CustomizationPage.TODAY),
-    Triple(R.string.settings_icon_pack_shape_style, R.string.settings_keywords_icon_pack_shape_style, CustomizationPage.STATUS),
-    Triple(R.string.notification_badges, R.string.settings_keywords_notification_badges, CustomizationPage.STATUS),
-    Triple(R.string.settings_live_clock_and_calendar_icons, R.string.settings_keywords_live_clock_and_calendar_icons, CustomizationPage.STATUS),
-    Triple(R.string.settings_side_bar_status_bar, R.string.settings_keywords_side_bar_status_bar, CustomizationPage.STATUS),
-    Triple(R.string.dynamic_island, R.string.settings_keywords_dynamic_island, CustomizationPage.ISLAND),
-    Triple(R.string.settings_other_notifications_in_the_islan, R.string.settings_keywords_other_notifications_in_the_islan, CustomizationPage.ISLAND_APPS),
-    Triple(R.string.settings_island_and_dock_in_every_app, R.string.settings_keywords_island_and_dock_in_every_app, CustomizationPage.ISLAND),
-    Triple(R.string.settings_hide_the_island_in_full_screen, R.string.settings_keywords_hide_the_island_in_full_screen, CustomizationPage.ISLAND),
-    Triple(R.string.notification_center, R.string.settings_keywords_notification_center, CustomizationPage.NOTIFICATIONS),
-    Triple(R.string.control_center, R.string.settings_keywords_control_center, CustomizationPage.NOTIFICATIONS),
-    Triple(R.string.spotlight, R.string.settings_keywords_spotlight, CustomizationPage.SEARCH),
-    Triple(R.string.app_library, R.string.settings_keywords_app_library, CustomizationPage.SEARCH),
-    Triple(R.string.settings_search_button_swipe_down, R.string.settings_keywords_search_button_swipe_down, CustomizationPage.SEARCH),
-    Triple(R.string.settings_page_dots_haptics, R.string.settings_keywords_page_dots_haptics, CustomizationPage.GESTURES),
-    Triple(R.string.settings_gestures_pull_downs, R.string.settings_keywords_gestures_pull_downs, CustomizationPage.GESTURES),
-    Triple(R.string.settings_swipe_down_on_home, R.string.settings_keywords_swipe_down_on_home, CustomizationPage.GESTURES),
-    Triple(R.string.actions, R.string.settings_keywords_actions, CustomizationPage.GESTURES),
-    Triple(R.string.side_key, R.string.settings_keywords_side_key, CustomizationPage.SIDE_KEY),
-    Triple(R.string.lock_cover, R.string.settings_keywords_lock_cover, CustomizationPage.LOCK),
-    Triple(R.string.fold_animation, R.string.settings_keywords_fold_animation, CustomizationPage.FOLD),
-    Triple(R.string.standby, R.string.settings_keywords_standby, CustomizationPage.FOLD),
-    Triple(R.string.themes, R.string.settings_keywords_themes, CustomizationPage.THEMES),
-    Triple(R.string.focus, R.string.settings_keywords_focus, CustomizationPage.FOCUS),
-    Triple(R.string.tweaks, R.string.settings_keywords_tweaks, CustomizationPage.TWEAKS),
-    Triple(R.string.general, R.string.settings_keywords_general, CustomizationPage.GENERAL),
-    Triple(R.string.language, R.string.settings_keywords_language, CustomizationPage.GENERAL),
-    Triple(R.string.privacy_permissions, R.string.settings_keywords_privacy_permissions, CustomizationPage.PERMISSIONS),
-    Triple(R.string.settings_safe_mode_crash_reports, R.string.settings_keywords_safe_mode_crash_reports, CustomizationPage.ADVANCED),
-    Triple(R.string.screenshot_mode, R.string.settings_keywords_screenshot_mode, CustomizationPage.ADVANCED),
-    Triple(R.string.system_bridge, R.string.settings_keywords_system_bridge, CustomizationPage.SYSTEM_BRIDGE),
-    Triple(R.string.screenshot_swap_apps, R.string.settings_keywords_screenshot_swap, CustomizationPage.SCREENSHOT_SWAP),
-    Triple(R.string.settings_backup_restore, R.string.settings_keywords_backup_restore, CustomizationPage.BACKUP),
-    Triple(R.string.settings_supporter_code, R.string.settings_keywords_supporter_code, CustomizationPage.SUPPORTER),
-    Triple(R.string.roadmap, R.string.settings_keywords_roadmap, CustomizationPage.COMING_SOON),
-    Triple(R.string.what_to_test, R.string.settings_keywords_what_to_test, CustomizationPage.WHAT_TO_TEST),
-    Triple(R.string.help, R.string.settings_keywords_help, CustomizationPage.HELP),
-    Triple(R.string.credits, R.string.settings_keywords_credits, CustomizationPage.CREDITS),
-    Triple(R.string.supporters, R.string.settings_keywords_supporters, CustomizationPage.SUPPORTERS),
-)
-
-/**
- * Settings that Settings search finds by the name they have on screen, so they need no keyword string of their own.
- * SettingsSearchCoverageTest fails when a switch, menu or slider is on a page and neither list has it.
- */
-internal val SettingsRows: List<Pair<Int, CustomizationPage>> = listOf(
-    R.string.align_dock_with_app_rows to CustomizationPage.HOME,
-    R.string.app_icon_size to CustomizationPage.HOME,
-    R.string.dock_height to CustomizationPage.HOME,
-    R.string.full_width_home to CustomizationPage.HOME,
-    R.string.separate_upright_layout to CustomizationPage.HOME,
-    R.string.space_between_rows to CustomizationPage.HOME,
-    R.string.status_height to CustomizationPage.HOME,
-    R.string.automatic_updates to CustomizationPage.SOFTWARE_UPDATE,
-    R.string.beta_updates to CustomizationPage.SOFTWARE_UPDATE,
-    R.string.background_blur to CustomizationPage.NOTIFICATIONS,
-    R.string.big_clock_in_notification_center to CustomizationPage.NOTIFICATIONS,
-    R.string.iphone_style_control_center_and_notifica to CustomizationPage.NOTIFICATIONS,
-    R.string.stack_notifications_by_app to CustomizationPage.NOTIFICATIONS,
-    R.string.nc_layout_title to CustomizationPage.NOTIFICATIONS,
-    R.string.shade_over_apps to CustomizationPage.NOTIFICATIONS,
-    R.string.notification_sections to CustomizationPage.NOTIFICATIONS,
-    R.string.unfolded_control_center_in_the_middle to CustomizationPage.NOTIFICATIONS,
-    R.string.badge_size to CustomizationPage.STATUS,
-    R.string.battery_percentage to CustomizationPage.STATUS,
-    R.string.clear_badges_when_opened to CustomizationPage.STATUS,
-    R.string.clock_calendar to CustomizationPage.STATUS,
-    R.string.color_battery_when_charging_or_low to CustomizationPage.STATUS,
-    R.string.left_handed_layout_rail_on_the_left to CustomizationPage.STATUS,
-    R.string.show_app_names to CustomizationPage.STATUS,
-    R.string.show_status_in_the_rail to CustomizationPage.STATUS,
-    R.string.silent_mode_icon to CustomizationPage.STATUS,
-    R.string.dock_handle_on_the_rail_edge to CustomizationPage.ISLAND,
-    R.string.dont_double_up_with_android_pop_ups to CustomizationPage.ISLAND,
-    R.string.headphones_speakers to CustomizationPage.ISLAND,
-    R.string.live_activities_under_the_status_bar to CustomizationPage.ISLAND,
-    R.string.music_and_live_progress to CustomizationPage.ISLAND,
-    R.string.fade_when_idle to CustomizationPage.ACCESSIBILITY,
-    R.string.width to CustomizationPage.ACCESSIBILITY,
-    R.string.drag_page_dots_to_flip_pages to CustomizationPage.GESTURES,
-    R.string.touch_and_hold to CustomizationPage.GESTURES,
-    R.string.add_new_apps_to_home_screen to CustomizationPage.SEARCH,
-    R.string.group_apps_into_categories to CustomizationPage.SEARCH,
-    R.string.message_contacts_with to CustomizationPage.SEARCH,
-    R.string.home_strip to CustomizationPage.SEARCH,
-    R.string.stronger_rings to CustomizationPage.STATUS,
-    R.string.search_button_opens_the_google_app to CustomizationPage.SEARCH,
-    R.string.search_with_enter to CustomizationPage.SEARCH,
-    R.string.work_apps to CustomizationPage.SEARCH,
-    R.string.show_after_unlocking to CustomizationPage.LOCK,
-    R.string.standby_half_open_like_a_laptop to CustomizationPage.FOLD,
-    R.string.standby_standing_as_a_tent to CustomizationPage.FOLD,
-    R.string.standby_while_charging_on_its_side to CustomizationPage.FOLD,
-    R.string.stay_awake_on_the_cover_screen to CustomizationPage.FOLD,
-    R.string.text_color to CustomizationPage.WALLPAPER,
-    R.string.wallpaper_moves_with_pages to CustomizationPage.WALLPAPER,
-    R.string.reduce_transparency to CustomizationPage.ACCESSIBILITY,
-    R.string.position to CustomizationPage.HOME,
-    R.string.placement to CustomizationPage.HOME,
-    R.string.when_unfolded to CustomizationPage.TODAY,
-    R.string.turn_on_automatically to CustomizationPage.FOCUS,
-    R.string.focus_trigger_folding to CustomizationPage.FOCUS,
-    R.string.focus_trigger_charging to CustomizationPage.FOCUS,
-    R.string.focus_trigger_headphones to CustomizationPage.FOCUS,
-    R.string.silence_notifications to CustomizationPage.FOCUS,
-    R.string.when_you_hold_it to CustomizationPage.SIDE_KEY,
-    R.string.fold_displays to CustomizationPage.FOLD,
-    R.string.gestures_actions to CustomizationPage.GESTURES,
-    R.string.home_screen_dock to CustomizationPage.HOME,
-    R.string.icons_side_bar to CustomizationPage.STATUS,
-    R.string.search_app_library to CustomizationPage.SEARCH,
-    R.string.clear_suggestions_history to CustomizationPage.SEARCH,
-    R.string.support_folio to CustomizationPage.SUPPORT,
-    R.string.animation_speed to CustomizationPage.GESTURES,
-    R.string.haptic_feedback to CustomizationPage.GESTURES,
-    R.string.swipe_down_on_home to CustomizationPage.GESTURES,
-    R.string.apps to CustomizationPage.HOME,
-    R.string.columns to CustomizationPage.HOME,
-    R.string.dock to CustomizationPage.HOME,
-    R.string.folder_background to CustomizationPage.HOME,
-    R.string.labels to CustomizationPage.HOME,
-    R.string.status to CustomizationPage.HOME,
-    R.string.side_rail to CustomizationPage.STATUS,
-    R.string.status_bar_background to CustomizationPage.STATUS,
-    R.string.badge_color to CustomizationPage.STATUS,
-    R.string.badge_look to CustomizationPage.STATUS,
-    R.string.date to CustomizationPage.STATUS,
-    R.string.icon_pack to CustomizationPage.STATUS,
-    R.string.icon_style to CustomizationPage.STATUS,
-    R.string.name_size to CustomizationPage.STATUS,
-    R.string.shape to CustomizationPage.STATUS,
-    R.string.time to CustomizationPage.STATUS,
-    R.string.big_buttons to CustomizationPage.ACCESSIBILITY,
-    R.string.look to CustomizationPage.ACCESSIBILITY,
-    R.string.order to CustomizationPage.ACCESSIBILITY,
-    R.string.size to CustomizationPage.ACCESSIBILITY,
-    R.string.control_center_size to CustomizationPage.NOTIFICATIONS,
-    R.string.hide_in_full_screen to CustomizationPage.ISLAND,
-    R.string.hide_in_landscape to CustomizationPage.ISLAND,
-    R.string.also_on_the_unfolded_screen to CustomizationPage.ISLAND,
-    R.string.other_notifications_2 to CustomizationPage.ISLAND,
-    R.string.suggestions to CustomizationPage.TODAY,
-    R.string.rounded_corners to CustomizationPage.WALLPAPER,
-    R.string.outline to CustomizationPage.WALLPAPER,
-    R.string.style to CustomizationPage.WALLPAPER,
-    R.string.wallpaper_tint to CustomizationPage.WALLPAPER,
-    R.string.screen_saver to CustomizationPage.FOLD,
-    R.string.restore to CustomizationPage.BACKUP,
-    R.string.dark_appearance to CustomizationPage.FOCUS,
-    R.string.dim_wallpaper to CustomizationPage.FOCUS,
-    R.string.grayscale to CustomizationPage.FOCUS,
-    R.string.open_on to CustomizationPage.FOCUS,
-    R.string.add_widget_to_this_page to CustomizationPage.HOME,
-    R.string.arrange_like_iphone to CustomizationPage.HOME,
-    R.string.choose_home_apps to CustomizationPage.HOME,
-    R.string.reset_this_layout to CustomizationPage.HOME,
-    R.string.save_current_layout to CustomizationPage.BACKUP,
-    R.string.email_the_developer to CustomizationPage.HELP,
-    R.string.show_welcome_again to CustomizationPage.HELP,
-    R.string.allow_do_not_disturb_access to CustomizationPage.FOCUS,
-    R.string.allow_notification_access to CustomizationPage.ISLAND,
-    R.string.put_the_island_back_at_the_camera to CustomizationPage.ISLAND,
-    R.string.also_set_as_phone_wallpaper to CustomizationPage.WALLPAPER,
-    R.string.change_android_wallpaper to CustomizationPage.WALLPAPER,
-    R.string.check_for_updates to CustomizationPage.SOFTWARE_UPDATE,
-    R.string.import_theme to CustomizationPage.THEMES,
-    R.string.save_current_look_as_theme to CustomizationPage.THEMES,
-    R.string.market to CustomizationPage.TWEAKS,
-    R.string.open_the_market to CustomizationPage.TWEAKS,
-    R.string.put_the_buttons_back_at_the_bottom to CustomizationPage.ACCESSIBILITY,
-    R.string.refresh_icons to CustomizationPage.STATUS,
-    R.string.reset_fold_timing to CustomizationPage.FOLD,
-    R.string.restore_from_backup to CustomizationPage.BACKUP,
-    R.string.save_backup to CustomizationPage.BACKUP,
-    R.string.save_backup_to_files to CustomizationPage.BACKUP,
-    R.string.share_diagnostics to CustomizationPage.ADVANCED,
-    R.string.capability_open_settings to CustomizationPage.ADVANCED,
-    R.string.allow_system_access to CustomizationPage.SYSTEM_BRIDGE,
-    R.string.screenshot_swap_all_third_party to CustomizationPage.SCREENSHOT_SWAP,
-    R.string.fold_motion_ripple to CustomizationPage.FOLD_TWEAK,
-    R.string.fold_motion_depth to CustomizationPage.FOLD_TWEAK,
-    R.string.fold_motion_light to CustomizationPage.FOLD_TWEAK,
-    R.string.bridge_root_test to CustomizationPage.SYSTEM_BRIDGE,
-    R.string.bridge_root_copy to CustomizationPage.SYSTEM_BRIDGE,
-    R.string.bridge_root_use to CustomizationPage.SYSTEM_BRIDGE,
-    R.string.bridge_root_share to CustomizationPage.SYSTEM_BRIDGE,
-    R.string.bridge_details to CustomizationPage.SYSTEM_BRIDGE,
-    R.string.bridge_root_report to CustomizationPage.SYSTEM_BRIDGE,
-    R.string.bridge_advanced to CustomizationPage.SYSTEM_BRIDGE,
-    R.string.bridge_rootgrant_allow to CustomizationPage.SYSTEM_BRIDGE,
-    R.string.bridge_rootgrant_do to CustomizationPage.SYSTEM_BRIDGE,
-    R.string.bridge_rootgrant_undo to CustomizationPage.SYSTEM_BRIDGE,
-    R.string.bridge_grant_copy to CustomizationPage.SYSTEM_BRIDGE,
-    R.string.bridge_grant_copy_revoke to CustomizationPage.SYSTEM_BRIDGE,
-    R.string.copy_diagnostics to CustomizationPage.ADVANCED,
-    R.string.share_latest to CustomizationPage.ADVANCED,
-    R.string.performance_log to CustomizationPage.ADVANCED,
-    R.string.performance_start to CustomizationPage.ADVANCED,
-    R.string.performance_stop to CustomizationPage.ADVANCED,
-    R.string.motion_pass to CustomizationPage.ADVANCED,
-    R.string.performance_copy to CustomizationPage.ADVANCED,
-    R.string.performance_share to CustomizationPage.ADVANCED,
-    R.string.suggest_a_feature to CustomizationPage.COMING_SOON,
-)
-
-/**
- * A search result scrolls to its row when it is a row: an entry with no keywords, or one with keywords whose title is also
- * a row (Folder background is found by "glass" or "blur" and is still one control further down its page).
- */
-internal fun isRowEntry(title: Int, keywords: Int?): Boolean = keywords == null || SettingsRows.any { it.first == title }
-
-/**
- * Rows already in [SettingsIndex] (with keywords) are listed once, from there; [SettingsRows] still marks them as rows for [isRowEntry].
- */
-internal val SettingsEntries: List<Triple<Int, Int?, CustomizationPage>> = SettingsIndex +
-    SettingsRows.filter { (title, _) -> SettingsIndex.none { it.first == title } }.map { (title, page) -> Triple(title, null, page) }
-
-private class Found(val title: String, val keywords: String, val page: CustomizationPage, val row: Boolean)
-
-internal fun settingsMatches(query: String, title: String, keywords: String): Boolean {
-    // A lone "&" or "-" in the query ("Fold & Displays") has nothing to match, so it must not make the search fail.
-    val words = query.trim().lowercase().split(Regex("\\s+")).filter { w -> w.any { it.isLetterOrDigit() } }
-    val hay = "$title $keywords".lowercase()
-    return words.isNotEmpty() && words.all { it in hay }
-}
-
-/**
- * What Settings search matches a tweak on: its name, what it's based on ("Barrel by Aaron Ash"), its one line, and any
- * [TweakFeature.keywords] (Flipbook is found by "Page Effects").
- * Tweaks aren't in [SettingsIndex] because each has a page of its own rather than a row on a fixed page.
- */
-internal fun searchableTweaks(context: android.content.Context): List<Pair<TweakFeature, String>> =
-    visibleTweaks(context).map { tweak ->
-        tweak to listOfNotNull(tweak.inspiredBy, context.getString(tweak.description), tweak.keywords?.let(context::getString)).joinToString(" ")
-    }
-
-/** [onOpen] gets the page and, for a setting found by its own name, that name, so the page can scroll to its row. */
-@Composable private fun SettingsSearchResults(query: String, onOpen: (CustomizationPage, String?) -> Unit, onOpenTweak: (TweakFeature) -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val resources = context.resources
-    val index = remember(androidx.compose.ui.platform.LocalConfiguration.current) {
-        // Widget Size is gone from Settings while widgets fill exactly two rows (WIDGETS_FILL_ROWS), so it isn't offered as a result.
-        SettingsEntries.filter { it.first != R.string.widget_size || !FeatureGate.WIDGETS_FILL_ROWS.isOpen(context) }
-            // The motion switch is only on the page while the pass is on trial, so search only finds it then.
-            .filter { it.first != R.string.motion_pass || FolioMotion.switchVisible(context) }
-            .map { (title, keywords, page) -> Found(resources.getString(title), keywords?.let(resources::getString).orEmpty(), page, row = isRowEntry(title, keywords)) }
-    }
-    val tweaks = remember(androidx.compose.ui.platform.LocalConfiguration.current) { searchableTweaks(context) }
-    val results = index.filter { settingsMatches(query, it.title, it.keywords) }
-    val tweakResults = tweaks.filter { (tweak, keywords) -> settingsMatches(query, tweak.name, keywords) }.map { it.first }
-    if (results.isEmpty() && tweakResults.isEmpty()) Text(stringResource(R.string.no_results_for_1, query.trim()), color = androidx.compose.ui.graphics.Color.White.copy(alpha = .55f),
-        modifier = Modifier.fillMaxWidth().padding(FolioSpace.XXL.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-    else SheetGroup {
-        results.forEachIndexed { index, found ->
-            if (index > 0) MenuDivider()
-            // A page found by its own name needs no "where": it is the page.
-            val where = if (found.row) stringResource(found.page.title).takeIf { it != found.title } else null
-            SettingsSearchRow(found.title, where) { onOpen(found.page, found.title.takeIf { found.row && where != null }) }
-        }
-        // A tweak says it's a tweak, since its name alone ("Cabinet", "Palette") doesn't say where it lives.
-        tweakResults.forEachIndexed { index, tweak ->
-            if (index > 0 || results.isNotEmpty()) MenuDivider()
-            SettingsSearchRow(tweak.name, stringResource(R.string.tweaks)) { onOpenTweak(tweak) }
-        }
-    }
-}
-
-@Composable private fun SettingsSearchRow(title: String, where: String?, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable(onClick = onClick).padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.SMALL.dp),
-        verticalAlignment = Alignment.CenterVertically) {
-        Text(title, color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.BODY.sp, modifier = Modifier.weight(1f))
-        where?.let { Text(it, color = androidx.compose.ui.graphics.Color.White.copy(alpha = .55f), fontSize = FolioType.BODY.sp) }
-        Icon(Icons.Rounded.ChevronRight, null, tint = androidx.compose.ui.graphics.Color.White.copy(alpha = .3f), modifier = Modifier.mirroredForRtl())
-    }
-}
-
 /** Every permission Folio can use, whether it's allowed, and which features rely on it (shared ownership). */
-@Composable private fun PermissionsPage(isDefaultHome: Boolean, onMakeDefault: () -> Unit, onShadeSetup: () -> Unit) {
+@Composable private fun PermissionsCard(isDefaultHome: Boolean, onMakeDefault: () -> Unit, onShadeSetup: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var tick by remember { mutableIntStateOf(0) }
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
@@ -1665,21 +503,19 @@ internal fun searchableTweaks(context: android.content.Context): List<Pair<Tweak
     data class Perm(val name: String, val usedBy: String, val allowed: Boolean, val action: () -> Unit)
     val perms = remember(tick, isDefaultHome) { listOf(
         Perm(context.getString(R.string.home_app), context.getString(R.string.home_button_folding_gestures), isDefaultHome, onMakeDefault),
-        Perm(context.getString(R.string.notification_access), context.getString(R.string.dynamic_island_notification_center_quick),
-            IslandListenerService.hasAccess(context)) { open(IslandListenerService.accessSettingsIntent(context)) },
-        Perm(context.getString(R.string.gestures_service_accessibility), context.getString(R.string.pull_down_panels_island_and_dock_in_othe),
+        Perm(context.getString(R.string.notification_access), context.getString(R.string.badges_cabinet),
+            NotificationListener.hasAccess(context)) { open(NotificationListener.accessSettingsIntent(context)) },
+        Perm(context.getString(R.string.gestures_service_accessibility), context.getString(R.string.pull_downs_dock_and_big_buttons_in_other),
             SystemShadeAccessibilityService.isConnected(), onShadeSetup),
-        Perm(context.getString(R.string.do_not_disturb_access), context.getString(R.string.focus_control_center_actions),
+        Perm(context.getString(R.string.do_not_disturb_access), context.getString(R.string.actions),
             context.getSystemService(android.app.NotificationManager::class.java).isNotificationPolicyAccessGranted) {
             open(android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) },
-        Perm(context.getString(R.string.modify_system_settings), context.getString(R.string.control_center_brightness_and_rotation_l), android.provider.Settings.System.canWrite(context)) {
-            open(android.content.Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS, android.net.Uri.parse("package:${context.packageName}"))) },
         Perm(context.getString(R.string.usage_access_optional), context.getString(R.string.better_suggestions_counts_apps_you_open), Suggestions.hasUsageAccess(context)) {
             open(Suggestions.usageAccessIntent(context)) },
         Perm(context.getString(R.string.calendar_optional), context.getString(R.string.up_next_widget), UpNext.hasCalendar(context)) { open(appSettings) },
         Perm(context.getString(R.string.contacts), context.getString(R.string.spotlight_contact_search), context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED) { open(appSettings) },
-        Perm(context.getString(R.string.digital_assistant), context.getString(R.string.side_key_picker), AssistPickerActivity.isDefaultAssistant(context)) { open(AssistPickerActivity.settingsIntent()) },
     ) }
+    SheetGroupLabel(stringResource(R.string.privacy_permissions))
     CardNote(stringResource(R.string.everything_stays_on_your_phone_folio_has), Modifier.padding(horizontal = FolioSpace.TINY.dp))
     SheetGroup {
         perms.forEachIndexed { index, perm ->
@@ -1700,263 +536,17 @@ internal fun searchableTweaks(context: android.content.Context): List<Pair<Tweak
     }
 }
 
-/** Tweak preference page: main switch first, per-screen overrides (dimmed when off), credit, reset. */
-@Composable private fun TweakPage(tweak: TweakFeature, state: LauncherState, model: LauncherModel, previewBitmap: android.graphics.Bitmap? = null) {
-    // Not installed yet: just what it does and Get, like a package page. Its settings appear once it's installed.
-    if (tweak.id !in state.installedTweaks) {
-        SettingsCard(tweak.name) {
-            CardNote(stringResource(tweak.description))
-            CardNote(tweak.credit?.let { stringResource(it) } ?: stringResource(R.string.inspired_by_re_created_from_scratch_no_t, tweak.inspiredBy))
-        }
-        SheetGroup { IosActionRow(stringResource(R.string.get_tweak, tweak.name), "tweak-get-${tweak.id}") { model.installTweak(tweak) } }
-        return
-    }
-    val on = tweak.get(state)
-    SettingsCard(tweak.name) {
-        SettingsSwitch(stringResource(R.string.enabled), on, { tweak.set(model, it) }, "tweak-enabled-${tweak.id}")
-        CardNote(stringResource(tweak.description))
-    }
-    if (tweak.id == "pageEffects") FlipbookEffects(state, model::setPageEffect, model::setPackagedEffect)
-    // Duet's look, only while it's on, like the fold settings always were.
-    if (tweak.id == DUET_ID && on) DuetSettings(state, model, previewBitmap)
-    TweakOptionsCard(tweak, state, model, on)
-    SettingsCard(stringResource(R.string.use_on)) {
-        Column(Modifier.alpha(if (on) 1f else .4f)) {
-            FolioScreen.entries.forEach { screen ->
-                val value = FeatureScopes.value(state.featureScopes, tweak.id, screen)
-                IosMenuRow(stringResource(screen.label), ScopeValue.entries.map { it to stringResource(it.label) }, value, { model.setFeatureScope(tweak.id, screen, it) }, enabled = on, tag = "scope-${tweak.id}-${screen.name.lowercase()}")
-            }
-        }
-        CardNote(stringResource(R.string.default_follows_enabled_on_or_off_applie))
-    }
-    SettingsCard(stringResource(R.string.about)) {
-        TextButton(onClick = { model.resetTweak(tweak) }) { Text(stringResource(R.string.reset_1, tweak.name)) }
-        CardNote(tweak.credit?.let { stringResource(it) } ?: stringResource(R.string.inspired_by_re_created_from_scratch_no_t, tweak.inspiredBy))
-    }
-    SheetGroup { IosActionRow(stringResource(R.string.remove_control, tweak.name), "tweak-remove-${tweak.id}", destructive = true) { model.removeTweak(tweak) } }
-}
-
-/** The settings a tweak offers on its own page (see [TweakOptions]): dimmed while the tweak is off, kept either way. */
-@Composable private fun TweakOptionsCard(tweak: TweakFeature, state: LauncherState, model: LauncherModel, on: Boolean) {
-    val options = TweakOptions.of(tweak.id)
-    if (options.isEmpty()) return
-    SettingsCard(stringResource(R.string.options)) {
-        Column(Modifier.alpha(if (on) 1f else .4f)) {
-            options.forEach { option ->
-                val label = stringResource(option.label)
-                val tag = "tweak-option-${tweak.id}-${option.id}"
-                val value = TweakOptions.value(state.tweakOptions, tweak.id, option.id)
-                when (option) {
-                    is TweakOption.Toggle -> SettingsSwitch(label, value == TweakOptions.ON,
-                        { model.setTweakOption(tweak.id, option.id, if (it) TweakOptions.ON else TweakOptions.OFF) }, tag, enabled = on)
-                    is TweakOption.Choice -> IosMenuRow(label, option.choices.map { (stored, text) -> stored to stringResource(text) }, value,
-                        { model.setTweakOption(tweak.id, option.id, it) }, tag = tag, enabled = on)
-                }
-            }
-        }
-    }
-}
-
-/** Themes (after SnowBoard): built-in looks with a live preview, plus saving and importing theme files. */
-@Composable private fun ThemesPage(state: LauncherState, model: LauncherModel, stagedBitmap: android.graphics.Bitmap?) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val scope = rememberCoroutineScope()
-    var message by remember { mutableStateOf<String?>(null) }
-    var undo by remember { mutableStateOf(model.themeUndo != null) }
-    val open = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) scope.launch {
-            val theme = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                readThemeText(context, uri)?.let(FolioTheme::fromJson)
-            }
-            if (theme == null) message = context.getString(R.string.that_file_isn_t_a_folio_theme)
-            else { model.applyTheme(theme); undo = true; message = context.getString(R.string.applied, theme.name) }
-        }
-    }
-    MiniHomePreview(stagedBitmap, state, 220.dp)
-    SheetGroup {
-        FolioTheme.PRESETS.forEachIndexed { index, theme ->
-            if (index > 0) MenuDivider()
-            val current = state.looksLike(theme)
-            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable { model.applyTheme(theme); undo = true; message = null }
-                .padding(horizontal = FolioSpace.LARGE.dp).testTag("theme-${theme.name.lowercase()}"), verticalAlignment = Alignment.CenterVertically) {
-                Text(theme.name, color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.BODY.sp, modifier = Modifier.weight(1f))
-                if (current) Icon(Icons.Rounded.Check, null, tint = LocalAccent.current.ink, modifier = Modifier.size(20.dp))
-            }
-        }
-    }
-    CardNote(stringResource(R.string.a_theme_changes_icons_badges_glass_text), Modifier.padding(horizontal = FolioSpace.TINY.dp))
-    SheetGroup {
-        IosActionRow(stringResource(R.string.save_current_look_as_theme), "theme-save") {
-            scope.launch {
-                val name = FolioFiles.datedName("folio-theme")
-                val saved = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    FolioFiles.save(context, name, "application/json", FolioTheme.of(state, context.getString(R.string.my_folio_theme)).toJson().toString(2).toByteArray())
-                }
-                message = if (saved != null) context.getString(R.string.saved_to_as, FolioFiles.displayPath, FolioFiles.displayName(context, saved) ?: name) else context.getString(R.string.the_theme_couldn_t_be_saved)
-            }
-        }
-        MenuDivider()
-        IosActionRow(stringResource(R.string.import_theme), "theme-import") { open.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }
-        if (undo) { MenuDivider(); IosActionRow(stringResource(R.string.undo_theme_change), "theme-undo") { model.undoTheme(); undo = false; message = null } }
-    }
-    message?.let { CardNote(it, Modifier.padding(horizontal = FolioSpace.TINY.dp)) }
-}
-
-/**
- * The line under a Focus in the list. Without Do Not Disturb access a Focus only changes Home (Android is not told to
- * silence anything), so an "on" Focus says so instead of promising more than it does (A-17).
- */
-internal fun focusRowStatus(context: android.content.Context, mode: FocusMode, on: Boolean, reason: FocusReason?, access: Boolean): String? {
-    if (!on) return if (mode.schedule != null) context.getString(R.string.scheduled) else null
-    val line = reason?.let { context.getString(R.string.focus_on_because, context.getString(it.label(mode))) } ?: context.getString(R.string.on)
-    return if (access) line else context.getString(R.string.focus_home_only, line)
-}
-
-/** iOS Settings › Focus: the list of Focuses, with the one that's on. */
-@Composable private fun FocusListPage(state: LauncherState, model: LauncherModel, onOpen: (String) -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var access by remember { mutableStateOf(FocusController.hasAccess(context)) }
-    val reason by model.focusReason.collectAsState()
-    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(lifecycle) { lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) { access = FocusController.hasAccess(context) } }
-    SheetGroup {
-        state.focusModes.forEachIndexed { index, mode ->
-            if (index > 0) MenuDivider()
-            TweakRow(mode.icon(), mode.color, mode.name, "focus-${mode.id}", focusRowStatus(context, mode, state.activeFocus == mode.id, reason, access)) { onOpen(mode.id) }
-        }
-    }
-    CardNote(stringResource(R.string.focus_lets_you_silence_notifications_cha), Modifier.padding(horizontal = FolioSpace.TINY.dp))
-    // Which Focus a trigger picks when several hold (FocusTriggers.wanted), said where the list is (#328).
-    if (state.focusModes.any { it.triggers.any }) CardNote(stringResource(R.string.focus_trigger_order_note), Modifier.padding(horizontal = FolioSpace.TINY.dp))
-    if (!access) {
-        SheetGroup { IosActionRow(stringResource(R.string.allow_do_not_disturb_access), "focus-allow-access") {
-            runCatching { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
-        } }
-        CardNote(stringResource(R.string.without_it_a_focus_still_changes_home_bu), Modifier.padding(horizontal = FolioSpace.TINY.dp))
-    }
-}
-
-@Composable private fun FocusModePage(mode: FocusMode, state: LauncherState, model: LauncherModel) {
-    val on = state.activeFocus == mode.id
-    SheetGroup {
-        Row(Modifier.fillMaxWidth().padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.SMALL.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(30.dp).clip(RoundedCornerShape(7.dp)).background(androidx.compose.ui.graphics.Color(mode.color)), contentAlignment = Alignment.Center) {
-                Icon(mode.icon(), null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(19.dp))
-            }
-            Spacer(Modifier.width(12.dp))
-            Text(stringResource(if (on) R.string.state_on else R.string.state_off), color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.BODY.sp, modifier = Modifier.weight(1f))
-            IosSwitch(on, { model.setFocus(if (it) mode.id else null) }, Modifier.testTag("focus-switch-${mode.id}"))
-        }
-    }
-    SettingsCard(stringResource(R.string.schedule)) {
-        val context = androidx.compose.ui.platform.LocalContext.current
-        val schedule = mode.schedule
-        SettingsSwitch(stringResource(R.string.turn_on_automatically), schedule != null, { on ->
-            model.updateFocusMode(mode.copy(schedule = if (!on) null else when (mode.id) {
-                "sleep" -> FocusSchedule(22 * 60, 7 * 60)
-                "work" -> FocusSchedule(9 * 60, 17 * 60, setOf(1, 2, 3, 4, 5))
-                else -> FocusSchedule(9 * 60, 17 * 60)
-            }))
-        }, "focus-schedule")
-        if (schedule != null) {
-            val is24 = android.text.format.DateFormat.is24HourFormat(context)
-            fun label(minute: Int) = java.time.LocalTime.of(minute / 60, minute % 60).format(java.time.format.DateTimeFormatter.ofPattern(if (is24) "HH:mm" else "h:mm a"))
-            fun pick(minute: Int, onPicked: (Int) -> Unit) = android.app.TimePickerDialog(context, android.R.style.Theme_DeviceDefault_Dialog_Alert,
-                { _, h, m -> onPicked(h * 60 + m) }, minute / 60, minute % 60, is24).show()
-            // The row knows which end it sets by its own key, not by its label, which changes with the language.
-            listOf(Triple("from", stringResource(R.string.from), schedule.startMinute),
-                Triple("to", stringResource(R.string.to), schedule.endMinute)).forEach { (key, name, minute) ->
-                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(FolioRadius.CONTROL.dp)).clickable {
-                    pick(minute) { picked -> model.updateFocusMode(mode.copy(schedule = if (key == "from") schedule.copy(startMinute = picked) else schedule.copy(endMinute = picked))) }
-                }.testTag("focus-schedule-$key"), verticalAlignment = Alignment.CenterVertically) {
-                    Text(name, Modifier.weight(1f))
-                    Text(label(minute), color = LocalAccent.current.ink, fontSize = FolioType.BODY.sp)
-                }
-            }
-            // iOS day picker: one letter per day, filled when the schedule runs that day.
-            Row(Modifier.fillMaxWidth().padding(vertical = FolioSpace.SNUG.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                java.time.DayOfWeek.entries.forEach { day ->
-                    val on = day.value in schedule.days
-                    Box(Modifier.size(38.dp).clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(if (on) androidx.compose.ui.graphics.Color(mode.color) else androidx.compose.ui.graphics.Color.White.copy(alpha = .1f))
-                        .clickable(onClickLabel = day.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault())) {
-                            val days = if (on) schedule.days - day.value else schedule.days + day.value
-                            if (days.isNotEmpty()) model.updateFocusMode(mode.copy(schedule = schedule.copy(days = days)))
-                        }, contentAlignment = Alignment.Center) {
-                        Text(day.getDisplayName(java.time.format.TextStyle.NARROW, java.util.Locale.getDefault()),
-                            color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.SUBHEAD.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            }
-            CardNote(stringResource(R.string.focus_schedule_note, mode.name))
-        }
-    }
-    // Supporters and Folio Dev first (FeatureGate.FOCUS_TRIGGERS); everyone from 0.6.9.
-    val gateContext = androidx.compose.ui.platform.LocalContext.current
-    val triggersOpen = remember { FeatureGate.FOCUS_TRIGGERS.isOpen(gateContext) }
-    if (triggersOpen) SettingsCard(stringResource(R.string.focus_also_turn_on_when)) {
-        val triggers = mode.triggers
-        SettingsSwitch(stringResource(R.string.focus_trigger_folding), triggers.fold != null,
-            { on -> model.updateFocusMode(mode.copy(triggers = triggers.copy(fold = if (on) FoldState.UNFOLDED else null))) }, "focus-trigger-fold")
-        triggers.fold?.let { chosen ->
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
-                FoldState.entries.forEach { fold ->
-                    IosChip(chosen == fold, { model.updateFocusMode(mode.copy(triggers = triggers.copy(fold = fold))) },
-                        label = { Text(stringResource(fold.label())) }, modifier = Modifier.testTag("focus-fold-${fold.key}"))
-                }
-            }
-        }
-        SettingsSwitch(stringResource(R.string.focus_trigger_charging), triggers.charging,
-            { model.updateFocusMode(mode.copy(triggers = triggers.copy(charging = it))) }, "focus-trigger-charging")
-        SettingsSwitch(stringResource(R.string.focus_trigger_headphones), triggers.headphones,
-            { model.updateFocusMode(mode.copy(triggers = triggers.copy(headphones = it))) }, "focus-trigger-headphones")
-        CardNote(stringResource(R.string.focus_triggers_note))
-    }
-    SettingsCard(stringResource(R.string.notifications_title)) {
-        SettingsSwitch(stringResource(R.string.silence_notifications), mode.silence, { model.updateFocusMode(mode.copy(silence = it)) }, "focus-silence")
-        CardNote(stringResource(R.string.calls_and_people_allowed_in_android_s_do))
-    }
-    SettingsCard(stringResource(R.string.home_screen)) {
-        // The real page count: while a Focus hides pages, Home's own state is the filtered copy.
-        val real by model.state.collectAsState()
-        val pages = real.layout.pageCount
-        Text(stringResource(R.string.show_pages), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = FolioSpace.TINY.dp))
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
-            IosChip(mode.pages == null, { model.updateFocusMode(mode.copy(pages = null)) }, label = { Text(stringResource(R.string.all)) })
-            repeat(pages) { page ->
-                val shown = mode.pages?.contains(page) == true
-                IosChip(shown, {
-                    val next = (mode.pages ?: emptySet()).let { if (shown) it - page else it + page }
-                    model.updateFocusMode(mode.copy(pages = next.ifEmpty { null }))
-                }, label = { Text(stringResource(R.string.page_1, page + 1)) }, modifier = Modifier.testTag("focus-page-$page"))
-            }
-        }
-        CardNote(stringResource(R.string.only_these_pages_show_while_is_on_editin, mode.name))
-        IosMenuRow(stringResource(R.string.open_on), listOf<Pair<Int?, String>>(null to stringResource(R.string.any_page)) + (0 until pages).filter { mode.pages == null || it in mode.pages }.map { it to stringResource(R.string.page_number, it + 1) },
-            mode.homePage, { model.updateFocusMode(mode.copy(homePage = it)) }, tag = "focus-open-on")
-        CardNote(stringResource(R.string.home_opens_on_this_page_while_is_on, mode.name))
-    }
-    if (android.os.Build.VERSION.SDK_INT >= 35) SettingsCard(stringResource(R.string.look)) {
-        SettingsSwitch(stringResource(R.string.dim_wallpaper), mode.dimWallpaper, { model.updateFocusMode(mode.copy(dimWallpaper = it)) }, "focus-dim")
-        SettingsSwitch(stringResource(R.string.dark_appearance), mode.darkTheme, { model.updateFocusMode(mode.copy(darkTheme = it)) }, "focus-dark")
-        SettingsSwitch(stringResource(R.string.grayscale), mode.grayscale, { model.updateFocusMode(mode.copy(grayscale = it)) }, "focus-gray")
-        CardNote(stringResource(R.string.android_applies_these_while_the_focus_is))
-    }
-}
-
 private fun riskLabel(risk: OperationRisk) = when (risk) {
     OperationRisk.OBSERVE -> R.string.risk_observe
     OperationRisk.REVERSIBLE -> R.string.risk_reversible
     OperationRisk.STATEFUL -> R.string.risk_stateful
     OperationRisk.DISRUPTIVE -> R.string.risk_disruptive
-    OperationRisk.CRITICAL -> R.string.risk_critical
-    OperationRisk.EXPERIMENTAL -> R.string.risk_experimental
 }
 
-/** Advanced › Diagnostics: what this phone and your permissions allow, and why a feature might be off (A0 to A2, see Capabilities). */
+/** General › Diagnostics: what this phone and your permissions allow, and why a feature might be off (A0 to A2, see Capabilities). */
 @Composable private fun CapabilitiesCard() {
     val context = androidx.compose.ui.platform.LocalContext.current
-    fun read() = Capabilities.rows(IslandListenerService.hasAccess(context), SystemShadeAccessibilityService.isConnected())
+    fun read() = Capabilities.rows(NotificationListener.hasAccess(context), SystemShadeAccessibilityService.isConnected())
     var rows by remember { mutableStateOf(read()) }
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(lifecycle) { lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) { rows = read() } }
@@ -1979,7 +569,7 @@ private fun riskLabel(risk: OperationRisk) = when (risk) {
         }
         if (Capabilities.needsPermission(rows).isNotEmpty()) CardAction(stringResource(R.string.capability_open_settings), onClick = {
             val tier = Capabilities.needsPermission(rows).first()
-            val intent = if (tier == CapabilityTier.NOTIFICATIONS) IslandListenerService.accessSettingsIntent(context)
+            val intent = if (tier == CapabilityTier.NOTIFICATIONS) NotificationListener.accessSettingsIntent(context)
                 else android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             runCatching { context.startActivity(intent) }
         }, modifier = Modifier.testTag("capability-open-settings"))
@@ -1987,7 +577,7 @@ private fun riskLabel(risk: OperationRisk) = when (risk) {
     }
 }
 
-/** Advanced › Diagnostics: Folio's own recent activity, newest first, with the failures it carried on from. Kept only on the phone. */
+/** General › Diagnostics: Folio's own recent activity, newest first, with the failures it carried on from. Kept only on the phone. */
 @Composable private fun RecentActivityCard() {
     var failedOnly by remember { mutableStateOf(false) }
     val entries = remember { Inspector.entries(Diagnostics.trailText()) }
@@ -2021,64 +611,30 @@ private fun riskLabel(risk: OperationRisk) = when (risk) {
         }
         val shareScope = rememberCoroutineScope()
         CardAction(stringResource(R.string.share_diagnostics), onClick = {
-            shareScope.launch { Diagnostics.send(context, email = false) }
+            shareScope.launch { Diagnostics.send(context) }
         }, modifier = Modifier.testTag("share-diagnostics"))
         // Copy is the other half of Share (#239): the report on the clipboard, to paste into a form, with the same text a shared file has.
         CardAction(stringResource(R.string.copy_diagnostics), onClick = {
-            shareScope.launch { runCatching { Diagnostics.copy(context); IslandEvents.notice(context, context.getString(R.string.diagnostics_copied)) } }
+            shareScope.launch { runCatching { Diagnostics.copy(context); FolioNotice.show(context, context.getString(R.string.diagnostics_copied)) } }
         }, modifier = Modifier.testTag("copy-diagnostics"))
         CardNote(stringResource(R.string.diagnostics_file_note))
     }
 }
 
-@Composable private fun CreditsPage() {
+/** What Folio is built from: the code it includes and the licences that ask to be named. */
+@Composable private fun CreditsCard() {
     val credits = listOf(
-        stringResource(R.string.duolauncher) to "jakesgoodapps (github.com/jakesgoodapps/DuoLauncher) · MIT · Folio’s starting codebase: iPhone Duo-style Home layouts for both screens, widgets, folders, work profile, wallpapers and Discover",
-        "iphone-duo" to "chuspeeism · MIT · fold blur and darkening model",
+        stringResource(R.string.duolauncher) to "jakesgoodapps (github.com/jakesgoodapps/DuoLauncher) · MIT · Folio’s starting codebase", // english-only
         "Duo Fold Live" to stringResource(R.string.credit_duo_fold_live), // english-only
+        "iphone-duo" to "chuspeeism · MIT · Duet’s blur and darkening model, by way of Duo Fold Live", // english-only
         "hingewave" to stringResource(R.string.credit_hingewave), // english-only
-        "FoldFX (iamkeeler)" to stringResource(R.string.credit_foldfx_keeler), // english-only
-        "Duo Open" to stringResource(R.string.credit_duo_open), // english-only
-        "iPhone Duo on Galaxy Z Fold 8 demo" to "u/moomanjohnny · screenshot + shader idea (no code)",
-        stringResource(R.string.quicklaunch) to stringResource(R.string.ahmedthegeek_spotlight_ideas_no_code),
-        stringResource(R.string.foldfx) to "u/FixHour8452 · fold transition ideas: halfway haptic tick, light sweep, slight scale, following a smooth hinge angle (no code)",
-        stringResource(R.string.zfoldduo) to "nnnnnnn0090 · MIT · showed a Fold7/Fold8 can read Samsung's internal hinge angle without root; research for Enhanced Fold Tracking",
-        stringResource(R.string.velox) to stringResource(R.string.phillip_tennen_app_panels_idea),
-        stringResource(R.string.activator) to stringResource(R.string.ryan_petrich_gestures_and_events_idea),
-        stringResource(R.string.axon) to stringResource(R.string.nepeta_notification_app_row_idea),
-        stringResource(R.string.velvet) to stringResource(R.string.noisyflake_himynameisubik_tinted_notific),
-        stringResource(R.string.colorflow) to stringResource(R.string.david_goldman_album_art_colors_idea),
-        stringResource(R.string.harbor) to stringResource(R.string.evan_swick_dock_magnification_idea),
-        stringResource(R.string.snowboard) to stringResource(R.string.sparkdev_themes_idea_no_code),
-        stringResource(R.string.apex) to stringResource(R.string.sticktron_icon_stacks_idea_no_code),
-        stringResource(R.string.icon_restore) to stringResource(R.string.layout_history_idea_no_code),
-        stringResource(R.string.lynx_2) to "recent-app dots idea (no code)",
-        stringResource(R.string.colorbadges) to "badges that match the app idea (no code)",
-        stringResource(R.string.barrel) to stringResource(R.string.flipbook_idea_no_code),
-        stringResource(R.string.cylinder) to stringResource(R.string.reed_weichler_flipbook_add_ons_and_inside_cube),
-        stringResource(R.string.page_squeeze) to stringResource(R.string.beta382_flipbook_stack_idea_no_code),
-        stringResource(R.string.contributor_covenant_3_0) to stringResource(R.string.organization_for_ethical_source_cc_by_sa),
     )
-    SettingsCard(stringResource(R.string.thanks_to)) {
+    SettingsCard(stringResource(R.string.credits)) {
         credits.forEach { (name, detail) ->
             Column(Modifier.fillMaxWidth().padding(vertical = FolioSpace.SNUG.dp)) {
                 Text(name)
                 CardNote(detail)
             }
-        }
-    }
-    CardNote(stringResource(R.string.tweak_ideas_were_re_created_from_scratch), Modifier.padding(horizontal = FolioSpace.TINY.dp))
-}
-
-@Composable private fun CustomizationDestination(icon: ImageVector, title: String, detail: String, tag: String,
-    leading: (@Composable () -> Unit)? = null, onClick: () -> Unit) {
-    Surface(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).testTag(tag),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .52f), shape = RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)) {
-        Row(Modifier.padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.COMPACT.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (leading != null) leading() else Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) { Text(title, style = MaterialTheme.typography.titleMedium); CardNote(detail) }
-            Icon(Icons.Rounded.ChevronRight, null, modifier = Modifier.mirroredForRtl())
         }
     }
 }
@@ -2090,18 +646,12 @@ internal val LocalPreviewPage = androidx.compose.runtime.compositionLocalOf { 0 
 internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { DeviceStatus(battery = 80, wifiConnected = true, wifiLevel = 4, cellularLevel = 4) }
 
 /**
- * Live preview of Home built from real data only: your Home and dock apps (with the current icon shape, pack,
- * tint, badges and live icons), your text, glass and dimming settings, and your background. Android's wallpaper
- * image can't be read by apps, so in that mode the preview uses the wallpaper's own reported colors and says so.
+ * Live preview of Home on Folio's own background, built from real data only: your Home and dock apps (with the
+ * current icon pack, badges and live icons), your text, glass and dimming settings, and the background, or the one
+ * being tried. It draws the page Home is on (LocalPreviewPage) in the cover's layout.
  */
-@Composable internal fun MiniHomePreview(stagedBitmap: android.graphics.Bitmap?, state: LauncherState,
-    previewHeight: androidx.compose.ui.unit.Dp, framed: Boolean = true,
-    /** The Side Bar (status, dock and search): off for the second page of an unfolded preview, which has one Side Bar. */
-    sideBar: Boolean = true,
-    /** The cover's layout by default; the inner screen's for an unfolded preview. */
-    preset: LayoutPreset = state.compact,
-    /** Which Home page to draw: the one Home is on (LocalPreviewPage) unless a caller pins one. */
-    page: Int = LocalPreviewPage.current) {
+@Composable internal fun MiniHomePreview(stagedBitmap: android.graphics.Bitmap?, state: LauncherState, previewHeight: androidx.compose.ui.unit.Dp) {
+    val page = LocalPreviewPage.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val backgroundRevision = LauncherBackgroundCache.revision.intValue
     val committedBitmap = remember(backgroundRevision) { cachedLauncherBackground(context) }
@@ -2110,19 +660,18 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
     val tone = LocalWallpaperTone.current
     val ink = homeInkFor(state.homeInk, tone.prefersDarkText)
     val basePalette = LocalDuoPalette.current
-    val glass = if (state.glassTintAmount > 0f) tintedGlass(basePalette.glass, tone.primary, state.glassTintAmount) else basePalette.glass
+    val glass = tintedGlass(basePalette.glass, tone.primary, GLASS_TINT)
     // Home page 1 drawn at a real cover-screen size with Folio's own layout math and parts (widget cards, icons,
     // status rail, dock, search pill), then scaled down, so the preview matches Home instead of approximating it.
     val refW = 420f; val refH = 720f
-    val geometry = homeGeometry(refW, refH, preset, state.labels, statusHeight = if (state.verticalStatus) 180f else 0f, labelHeight = 20f,
+    val geometry = homeGeometry(refW, refH, state.coverDock, state.labels, statusHeight = if (state.verticalStatus) 180f else 0f, labelHeight = 20f,
         appRows = state.homeAppRows, dockSlots = state.dock.size, statusRail = state.verticalStatus,
-        railControls = if (state.searchPill) 0 else 1, // the Home pages' rail, as Home lays it out
-        widgetsFillRows = FeatureGate.WIDGETS_FILL_ROWS.isOpen(androidx.compose.ui.platform.LocalContext.current),
-        shrinkIconsForRows = state.homeRows > BASE_APP_ROWS)
+        railControls = if (state.searchPill) 0 else 1) // the Home pages' rail, as Home lays it out
     val placements = state.widgetPlacements.filter { it.page == page }
     val shownRows = shownHomeRows(state.homeAppRows, state.homeSlots.drop(homeCellIndex(page, 0).coerceAtLeast(0)).take(HOME_CELLS), placements)
     val cells = HomeCellLayout.forPage(geometry, placements.map { it.row to it.spanY })
-    val (iconSize, labels) = (state.pageStyles[page] ?: PageStyle()).apply(geometry, state.labels)
+    val iconSize = geometry.cellIconSize(state.labels)
+    val labels = state.labels
     val scale = previewHeight.value / refH
     val left = state.leftHanded
     val railAlign = if (left) Alignment.TopStart else Alignment.TopEnd
@@ -2130,24 +679,18 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
     // A thin black bezel with the screen's own corners inside it, so the preview reads as the phone, not a card.
     val corner = 26.dp * (previewHeight.value / 260f)
     val bezel = previewHeight * .022f
-    Column(if (framed) Modifier.fillMaxWidth() else Modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(if (!framed) Modifier else Modifier.clip(RoundedCornerShape(corner + bezel)).background(FolioColors.PreviewBezel)
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(Modifier.clip(RoundedCornerShape(corner + bezel)).background(FolioColors.PreviewBezel)
             .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = .2f), RoundedCornerShape(corner + bezel)).padding(bezel)) {
         Box(Modifier.height(previewHeight).width(previewHeight * (refW / refH))
-            .clip(RoundedCornerShape(if (framed) corner else 0.dp))
+            .clip(RoundedCornerShape(corner))
             .testTag("customization-home-preview").clearedDescription(R.string.preview_of_home), contentAlignment = Alignment.Center) {
             Box(Modifier.requiredSize(refW.dp, refH.dp).graphicsLayer { scaleX = scale; scaleY = scale }) {
-                if (state.systemWallpaper) Box(Modifier.matchParentSize().background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(
-                    androidx.compose.ui.graphics.Color(tone.primary ?: 0xFF5A6B78.toInt()), androidx.compose.ui.graphics.Color(tone.secondary ?: tone.primary ?: 0xFF2E3A42.toInt())))))
-                else {
-                    DuneWallpaper()
-                    bitmap?.let { Image(it.asImageBitmap(), null, Modifier.matchParentSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
-                }
-                val previewDim = if (state.dimWallpaperDark && basePalette.dark) .3f else 0f
-                if (previewDim > 0f) Box(Modifier.matchParentSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = previewDim)))
+                DuneWallpaper()
+                bitmap?.let { Image(it.asImageBitmap(), null, Modifier.matchParentSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
                 // Drawn over the background rather than inside it, because the preview lays the chosen photo over the
                 // background; on Home the same scrim is baked into the background's cached layer.
-                HomeScrim.of(state.homeScrim, ink.dark, previewDim).let { if (it.draws) Box(Modifier.matchParentSize().homeScrim(it)) }
+                HomeScrim.of(state.homeScrim, ink.dark).let { if (it.draws) Box(Modifier.matchParentSize().homeScrim(it)) }
                 CompositionLocalProvider(LocalHomeInk provides ink, LocalDuoPalette provides basePalette.copy(glass = glass), LocalHomeIconSize provides geometry.iconSize) {
                     Box(Modifier.offset(x = (if (left) refW - 16f - geometry.gridWidth else 16f).dp, y = geometry.contentTop.dp).width(geometry.gridWidth.dp).height((cells.height(shownRows)).dp)) {
                         placements.forEach { w ->
@@ -2157,7 +700,7 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
                             Box(Modifier.offset(x = (cells.x(w.column, w.row) + 5f + geometry.cellWidth * w.offsetX).dp, y = (cells.y(w.row) + rowPitch * w.offsetY).dp)
                                 .size((geometry.cellWidth * w.spanX - 10f).dp, (cells.spanHeight(w.row, w.spanY) - 18f).coerceAtLeast(48f).dp)) {
                                 if (w.id < 0) BuiltinWidgetCard(w.id, w.slot) {}
-                                else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.PANEL.dp)).background(glass.copy(alpha = LocalGlassLook.current.widget)), contentAlignment = Alignment.Center) {
+                                else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.PANEL.dp)).background(glass.copy(alpha = LIQUID_FROST)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Rounded.Widgets, null, tint = ink.secondary, modifier = Modifier.size(32.dp))
                                 }
                             }
@@ -2169,167 +712,46 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
                             val row = local / GRID_COLUMNS
                             Column(Modifier.offset(x = cells.x(local % GRID_COLUMNS, row).dp, y = cells.y(row).dp).width(geometry.cellWidth.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally) {
-                                if (app != null) AppIcon(app, null, Modifier.size(iconSize.dp), shape = RoundedCornerShape((iconSize * .24f).dp))
+                                if (app != null) AppIcon(app, null, Modifier.size(iconSize.dp), badge = true)
                                 else if (folder != null) PreviewFolder(folder, apps, iconSize)
-                                if (labels) Text(app?.label ?: folder?.title.orEmpty(), color = ink.primary, fontSize = LocalLabelSize.current.sp.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                if (labels) Text(app?.label ?: folder?.title.orEmpty(), color = ink.primary, fontSize = HOME_LABEL_SP.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(top = FolioSpace.TINY.dp, start = FolioSpace.HAIR.dp, end = FolioSpace.HAIR.dp),
                                     style = androidx.compose.ui.text.TextStyle(shadow = ink.labelShadow))
                             }
                         }
                     }
-                    if (sideBar && state.verticalStatus) StatusRail(LocalDeviceStatus.current,
-                        Modifier.align(railAlign).then(railEdge).offset(y = geometry.statusTop.dp).width(preset.dockWidth.dp),
-                        iconSize = dockIconSize(iconSize).dp, style = state.statusStyle)
-                    val barShape = RoundedCornerShape(dockCornerRadius(geometry.dockBarHeight, dockIconSize(iconSize), state.iconShape).dp)
-                    val railShape = RoundedCornerShape(dockCornerRadius(preset.dockWidth, dockIconSize(iconSize), state.iconShape).dp)
+                    if (state.verticalStatus) StatusRail(LocalDeviceStatus.current,
+                        Modifier.align(railAlign).then(railEdge).offset(y = geometry.contentTop.dp).width(DOCK_WIDTH.dp),
+                        iconSize = dockIconSize(iconSize).dp)
+                    val barShape = RoundedCornerShape(dockCornerRadius(geometry.dockBarHeight, dockIconSize(iconSize)).dp)
+                    val railShape = RoundedCornerShape(dockCornerRadius(DOCK_WIDTH, dockIconSize(iconSize)).dp)
                     // A bottom dock bar: beside the status Side Bar, or the whole width when there is none (Full-Width Home).
-                    if (sideBar && geometry.horizontalDock) Box(Modifier.align(if (!geometry.dockBesideRail) Alignment.BottomCenter else if (left) Alignment.BottomEnd else Alignment.BottomStart)
-                        .width((if (geometry.dockBesideRail) refW - preset.dockWidth - 28f else refW).dp).padding(bottom = 58.dp), contentAlignment = Alignment.Center) { Row(Modifier
-                        .height(geometry.dockBarHeight.dp).background(glass.copy(alpha = state.statusStyle.railGlass), barShape)
-                        .border(1.dp, LocalGlassLook.current.outlineColor, barShape).padding(horizontal = FolioSpace.SMALL.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (geometry.horizontalDock) Box(Modifier.align(if (!geometry.dockBesideRail) Alignment.BottomCenter else if (left) Alignment.BottomEnd else Alignment.BottomStart)
+                        .width((if (geometry.dockBesideRail) refW - DOCK_WIDTH - 28f else refW).dp).padding(bottom = 58.dp), contentAlignment = Alignment.Center) { Row(Modifier
+                        .height(geometry.dockBarHeight.dp).background(glass.copy(alpha = LIQUID_FROST), barShape)
+                        .border(1.dp, GlassOutlineColor, barShape).padding(horizontal = FolioSpace.SMALL.dp), verticalAlignment = Alignment.CenterVertically) {
                         state.dock.forEach { id ->
                             Box(Modifier.width(geometry.dockPitch.dp), contentAlignment = Alignment.Center) {
-                                id?.let(apps::get)?.let { AppIcon(it, null, Modifier.size(dockIconSize(iconSize).dp), shape = RoundedCornerShape(11.dp)) }
+                                id?.let(apps::get)?.let { AppIcon(it, null, Modifier.size(dockIconSize(iconSize).dp), badge = true) }
                             }
                         }
                     } }
-                    else if (sideBar) Column(Modifier.align(railAlign).then(railEdge).offset(y = geometry.dockTop.dp).width(preset.dockWidth.dp)
-                        .height(geometry.dockHeight.dp).background(glass.copy(alpha = state.statusStyle.railGlass), railShape)
-                        .border(1.dp, LocalGlassLook.current.outlineColor, railShape).padding(vertical = FolioSpace.SMALL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    else Column(Modifier.align(railAlign).then(railEdge).offset(y = geometry.dockTop.dp).width(DOCK_WIDTH.dp)
+                        .height(geometry.dockHeight.dp).background(glass.copy(alpha = LIQUID_FROST), railShape)
+                        .border(1.dp, GlassOutlineColor, railShape).padding(vertical = FolioSpace.SMALL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         state.dock.forEach { id ->
                             Box(Modifier.fillMaxWidth().height(geometry.dockRowHeight.dp), contentAlignment = Alignment.Center) {
-                                id?.let(apps::get)?.let { AppIcon(it, null, Modifier.size(dockIconSize(iconSize).dp), shape = RoundedCornerShape(11.dp)) }
+                                id?.let(apps::get)?.let { AppIcon(it, null, Modifier.size(dockIconSize(iconSize).dp), badge = true) }
                             }
                         }
                     }
-                    if (sideBar && state.searchPill) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = FolioSpace.COMFY.dp)
-                        .then(if (left) Modifier.padding(start = (preset.dockWidth + 24f).dp) else Modifier.padding(end = (preset.dockWidth + 24f).dp))) {
+                    if (state.searchPill) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = FolioSpace.COMFY.dp)
+                        .then(if (left) Modifier.padding(start = (DOCK_WIDTH + 24f).dp) else Modifier.padding(end = (DOCK_WIDTH + 24f).dp))) {
                         HomeSearchPill {}
                     }
                 }
             }
         }
-        }
-        if (framed && state.systemWallpaper) CardNote(stringResource(R.string.colors_from_your_android_wallpaper_apps), Modifier.padding(top = FolioSpace.SNUG.dp))
-    }
-}
-
-/** Drag to see the fold effect at your Intensity without folding: two Home pages side by side, like the open screen. */
-@Composable private fun FoldEffectPreview(state: LauncherState, bitmap: android.graphics.Bitmap?,
-    /** Where to keep a copy of the clean Home pair, so Duet's style tiles can draw it instead of building their own. */
-    record: DuetHome? = null) {
-    var fold by rememberSaveable { mutableFloatStateOf(.5f) }
-    val corner = 16.dp
-    val bezel = 5.dp
-    Box(Modifier.fillMaxWidth().padding(top = FolioSpace.SMALL.dp), contentAlignment = Alignment.Center) {
-        Box(Modifier.clip(RoundedCornerShape(corner + bezel)).background(FolioColors.PreviewBezel)
-            .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = .2f), RoundedCornerShape(corner + bezel)).padding(bezel)
-            .clearedDescription(R.string.fold_effect_preview)) {
-            Row(Modifier.clip(RoundedCornerShape(corner)).foldPreviewEffect(state.duet.resolved()) { fold * state.foldIntensity }
-                .then(if (record != null) Modifier.drawWithContent {
-                    // Inside the effect's layer, so this is the Home before any frost.
-                    record.layer.record { this@drawWithContent.drawContent() }
-                    drawLayer(record.layer)
-                    if (record.size != record.layer.size) record.size = record.layer.size
-                } else Modifier)) {
-                // Two Home pages with one Side Bar, on the right (on the left in left-handed layouts), like the open Fold.
-                MiniHomePreview(bitmap, state, 150.dp, framed = false, sideBar = state.leftHanded, page = 0)
-                MiniHomePreview(bitmap, state, 150.dp, framed = false, sideBar = !state.leftHanded, page = 0)
-            }
-        }
-    }
-    // Slider end to end is the hinge from open (180°) to half folded (90°), where the effect peaks.
-    CustomizationSlider(stringResource(R.string.preview), if (fold < .01f) stringResource(R.string.open) else "${(180 - 90 * fold).toInt()}°", fold, 0f..1f) { fold = it }
-}
-
-/**
- * Duet's own settings: the preview, the style picker and the sliders that adjust the style (DuetOptions). Frost is
- * hidden for a style with none and Tilt for a style that doesn't tilt, rather than shown greyed out.
- */
-@Composable private fun DuetSettings(state: LauncherState, model: LauncherModel, bitmap: android.graphics.Bitmap?) {
-    val duet = state.duet
-    val look = duet.look
-    val home = DuetHome(androidx.compose.ui.graphics.rememberGraphicsLayer())
-    SettingsCard(stringResource(R.string.preview)) { FoldEffectPreview(state, bitmap, home) }
-    SettingsCard(stringResource(R.string.duet_style)) {
-        // Three to a row on the cover screen, all five across when there's room; a short last row keeps tile widths.
-        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val perRow = if (maxWidth >= 520.dp) 5 else 3
-            Column(verticalArrangement = Arrangement.spacedBy(FolioSpace.SNUG.dp)) {
-                com.mccal.folio.duet.DuetStyles.all.chunked(perRow).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(FolioSpace.SNUG.dp)) {
-                        row.forEach { style ->
-                            DuetStyleTile(style, style.id == look.id, state, home, Modifier.weight(1f)) { model.setDuet(duet.copy(style = style.id)) }
-                        }
-                        repeat(perRow - row.size) { androidx.compose.foundation.layout.Spacer(Modifier.weight(1f)) }
-                    }
-                }
-            }
-        }
-        CustomizationSlider(stringResource(R.string.intensity), "${(state.foldIntensity * 100).toInt()}%", state.foldIntensity, .3f..1.5f, default = 1f) {
-            model.setFoldIntensity(it) }
-        if (look.frost > 0f) CustomizationSlider(stringResource(R.string.duet_frost), "${(duet.frost * 100).toInt()}%", duet.frost,
-            com.mccal.folio.duet.DuetOptions.FROST, default = 1f) { model.setDuet(duet.copy(frost = it)) }
-        CustomizationSlider(stringResource(R.string.duet_shade), "${(duet.darkening * 100).toInt()}%", duet.darkening,
-            com.mccal.folio.duet.DuetOptions.DARKENING, default = 1f) { model.setDuet(duet.copy(darkening = it)) }
-        if (look.perspective > 0f) CustomizationSlider(stringResource(R.string.duet_tilt), "${(duet.perspective * 100).toInt()}%", duet.perspective,
-            com.mccal.folio.duet.DuetOptions.PERSPECTIVE, default = 1f) { model.setDuet(duet.copy(perspective = it)) }
-        val note = stringResource(R.string.duet_adjust_note)
-        val tiltNote = stringResource(R.string.duet_tilt_only_deep)
-        val frostNote = stringResource(R.string.duet_minimal_no_frost)
-        CardNote(listOfNotNull(note, tiltNote.takeIf { look.perspective == 0f }, frostNote.takeIf { look.frost == 0f }).joinToString(" "))
-        IosActionRow(stringResource(R.string.duet_reset_style), "duet-reset-style",
-            enabled = duet.frost != 1f || duet.darkening != 1f || duet.perspective != 1f) {
-            model.setDuet(duet.copy(frost = 1f, darkening = 1f, perspective = 1f)) }
-    }
-    SettingsCard(stringResource(R.string.duet_direction)) {
-        IosSegmented(com.mccal.folio.duet.DuetDirection.entries.map { it to stringResource(it.label) }, duet.plays,
-            { model.setDuet(duet.copy(direction = it.id)) }, Modifier.padding(vertical = FolioSpace.SNUG.dp), tag = "duet-direction")
-    }
-    val motionContext = androidx.compose.ui.platform.LocalContext.current
-    val motion by rememberFoldMotionOptions(motionContext)
-    SettingsCard(stringResource(R.string.fold_motion)) {
-        val prefs = remember { FoldMotionOptions.prefs(motionContext) }
-        SettingsSwitch(stringResource(R.string.fold_motion_ripple), motion.ripple, { FoldMotionOptions.write(prefs, motion.copy(ripple = it)) }, "fold-motion-ripple")
-        SettingsSwitch(stringResource(R.string.fold_motion_depth), motion.depth, { FoldMotionOptions.write(prefs, motion.copy(depth = it)) }, "fold-motion-depth")
-        SettingsSwitch(stringResource(R.string.fold_motion_light), motion.light, { FoldMotionOptions.write(prefs, motion.copy(light = it)) }, "fold-motion-light")
-        CardNote(stringResource(R.string.fold_motion_note))
-    }
-    SettingsCard(stringResource(R.string.duet_handover)) {
-        IosSegmented(listOf(false to stringResource(R.string.iphone_duo_fade), true to stringResource(R.string.screenshot_morph)),
-            state.foldSnapshot, model::setFoldSnapshot, Modifier.padding(vertical = FolioSpace.SNUG.dp), tag = "fold-style")
-        if (state.foldSnapshot) CardNote(stringResource(R.string.takes_a_quick_in_memory_snapshot_of_foli))
-        CardNote(stringResource(R.string.your_fold_reports_only_a_few_hinge_posit))
-    }
-}
-
-/** The preview's Home pair, recorded once and drawn by every style tile. */
-@androidx.compose.runtime.Stable
-private class DuetHome(val layer: androidx.compose.ui.graphics.layer.GraphicsLayer) {
-    var size by mutableStateOf(androidx.compose.ui.unit.IntSize.Zero)
-}
-
-/** One style, drawn by the real shader at a fixed half fold over the person's own Home. */
-@Composable private fun DuetStyleTile(style: com.mccal.folio.duet.DuetStyle, selected: Boolean, state: LauncherState,
-    home: DuetHome, modifier: Modifier, onClick: () -> Unit) {
-    val name = stringResource(style.name)
-    val resolved = state.duet.copy(style = style.id).resolved()
-    Column(modifier.clip(RoundedCornerShape(14.dp)).background(androidx.compose.ui.graphics.Color.White.copy(alpha = .06f))
-        .border(2.dp, if (selected) androidx.compose.ui.graphics.Color(FolioColors.Value.Blue) else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(14.dp))
-        .selectable(selected, role = androidx.compose.ui.semantics.Role.RadioButton, onClick = onClick)
-        .testTag("duet-style-${style.id}").padding(FolioSpace.SNUG.dp)) {
-        // The Home pair the big preview recorded, scaled to fit: one recording shared by every tile.
-        val src = home.size
-        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth()
-            .aspectRatio(if (src.width > 0 && src.height > 0) src.width.toFloat() / src.height else 7f / 6f)
-            .clip(RoundedCornerShape(9.dp)).foldPreviewEffect(resolved) { .6f * state.foldIntensity }
-            .drawBehind {
-                if (src.width > 0) scale(size.width / src.width, size.height / src.height,
-                    androidx.compose.ui.geometry.Offset.Zero) { drawLayer(home.layer) }
-            })
-        Row(Modifier.padding(top = FolioSpace.SNUG.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(name, Modifier.weight(1f), fontSize = FolioType.BODY.sp)
-            if (selected) androidx.compose.material3.Icon(Icons.Rounded.CheckCircle, null, tint = androidx.compose.ui.graphics.Color(FolioColors.Value.Blue), modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -2364,7 +786,7 @@ private class DuetHome(val layer: androidx.compose.ui.graphics.layer.GraphicsLay
     Text(stringResource(R.string.hidden_apps), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = FolioSpace.SNUG.dp))
     hidden.forEach { app ->
         Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-            AppIcon(app, null, Modifier.size(32.dp), shape = RoundedCornerShape(8.dp))
+            AppIcon(app, null, Modifier.size(32.dp), badge = true)
             Spacer(Modifier.width(12.dp))
             Text(app.label, Modifier.weight(1f))
             TextButton(onClick = { model.setHidden(app.id, false) }) { Text(stringResource(R.string.unhide)) }
@@ -2388,96 +810,74 @@ private class DuetHome(val layer: androidx.compose.ui.graphics.layer.GraphicsLay
     }
 }
 
-@Composable private fun HomeLayoutSettings(state: LauncherState, wide: Boolean, onWide: (Boolean) -> Unit, upright: Boolean, onUpright: (Boolean) -> Unit,
+@Composable private fun HomeLayoutSettings(state: LauncherState, wide: Boolean, onWide: (Boolean) -> Unit,
     model: LauncherModel, homePage: Int, onEditPins: () -> Unit, onWidget: (Int) -> Unit,
     onAddWidget: (Int) -> Unit, onRemoveWidget: (Int) -> Unit) {
-    val screen = if (!wide) LayoutScreen.COVER else if (upright && state.portrait != null) LayoutScreen.INNER_UPRIGHT else LayoutScreen.INNER
-    val p = state.presetFor(screen)
-    IosSegmented(listOf(false to stringResource(R.string.cover), true to stringResource(R.string.inner)), wide, onWide, Modifier.padding(vertical = FolioSpace.TINY.dp), tag = "layout-screen")
-    if (wide) {
-        // The upright inner screen can have a layout of its own; until it does, it shares the inner one.
-        if (state.portrait != null) IosSegmented(listOf(false to stringResource(R.string.sideways), true to stringResource(R.string.upright)), upright, onUpright,
-            Modifier.padding(bottom = FolioSpace.TINY.dp), tag = "layout-orientation")
-        SettingsCard(stringResource(R.string.inner)) {
-            SettingsSwitch(stringResource(R.string.separate_upright_layout), state.portrait != null, { on -> model.setSeparatePortrait(on); onUpright(on) }, "separate-portrait-switch")
-            CardNote(stringResource(R.string.separate_upright_layout_note))
-        }
-    }
-    var confirmIPhone by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val screen = if (wide) LayoutScreen.INNER else LayoutScreen.COVER
+    val placement = state.dockFor(screen)
     SheetGroup {
         IosActionRow(stringResource(R.string.choose_home_apps), onClick = onEditPins)
-        MenuDivider()
-        IosActionRow(stringResource(R.string.arrange_like_iphone), "arrange-like-iphone", onClick = { confirmIPhone = true })
     }
-    if (confirmIPhone) AlertDialog(onDismissRequest = { confirmIPhone = false },
-        title = { Text(stringResource(R.string.arrange_like_iphone_2)) },
-        text = { Text(stringResource(R.string.your_first_home_page_and_dock_get_iphon)) },
-        confirmButton = { TextButton(onClick = { confirmIPhone = false; model.arrangeLikeIPhone() }) { Text(stringResource(R.string.arrange)) } },
-        dismissButton = { TextButton(onClick = { confirmIPhone = false }) { Text(stringResource(R.string.cancel)) } })
-    SettingsCard(stringResource(R.string.layout)) {
-        val d = LayoutPreset()
-        CustomizationSlider(stringResource(R.string.app_icon_size), stringResource(R.string.dp_value, p.iconSize.toInt()), p.iconSize, 40f..68f, d.iconSize, peek = true) { model.setPreset(screen, p.copy(iconSize = it)) }
-        CustomizationSlider(stringResource(R.string.space_between_rows), stringResource(R.string.dp_value, p.rowGap.toInt()), p.rowGap, 0f..28f, d.rowGap, peek = true) { model.setPreset(screen, p.copy(rowGap = it)) }
-        CustomizationSlider(stringResource(R.string.space_between_columns), stringResource(R.string.dp_value, p.columnGap.toInt()), p.columnGap, 8f..40f, d.columnGap, peek = true) { model.setPreset(screen, p.copy(columnGap = it)) }
-        // With the gate open a widget is exactly two rows tall, so Widget Size has nothing to do (its saved value is kept).
-        if (!FeatureGate.WIDGETS_FILL_ROWS.isOpen(androidx.compose.ui.platform.LocalContext.current))
-            CustomizationSlider(stringResource(R.string.widget_size), "${(p.widgetScale * 100).roundToInt()}%", p.widgetScale, .8f..1.25f, d.widgetScale, peek = true) { model.setPreset(screen, p.copy(widgetScale = it)) }
-        // Automatic says which number it landed on, so the count is never a mystery.
-        IosMenuRow(stringResource(R.string.rows), listOf(0 to stringResource(R.string.automatic_rows_count, state.homeAppRows), 4 to "4", 5 to "5", 6 to "6", 7 to "7"), state.homeRows, model::setHomeRows, tag = "home-rows")
-        CardNote(stringResource(R.string.automatic_adds_up_to_3_more_rows_of_apps))
-        val rowsContext = androidx.compose.ui.platform.LocalContext.current
-        CardNote(automaticRowsNote(state, rowsContext.strings()))
-    }
-    SettingsCard(stringResource(R.string.position)) {
-        IosMenuRow(stringResource(R.string.apps), listOf(false to stringResource(R.string.centered), true to stringResource(R.string.top)), p.pageTop,
-            { model.setPreset(screen, p.copy(pageTop = it)) }, tag = "page-position")
-        IosMenuRow(stringResource(R.string.status), listOf(true to stringResource(R.string.level_with_apps), false to stringResource(R.string.custom)), p.statusAlignToGrid,
-            { model.setPreset(screen, p.copy(statusAlignToGrid = it)) }, tag = "status-position")
-        if (!p.statusAlignToGrid) CustomizationSlider(stringResource(R.string.status_height), if (p.statusPosition < .01f) "Top" else "${(p.statusPosition * 100).toInt()}%",
-            p.statusPosition, 0f..1f, peek = true) { model.setPreset(screen, p.copy(statusPosition = it)) }
-    }
+    // The dock is placed per screen, and Full-Width Home and the unfolded-only page's widgets with it.
+    IosSegmented(listOf(false to stringResource(R.string.cover), true to stringResource(R.string.inner)), wide, onWide, Modifier.padding(vertical = FolioSpace.TINY.dp), tag = "layout-screen")
     SettingsCard(stringResource(R.string.full_width_home)) {
         // Two settings that already exist, in one tap: a dock along the bottom, and no status Side Bar beside the page.
-        val fullWidth = p.dockPlacement == DockPlacement.BOTTOM && !state.verticalStatus
+        val fullWidth = placement == DockPlacement.BOTTOM && !state.verticalStatus
         SettingsSwitch(stringResource(R.string.full_width_home), fullWidth, { on -> model.setFullWidthHome(screen, on) }, "full-width-home-switch")
         CardNote(stringResource(R.string.full_width_home_note))
     }
     SettingsCard(stringResource(R.string.dock)) {
         IosMenuRow(stringResource(R.string.placement), listOf(DockPlacement.AUTOMATIC to stringResource(R.string.automatic), DockPlacement.SIDE to stringResource(R.string.side_rail), DockPlacement.BOTTOM to stringResource(R.string.bottom)),
-            p.dockPlacement, { model.setPreset(screen, p.copy(dockPlacement = it)) }, tag = "dock-placement")
-        CustomizationSlider(stringResource(R.string.width), stringResource(R.string.dp_value, p.dockWidth.toInt()), p.dockWidth, 56f..84f, LayoutPreset().dockWidth, peek = true) { model.setPreset(screen, p.copy(dockWidth = it)) }
-        CustomizationSlider(stringResource(R.string.space_between_dock_apps), stringResource(R.string.dp_value, p.dockSpacing.toInt()), p.dockSpacing, 0f..24f, 0f, peek = true) { model.setPreset(screen, p.copy(dockSpacing = it)) }
-        if (p.dockPlacement != DockPlacement.BOTTOM) SettingsSwitch(stringResource(R.string.align_dock_with_app_rows), p.dockAlignToGrid, { model.setPreset(screen, p.copy(dockAlignToGrid = it)) })
-        if (!p.dockAlignToGrid && p.dockPlacement != DockPlacement.BOTTOM) CustomizationSlider(stringResource(R.string.dock_height), "${(p.dockPosition * 100).toInt()}%", p.dockPosition, 0f..1f,
-            LayoutPreset().dockPosition, peek = true) { model.setPreset(screen, p.copy(dockPosition = it)) }
-        CardNote(when (p.dockPlacement) {
+            placement, { model.setDockPlacement(screen, it) }, tag = "dock-placement")
+        CardNote(when (placement) {
             DockPlacement.AUTOMATIC -> if (wide) stringResource(R.string.the_dock_stays_on_the_side_bar_and_moves) else stringResource(R.string.the_dock_stays_on_the_side_bar)
             DockPlacement.SIDE -> stringResource(R.string.the_dock_stays_on_the_side_bar_even_when)
             DockPlacement.BOTTOM -> if (wide) stringResource(R.string.the_dock_sits_along_the_bottom_under_you) else stringResource(R.string.the_dock_sits_along_the_bottom_in_landsc)
-        } + if (!p.statusAlignToGrid) " The dock always stays below the status." else "")
-    }
-    SheetGroup { IosActionRow(stringResource(R.string.reset_this_layout), destructive = true, onClick = { model.setPreset(screen, LayoutPreset()) }) }
-    // Per-page looks (after Atria): each page can have its own icon size and labels.
-    SheetGroupLabel(stringResource(R.string.pages))
-    // Real pages and styles (a Focus hiding pages renumbers the state Home draws), collected so the chips update.
-    val real by model.state.collectAsState()
-    val realPages = real.layout.pageCount
-    SheetGroup {
-        repeat(realPages) { page ->
-            if (page > 0) MenuDivider()
-            val style = real.pageStyles[page] ?: PageStyle()
-            Column(Modifier.fillMaxWidth().padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.COMPACT.dp).testTag("page-style-$page"), verticalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.page_1, page + 1), color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.BODY.sp, modifier = Modifier.weight(1f))
-                    if (page == homePage) Text(stringResource(R.string.showing), color = androidx.compose.ui.graphics.Color.White.copy(alpha = .5f), fontSize = FolioType.FOOTNOTE.sp)
+        })
+        // Recent-app dots (Beta) need Usage Access, asked for right here when they're turned on.
+        Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) { Text(stringResource(R.string.recent_app_dots), Modifier.weight(1f, fill = false)); BetaTag() }
+            IosSwitch(state.dockRecentDots, { on ->
+                model.setDockRecentDots(on)
+                if (on && !Suggestions.hasUsageAccess(context)) runCatching {
+                    context.startActivity(Suggestions.usageAccessIntent(context).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
-                IosSegmented(PageStyle.SIZES.map { it.second to it.first }, style.iconScale, { model.setPageStyle(page, style.copy(iconScale = it)) }, tag = "page-size-$page")
-                IosMenuRow(stringResource(R.string.labels), listOf<Pair<Boolean?, String>>(null to stringResource(R.string.same_as_home), true to stringResource(R.string.show), false to stringResource(R.string.hide)), style.labels,
-                    { model.setPageStyle(page, style.copy(labels = it)) }, tag = "page-labels-$page")
-            }
+            }, Modifier.testTag("dock-recent-dots-switch"))
+        }
+        CardNote(stringResource(R.string.a_small_dot_beside_dock_apps_you_ve_used))
+    }
+    SettingsCard(null) {
+        SettingsSwitch(stringResource(R.string.show_app_names), state.labels, model::setLabels, "label-switch")
+        SettingsSwitch(stringResource(R.string.left_handed_layout_rail_on_the_left), state.leftHanded, model::setLeftHanded, "left-handed-switch")
+        SettingsSwitch(stringResource(R.string.show_status_in_the_rail), state.verticalStatus, model::setVerticalStatus, "status-switch")
+    }
+    SettingsCard(stringResource(R.string.app_icons)) {
+        // Reading the installed icon packs asks Android about every pack, so it happens off the main thread.
+        val packs by androidx.compose.runtime.produceState(emptyList<IconPacks.Pack>(), context) {
+            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { IconPacks.installed(context) }
+        }
+        IosMenuRow(stringResource(R.string.icon_pack), listOf<Pair<String?, String>>(null to stringResource(R.string.app_icons)) + packs.map { it.packageName to it.label },
+            state.iconPack, { IconPacks.clear(); model.setIconPack(it) }, tag = "icon-pack")
+        CardNote(stringResource(R.string.icon_packs_and_themes_are_made_by_indepe))
+        if (packs.isEmpty()) CardNote(stringResource(R.string.install_any_icon_pack_made_for_nova_styl))
+        CardAction(stringResource(R.string.refresh_icons), onClick = model::reloadIcons)
+        CardNote(stringResource(R.string.refresh_icons_note))
+        SettingsSwitch(stringResource(R.string.settings_live_clock_and_calendar_icons), state.liveIcons, model::setLiveIcons, "live-icons-switch")
+        IosMenuRow(stringResource(R.string.notification_badges), BadgeStyle.entries.map { it to stringResource(it.label) }, state.badgeStyle, model::setBadgeStyle, tag = "badge-style")
+        if (state.badgeStyle != BadgeStyle.OFF) {
+            SettingsSwitch(stringResource(R.string.clear_badges_when_opened), state.badgesWhenOpened,
+                model::setBadgesWhenOpened, "badges-when-opened-switch")
+            CardNote(stringResource(R.string.a_badge_goes_away_when_you_open_the_app))
         }
     }
-    CardNote(stringResource(R.string.changes_how_icons_look_on_one_page_widge), Modifier.padding(horizontal = FolioSpace.TINY.dp))
+    FolioSettingsCard(state, model)
+    SettingsCard(null) {
+        SettingsSwitch("Cabinet", state.appPanels, model::setAppPanels, "cabinet-switch") // english-only
+        CardNote(stringResource(R.string.tweak_cabinet_detail))
+        SettingsSwitch("Harborline", state.dockMagnify, model::setDockMagnify, "harborline-switch") // english-only
+        CardNote(stringResource(R.string.tweak_harborline_detail))
+    }
     SheetGroupLabel(stringResource(R.string.widgets_page_number, homePage + 1))
     SheetGroup {
         state.widgetPlacements.filter { it.page == homePage || (wide && it.page == -1) }.forEach { placement ->
@@ -2495,114 +895,11 @@ private class DuetHome(val layer: androidx.compose.ui.graphics.layer.GraphicsLay
     }
 }
 
-/** Keeps Android's pop-up and Folio's island message card from showing for the same message. */
-@Composable private fun MessageBannerSettings(avoidDouble: Boolean, onAvoidDouble: (Boolean) -> Unit) {
-    SettingsSwitch(stringResource(R.string.dont_double_up_with_android_pop_ups), avoidDouble, onAvoidDouble, "messages-avoid-double-switch")
-    CardNote(if (avoidDouble) stringResource(R.string.messages_that_android_already_pops_up_ar)
-        else stringResource(R.string.the_island_shows_every_new_message_even))
-    if (!avoidDouble) return
-    MessageChannelList()
-}
-
-/** Brief pop-ups › Other notifications: any app's new notifications in the island, like messages. Off until turned on. */
-@Composable private fun IslandAlertSettings(on: Boolean, appsOff: Set<String>, onOn: (Boolean) -> Unit, onChooseApps: () -> Unit) {
-    SettingsSwitch(stringResource(R.string.other_notifications_2), on, onOn, "island-alerts-switch")
-    if (on) {
-        val channels by IslandListenerService.messageChannels.collectAsState()
-        val seen = channels.values.filter { !it.isMessage }.map { it.packageName }.toSet() + appsOff
-        IosNavRow(stringResource(R.string.apps), if (seen.isEmpty()) null else stringResource(R.string.count_of_total, (seen - appsOff).size, seen.size), onChooseApps, "island-alert-apps")
-    }
-    CardNote(if (on) stringResource(R.string.new_notifications_from_the_apps_you_choo)
-        else stringResource(R.string.show_new_notifications_from_other_apps_i))
-}
-
-/** Dynamic Island › Other Notifications: which apps' notifications pop up in the island (apps appear once they've sent one). */
-@Composable private fun IslandAlertApps(appsOff: Set<String>, avoidDouble: Boolean, onApp: (String, Boolean) -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val channels by IslandListenerService.messageChannels.collectAsState()
-    val seen = channels.values.filter { !it.isMessage }.groupBy { it.packageName }
-    val pm = context.packageManager
-    fun label(pkg: String) = seen[pkg]?.first()?.appLabel
-        ?: runCatching { pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString() }.getOrDefault(pkg)
-    val apps = remember(seen.keys, appsOff) { (seen.keys + appsOff).map { it to label(it) }.sortedBy { it.second.lowercase() } }
-    SettingsCard(stringResource(R.string.show_in_the_island)) {
-        if (apps.isEmpty()) Text(stringResource(R.string.apps_show_up_here_after_they_send_a_noti),
-            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = FolioSpace.MEDIUM.dp))
-        apps.forEach { (pkg, name) -> key(pkg) {
-            val enabled = pkg !in appsOff
-            // With "don't double up" on, a channel Android pops up itself stays with Android; offer the same way over.
-            val android = seen[pkg].orEmpty().firstOrNull { it.popsUp }?.takeIf { avoidDouble && enabled }
-            val icon = remember(pkg) { runCatching { pm.getApplicationIcon(pkg).toBitmap(84, 84).asImageBitmap() }.getOrNull() }
-            Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically) {
-                icon?.let { Image(it, null, Modifier.size(29.dp).clip(RoundedCornerShape(7.dp))) }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                    if (android != null) Text(stringResource(R.string.android_shows_its_own_pop_up), style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                if (android != null) CardAction(stringResource(R.string.use_island), onClick = { runCatching { context.startActivity(android.settingsIntent()) } })
-                IosSwitch(enabled, { onApp(pkg, it) }, Modifier.testTag("island-alert-$pkg"))
-            }
-        } }
-    }
-    CardNote(if (avoidDouble) stringResource(R.string.apps_that_android_already_pops_up_stay_w)
-        else stringResource(R.string.the_island_shows_these_apps_new_notifica), Modifier.padding(horizontal = FolioSpace.LARGE.dp))
-}
-
-/** Messaging apps Folio has seen, and whether each one pops up through Android or the island. */
-@Composable private fun MessageChannelList() {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val channels by IslandListenerService.messageChannels.collectAsState()
-    val list = channels.values.filter { it.isMessage }.sortedWith(compareBy({ !it.popsUp }, { it.appLabel }))
-    if (list.isEmpty()) CardNote(stringResource(R.string.messaging_apps_appear_here_after_they_po))
-    list.forEach { channel ->
-        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(channel.appLabel, style = MaterialTheme.typography.bodyLarge)
-                CardNote(listOfNotNull(channel.channelName, if (channel.popsUp) stringResource(R.string.android_pop_up) else stringResource(R.string.island)).joinToString(" · "))
-            }
-            // Both ways lead to the app's own notification settings: turn Android's pop-up off to use the island,
-            // or back on to get Android's pop-up again (the only way back once an app was switched over).
-            TextButton(onClick = { runCatching { context.startActivity(channel.settingsIntent()) } }) {
-                Text(if (channel.popsUp) stringResource(R.string.use_island) else stringResource(R.string.android_popup_title))
-            }
-        }
-    }
-}
-
 @Composable internal fun SettingsSwitch(label: String, checked: Boolean, onChecked: (Boolean) -> Unit, tag: String? = null, enabled: Boolean = true) {
     // One accessible element for TalkBack ("label, switch, on"); the whole row toggles.
-    Row(Modifier.fillMaxWidth().heightIn(min = 50.dp).settingsFocus(label).semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 50.dp).semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f).padding(end = FolioSpace.MEDIUM.dp, top = FolioSpace.SNUG.dp, bottom = FolioSpace.SNUG.dp), fontSize = FolioType.BODY.sp); IosSwitch(checked, onChecked, Modifier.then(if (tag != null) Modifier.testTag(tag) else Modifier), enabled)
     }
-}
-
-/**
- * [peek]: a Home layout slider, so Settings fades while it's dragged by touch (TalkBack and keys change it without a
- * press, so they don't). [default]: a light tick as the value crosses it.
- */
-@Composable private fun CustomizationSlider(label: String, valueLabel: String, value: Float,
-    range: ClosedFloatingPointRange<Float>, default: Float? = null, peek: Boolean = false, onChange: (Float) -> Unit) {
-    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    val dragged by interaction.collectIsDraggedAsState()
-    val pressed by interaction.collectIsPressedAsState()
-    val touching = peek && (dragged || pressed)
-    var bounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
-    val span = range.endInclusive - range.start
-    if (touching) SideEffect {
-        SettingsPeek.value = PeekSlider(label, valueLabel, if (span > 0f) ((value - range.start) / span).coerceIn(0f, 1f) else 0f, bounds)
-    }
-    DisposableEffect(touching) { onDispose { if (touching) SettingsPeek.value = null } }
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
-    val change: (Float) -> Unit = { next ->
-        if (default != null && next != value && kotlin.math.sign(next - default) != kotlin.math.sign(value - default))
-            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.SegmentTick)
-        onChange(next)
-    }
-    Column(Modifier.settingsFocus(label).padding(top = FolioSpace.COMPACT.dp, bottom = FolioSpace.HAIR.dp).onGloballyPositioned { bounds = it.boundsInWindow() }) {
-        Row { Text(label, Modifier.weight(1f), fontSize = FolioType.BODY.sp); Text(valueLabel, fontSize = FolioType.BODY.sp, color = androidx.compose.ui.graphics.Color.White.copy(alpha = .6f)) }
-        IosSlider(value, change, valueRange = range, modifier = Modifier.semantics { contentDescription = label }, interactionSource = interaction) }
 }
 
 /** [title] is left out when the page already says it, so a page with one group doesn't repeat its own name. */
@@ -2615,54 +912,15 @@ private class DuetHome(val layer: androidx.compose.ui.graphics.layer.GraphicsLay
     }
 }
 
-/** The open Fold for the Inner tab: two Home pages with one Side Bar, laid out with the inner screen's settings. */
-@Composable private fun UnfoldedHomePreview(bitmap: android.graphics.Bitmap?, state: LauncherState, height: androidx.compose.ui.unit.Dp, preset: LayoutPreset = state.expanded) {
-    val corner = 18.dp
-    val bezel = 5.dp
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Row(Modifier.clip(RoundedCornerShape(corner + bezel)).background(FolioColors.PreviewBezel)
-            .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = .2f), RoundedCornerShape(corner + bezel)).padding(bezel)
-            .clip(RoundedCornerShape(corner)).clearedDescription(R.string.preview_of_home_on_the_inner_screen)) {
-            MiniHomePreview(bitmap, state, height, framed = false, sideBar = state.leftHanded, preset = preset)
-            MiniHomePreview(bitmap, state, height, framed = false, sideBar = !state.leftHanded, preset = preset)
-        }
-    }
-}
-
-/** Folio's current app icon as its screens show it. */
-internal fun folioIconBitmap(context: android.content.Context, size: Int = 216): androidx.compose.ui.graphics.ImageBitmap? =
-    AppIconChoice.current(context).artwork(context, size)
-
-/** iOS-style alternate app icons: tap one to use it for Folio's app entry. */
-@Composable private fun AppIconCard(state: LauncherState, model: LauncherModel, onChanged: () -> Unit) {
+/** Folio's Settings icon is in the App Library; this puts it on Home in one tap, in the first free place. */
+@Composable private fun FolioSettingsCard(state: LauncherState, model: LauncherModel) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    var current by remember { mutableStateOf(AppIconChoice.current(context)) }
+    val folio = state.apps.firstOrNull { it.component.packageName == context.packageName } ?: return
     SettingsCard(stringResource(R.string.app_icon)) {
-        Row(Modifier.fillMaxWidth().padding(vertical = FolioSpace.SNUG.dp), horizontalArrangement = Arrangement.spacedBy(FolioSpace.XL.dp)) {
-            AppIconChoice.entries.forEach { choice ->
-                val choiceName = stringResource(choice.label)
-                val bitmap = remember(choice) { choice.artwork(context, 180) }
-                val selected = choice == current
-                Column(Modifier.clip(RoundedCornerShape(FolioRadius.GROUP.dp)).clickable {
-                    if (!selected) { AppIconChoice.set(context, choice); current = choice; onChanged() }
-                }.padding(FolioSpace.SNUG.dp).semantics { this.selected = selected; contentDescription = choiceName + " app icon" }.testTag("app-icon-${choice.name.lowercase()}"),
-                    horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(Modifier.size(64.dp).then(if (selected) Modifier.border(2.5.dp, LocalAccent.current.ink, RoundedCornerShape(18.dp)).padding(FolioSpace.TINY.dp) else Modifier.padding(FolioSpace.TINY.dp))) {
-                        bitmap?.let { androidx.compose.foundation.Image(it, null, Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.CARD.dp))) }
-                    }
-                    Text(stringResource(choice.label), color = if (selected) LocalAccent.current.ink else androidx.compose.ui.graphics.Color.White, fontSize = FolioType.FOOTNOTE.sp, modifier = Modifier.padding(top = FolioSpace.SNUG.dp))
-                }
-            }
-        }
-        CardNote(stringResource(R.string.changes_folio_s_icon_in_the_app_library))
-        // Folio's Settings icon is in the App Library; this puts it on Home in one tap, in the first free place.
-        val folio = state.apps.firstOrNull { it.component.packageName == context.packageName }
-        if (folio != null) {
-            val onHome = folio.id in state.homeAppIds()
-            CardAction(stringResource(if (onHome) R.string.folio_settings_on_home else R.string.add_folio_settings_to_home), enabled = !onHome,
-                modifier = Modifier.testTag("add-settings-to-home"), onClick = { model.setPinned(folio.id, true) })
-            CardNote(stringResource(R.string.folio_settings_icon_note))
-        }
+        val onHome = folio.id in state.homeAppIds()
+        CardAction(stringResource(if (onHome) R.string.folio_settings_on_home else R.string.add_folio_settings_to_home), enabled = !onHome,
+            modifier = Modifier.testTag("add-settings-to-home"), onClick = { model.setPinned(folio.id, true) })
+        CardNote(stringResource(R.string.folio_settings_icon_note))
     }
 }
 
@@ -2709,7 +967,7 @@ internal fun layoutSnapshotsShown(layoutHistory: Boolean, layoutDamaged: Boolean
                 }
             }
         }
-        CardNote(stringResource(R.string.before_restoring_a_backup_arrange_like_i, LayoutHistory.MAX))
+        CardNote(stringResource(R.string.before_restoring_a_backup_or_layout, LayoutHistory.MAX))
     }
     confirm?.let { snapshot ->
         AlertDialog(onDismissRequest = { confirm = null },
@@ -2717,69 +975,6 @@ internal fun layoutSnapshotsShown(layoutHistory: Boolean, layoutDamaged: Boolean
             text = { Text(stringResource(R.string.home_goes_back_to_how_it_was_1, snapshot.reason.lowercase())) },
             confirmButton = { TextButton(onClick = { model.restoreLayoutSnapshot(snapshot); confirm = null; onClose() }) { Text(stringResource(R.string.restore)) } },
             dismissButton = { TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.cancel)) } })
-    }
-}
-
-/** Recent-app dots (Beta): needs Usage Access, asked for right here when it's turned on. */
-@Composable private fun RecentDotsCard(state: LauncherState, model: LauncherModel) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    SettingsCard(stringResource(R.string.dock)) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) { Text(stringResource(R.string.recent_app_dots), Modifier.weight(1f, fill = false)); BetaTag() }
-            IosSwitch(state.dockRecentDots, { on ->
-                model.setDockRecentDots(on)
-                if (on && !Suggestions.hasUsageAccess(context)) runCatching {
-                    context.startActivity(Suggestions.usageAccessIntent(context).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
-                }
-            }, Modifier.testTag("dock-recent-dots-switch"))
-        }
-        CardNote(stringResource(R.string.a_small_dot_beside_dock_apps_you_ve_used))
-    }
-}
-
-/** Settings › Wallpaper & Appearance › Glass: one style menu for most people, sliders to fine-tune. */
-@Composable private fun GlassCardSettings(state: LauncherState, model: LauncherModel) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val liquidOpen = remember(context) { FeatureGate.LIQUID_GLASS.isOpen(context) }
-    val presets = listOf("CLEAR" to .08f, "LIGHT" to .16f, "FROSTED" to .26f, "SOLID" to .55f)
-    val rail = state.statusStyle.railGlass
-    val current = if (liquidOpen && state.glassMaterial == GlassMaterial.LIQUID) "LIQUID"
-        else presets.firstOrNull { (_, v) -> kotlin.math.abs(state.widgetGlass - v) < .005f && kotlin.math.abs(rail - v) < .005f }?.first ?: "CUSTOM"
-    val solid = LocalSolidGlass.current
-    SettingsCard(stringResource(R.string.glass)) {
-        if (!solid) IosMenuRow(stringResource(R.string.style), listOf("CLEAR" to stringResource(R.string.clear), "LIGHT" to stringResource(R.string.light), "FROSTED" to stringResource(R.string.frosted), "SOLID" to stringResource(R.string.solid)) +
-            (if (liquidOpen) listOf("LIQUID" to stringResource(R.string.liquid)) else emptyList()) +
-            (if (current == "CUSTOM") listOf("CUSTOM" to stringResource(R.string.custom)) else emptyList()), current,
-            { key -> if (key == "LIQUID") model.setGlassPreset(LIQUID_FROST, GlassMaterial.LIQUID)
-                else presets.firstOrNull { it.first == key }?.let { model.setGlassPreset(it.second) } }, tag = "glass-style")
-        if (!solid) {
-            CustomizationSlider(stringResource(R.string.widgets), "${(state.widgetGlass * 100).toInt()}%", state.widgetGlass, 0f..0.8f, onChange = model::setWidgetGlass)
-            CustomizationSlider(stringResource(R.string.side_rail), "${(rail * 100).toInt()}%", rail, 0f..0.8f) { model.setStatusStyle(state.statusStyle.copy(railGlass = it)) }
-            CustomizationSlider(stringResource(R.string.outline), if (state.glassOutline < .01f) stringResource(R.string.off) else "${(state.glassOutline * 100).toInt()}%", state.glassOutline, 0f..0.5f, onChange = model::setGlassOutline)
-        }
-        // Clear ↔ Tinted, like iOS: all the way left is clear glass, the middle is Folio's usual wallpaper tint.
-        val tint = if (state.tintedGlass) state.glassTint else 0f
-        CustomizationSlider(stringResource(R.string.wallpaper_tint), when { tint < .01f -> stringResource(R.string.clear); tint > .99f -> stringResource(R.string.tinted); else -> "${(tint * 100).toInt()}%" },
-            tint, 0f..1f, default = .5f, peek = true, onChange = model::setGlassTint)
-        CardNote(if (solid && !state.reduceTransparency) stringResource(R.string.glass_is_nearly_solid_because_android_s)
-            else if (solid) stringResource(R.string.glass_is_nearly_solid_turn_off_reduce_transparency)
-            else stringResource(R.string.frost_is_how_see_through_widgets_and_the))
-    }
-}
-
-/** A live sample of the badge settings on a plain icon, so each change shows right away. */
-@Composable private fun BadgePreviewRow(state: LauncherState) {
-    val look = LocalIconLook.current
-    Row(Modifier.fillMaxWidth().padding(vertical = FolioSpace.SMALL.dp).clearedDescription(R.string.badge_preview),
-        horizontalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterHorizontally)) {
-        listOf(1, 12).forEach { count ->
-            Box(Modifier.size(56.dp)) {
-                Box(Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.CARD.dp)).background(FolioColors.MenuSurface))
-                val color = look.badgeColor.fixed?.let { androidx.compose.ui.graphics.Color(it) }
-                    ?: if (look.badgeColor == BadgeColor.SOFT) androidx.compose.ui.graphics.Color(0xFFE5E5EA) else FolioColors.RedLight
-                IconBadge(count, state.badgeStyle, color, state.badgeLook, state.badgeSize.scale)
-            }
-        }
     }
 }
 
@@ -2808,205 +1003,6 @@ internal fun layoutSnapshotsShown(layoutHistory: Boolean, layoutDamaged: Boolean
         dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) } })
 }
 
-/** Before Android's screen saver list opens: the one choice to make there, and what it gives. */
-@Composable private fun StandByScreenSaverAlert(onOpen: () -> Unit, onCancel: () -> Unit) {
-    AlertDialog(onDismissRequest = onCancel,
-        title = { Text(stringResource(R.string.standby_screen_saver_setup_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
-                Text(stringResource(R.string.standby_screen_saver_setup_body), fontSize = FolioType.SUBHEAD.sp)
-                Text(stringResource(R.string.standby_screen_saver_step_open), fontSize = FolioType.SUBHEAD.sp)
-                Text(stringResource(R.string.standby_screen_saver_step_choose), fontSize = FolioType.SUBHEAD.sp)
-            }
-        },
-        confirmButton = { TextButton(onClick = onOpen, modifier = Modifier.testTag("standby-screen-saver-open")) {
-            Text(stringResource(R.string.open_screen_saver_settings)) } },
-        dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.not_now)) } })
-}
-
-/** Tweak Library: every built-in tweak as a package, Sileo-style. Get adds it to Settings › Tweaks and turns it on. */
-@Composable private fun TweakLibraryPage(state: LauncherState, model: LauncherModel, onOpen: (TweakFeature) -> Unit) {
-    CardNote(stringResource(R.string.built_into_folio_and_off_until_you_get_t), Modifier.padding(horizontal = FolioSpace.TINY.dp))
-    SheetGroup {
-        val libraryContext = androidx.compose.ui.platform.LocalContext.current
-        remember { visibleTweaks(libraryContext) }.forEachIndexed { index, tweak ->
-            if (index > 0) MenuDivider()
-            val installed = tweak.id in state.installedTweaks
-            Row(Modifier.fillMaxWidth().clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = stringResource(R.string.show_details)) { onOpen(tweak) }
-                .padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.COMPACT.dp).testTag("library-tweak-${tweak.id}"),
-                verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(40.dp).clip(RoundedCornerShape(FolioRadius.CONTROL.dp)).background(androidx.compose.ui.graphics.Color(tweak.color)), contentAlignment = Alignment.Center) {
-                    Icon(tweak.icon, null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(22.dp))
-                }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(tweak.name, fontSize = FolioType.CALLOUT.sp, fontWeight = FontWeight.SemiBold)
-                    Text(stringResource(R.string.inspired_by_1, tweak.inspiredNames), fontSize = FolioType.FOOTNOTE.sp, color = androidx.compose.ui.graphics.Color.White.copy(alpha = .6f), maxLines = 1)
-                }
-                // Sileo's pill: Get in blue; once installed it reads Open and goes to the tweak's settings.
-                val actionLabel = stringResource(if (installed) R.string.open_tweak else R.string.get_tweak, tweak.name)
-                Text(stringResource(if (installed) R.string.open else R.string.get), fontSize = FolioType.COMPACT.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
-                    color = if (installed) LocalAccent.current.ink else androidx.compose.ui.graphics.Color.White,
-                    modifier = Modifier.minimumInteractiveComponentSize().clip(RoundedCornerShape(50)).background(if (installed) androidx.compose.ui.graphics.Color.White.copy(alpha = .12f) else LocalAccent.current.fill)
-                        .clickable(role = androidx.compose.ui.semantics.Role.Button) { if (installed) onOpen(tweak) else model.installTweak(tweak) }.padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.SNUG.dp)
-                        .semantics { contentDescription = actionLabel })
-            }
-        }
-    }
-}
-
-/** Settings › Software Update, laid out like iOS: the version, one clear action, and automatic updates. */
-@Composable private fun SoftwareUpdatePage() {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val status by SoftwareUpdate.status.collectAsState()
-    val installed = remember { SoftwareUpdate.installedVersion(context) }
-    val supported = SoftwareUpdate.supported(context)
-    // Like iOS: the page checks when you open it, unless a check already ran this session.
-    LaunchedEffect(Unit) { if (supported && status == SoftwareUpdate.Status.Idle) SoftwareUpdate.startCheck(context) }
-    val icon = remember { folioIconBitmap(context) }
-    SheetGroup {
-        Row(Modifier.fillMaxWidth().padding(FolioSpace.LARGE.dp), verticalAlignment = Alignment.CenterVertically) {
-            icon?.let { Image(it, null, Modifier.size(56.dp).clip(RoundedCornerShape(13.dp))) }
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.folio_version, installed), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text(when {
-                    !supported -> stringResource(R.string.folio_dev_a_test_build_it_updates_from_n)
-                    status == SoftwareUpdate.Status.Checking -> stringResource(R.string.checking_for_updates)
-                    status == SoftwareUpdate.Status.UpToDate -> stringResource(R.string.folio_is_up_to_date)
-                    status is SoftwareUpdate.Status.Failed -> (status as SoftwareUpdate.Status.Failed).message
-                    else -> SoftwareUpdate.lastChecked(context).takeIf { it > 0 }?.let {
-                        val ago = if (System.currentTimeMillis() - it < 60_000) stringResource(R.string.just_now)
-                            else android.text.format.DateUtils.getRelativeTimeSpanString(it, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS)
-                        stringResource(R.string.last_checked, ago)
-                    }
-                        ?: stringResource(R.string.updates_come_from_folio_s_github_release)
-                }, style = MaterialTheme.typography.bodySmall,
-                    color = if (status is SoftwareUpdate.Status.Failed) FolioColors.Red else MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
-    if (!supported) return
-    val release = when (val s = status) {
-        is SoftwareUpdate.Status.Available -> s.release
-        is SoftwareUpdate.Status.Downloading -> s.release
-        is SoftwareUpdate.Status.Ready -> s.release
-        else -> null
-    }
-    if (release != null) UpdateCard(release, status)
-    else SheetGroup {
-        IosActionRow(stringResource(R.string.check_for_updates), "update-check", enabled = status !is SoftwareUpdate.Status.Checking && status != SoftwareUpdate.Status.Installing) {
-            SoftwareUpdate.startCheck(context)
-        }
-    }
-    var mode by remember { mutableStateOf(SoftwareUpdate.mode(context)) }
-    val notifyPermission = androidx.activity.compose.rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
-    var beta by remember { mutableStateOf(SoftwareUpdate.beta(context)) }
-    SettingsCard(stringResource(R.string.updates)) {
-        IosMenuRow(stringResource(R.string.automatic_updates), SoftwareUpdate.Mode.entries.map { it to stringResource(it.label) }, mode, {
-            mode = it; SoftwareUpdate.setMode(context, it)
-            if (it != SoftwareUpdate.Mode.MANUAL && !SoftwareUpdate.canPostNotifications(context))
-                notifyPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-        }, tag = "update-mode")
-        CardNote(when (mode) {
-            SoftwareUpdate.Mode.AUTOMATIC -> stringResource(R.string.folio_checks_once_a_day_downloads_new_ve)
-            SoftwareUpdate.Mode.NOTIFY -> stringResource(R.string.folio_checks_once_a_day_and_sends_a_noti)
-            SoftwareUpdate.Mode.MANUAL -> stringResource(R.string.folio_only_checks_when_you_open_this_pag)
-        })
-        IosMenuRow(stringResource(R.string.beta_updates), listOf(false to stringResource(R.string.off), true to stringResource(R.string.folio_beta)), beta, { beta = it; SoftwareUpdate.setBeta(context, it) }, tag = "update-beta")
-        CardNote(if (beta) stringResource(R.string.you_ll_get_folio_betas_as_well_as_public)
-            else stringResource(R.string.turn_on_to_try_new_features_before_they))
-        // A supporter's code turns this on by itself, so say where it came from rather than leaving them to wonder.
-        if (beta && Supporter.has(context, BetaCodes.SCOPE_BETA)) CardNote(stringResource(R.string.a_supporter_code_turned_this_on_you_can))
-        // Betas come through the supporter worker. Without a code Folio only sees public releases, and "up to date" would
-        // read as if no beta existed (#239).
-        if (!SoftwareUpdate.betaSourceReady(context)) CardNote(stringResource(R.string.betas_are_for_supporters))
-    }
-    CardNote(stringResource(R.string.every_update_is_checked_against_its_publ), Modifier.padding(horizontal = FolioSpace.LARGE.dp))
-}
-
-/** The available update, like iOS's: version, size, the release notes, progress, and Update Now / Update Tonight. */
-@Composable internal fun UpdateCard(release: SoftwareUpdate.Release, status: SoftwareUpdate.Status) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var expanded by remember(release.version) { mutableStateOf(false) }
-    val notes = remember(release.notes) { releaseNoteLines(release.notes) }
-    SheetGroup {
-        Column(Modifier.fillMaxWidth().padding(FolioSpace.LARGE.dp), verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val icon = remember { folioIconBitmap(context) }
-                icon?.let { Image(it, null, Modifier.size(44.dp).clip(RoundedCornerShape(FolioRadius.CONTROL.dp))) }
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(stringResource(if (release.prerelease) R.string.folio_version_beta else R.string.folio_version, release.version), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    CardNote(listOfNotNull(stringResource(R.string.mccal_codes), release.size.takeIf { it > 0 }?.let { android.text.format.Formatter.formatShortFileSize(context, it) })
-                        .joinToString(" · "))
-                }
-            }
-            if (notes.isNotEmpty()) {
-                (if (expanded) notes else notes.take(6)).forEach { line -> Text(line, style = MaterialTheme.typography.bodyMedium) }
-                // A beta's notes have no page to open (its repository is private), so once they're expanded there's no link.
-                if ((!expanded && notes.size > 6) || release.notesUrl.isNotBlank()) Text(if (!expanded && notes.size > 6) stringResource(R.string.more) else stringResource(R.string.full_release_notes),
-                    color = LocalAccent.current.ink, style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable {
-                        if (!expanded && notes.size > 6) expanded = true
-                        else runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(release.notesUrl))) }
-                    }.padding(vertical = FolioSpace.TINY.dp))
-            }
-            when (status) {
-                is SoftwareUpdate.Status.Downloading -> {
-                    val fraction = status.fraction
-                    if (fraction != null) LinearProgressIndicator({ fraction }, Modifier.fillMaxWidth())
-                    else LinearProgressIndicator(Modifier.fillMaxWidth())
-                    CardNote(stringResource(R.string.downloading) + (fraction?.let { " · ${(it * 100).toInt()}%" } ?: "…"))
-                }
-                is SoftwareUpdate.Status.Ready -> CardNote(if (status.tonight) stringResource(R.string.downloaded_and_verified_it_installs_toni)
-                    else stringResource(R.string.downloaded_and_verified_it_installs_when))
-                else -> Unit
-            }
-            if (status !is SoftwareUpdate.Status.Downloading) Row(horizontalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) {
-                FolioButton(stringResource(R.string.update_now), {
-                    if (status is SoftwareUpdate.Status.Ready) SoftwareUpdate.installReadyNow(context) else SoftwareUpdate.startInstall(context, release)
-                }, Modifier.weight(1f), tag = "update-install")
-                if (!(status is SoftwareUpdate.Status.Ready && status.tonight)) FolioButton(stringResource(R.string.update_tonight),
-                    { SoftwareUpdate.startUpdateTonight(context, release) }, Modifier.weight(1f), style = FolioButtonStyle.TONAL, tag = "update-tonight")
-            }
-            CardNote(stringResource(R.string.updating_restarts_home_for_a_moment))
-        }
-    }
-}
-
-/** GitHub release notes as plain lines: headings and emphasis markers dropped, bullets kept. */
-internal fun releaseNoteLines(markdown: String): List<String> = markdown.lines()
-    .map { it.trim() }
-    // Folio's notes open with install and verify steps; the part worth reading here starts at "What's new".
-    .let { lines -> lines.indexOfFirst { Regex("""^#+\s*What.s new""", RegexOption.IGNORE_CASE).containsMatchIn(it) }
-        .takeIf { it >= 0 }?.let { lines.drop(it + 1) } ?: lines }
-    .filter { it.isNotEmpty() && !it.startsWith("![") && !it.startsWith("<") && !it.startsWith("```") && !it.startsWith("> ") }
-    .map { line ->
-        line.removePrefix("### ").removePrefix("## ").removePrefix("# ")
-            .replace(Regex("""\*\*|__|`"""), "")
-            .replace(Regex("""\[([^\]]+)]\([^)]+\)"""), "$1")
-            .let { if (it.startsWith("- ") || it.startsWith("* ")) "• " + it.drop(2) else it }
-    }
-
-/** Why Automatic landed on this many rows: which screens Folio has measured, and which one sets the limit. */
-internal fun automaticRowsNote(state: LauncherState, strings: Strings): String {
-    val cover = state.homeFitCompact
-    // The inner screen's number is the smaller of its sideways and upright fits (0 = not measured), the one that limits it.
-    val inner = listOf(state.homeFitExpanded, state.homeFitUpright).filter { it > 0 }.minOrNull() ?: 0
-    return when {
-        state.homeRows > BASE_APP_ROWS -> strings.get(R.string.rows_note_fixed_more, state.homeRows)
-        state.homeRows > 0 -> strings.plural(R.plurals.rows_note_fixed, state.homeRows, state.homeRows)
-        cover == 0 && inner == 0 -> strings.get(R.string.rows_note_unmeasured)
-        inner == 0 -> strings.get(R.string.rows_note_cover_only, cover)
-        cover == 0 -> strings.get(R.string.rows_note_inner_only, inner)
-        cover == inner && cover < MAX_APP_ROWS -> strings.plural(R.plurals.rows_note_same, cover, cover)
-        cover == inner -> strings.plural(R.plurals.rows_note_same_max, cover, cover)
-        else -> strings.get(R.string.rows_note_different, cover, inner, minOf(cover, inner))
-    }
-}
-
 /** A content description from strings.xml; semantics blocks can't read resources themselves. */
 @Composable internal fun Modifier.description(@androidx.annotation.StringRes id: Int): Modifier =
     stringResource(id).let { text -> semantics { contentDescription = text } }
@@ -3029,260 +1025,4 @@ internal fun automaticRowsNote(state: LauncherState, strings: Strings): String {
             imeAction = androidx.compose.ui.text.input.ImeAction.Done),
         decorationBox = { inner -> Box { if (text.isEmpty()) Text("https://example.com/search?q=%s", color = androidx.compose.ui.graphics.Color.White.copy(alpha = .35f), fontSize = FolioType.SUBHEAD.sp); inner() } })
     CardNote(stringResource(when { text.isBlank() -> R.string.custom_search_blank; valid -> R.string.custom_search_note; else -> R.string.custom_search_invalid }))
-}
-
-
-/** A theme file is small text; anything bigger than this is not one, and is never read whole into memory. */
-internal const val MAX_THEME_BYTES = 64_000
-
-internal fun readThemeText(context: android.content.Context, uri: android.net.Uri): String? = runCatching {
-    context.contentResolver.openInputStream(uri)?.use { readCapped(it, MAX_THEME_BYTES)?.decodeToString() }
-}.getOrNull()
-
-/** At most [limit] bytes of [input]; null when there is more than that. */
-internal fun readCapped(input: java.io.InputStream, limit: Int): ByteArray? {
-    val out = java.io.ByteArrayOutputStream()
-    val buffer = ByteArray(8192)
-    var total = 0
-    while (true) {
-        val read = input.read(buffer, 0, minOf(buffer.size, limit + 1 - total))
-        if (read < 0) break
-        total += read
-        if (total > limit) return null
-        out.write(buffer, 0, read)
-    }
-    return out.toByteArray()
-}
-
-/** Advanced › System Bridge (ADR 0011): the ways Folio can reach more of the system, what each lets it do, and the one switch that turns the extra ones off. */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@Composable private fun SystemBridgePage() {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var off by remember { mutableStateOf(SystemBridge.isOff(context)) }
-    val safe = SafeMode.active
-    val broker = remember { SystemBridge.broker(context) }
-    fun read() = broker.states()
-    var states by remember { mutableStateOf(read()) }
-    var rootState by remember { mutableStateOf(RootHingeStore.state(context)) }
-    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(lifecycle, off) { lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) { states = read() } }
-    LaunchedEffect(off) { states = read() }
-    Text(stringResource(R.string.system_bridge_intro), style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = FolioSpace.TINY.dp))
-    if (safe) CardNote(stringResource(R.string.system_bridge_safe_mode), Modifier.testTag("bridge-safe-mode"))
-    SettingsCard(null) {
-        SettingsSwitch(stringResource(R.string.allow_system_access), !off, { on -> off = !on; SystemBridge.setOff(context, off) }, "bridge-allow-switch")
-        CardNote(stringResource(R.string.allow_system_access_note))
-    }
-    SettingsCard(stringResource(R.string.bridge_ways)) {
-        val gated = SystemBridge.wayLabel(off, safe)
-        val ways = listOf(
-            BridgeWayRow(PrivilegeTier.STANDARD, R.string.bridge_way_standard, R.string.bridge_way_standard_uses, R.string.bridge_state_always, "A0 to A2", "bridge-way-standard"),
-            BridgeWayRow(PrivilegeTier.SHIZUKU, R.string.bridge_way_shizuku, R.string.bridge_way_shizuku_uses, gated, "A3", "bridge-way-shizuku"),
-            BridgeWayRow(PrivilegeTier.ROOT, R.string.bridge_way_root, R.string.bridge_way_root_uses, SystemBridge.rootWayLabel(rootState, off, safe), "A4", "bridge-way-root"),
-            BridgeWayRow(PrivilegeTier.HOOKS, R.string.bridge_way_system, R.string.bridge_way_system_uses, gated, "A5", "bridge-way-system"),
-            BridgeWayRow(null, R.string.bridge_way_device, R.string.bridge_way_device_uses, gated, "", "bridge-way-device"),
-        )
-        val (now, later) = SystemBridge.splitNotYet(ways) { it.state }
-        now.forEach { BridgeWay(it.tier, it.name, it.uses, it.state, it.code, it.tag) }
-        if (later.isNotEmpty()) BridgeNotYet(later.size, R.string.bridge_not_yet_ways_cd, "bridge-ways-later") {
-            later.forEach { BridgeWay(it.tier, it.name, it.uses, it.state, it.code, it.tag) }
-        }
-    }
-    BridgeWarning(stringResource(R.string.bridge_knox))
-    // Root and computer commands sit behind one switch and a short warning. Details open the full disclosure.
-    var advanced by remember { mutableStateOf(RootHingeStore.advanced(context)) }
-    var dialog by remember { mutableStateOf<String?>(null) }
-    SettingsCard(null) {
-        SettingsSwitch(stringResource(R.string.bridge_advanced), advanced,
-            { on -> if (on) dialog = "adv" else { advanced = false; RootHingeStore.setAdvanced(context, false) } }, "bridge-advanced")
-        CardNote(stringResource(R.string.bridge_advanced_note))
-        val cd = stringResource(R.string.bridge_details_adv_cd)
-        CardAction(stringResource(R.string.bridge_details), Modifier.fillMaxWidth().semantics { contentDescription = cd }.testTag("bridge-details-adv"), onClick = { dialog = "details-adv" })
-    }
-    if (advanced) {
-        SettingsCard(stringResource(R.string.bridge_root_title)) {
-            CardNote(stringResource(R.string.bridge_root_note))
-            SystemBridge.pausedNote(off, safe)?.let { CardNote(stringResource(it), Modifier.testTag("bridge-root-paused")) }
-            val status by RootHingeTester.status.collectAsState()
-            val testing = status is RootHingeTester.Status.Running
-            val found = (status as? RootHingeTester.Status.Done)?.report
-            // The result lands whichever screen is showing (the Fold swaps displays mid-test), so the saved state is read again when it does.
-            LaunchedEffect(status) { rootState = RootHingeStore.state(context); states = read() }
-            DisposableEffect(Unit) { onDispose { RootHingeTester.dismiss() } }
-            // Before the first test the owner sees a short note about what runs as root; after that, a test just starts.
-            CardPrimaryAction(stringResource(R.string.bridge_root_test), Modifier.testTag("bridge-root-test"), enabled = !testing && !off && !safe,
-                onClick = { if (RootHingeStore.explained(context)) RootHingeTester.start(context) else dialog = "first" })
-            found?.let { Text(SystemBridge.rootResult(context, it), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = FolioSpace.SMALL.dp).testTag("bridge-root-result")) }
-            if (testing) Text(stringResource(R.string.bridge_root_testing), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = FolioSpace.SMALL.dp).testTag("bridge-root-testing"))
-            if (rootState == RootState.READY) {
-                var use by remember { mutableStateOf(RootHingeStore.useInFold(context)) }
-                SettingsSwitch(stringResource(R.string.bridge_root_use), use, { on -> use = on; RootHingeStore.setUseInFold(context, on) }, "bridge-root-use")
-                CardNote(stringResource(R.string.bridge_root_use_note))
-            }
-            if (RootHingeStore.lastReport(context) != null) {
-                // Copy and Share live under one row, so the card has one main action and a few quiet ones.
-                var reportMenu by remember { mutableStateOf(false) }
-                Box {
-                    CardAction(stringResource(R.string.bridge_root_report), Modifier.fillMaxWidth().testTag("bridge-root-report"), onClick = { reportMenu = true })
-                    DropdownMenu(expanded = reportMenu, onDismissRequest = { reportMenu = false }) {
-                        DropdownMenuItem(text = { Text(stringResource(R.string.bridge_root_copy)) }, modifier = Modifier.testTag("bridge-root-copy"), onClick = {
-                            reportMenu = false
-                            context.getSystemService(android.content.ClipboardManager::class.java)?.setPrimaryClip(android.content.ClipData.newPlainText("Folio root test", RootHingeStore.lastReport(context)))
-                        })
-                        DropdownMenuItem(text = { Text(stringResource(R.string.bridge_root_share)) }, modifier = Modifier.testTag("bridge-root-share"), onClick = {
-                            reportMenu = false
-                            RootHingeStore.shareIntent(context)?.let { runCatching { context.startActivity(it) } }
-                        })
-                    }
-                }
-            }
-            val cdRoot = stringResource(R.string.bridge_details_root_cd)
-            CardAction(stringResource(R.string.bridge_details), Modifier.fillMaxWidth().semantics { contentDescription = cdRoot }.testTag("bridge-details-root"), onClick = { dialog = "details-root" })
-        }
-        SettingsCard(stringResource(R.string.bridge_grant_title)) {
-            CardNote(stringResource(R.string.bridge_grant_note))
-            SystemBridge.pausedNote(off, safe)?.let { CardNote(stringResource(it), Modifier.testTag("bridge-grant-paused")) }
-            var granted by remember { mutableStateOf(SecureSettingsGrant.isGranted(context)) }
-            // Checked again whenever the page comes back, since the owner may grant it on a computer.
-            LaunchedEffect(lifecycle) { lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) { granted = SecureSettingsGrant.isGranted(context); states = read() } }
-            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("bridge-grant-state"), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.bridge_grant_permission), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                Text(stringResource(if (granted) R.string.bridge_grant_yes else R.string.bridge_grant_no), style = MaterialTheme.typography.bodyMedium,
-                    color = if (granted) FolioColors.Green else MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            val command = if (granted) SecureSettingsGrant.revokeCommand(context.packageName) else SecureSettingsGrant.grantCommand(context.packageName)
-            if (!granted) { CardNote(stringResource(R.string.bridge_grant_step_1)); CardNote(stringResource(R.string.bridge_grant_step_2)) }
-            if (command != null) {
-                androidx.compose.foundation.text.selection.SelectionContainer {
-                    Text(command, Modifier.fillMaxWidth().padding(vertical = FolioSpace.SMALL.dp).clip(RoundedCornerShape(FolioRadius.CONTROL.dp))
-                        .background(androidx.compose.ui.graphics.Color.White.copy(alpha = .08f)).padding(horizontal = 12.dp, vertical = 10.dp).testTag("bridge-grant-command"),
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace))
-                }
-                CardNote(stringResource(if (granted) R.string.bridge_grant_revoke_note else R.string.bridge_grant_step_3))
-                CardAction(stringResource(if (granted) R.string.bridge_grant_copy_revoke else R.string.bridge_grant_copy), Modifier.fillMaxWidth().testTag("bridge-grant-copy"), onClick = {
-                    context.getSystemService(android.content.ClipboardManager::class.java)?.setPrimaryClip(android.content.ClipData.newPlainText("Folio command", command))
-                })
-            }
-            // With root working, the owner may let Folio do the same command itself. Off until they turn it on, and only a button press runs it.
-            if (rootState == RootState.READY) {
-                var allow by remember { mutableStateOf(RootHingeStore.allowRootGrant(context)) }
-                SettingsSwitch(stringResource(R.string.bridge_rootgrant_allow), allow, { on -> allow = on; RootHingeStore.setAllowRootGrant(context, on) }, "bridge-rootgrant-allow")
-                CardNote(stringResource(R.string.bridge_rootgrant_note))
-                if (allow && !off && !safe) {
-                    val gs by RootSettingsGrantTester.status.collectAsState()
-                    val working = gs is RootSettingsGrantTester.Status.Running
-                    LaunchedEffect(gs) { granted = SecureSettingsGrant.isGranted(context); states = read() }
-                    DisposableEffect(Unit) { onDispose { RootSettingsGrantTester.dismiss() } }
-                    (gs as? RootSettingsGrantTester.Status.Done)?.let { d ->
-                        Text(stringResource(when {
-                            d.outcome == RootSettingsGrantRunner.Outcome.DONE && d.granted -> R.string.bridge_rootgrant_granted
-                            d.outcome == RootSettingsGrantRunner.Outcome.DONE -> R.string.bridge_rootgrant_removed
-                            d.outcome == RootSettingsGrantRunner.Outcome.DENIED -> R.string.bridge_rootgrant_denied
-                            else -> R.string.bridge_rootgrant_failed }),
-                            style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = FolioSpace.SMALL.dp).testTag("bridge-rootgrant-result"))
-                    }
-                    if (working) Text(stringResource(R.string.bridge_rootgrant_working), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = FolioSpace.SMALL.dp))
-                    CardAction(stringResource(if (granted) R.string.bridge_rootgrant_undo else R.string.bridge_rootgrant_do), Modifier.fillMaxWidth().testTag("bridge-rootgrant-do"),
-                        enabled = !working, onClick = { RootSettingsGrantTester.start(context, grant = !granted) })
-                }
-            }
-            val cdGrant = stringResource(R.string.bridge_details_grant_cd)
-            CardAction(stringResource(R.string.bridge_details), Modifier.fillMaxWidth().semantics { contentDescription = cdGrant }.testTag("bridge-details-grant"), onClick = { dialog = "details-grant" })
-        }
-    }
-    dialog?.let { d ->
-        val details = d.startsWith("details-")
-        val title = when (d) { "adv" -> R.string.bridge_adv_title; "first" -> R.string.bridge_root_explain_title; "details-adv" -> R.string.bridge_detail_adv_title
-            "details-root" -> R.string.bridge_root_about; else -> R.string.bridge_detail_grant_title }
-        if (details) {
-            // The full disclosure is a Folio sheet (a handle on the cover, a form sheet on the open screen), not a cramped alert.
-            val body = when (d) {
-                "details-adv" -> listOf(R.string.bridge_detail_adv_1, R.string.bridge_detail_adv_2, R.string.bridge_detail_adv_3)
-                "details-root" -> listOf(R.string.bridge_root_explain_1, R.string.bridge_root_explain_2, R.string.bridge_root_explain_3)
-                else -> listOf(R.string.bridge_detail_grant_1, R.string.bridge_detail_grant_2, R.string.bridge_detail_grant_3) }
-            ModalBottomSheet(onDismissRequest = { dialog = null }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-                Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = FolioSpace.XXL.dp).padding(bottom = FolioSpace.XXL.dp),
-                    verticalArrangement = Arrangement.spacedBy(FolioSpace.MEDIUM.dp)) {
-                    Text(stringResource(title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
-                    body.forEach { Text(stringResource(it), style = MaterialTheme.typography.bodyMedium) }
-                    CardPrimaryAction(stringResource(R.string.done), Modifier.testTag("bridge-dialog-go"), onClick = { dialog = null })
-                }
-            }
-        } else {
-            // The short warnings are alerts: the preferred action first and bold, then Details, then the way out.
-            val message = if (d == "adv") R.string.bridge_adv_text else R.string.bridge_root_first_text
-            AlertDialog(onDismissRequest = { dialog = null },
-                title = { Text(stringResource(title)) },
-                text = { Text(stringResource(message)) },
-                confirmButton = { TextButton(onClick = {
-                    when (d) {
-                        "adv" -> { advanced = true; RootHingeStore.setAdvanced(context, true) }
-                        "first" -> { RootHingeStore.setExplained(context); RootHingeTester.start(context) }
-                    }
-                    dialog = null }, modifier = Modifier.testTag("bridge-dialog-go")) { Text(stringResource(if (d == "adv") R.string.bridge_adv_know else R.string.bridge_root_explain_continue)) } },
-                neutralButton = { TextButton(onClick = { dialog = if (d == "adv") "details-adv" else "details-root" }, modifier = Modifier.testTag("bridge-dialog-details")) { Text(stringResource(R.string.bridge_details)) } },
-                dismissButton = { TextButton(onClick = { dialog = null }, modifier = Modifier.testTag("bridge-dialog-no")) { Text(stringResource(R.string.not_now)) } })
-        }
-    }
-    SettingsCard(stringResource(R.string.bridge_does)) {
-        val (now, later) = SystemBridge.splitNotYet(states) { SystemBridge.stateLabel(it) }
-        @Composable fun CapRow(s: CapabilityState) {
-            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("bridge-cap-${s.capability.id}"), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(SystemBridge.capabilityName(s.capability)), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                Text(stringResource(SystemBridge.stateLabel(s)), style = MaterialTheme.typography.bodyMedium,
-                    color = if (s.available) FolioColors.Green else MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-        now.forEach { CapRow(it) }
-        if (later.isNotEmpty()) BridgeNotYet(later.size, R.string.bridge_not_yet_caps_cd, "bridge-caps-later") { later.forEach { CapRow(it) } }
-        CardNote(stringResource(R.string.bridge_if_stops))
-    }
-    SettingsCard(stringResource(R.string.bridge_recent)) {
-        val calls = remember { SystemBridge.recentCalls() }
-        if (calls.isEmpty()) Text(stringResource(R.string.bridge_recent_none), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = FolioSpace.SMALL.dp))
-        calls.forEach { e ->
-            Column(Modifier.fillMaxWidth().padding(vertical = FolioSpace.TINY.dp)) {
-                Text(stringResource(SystemBridge.capabilityName(e.capability)), style = MaterialTheme.typography.bodyMedium)
-                Text("${e.via?.code ?: "-"} · ${stringResource(SystemBridge.outcomeLabel(e.outcome))}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-        CardNote(stringResource(R.string.bridge_recent_note))
-    }
-}
-
-/** One way of getting access: its tier code, what it is for and the state in words (never color alone). */
-private data class BridgeWayRow(val tier: PrivilegeTier?, @androidx.annotation.StringRes val name: Int, @androidx.annotation.StringRes val uses: Int,
-    @androidx.annotation.StringRes val state: Int, val code: String, val tag: String)
-
-/** One row that stands for the things that are not available yet; it opens to list them. */
-@Composable private fun BridgeNotYet(count: Int, @androidx.annotation.StringRes description: Int, tag: String, content: @Composable () -> Unit) {
-    var open by remember { mutableStateOf(false) }
-    val spoken = stringResource(description, count)
-    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(role = androidx.compose.ui.semantics.Role.Button) { open = !open }
-        .semantics { contentDescription = spoken; stateDescription = if (open) "expanded" else "collapsed" }.testTag(tag), verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(R.string.bridge_not_yet_group, count), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-        Icon(if (open) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-    if (open) content()
-}
-
-/** The Knox note: the most important sentence on the page, so it gets a card of its own instead of small print. */
-@Composable private fun BridgeWarning(text: String) {
-    val shape = RoundedCornerShape(FolioRadius.CARD.dp)
-    Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.fillMaxWidth().clip(shape).background(FolioColors.Orange.copy(alpha = .14f)).border(1.dp, FolioColors.Orange.copy(alpha = .45f), shape)
-            .padding(12.dp).testTag("bridge-knox"))
-}
-
-@Composable private fun BridgeWay(tier: PrivilegeTier?, @androidx.annotation.StringRes name: Int, @androidx.annotation.StringRes uses: Int,
-    @androidx.annotation.StringRes state: Int, code: String, tag: String) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(vertical = FolioSpace.SMALL.dp).semantics(mergeDescendants = true) {}.testTag(tag), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(if (code.isEmpty()) stringResource(name) else "$code · ${stringResource(name)}", style = MaterialTheme.typography.bodyLarge)
-            Text(stringResource(uses), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Text(stringResource(state), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = FolioSpace.SMALL.dp),
-            color = if (tier == PrivilegeTier.STANDARD) FolioColors.Green else MaterialTheme.colorScheme.onSurfaceVariant)
-    }
 }

@@ -29,7 +29,7 @@ model functions          → persist, update state
 - **CMP-4 SHOULD** keep Android framework calls (`PackageManager`, `getSharedPreferences`, intents) out of reusable
   presentation composables; do them in the model, a controller, or an effect at the screen level.
 - **CMP-5 MUST** isolate vendor and version workarounds in one named place with a version guard and a fallback
-  (`DiscoverBounds.kt` is the model), never scattered through screens.
+  (`CameraArea.kt` is the model), never scattered through screens.
 
 ### State in composition
 
@@ -79,7 +79,7 @@ Good:
   `Dispatchers.IO`.
 - No `GlobalScope`, no `runBlocking`, no writes found inside composable bodies.
 - Pagers and most lists are keyed.
-- Vendor workarounds are guarded (`DiscoverBounds`, `FoldBridgeActivity`).
+- Vendor workarounds are guarded (`CameraArea`, `FoldBridgeActivity`).
 
 Not yet:
 
@@ -88,7 +88,7 @@ Not yet:
 - `model.state.value` read in composition at `LauncherScreen.kt:207` and `:479`.
 - Uncached prefs read in composition at `CustomizationSheet.kt:538`.
 - Globals: `FolioSettingsBridge.liveModel` (`FolioTiles.kt:19`), plus mutable globals in `FolioActions.kt:35`,
-  `CustomizationSheet.kt:52`, `Appearance.kt:75`.
+  `CustomizationSheet.kt:52`.
 - 26 `collectAsState()`; 4 `derivedStateOf`; 5 `@Stable`, 3 `@Immutable`; 0 `@Preview`.
 - 25 `Handler(` and 11 `postDelayed`; about 308 `runCatching` with ~19 that log.
 

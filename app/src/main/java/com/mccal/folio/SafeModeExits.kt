@@ -33,10 +33,6 @@ internal object SafeModeExits {
             else -> previousStartMs > 0L && it.timestampMs - previousStartMs in 0 until windowMs
         } }
 
-    /** Whether the process before this one, if it is a new ending, ended in a counted way, so Package Safe Mode may blame a package. */
-    fun crashedLast(exits: List<ExitRecord>, seenUntilMs: Long): Boolean =
-        exits.filter { it.timestampMs > seenUntilMs }.maxByOrNull { it.timestampMs }?.reason in COUNTED
-
     /** Android's record of the last few endings of this app, newest first; empty when it cannot be read. */
     fun read(context: Context): List<ExitRecord> = runCatching {
         context.getSystemService(ActivityManager::class.java).getHistoricalProcessExitReasons(context.packageName, 0, 5)

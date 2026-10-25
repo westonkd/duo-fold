@@ -37,7 +37,7 @@ Every dynamic feature declares one class in its KDoc or PR. The class sets which
 | **D2 Transitional** | One UI state becomes another | Folder open, sheets, island expand, Control Center, context menus |
 | **D3 Interactive** | Motion follows a finger or pointer | Page swipe, drag and drop, dock magnification, widget resize, predictive back |
 | **D4 Adaptive** | The window or posture changes | Fold and unfold, rotation, resize, multi-window, half-open hinge |
-| **D5 Ambient** | Time or the system, with no user action | Clock icon, sunrise/sunset appearance, install rings, Smart Stack rotation, recent-app dots |
+| **D5 Ambient** | Time or the system, with no user action | Clock icon, install rings, Smart Stack rotation, recent-app dots |
 
 Declaration template (for the KDoc or PR):
 
@@ -55,7 +55,7 @@ Animation owner: HomeTiles dock row
 ### State
 
 - **DYN-1 MUST** model dynamic states as a sealed type or enum when there are more than two, not as a set of booleans
-  that allow impossible combinations. `IslandActivity` and `IslandContent` are the model.
+  that allow impossible combinations.
 - **DYN-2 MUST NOT** change source state from an animation callback, frame count or animation end. Animations read
   state; they don't write it.
 - **DYN-3 MUST** give every dynamic element a static, understandable form: what the user sees with animations off, with
@@ -128,7 +128,7 @@ Animation owner: HomeTiles dock row
 
 Good:
 
-- Sealed state for the island (`Island.kt:80`, `:116`, `CutoutIsland.kt:69`), exposed as `StateFlow`s.
+- Now playing and notifications are exposed as `StateFlow`s (`NotificationListener.kt`).
 - `DeviceStatus` is callbacks only, registered on start and removed on stop (`DeviceStatus.kt:68-97`).
 - `Ticker` is one shared clock with `WhileSubscribed(0)`; install rings come from `PackageInstaller.SessionCallback`.
 - Jiggle is one shared infinite transition read in `graphicsLayer` (`Jiggle.kt:69-88`); dock magnification scales in
@@ -143,7 +143,7 @@ Not yet:
 - The Settings page slide in `FolioSheet.kt` is already a spring (`rememberEntrance(stiffness = 500f)`, line 149). The tween at line 161 is only the 250 ms opacity fade of the Settings peek, which is fine. The gap is that entrances use raw numbers (500/1.0, 520/1.0, 600/.82, 900/.85) instead of one `FolioMotion` token. (Corrected 8 Oct 2026; this line used to say the sheet used a tween.)
 - Page settle (`PageGestures.kt:212`) drops the previous settle's velocity when a new drag starts.
 - Private loops: `EverywhereOverlay.kt:184` still polls every 600 ms for a full-screen app. The Smart Stack rotation
-  runs under `repeatOnLifecycle(RESUMED)` now, and `StatusRail` and `MicroHome` take the shared minute tick.
+  runs under `repeatOnLifecycle(RESUMED)` now, and `StatusRail` takes the shared minute tick.
 - Reduce Motion is binary (scale exactly 0), and `DiscoverFrame.kt:44` reads the setting itself.
 - 16 `collectAsState()` left, in `CustomizationSheet.kt`, `StandBy.kt` and `EverywhereOverlay.kt`; everything else
   collects with the lifecycle, the island included.
@@ -155,7 +155,7 @@ Not yet:
 |---|---|---|
 | 1 | Name the springs Folio actually needs (`Settle`, `Quick`, `Firm`, plus `Sheet`, `Menu`, `Bounce` for switches) and move call sites onto them | M |
 | 2 | Sheet motion on a spring, growing from the source, with detents | M |
-| 3 | ~~Smart Stack rotation behind `repeatOnLifecycle`; `StatusRail` and `MicroHome` clocks onto `Ticker`~~ (done) | S |
+| 3 | ~~Smart Stack rotation behind `repeatOnLifecycle`; `StatusRail` clock onto `Ticker`~~ (done) | S |
 | 4 | ~~`collectAsState` → `collectAsStateWithLifecycle`~~ (done for the island, the cover, installs, notifications and the update status). Left: `CustomizationSheet.kt`, `StandBy.kt` (open in other pull requests) and `EverywhereOverlay.kt`, whose window has no lifecycle to follow | S |
 | 5 | ~~`DiscoverFrame` reads Reduce Motion through `reduceMotionEnabled()`~~ (done; it is a View, so it uses the helper `LocalReduceMotion` is built from). **Not** "a scale below 1 counts as Reduce Motion", as this row used to say: a scale of 0.5 means the person wants animations *faster*, not gone. Honouring the scale as a speed, alongside Animation Speed, is the right shape and is its own decision | S |
 | 6 | ~~Live regions for island notices and page changes~~ (done) | S |

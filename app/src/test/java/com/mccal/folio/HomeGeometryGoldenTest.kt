@@ -8,9 +8,8 @@ import java.security.MessageDigest
 
 /**
  * Today's Home layout, pinned. Every window in the shared device list (rotated, and split in half where it is big
- * enough), under every dock placement, two presets (Folio's defaults, and a set of tweaked sliders) and with labels on
- * and off, lays out to a digest of the numbers Home draws from: the page, the grid, the dock, the status rail and the
- * cell positions. The digests are recorded in `src/test/resources/home-geometry-golden.txt`.
+ * enough), under every dock placement and with labels on and off, lays out to a digest of the numbers Home draws from:
+ * the page, the grid, the dock, the status rail and the cell positions. The digests are recorded in `src/test/resources/home-geometry-golden.txt`.
  *
  * It exists so changes to how Home is measured (a third preset, more dock slots, a full-width Home) can prove they
  * left every existing window exactly where it was: with the new settings at their defaults this test must stay green
@@ -32,19 +31,13 @@ class HomeGeometryGoldenTest {
             (if (maxOf(d.width, d.height) >= 800f) listOf(Window("${d.name} split half", maxOf(d.width, d.height) / 2f, minOf(d.width, d.height))) else emptyList())
     }
 
-    private val presets = listOf(
-        "defaults" to LayoutPreset(),
-        "tweaked" to LayoutPreset(iconSize = 52f, rowGap = 6f, dockWidth = 64f, dockPosition = .3f, dockAlignToGrid = false, statusAlignToGrid = false,
-            statusPosition = .5f, columnGap = 24f, dockSpacing = 8f, widgetScale = 1.1f),
-    )
-
     private fun f(x: Float) = x.toBits().toString(16)
 
     private fun digest(g: HomeGeometry): String {
         val cells = HomeCellLayout.forPage(g, listOf(0 to 2))
         val cellXY = (0 until 4 * g.appRows).joinToString(",") { i -> val row = 2 + i / 4; "${f(cells.x(i % 4, row))}:${f(cells.y(row))}" }
         return listOf(g.expanded, g.splitColumns, g.horizontalDock, g.dockBesideRail, g.appRows, g.fitAppRows).joinToString(",") + "|" +
-            listOf(g.homeWidth, g.gridWidth, g.iconSize, g.rowHeight, g.widgetHeight, g.contentTop, g.statusTop, g.dockTop, g.dockHeight,
+            listOf(g.homeWidth, g.gridWidth, g.iconSize, g.rowHeight, g.widgetHeight, g.contentTop, g.contentTop, g.dockTop, g.dockHeight,
                 g.dockRowHeight, g.dockBarHeight, g.cellWidth, g.zoneGap, g.rowGap, g.columnsInset, g.dockPitch,
                 cells.x(2, 0), cells.y(0), cells.spanHeight(0, 2)).joinToString(",") { f(it) } + "|" + cellXY
     }
@@ -53,13 +46,12 @@ class HomeGeometryGoldenTest {
         for (w in windows) {
             val scale = uiScale(w.width, w.height)
             val width = w.width / scale; val height = w.height / scale
-            for (placement in DockPlacement.entries) for ((presetName, preset) in presets) for (labels in listOf(true, false)) {
-                val p = preset.copy(dockPlacement = placement)
-                val base = homeGeometry(width, height, p, labels, statusHeight = 160f)
-                val fit = homeGeometry(width, height, p, labels, statusHeight = 160f, appRows = base.fitAppRows, fillSpace = true)
+            for (placement in DockPlacement.entries) for (labels in listOf(true, false)) {
+                val base = homeGeometry(width, height, placement, labels, statusHeight = 160f)
+                val fit = homeGeometry(width, height, placement, labels, statusHeight = 160f, appRows = base.fitAppRows, fillSpace = true)
                 val text = digest(base) + "#" + digest(fit)
                 val hash = MessageDigest.getInstance("SHA-256").digest(text.toByteArray()).take(6).joinToString("") { "%02x".format(it) }
-                add("${w.name} | $placement | $presetName | labels=$labels | $hash")
+                add("${w.name} | $placement | defaults | labels=$labels | $hash")
             }
         }
     }
@@ -77,7 +69,7 @@ class HomeGeometryGoldenTest {
     }
 
     @Test fun `the sweep covers every window and option`() {
-        assertEquals(windows.size * DockPlacement.entries.size * presets.size * 2, cases().size)
+        assertEquals(windows.size * DockPlacement.entries.size * 2, cases().size)
         assertTrue(windows.any { it.name.contains("split half") } && windows.any { it.name.contains("rotated") })
     }
 }

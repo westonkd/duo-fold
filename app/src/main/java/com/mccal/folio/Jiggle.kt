@@ -124,7 +124,7 @@ internal fun JigglePill(label: String, icon: ImageVector? = null, description: S
 internal fun HomeSearchPill(onClick: () -> Unit) {
     val ink = LocalHomeInk.current
     val frost = if (ink.dark) .45f else .2f
-    Row(Modifier.heightIn(min = 30.dp).clip(CircleShape).liquidGlassOr(CircleShape, frost, GlassRole.CAPSULE, Color.White) { background(Color.White.copy(alpha = frost)) }
+    Row(Modifier.heightIn(min = 30.dp).clip(CircleShape).liquidGlass(CircleShape, frost, GlassRole.CAPSULE, Color.White)
         .clickable(role = Role.Button, onClickLabel = stringResource(R.string.search), onClick = onClick)
         .padding(horizontal = FolioSpace.COMFY.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.Rounded.Search, null, tint = ink.primary, modifier = Modifier.size(15.dp))
@@ -133,7 +133,5 @@ internal fun HomeSearchPill(onClick: () -> Unit) {
     }
 }
 
-/** Extra top inset for the jiggle bar when the Dynamic Island is on, so its pills don't sit under the island. */
-internal val JIGGLE_BAR_ISLAND_GAP = 8.dp
 /** Where the jiggle bar's bottom edge falls (top inset + 48dp touch height + a little air), for Home's first-row clearance. */
-internal val JIGGLE_BAR_BOTTOM = JIGGLE_BAR_ISLAND_GAP + 48.dp + 4.dp
+internal val JIGGLE_BAR_BOTTOM = FolioSpace.HAIR.dp + 48.dp + 4.dp

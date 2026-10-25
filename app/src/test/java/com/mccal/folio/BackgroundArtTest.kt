@@ -7,9 +7,8 @@ import java.io.File
 /**
  * The art Folio ships, checked against the files that actually ship.
  *
- * `DES-2b` says Folio must be able to name the artist, the work and the license for every image it ships. For art
- * that arrives from the Market that is enforced when the package is read. For art inside the app there is no such
- * moment, so it is enforced here: a piece added without a credit, or with a credit but no picture, fails the build.
+ * `DES-2b` says Folio must be able to name the artist, the work and the license for every image it ships. It is
+ * enforced here: a piece added without a credit, or with a credit but no picture, fails the build.
  */
 class BackgroundArtTest {
     private val root = generateSequence(File("").absoluteFile) { it.parentFile }

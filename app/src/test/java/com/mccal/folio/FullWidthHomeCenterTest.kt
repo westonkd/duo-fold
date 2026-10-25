@@ -12,36 +12,28 @@ import org.junit.Test
  */
 class FullWidthHomeCenterTest {
     // The cover screen with the dock at the bottom and no Side Bar: Full-width Home.
-    private fun fullWidth(columnGap: Float) = homeGeometry(475f, 751f,
-        LayoutPreset(dockPlacement = DockPlacement.BOTTOM, columnGap = columnGap), true, statusRail = false)
+    private fun fullWidth() = homeGeometry(475f, 751f, DockPlacement.BOTTOM, true, statusRail = false)
 
     @Test fun `the setup really is Full-width Home`() {
-        val g = fullWidth(DEFAULT_COLUMN_GAP)
+        val g = fullWidth()
         assertTrue(g.horizontalDock)
         assertTrue(!g.dockBesideRail)
         assertEquals(475f - 32f, g.gridWidth, .01f)
     }
 
-    @Test fun `narrowed columns stay centered in a full-width page`() {
-        val g = fullWidth(8f) // less space between columns than Folio's own narrows them
-        val used = 4f * g.cellWidth
-        assertTrue("the columns are narrower than the grid here", used < g.gridWidth - 1f)
-        assertEquals("the same space on both sides of the columns", (g.gridWidth - used) / 2f, g.columnsInset, .01f)
-    }
-
     @Test fun `a page beside the Side Bar keeps its columns where they were`() {
-        val g = homeGeometry(475f, 751f, LayoutPreset(dockPlacement = DockPlacement.SIDE, columnGap = 8f), true)
+        val g = homeGeometry(475f, 751f, DockPlacement.SIDE, true)
         assertEquals(0f, g.columnsInset, 0f)
     }
 
     @Test fun `the App Library has the same edges on both sides when the page spans the window`() {
         for (leftHanded in listOf(false, true)) {
-            val edges = libraryEdges(statusInCorner = false, dockWidth = 68f, leftHanded = leftHanded, spansWindow = true)
+            val edges = libraryEdges(statusInCorner = false, leftHanded = leftHanded, spansWindow = true)
             assertEquals(edges.calculateLeftPadding(LayoutDirection.Ltr), edges.calculateRightPadding(LayoutDirection.Ltr))
             assertEquals(16.dp, edges.calculateLeftPadding(LayoutDirection.Ltr))
         }
         // Beside the Side Bar nothing changes: Home's 16 dp on the screen edge, none against the rail.
-        val beside = libraryEdges(statusInCorner = false, dockWidth = 68f, leftHanded = false)
+        val beside = libraryEdges(statusInCorner = false, leftHanded = false)
         assertEquals(16.dp, beside.calculateLeftPadding(LayoutDirection.Ltr))
         assertEquals(0.dp, beside.calculateRightPadding(LayoutDirection.Ltr))
     }

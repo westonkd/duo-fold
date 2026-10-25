@@ -102,12 +102,8 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 internal fun ExpandedWorkspace(
-    nativePager: androidx.compose.foundation.pager.PagerState,
+    pager: androidx.compose.foundation.pager.PagerState,
     motion: WorkspacePageMotion,
-    firstHome: Int,
-    leftPageContent: @Composable (Modifier) -> Unit,
-    /** iPad-style Today View kept beside Home in place of the unfolded-only page. */
-    besideContent: (@Composable (Modifier) -> Unit)? = null,
     visibleHomePages: Int,
     panelWidth: Dp,
     contentHeight: Dp,
@@ -144,62 +140,47 @@ internal fun ExpandedWorkspace(
     val initialHomeOrigin = with(density) { panelWidth.toPx() }
     val homePaneWidth = with(density) { (geometry.gridWidth + 16f).dp.toPx() }
     val stateHolder = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
-    val visibleHomes by remember(nativePager, motion, firstHome, visibleHomePages, initialHomeOrigin, homePaneWidth) {
+    val visibleHomes by remember(pager, motion, visibleHomePages, initialHomeOrigin, homePaneWidth) {
         derivedStateOf(structuralEqualityPolicy()) {
-            val physicalPosition = nativePager.currentPage + nativePager.currentPageOffsetFraction
+            val physicalPosition = pager.currentPage + pager.currentPageOffsetFraction
             val scroll = motion.offset(physicalPosition)
             val intersectingHomes = (0 until visibleHomePages).filter { page ->
                 val start = initialHomeOrigin + page * stride
                 start + homePaneWidth > scroll && start < scroll + viewportWidth
             }
-            val nearestLogicalPage = nativePager.currentPage - firstHome
-            // While Discover is current, keep the initial Home pair cached. Otherwise Home 2
-            // is recreated midway through the first native exit and provider inflation can
-            // block the gesture frame even though that pane began offscreen.
-            val retentionAnchor = nearestLogicalPage.coerceAtLeast(0)
+            val retentionAnchor = pager.currentPage
             (intersectingHomes + (retentionAnchor - 1..retentionAnchor + 1))
                 .filter { it in 0 until visibleHomePages }.distinct().sorted()
         }
     }
     val place: Modifier.(Float) -> Modifier = { x ->
         offset {
-            val physicalPosition = nativePager.currentPage + nativePager.currentPageOffsetFraction
+            val physicalPosition = pager.currentPage + pager.currentPageOffsetFraction
             IntOffset((x - motion.offset(physicalPosition)).roundToInt(), 0)
         }
     }
-    val showDiscover by remember(nativePager, firstHome) {
-        derivedStateOf(structuralEqualityPolicy()) {
-            firstHome > 0 && nativePager.currentPage + nativePager.currentPageOffsetFraction <= firstHome + .25f
-        }
-    }
     val leadingX = initialHomeOrigin - stride
-    val showLeading by remember(nativePager, motion, firstHome, panelWidth, leadingX, homePaneWidth) {
+    val showLeading by remember(pager, motion, panelWidth, leadingX, homePaneWidth) {
         derivedStateOf(structuralEqualityPolicy()) {
-            val physicalPosition = nativePager.currentPage + nativePager.currentPageOffsetFraction
+            val physicalPosition = pager.currentPage + pager.currentPageOffsetFraction
             val scroll = motion.offset(physicalPosition)
-            panelWidth.value > 0f && physicalPosition - firstHome < 1f &&
+            panelWidth.value > 0f && physicalPosition < 1f &&
                 leadingX - scroll + homePaneWidth > 0f
         }
     }
-    val libraryPhysicalPage = firstHome + visibleHomePages
-    val showLibrary by remember(nativePager, libraryPhysicalPage) {
+    val libraryPhysicalPage = visibleHomePages
+    val showLibrary by remember(pager, libraryPhysicalPage) {
         derivedStateOf(structuralEqualityPolicy()) {
-            nativePager.currentPage + nativePager.currentPageOffsetFraction >= libraryPhysicalPage - 1.25f
+            pager.currentPage + pager.currentPageOffsetFraction >= libraryPhysicalPage - 1.25f
         }
     }
 
     Box(Modifier.fillMaxSize().clipToBounds().testTag("expanded-workspace")) {
-        if (showDiscover) {
-            key("discover-pane") {
-                Box(Modifier.place(-viewportWidth).fillMaxSize()) { leftPageContent(Modifier.fillMaxSize()) }
-            }
-        }
-
         if (showLeading) {
             key("expanded-leading-home") {
                 Box(Modifier.place(leadingX).width((geometry.gridWidth + 16f).dp).fillMaxHeight()
                     .testTag("expanded-leading-home")) {
-                    if (besideContent != null) besideContent(Modifier.fillMaxSize()) else HomePagePane(
+                    HomePagePane(
                         -1, state, previewSlots, previewLeadingSlots, previewWidgetPlacements, appsById, geometry, contentHeight, bottomSpace,
                         widgets, drag, target, insertionTarget, showLargeWidget = true,
                         onLaunch = onLaunchFrom, onActions = onActions, onWidget = onWidget,
@@ -334,9 +315,8 @@ internal fun HomePagePane(
         val editRoom by animateDpAsState(if (roomWanted && !geometry.expanded) (JIGGLE_BAR_BOTTOM - geometry.contentTop.dp).coerceAtLeast(0.dp) else 0.dp, label = "jiggle room")
         Column(Modifier.offset(x = 16.dp).width(geometry.gridWidth.dp).fillMaxHeight()
             .verticalScroll(homeScroll).padding(top = geometry.contentTop.dp + editRoom, bottom = FolioSpace.SMALL.dp)) {
-            val (pageIcon, pageLabels) = (state.pageStyles[page] ?: PageStyle()).apply(geometry, state.labels)
             SharedHomeGrid(page, state.homeSlots, state.leadingSlots, previewSlots, previewLeadingSlots, previewWidgetPlacements,
-                appsById, geometry.copy(iconSize = pageIcon), pageLabels, widgets, drag, target,
+                appsById, geometry.copy(iconSize = geometry.cellIconSize(state.labels)), state.labels, widgets, drag, target,
                 folders = state.folders, onLaunch = onLaunch, onActions = onActions, onWidget = onWidget,
                 onFolder = onFolder, onEmptyWidget = onEmptyWidget, onMove = onMove,
                 onEmptyDoubleTap = if (doubleTapAction == FolioAction.NONE) null else ({ FolioActions.run(context, doubleTapAction) }))
@@ -526,9 +506,9 @@ internal fun SharedHomeGrid(
                 val localIndex = renderIndex - pageStart
                 val row = localIndex / GRID_COLUMNS
                 val place = with(density) { IntOffset(cellX(localIndex % GRID_COLUMNS, row).toPx().roundToInt(), rowTop(row).dp.toPx().roundToInt()) }
-                // With the motion pass, a folder pushed along by a drag slides with the apps around it, on the same stiff spring;
-                // without it, it jumps as it always did. Only while rearranging: a new screen size (folding) places it at once.
-                val slides = FolioMotion.v2 && (drag.active || edit.active || layoutSettling)
+                // A folder pushed along by a drag slides with the apps around it, on the same stiff spring. Only while
+                // rearranging: a new screen size (folding) places it at once.
+                val slides = drag.active || edit.active || layoutSettling
                 val placed by animateIntOffsetAsState(place,
                     animationSpec = if (slides) FolioMotion.spring<IntOffset>(FolioMotion.Snap) else androidx.compose.animation.core.snap(),
                     label = "folderSlide ${folder.id}")

@@ -28,73 +28,33 @@ import kotlin.math.abs
 
 @RunWith(AndroidJUnit4::class)
 class AppearanceBackgroundIntegrationTest {
-    private val compose = createAndroidComposeRule<MainActivity>()
-    @get:Rule val rules = org.junit.rules.RuleChain.outerRule(WithoutNativeFeed()).around(compose)
+    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     private fun model() = ViewModelProvider(compose.activity)[LauncherModel::class.java]
     private fun ready() = compose.waitUntil(15_000) { !model().state.value.loading }
     private fun settings() {
         if (compose.onAllNodesWithTag("background-choose")
                 .fetchSemanticsNodes(atLeastOneRootRequired = false).isEmpty()) {
-            if (compose.onAllNodesWithTag("customization-wallpaper")
+            if (compose.onAllNodesWithTag("customization-home")
                     .fetchSemanticsNodes(atLeastOneRootRequired = false).isEmpty()) {
                 compose.openHomeCustomization()
             }
-            compose.onNodeWithTag("customization-wallpaper").performScrollTo().performClick()
+            compose.onNodeWithTag("customization-home").performScrollTo().performClick()
         }
         compose.onNodeWithTag("background-choose").assertExists()
     }
 
-    @Test fun appearanceAndBackgroundPersistRecoverAndLeaveLayoutUntouched() {
+    @Test fun backgroundPersistsRecoversAndLeavesLayoutUntouched() {
         ready()
         val layout = model().state.value.layout
-        val appearancePrefs = compose.activity.getSharedPreferences("appearance", Context.MODE_PRIVATE)
         val backgroundPrefs = compose.activity.getSharedPreferences("launcher_background", Context.MODE_PRIVATE)
-        val oldAppearance = appearancePrefs.all.toMap()
         val oldBackground = backgroundPrefs.all.toMap()
-        val file = launcherBackgroundFile(compose.activity)
+        val file = launcherPhotoFile(compose.activity)
         val oldPhoto = file.takeIf { it.isFile }?.readBytes()
         val oldStagedPhotos = stagedPhotoFiles(compose.activity)
         try {
-            appearancePrefs.edit().clear().commit()
             backgroundPrefs.edit().clear().commit(); file.delete()
             compose.runOnUiThread { LauncherBackgroundCache.changed(null) }
             compose.activityRule.scenario.recreate(); ready(); settings()
-            compose.onNodeWithTag("appearance-light").assertIsSelected()
-
-            compose.onNodeWithTag("appearance-dark").performScrollTo().performClick()
-            assertEquals("DARK", appearancePrefs.getString("mode", null))
-            compose.onNodeWithTag("appearance-sunrise_sunset").performScrollTo().performClick()
-            compose.waitUntil(5_000) {
-                compose.onAllNodesWithTag("appearance-latitude")
-                    .fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
-            }
-            compose.onNodeWithTag("appearance-latitude").performScrollTo().performTextInput("99")
-            compose.onNodeWithTag("appearance-longitude").performScrollTo().performTextInput("0")
-            compose.onNodeWithTag("appearance-save-place").performScrollTo().assertIsDisplayed().performClick()
-            val coordinateError = hasText("Enter a latitude from −90 to 90 and longitude from −180 to 180.")
-            try {
-                compose.waitUntil(5_000) {
-                    runCatching { compose.onNode(coordinateError).assertIsDisplayed() }.isSuccess
-                }
-            } catch (failure: Throwable) {
-                writeFailureArtifacts("manual-feedback", appearancePrefs, file)
-                throw failure
-            }
-            compose.onNodeWithTag("appearance-place").performScrollTo().performTextInput("Equator")
-            compose.onNodeWithTag("appearance-latitude").performScrollTo().performTextReplacement("0")
-            compose.onNodeWithTag("appearance-longitude").performScrollTo().performTextReplacement("0")
-            compose.onNodeWithTag("appearance-save-place").performScrollTo().assertIsDisplayed().performClick()
-            try {
-                compose.waitUntil(5_000) { appearancePrefs.getString("lat", null) == "0.0" }
-            } catch (failure: Throwable) {
-                writeFailureArtifacts("manual-valid-save", appearancePrefs, file)
-                throw failure
-            }
-            assertEquals("SUNRISE_SUNSET", appearancePrefs.getString("mode", null))
-            assertEquals("0.0", appearancePrefs.getString("lat", null))
-            compose.activityRule.scenario.recreate(); ready(); settings()
-            compose.onNodeWithTag("appearance-sunrise_sunset").assertIsSelected()
-
             val bitmap = Bitmap.createBitmap(12, 8, Bitmap.Config.ARGB_8888).apply { eraseColor(0xff31596d.toInt()) }
             val bytes = ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }.toByteArray()
             file.writeBytes(bytes); backgroundPrefs.edit().putBoolean("photoEnabled", true).commit()
@@ -108,7 +68,7 @@ class AppearanceBackgroundIntegrationTest {
             assertFalse(backgroundPrefs.contains("pickerPending"))
             assertEquals(layout, model().state.value.layout)
         } finally {
-            restore(appearancePrefs, oldAppearance); restore(backgroundPrefs, oldBackground)
+            restore(backgroundPrefs, oldBackground)
             if (oldPhoto == null) file.delete() else file.writeBytes(oldPhoto)
             restoreStagedPhotoFiles(compose.activity, oldStagedPhotos)
             compose.runOnUiThread { LauncherBackgroundCache.changed(null) }
@@ -122,7 +82,7 @@ class AppearanceBackgroundIntegrationTest {
         val appContext = compose.activity.applicationContext
         val backgroundPrefs = appContext.getSharedPreferences("launcher_background", Context.MODE_PRIVATE)
         val oldBackground = backgroundPrefs.all.toMap()
-        val privatePhoto = launcherBackgroundFile(appContext)
+        val privatePhoto = launcherPhotoFile(appContext)
         val oldPhoto = privatePhoto.takeIf(File::isFile)?.readBytes()
         val oldStagedPhotos = stagedPhotoFiles(appContext)
         val resolver = appContext.contentResolver
@@ -218,20 +178,20 @@ class AppearanceBackgroundIntegrationTest {
             assertTrue(abs(android.graphics.Color.green(pixel) - 0x6f) <= 16)
             assertTrue(abs(android.graphics.Color.blue(pixel) - 0x42) <= 16)
             selected.recycle()
-            LiveDiscover.owner.get()?.let { owner ->
+            FolioActions.home?.get()?.let { owner ->
                 assertEquals(layout, ViewModelProvider(owner)[LauncherModel::class.java].state.value.layout)
             }
         } finally {
             InstrumentationRegistry.getInstrumentation().runOnMainSync {
-                LiveDiscover.owner.get()?.backgrounds?.cancelPreview()
-                LiveDiscover.owner.get()?.backgrounds?.cancelPendingSelection()
+                FolioActions.home?.get()?.backgrounds?.cancelPreview()
+                FolioActions.home?.get()?.backgrounds?.cancelPendingSelection()
             }
             resolver.delete(media, null, null)
             restore(backgroundPrefs, oldBackground)
             if (oldPhoto == null) privatePhoto.delete() else privatePhoto.writeBytes(oldPhoto)
             restoreStagedPhotoFiles(appContext, oldStagedPhotos)
             InstrumentationRegistry.getInstrumentation().runOnMainSync { LauncherBackgroundCache.changed(null) }
-            LiveDiscover.owner.get()?.let { owner ->
+            FolioActions.home?.get()?.let { owner ->
                 assertEquals(layout, ViewModelProvider(owner)[LauncherModel::class.java].state.value.layout)
             }
         }
@@ -242,7 +202,7 @@ class AppearanceBackgroundIntegrationTest {
         val appContext = compose.activity.applicationContext
         val prefs = appContext.getSharedPreferences("launcher_background", Context.MODE_PRIVATE)
         val oldPrefs = prefs.all.toMap()
-        val committedFile = launcherBackgroundFile(appContext)
+        val committedFile = launcherPhotoFile(appContext)
         val oldPhoto = committedFile.takeIf(File::isFile)?.readBytes()
         val oldStagedPhotos = stagedPhotoFiles(appContext)
         val operation = "cancel-preview-${System.currentTimeMillis()}"
@@ -297,14 +257,14 @@ class AppearanceBackgroundIntegrationTest {
     }
 
     private fun stagedPhotoFiles(context: Context): Map<String, ByteArray> {
-        val committed = launcherBackgroundFile(context)
+        val committed = launcherPhotoFile(context)
         return committed.parentFile?.listFiles { file ->
             file.name.startsWith("${committed.name}.") && file.name.endsWith(".tmp")
         }?.associate { it.name to it.readBytes() }.orEmpty()
     }
 
     private fun restoreStagedPhotoFiles(context: Context, files: Map<String, ByteArray>) {
-        val committed = launcherBackgroundFile(context)
+        val committed = launcherPhotoFile(context)
         committed.parentFile?.listFiles { file ->
             file.name.startsWith("${committed.name}.") && file.name.endsWith(".tmp")
         }?.forEach(File::delete)
@@ -323,7 +283,7 @@ class AppearanceBackgroundIntegrationTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val device = UiDevice.getInstance(instrumentation)
         val directory = instrumentation.targetContext.cacheDir
-        val owner = LiveDiscover.owner.get()
+        val owner = FolioActions.home?.get()
         val controller = owner?.backgrounds
         File(directory, "$name-state.txt").writeText(buildString {
             appendLine("package=${device.currentPackageName}")

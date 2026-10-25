@@ -10,26 +10,20 @@ import org.junit.Test
 class ButtonsRoomTest {
 
     @Test fun `off means no room`() {
-        assertEquals(0f, buttonsRoomDp("""{"buttonBar":false,"buttonBarHeight":52}""", 0f))
+        assertEquals(0f, buttonsRoomDp("""{"buttonBar":false}""", 0f))
     }
 
     @Test fun `on and at the bottom asks for its height`() {
-        assertEquals(52f, buttonsRoomDp("""{"buttonBar":true,"buttonBarHeight":52}""", 0f))
-        assertEquals(60f, buttonsRoomDp("""{"buttonBar":true,"buttonBarHeight":60}""", 0f))
-    }
-
-    @Test fun `a height outside what Folio allows is brought back inside it`() {
-        assertEquals(60f, buttonsRoomDp("""{"buttonBar":true,"buttonBarHeight":900}""", 0f))
-        assertEquals(44f, buttonsRoomDp("""{"buttonBar":true,"buttonBarHeight":2}""", 0f))
+        assertEquals(BUTTON_BAR_HEIGHT_DP, buttonsRoomDp("""{"buttonBar":true}""", 0f))
     }
 
     @Test fun `lifted out of the way asks for nothing`() {
         // Dragging the buttons up is how someone moves them off a keyboard; reserving room would undo that.
-        assertEquals(0f, buttonsRoomDp("""{"buttonBar":true,"buttonBarHeight":52}""", 120f))
+        assertEquals(0f, buttonsRoomDp("""{"buttonBar":true}""", 120f))
     }
 
     @Test fun `a nudge is not a lift`() {
-        assertEquals(52f, buttonsRoomDp("""{"buttonBar":true,"buttonBarHeight":52}""", 4f))
+        assertEquals(BUTTON_BAR_HEIGHT_DP, buttonsRoomDp("""{"buttonBar":true}""", 4f))
     }
 
     @Test fun `nonsense settings ask for nothing rather than crashing a keyboard`() {

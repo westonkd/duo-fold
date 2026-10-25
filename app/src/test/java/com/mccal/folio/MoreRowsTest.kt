@@ -72,27 +72,25 @@ class MoreRowsTest {
         assertEquals(layout, LayoutHistory.decodeLayout(LayoutHistory.encodeLayout(layout)))
     }
 
-    @Test fun `automatic rows are the fewest any measured screen fits, and fixed 4 is always 4`() {
-        assertEquals(4, effectiveHomeRows(0, 0, 0))
-        assertEquals(5, effectiveHomeRows(0, 5, 0))
-        assertEquals(6, effectiveHomeRows(0, 0, 6))
-        assertEquals(5, effectiveHomeRows(0, 7, 5))
-        assertEquals(5, effectiveHomeRows(0, 5, 7))
-        assertEquals(4, effectiveHomeRows(4, 7, 7))
-        assertEquals(7, effectiveHomeRows(0, 9, 9))
+    @Test fun `rows are the fewest any measured screen fits`() {
+        assertEquals(4, effectiveHomeRows(0, 0))
+        assertEquals(5, effectiveHomeRows(5, 0))
+        assertEquals(6, effectiveHomeRows(0, 6))
+        assertEquals(5, effectiveHomeRows(7, 5))
+        assertEquals(5, effectiveHomeRows(5, 7))
+        assertEquals(7, effectiveHomeRows(9, 9))
         assertEquals(5, LauncherState(homeFitCompact = 5, homeFitExpanded = 6).homeAppRows)
-        assertEquals(4, LauncherState(homeRows = 4, homeFitCompact = 5, homeFitExpanded = 6).homeAppRows)
     }
 
-    @Test fun `the upright inner screen records its own fit and Automatic takes the fewest of all three`() {
+    @Test fun `the upright inner screen records its own fit and Home takes the fewest of all three`() {
         val s = LauncherState(homeFitCompact = 6, homeFitExpanded = 6)
         assertEquals(6, s.homeAppRows)
         val measured = s.withHomeFit(LayoutScreen.INNER_UPRIGHT, 5)
         assertEquals(6, measured.homeFitExpanded) // upright no longer overwrites the sideways inner fit
         assertEquals(5, measured.homeFitFor(LayoutScreen.INNER_UPRIGHT))
         assertEquals(5, measured.homeAppRows)
-        assertEquals(4, effectiveHomeRows(0, 6, 6, 4))
-        assertEquals(6, effectiveHomeRows(0, 6, 6, 0)) // not measured yet doesn't count
+        assertEquals(4, effectiveHomeRows(6, 6, 4))
+        assertEquals(6, effectiveHomeRows(6, 6, 0)) // not measured yet doesn't count
     }
 
     @Test fun `new apps skip rows Home doesn't show and continue on the next page`() {
@@ -117,7 +115,7 @@ class MoreRowsTest {
         assertEquals("a${shown - 1}", dropApp(HomeLayout(full, emptyList()), "new", DropTarget.Home(shown - 1)).slotAt(shown))
     }
 
-    @Test fun `widget spots, candidates and arrange like iPhone use only shown rows`() {
+    @Test fun `widget spots and candidates use only shown rows`() {
         val shown = visibleHomeRows(4) * GRID_COLUMNS
         val layout = HomeLayout(List(shown) { "a$it" }, List(4) { null }, emptyList())
         assertEquals(1 to homeCellIndex(1, 0), firstFreeWidgetSpot(layout, 2, 2, appRows = 4))
@@ -125,12 +123,6 @@ class MoreRowsTest {
         assertNull(firstFreeWidgetSpot(layout, 2, 7, appRows = 4))
         assertNull(widgetCandidate(layout, 9, shown, 2, 2, rows = visibleHomeRows(4)))
         assertNotNull(widgetCandidate(layout, 9, shown, 2, 2))
-        // Displaced apps move to page 2's shown cells.
-        val first = HomeLayout(List(HOME_CELLS + shown) { if (it < 24) "old$it" else if (it >= HOME_CELLS) "p$it" else null }, List(4) { null })
-        val arranged = arrangeLikeIPhone(first, mapOf(IPhoneApp.values().first() to "iphone"), appRows = 4)
-        val displaced = arranged.slots.withIndex().filter { (i, id) -> id != null && first.slots.getOrNull(i) != id && id != "iphone" }
-        assertTrue(displaced.isNotEmpty())
-        assertTrue(displaced.all { (i, _) -> homeCellShown(i, 4) })
     }
 
     @Test fun `pages draw the shown rows, or more where something already sits lower`() {
