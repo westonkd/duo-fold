@@ -22,6 +22,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.animation.core.Animatable
+import androidx.compose.ui.layout.layout
+import kotlin.math.roundToInt
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.ui.draw.clip
@@ -124,12 +128,26 @@ internal fun JigglePill(label: String, icon: ImageVector? = null, description: S
 internal fun HomeSearchPill(onClick: () -> Unit) {
     val ink = LocalHomeInk.current
     val frost = if (ink.dark) .45f else .2f
-    Row(Modifier.heightIn(min = 30.dp).clip(CircleShape).liquidGlass(CircleShape, frost, GlassRole.CAPSULE, Color.White)
-        .clickable(role = Role.Button, onClickLabel = stringResource(R.string.search), onClick = onClick)
-        .padding(horizontal = FolioSpace.COMFY.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Rounded.Search, null, tint = ink.primary, modifier = Modifier.size(15.dp))
-        Spacer(Modifier.width(5.dp))
-        Text(stringResource(R.string.search), color = ink.primary, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.Medium)
+    val reduceMotion = LocalReduceMotion.current
+    val reveal = remember { Animatable(if (reduceMotion) 1f else 0f) }
+    LaunchedEffect(Unit) { reveal.animateTo(1f, FolioMotion.spring(FolioMotion.Settle)) }
+    Box(Modifier
+        .layout { measurable, constraints ->
+            val collapsed = 30.dp.roundToPx()
+            val full = measurable.maxIntrinsicWidth(constraints.maxHeight).coerceAtLeast(collapsed)
+            val shown = (collapsed + (full - collapsed) * reveal.value).roundToInt().coerceAtLeast(collapsed)
+            val placeable = measurable.measure(constraints.copy(minWidth = shown, maxWidth = shown))
+            layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+        }
+        .heightIn(min = 30.dp).clip(CircleShape).liquidGlass(CircleShape, frost, GlassRole.CAPSULE, Color.White)
+        .clickable(role = Role.Button, onClickLabel = stringResource(R.string.search), onClick = onClick),
+        contentAlignment = Alignment.Center) {
+        Row(Modifier.wrapContentWidth(unbounded = true).padding(horizontal = FolioSpace.COMFY.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.Search, null, tint = ink.primary, modifier = Modifier.size(15.dp))
+            Spacer(Modifier.width(5.dp))
+            Text(stringResource(R.string.search), color = ink.primary, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.Medium)
+        }
     }
 }
 

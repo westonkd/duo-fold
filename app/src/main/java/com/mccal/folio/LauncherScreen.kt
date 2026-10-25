@@ -733,19 +733,22 @@ fun LauncherScreen(
                     else launcherActivity.openAndroidShade(panel)
                 },
             )) {
-            val pagerModifier = Modifier.align(if (state.leftHanded) Alignment.TopEnd else Alignment.TopStart)
-                .fillMaxHeight().width(pagerWidth)
-                .testTag("app-pager")
+            val dockColumn = contentWidth - pagerWidth
+            val clearOfDockColumn = Modifier.padding(start = if (state.leftHanded) dockColumn else 0.dp,
+                end = if (state.leftHanded) 0.dp else dockColumn)
+            val pagerSemantics = Modifier.testTag("app-pager")
                 .semantics { stateDescription = if (pager.currentPage == visibleHomePages) launcherActivity.getString(R.string.all_apps) else launcherActivity.getString(R.string.home_page_1_d_of_2_d, pager.currentPage + 1, visibleHomePages)
                     // Polite: TalkBack says the new page when a swipe lands, without cutting off what it was reading (A11Y-7).
                     liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite }
             if (geometry.expanded) {
-                Box(pagerModifier) {
+                Box(Modifier.fillMaxSize()) {
                     // PagerState remains the source of truth for snapping, accessibility state, and programmatic page requests.
-                    HorizontalPager(pager, Modifier.fillMaxSize(), userScrollEnabled = false,
+                    HorizontalPager(pager, Modifier.align(if (state.leftHanded) Alignment.TopEnd else Alignment.TopStart)
+                        .fillMaxHeight().width(pagerWidth).then(pagerSemantics), userScrollEnabled = false,
                         key = { if (it == visibleHomePages) "library" else "home-$it" }) { }
                     ExpandedWorkspace(
                         pager = pager, motion = workspaceMotion!!,
+                        dockColumn = dockColumn, dockColumnLeads = state.leftHanded,
                         visibleHomePages = visibleHomePages, panelWidth = panelWidth,
                         contentHeight = contentHeight, bottomSpace = bottomSpace, geometry = geometry,
                         state = state, previewSlots = previewLayout.slots, previewLeadingSlots = previewLayout.leadingSlots,
@@ -763,37 +766,39 @@ fun LauncherScreen(
                     )
                 }
             } else {
-                HorizontalPager(pager, pagerModifier,
+                HorizontalPager(pager, Modifier.fillMaxSize().then(pagerSemantics),
                     // Keep adjacent Home panes attached so ordinary back-and-forth paging does
                     // not synchronously inflate provider RemoteViews inside the gesture frame.
                     beyondViewportPageCount = 1,
                     userScrollEnabled = !drag.active && !resize.active, flingBehavior = pageFling,
                     key = { if (it == visibleHomePages) "library" else "home-$it" }) { page ->
-                    if (page == visibleHomePages) {
-                        AppLibrary(state, libraryQuery, { libraryQuery = it }, onLaunch, model::setPinned,
-                            // Unfolded portrait: the Side Bar's status capsule sits in the top corner, so the library keeps
-                            // the same side margin Home does instead of running underneath it.
-                            onActions = { overlays.menu = it.id }, modifier = Modifier.fillMaxSize()
-                                .graphicsLayer { val b = libraryBack; scaleX = 1f - .14f * b; scaleY = scaleX; alpha = 1f - .35f * b; translationX = size.width * .08f * b }
-                                .padding(top = FolioSpace.LARGE.dp, bottom = bottomSpace)
-                                .padding(libraryEdges(geometry.horizontalDock && !geometry.dockBesideRail && state.verticalStatus, state.leftHanded,
-                                    spansWindow = geometry.horizontalDock && !geometry.dockBesideRail)).testTag("library-page"),
-                            drag = drag, page = visibleHomePages, onLaunchFrom = onLaunchFrom, onTurnOnWork = { model.turnOnWork(it) })
-                    } else {
-                        // Centered beside the rail when the grid is narrower than the space (short, wide windows).
-                        Row(Modifier.fillMaxSize().testTag("home-surface"), horizontalArrangement = Arrangement.Center) {
-                            HomePagePane(page, state, previewLayout.slots, previewLayout.leadingSlots, previewLayout.widgetPlacements, appsById, geometry, contentHeight,
-                                bottomSpace, widgets, drag, target, insertionTarget, showLargeWidget = false,
-                                onLaunch = onLaunchFrom, onActions = { overlays.menu = it.id },
-                                onWidget = { picker.slot = it; sheet = "widgetActions" },
-                                onFolder = { overlays.folder = it },
-                                onEmptyWidget = onEmptyLongPress,
-                                onMove = { id, offset -> model.move(id, offset) },
-                                onProblem = onProblem)
-                            // The pane starts with a 16 dp margin before its grid. With nothing beside the page (dock at the
-                            // bottom, no Side Bar) the Row centers the page in the window, so the same margin after it keeps
-                            // the grid itself centered instead of 8 dp to the right.
-                            if (geometry.horizontalDock && !geometry.dockBesideRail) Spacer(Modifier.width(FolioSpace.LARGE.dp))
+                    Box(clearOfDockColumn.fillMaxSize()) {
+                        if (page == visibleHomePages) {
+                            AppLibrary(state, libraryQuery, { libraryQuery = it }, onLaunch, model::setPinned,
+                                // Unfolded portrait: the Side Bar's status capsule sits in the top corner, so the library keeps
+                                // the same side margin Home does instead of running underneath it.
+                                onActions = { overlays.menu = it.id }, modifier = Modifier.fillMaxSize()
+                                    .graphicsLayer { val b = libraryBack; scaleX = 1f - .14f * b; scaleY = scaleX; alpha = 1f - .35f * b; translationX = size.width * .08f * b }
+                                    .padding(top = FolioSpace.LARGE.dp, bottom = bottomSpace)
+                                    .padding(libraryEdges(geometry.horizontalDock && !geometry.dockBesideRail && state.verticalStatus, state.leftHanded,
+                                        spansWindow = geometry.horizontalDock && !geometry.dockBesideRail)).testTag("library-page"),
+                                drag = drag, page = visibleHomePages, onLaunchFrom = onLaunchFrom, onTurnOnWork = { model.turnOnWork(it) })
+                        } else {
+                            // Centered beside the rail when the grid is narrower than the space (short, wide windows).
+                            Row(Modifier.fillMaxSize().testTag("home-surface"), horizontalArrangement = Arrangement.Center) {
+                                HomePagePane(page, state, previewLayout.slots, previewLayout.leadingSlots, previewLayout.widgetPlacements, appsById, geometry, contentHeight,
+                                    bottomSpace, widgets, drag, target, insertionTarget, showLargeWidget = false,
+                                    onLaunch = onLaunchFrom, onActions = { overlays.menu = it.id },
+                                    onWidget = { picker.slot = it; sheet = "widgetActions" },
+                                    onFolder = { overlays.folder = it },
+                                    onEmptyWidget = onEmptyLongPress,
+                                    onMove = { id, offset -> model.move(id, offset) },
+                                    onProblem = onProblem)
+                                // The pane starts with a 16 dp margin before its grid. With nothing beside the page (dock at the
+                                // bottom, no Side Bar) the Row centers the page in the window, so the same margin after it keeps
+                                // the grid itself centered instead of 8 dp to the right.
+                                if (geometry.horizontalDock && !geometry.dockBesideRail) Spacer(Modifier.width(FolioSpace.LARGE.dp))
+                            }
                         }
                     }
                 }
@@ -891,8 +896,9 @@ fun LauncherScreen(
                                 }
                             }
                         }.description(R.string.page_scrubber),
-                        transitionSpec = { androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(180)) togetherWith
-                            androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(120)) },
+                        transitionSpec = { (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(180)) togetherWith
+                            androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(120)))
+                            .using(androidx.compose.animation.SizeTransform(clip = false)) },
                         contentAlignment = Alignment.Center) { view ->
                         if (view == StripView.PILL) HomeSearchPill { if (!state.googleSearch || !onGoogleSearch(null)) launcherActivity.openSpotlight() }
                         // Nothing at rest, but the strip keeps its height and width so Home never shifts and dragging
