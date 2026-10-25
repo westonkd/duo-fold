@@ -121,8 +121,7 @@ internal fun CategoryCard(title: String, apps: List<AppEntry>, modifier: Modifie
             }
         }
         Text(title, color = labelColor, fontSize = FolioType.GROUP_LABEL.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = FolioSpace.SNUG.dp).clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onOpen)
-                .heightIn(min = FolioTouch.MIN.dp).wrapContentHeight(Alignment.CenterVertically))
+            modifier = Modifier.padding(top = FolioSpace.SNUG.dp).clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onOpen))
     }
 }
 
