@@ -128,14 +128,13 @@ internal fun BigClockCard(onClick: () -> Unit, slot: Int = -1, home: Boolean = f
     val context = LocalContext.current
     val ink = LocalHomeInk.current
     val tick by rememberMinuteTick()
-    val screenshot by ScreenshotMode.on.collectAsStateWithLifecycle()
     val now = displayNow(tick)
     val systemIs24 = android.text.format.DateFormat.is24HourFormat(context)
     val allowed = remember(tick) { UpNext.hasCalendar(context) }
-    val event by produceState<UpNextEvent?>(null, tick, allowed, screenshot) {
-        value = if (!allowed || screenshot) null else withContext(Dispatchers.IO) { UpNext.events(context, limit = 1).firstOrNull() }
+    val event by produceState<UpNextEvent?>(null, tick, allowed) {
+        value = if (!allowed) null else withContext(Dispatchers.IO) { UpNext.events(context, limit = 1).firstOrNull() }
     }
-    val alarm = remember(tick, screenshot) { if (screenshot) null else UpNext.nextAlarm(context) }
+    val alarm = remember(tick) { UpNext.nextAlarm(context) }
     val stored = LocalBigClockStyles.current.bySlot[slot]
     val style = stored.orDefault()
     val is24 = when (style.hours) { "24" -> true; "12" -> false; else -> systemIs24 }

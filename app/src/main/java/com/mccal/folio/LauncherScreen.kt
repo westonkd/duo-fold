@@ -127,14 +127,10 @@ fun LauncherScreen(
     onDiscover: () -> Unit = {}, searchRequests: Int = 0, settingsRequests: Int = 0,
     onLaunchFrom: (AppEntry, android.graphics.Rect?) -> Unit = { app, _ -> onLaunch(app) },
     onGoogleSearch: (android.graphics.Rect?) -> Boolean = { false },
-    showFirstRun: Boolean = false,
-    onFinishFirstRun: () -> Unit = {},
     onShadeSetup: () -> Unit = {},
-    onShowWelcome: () -> Unit = {},
     onShowWhatsNew: () -> Unit = {},
 ) {
     val cancelLabel = stringResource(R.string.cancel)
-    val swappedApps = LocalSwappedApps.current
     var sheet by rememberSaveable { mutableStateOf("") }
     var dockSlot by rememberSaveable { mutableIntStateOf(0) }
     var widgetSession by remember { mutableStateOf<WidgetPickerSession?>(null) }
@@ -655,7 +651,7 @@ fun LauncherScreen(
             val s = FolderOpening.homeScale(FolderOpening.progress); scaleX = s; scaleY = s
         }
     }.onSizeChanged { LiveDiscover.fullSize = androidx.compose.ui.geometry.Size(it.width.toFloat(), it.height.toFloat()) }.testTag("launcher-root").onGloballyPositioned { drag.landing.rootInWindow = it.boundsInWindow().topLeft }.homeDragInput(drag,
-        enabled = sheet.isEmpty() && !showFirstRun && overlays.menu == null && !resize.active && pager.currentPage >= 0,
+        enabled = sheet.isEmpty() && overlays.menu == null && !resize.active && pager.currentPage >= 0,
         page = pager.currentPage, eligiblePages = eligibleDragPages, onStart = {
             focus.clearFocus(); keyboard?.hide(); haptic.perform(FolioHaptic.PickedUp)
             // The 0.6.9 motion pass: an app carried from Home or the dock lifts where it is and later lands (DragLanding).
@@ -726,17 +722,6 @@ fun LauncherScreen(
         val hinge = LocalHinge.current
         BoxWithConstraints(Modifier.fillMaxSize().onGloballyPositioned { homeBoxTop = it.positionInWindow().y }
             .windowInsetsPadding(WindowInsets.safeDrawing.exclude(WindowInsets.ime).union(rememberHiddenCameraInsets()))) {
-            // Tier C: a tiny cover screen gets the focused Home instead of a full page shrunk past tappable sizes.
-            // Settings and first-run setup still open over the regular screen below.
-            if (isMicroWindow(maxWidth.value, maxHeight.value) && sheet.isEmpty() && !showFirstRun) {
-                val microApps = remember(state.dock, state.homeSlots, appsById) {
-                    (state.dock + state.homeSlots).filterNotNull().distinct().mapNotNull(appsById::get)
-                }
-                MicroHome(microApps, deviceStatus, maxWidth, maxHeight, onLaunch = onLaunch,
-                    onNotifications = { launcherActivity.openAndroidShade(ShadePanel.NOTIFICATIONS) },
-                    onSearch = { launcherActivity.openSpotlight() }, onSettings = { sheet = "settings" })
-                return@BoxWithConstraints
-            }
             val classScale = androidx.compose.ui.platform.LocalConfiguration.current.classScale
             val wide = maxWidth.value * classScale >= EXPANDED_HOME_MIN_WIDTH_DP && maxHeight.value * classScale >= HOME_REGULAR_MIN_HEIGHT_DP
             val layoutScreen = layoutScreenFor(maxWidth.value, maxHeight.value, classScale)
@@ -836,7 +821,7 @@ fun LauncherScreen(
             // The edit-mode dock grabber, so a downward drag on it moves the dock instead of opening Spotlight or the shade (#326).
             var grabberBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
             val pagerInputEnabled = pager.currentPage in -firstHome..visibleHomePages && !drag.active &&
-                widgetSession == null && !resize.active && sheet.isEmpty() && !showFirstRun && overlays.menu == null &&
+                widgetSession == null && !resize.active && sheet.isEmpty() && overlays.menu == null &&
                 overlays.folder == null && overlays.emptyCell == null && overlays.newFolder == null &&
                 launcherActivity.backups.preview == null && !launcherActivity.backups.pickerPending &&
                 !launcherActivity.backgrounds.pickerPending && widgets.setupStatus == null &&
@@ -899,7 +884,7 @@ fun LauncherScreen(
                     LiveDiscover.host.get()?.invalidateFrame()
                 }.testTag("app-pager")
                 .discoverSwipe(discoverMode && firstHome == 0 && pager.currentPage == 0 && !drag.active && sheet.isEmpty() &&
-                    !showFirstRun && overlays.menu == null, onDiscover)
+                    overlays.menu == null, onDiscover)
                 .onGloballyPositioned {
                     if (firstHome > 0 && !todayMode) {
                         val bounds = it.boundsInWindow()
@@ -1271,7 +1256,6 @@ fun LauncherScreen(
                             onSaveLayoutToFolder = { launcherActivity.backups.saveToFolioFolder(it) },
                             onImportLayout = { sheet = ""; launcherActivity.backups.startImport() },
                             onShadeSetup = { sheet = ""; onShadeSetup() },
-                            onShowWelcome = { sheet = ""; onShowWelcome() },
                             onShowWhatsNew = { sheet = ""; onShowWhatsNew() },
                             backgrounds = launcherActivity.backgrounds,
                             onWallpaperPreview = { sheet = ""; onWallpaperPreview() }, homePage = pager.currentPage.coerceIn(0, homePages - 1))
@@ -1284,7 +1268,7 @@ fun LauncherScreen(
                                 topRowHeightDp = topPitch, appRowHeightDp = geometry.rowHeight)
                             val constraints = widgets.manager.getAppWidgetInfo(placement.id)?.let { widgets.sizing(it, gridSizing) } ?: builtinWidgetConstraints(placement.id)
                             WidgetActions(placement, constraints, rows = pageRows(placement.page),
-                                stackCards = model.stackCards(placement.slot), stackLabel = { widgetLabel(launcherActivity, it, widgets, swappedApps) },
+                                stackCards = model.stackCards(placement.slot), stackLabel = { widgetLabel(launcherActivity, it, widgets) },
                                 stackRotate = state.stackRotate, onStackRotate = model::setStackRotate,
                                 onAddToStack = {
                                     picker.stackSlot = placement.slot; picker.slot = placement.slot
@@ -1321,35 +1305,8 @@ fun LauncherScreen(
                     }
                 }
             }
-            // One-time hints (FirstUseHints): the first Home after setup, and the first unfolded one. Doing the thing counts as having seen it.
-            LaunchedEffect(showFirstRun, homeEdit.active, overlays.menu) {
-                if (homeEdit.active || overlays.menu != null) FirstUseHints.done(launcherActivity, FirstUseHint.HOLD)
-                else if (!showFirstRun && sheet.isEmpty()) { kotlinx.coroutines.delay(2_500); FirstUseHints.show(launcherActivity, FirstUseHint.HOLD) }
-            }
-            LaunchedEffect(wide, showFirstRun) {
-                if (wide && !showFirstRun && FirstUseHints.pending(launcherActivity, FirstUseHint.UNFOLD)) {
-                    kotlinx.coroutines.delay(2_500)
-                    FirstUseHints.show(launcherActivity, FirstUseHint.UNFOLD)
-                }
-            }
             // iOS-style notice when editing is locked by a Focus.
             FocusLockNotice(lockNotice, focusLock?.mode, Modifier.align(Alignment.TopCenter))
-            if (showFirstRun) {
-                // Full-screen, iOS Setup Assistant style; Back steps back, Skip Setup or Get Started finishes.
-                ModalBottomSheet(onDismissRequest = onFinishFirstRun, modifier = Modifier.testTag("first-run-setup"), fullScreen = true) {
-                    Onboarding(isDefaultHome, onMakeDefault, onShadeSetup,
-                        systemWallpaper = state.systemWallpaper,
-                        onWallpaper = { value ->
-                            if (value != state.systemWallpaper) { model.setSystemWallpaper(value); launcherActivity.applyWallpaperWindow(value) }
-                        },
-                        onFinish = onFinishFirstRun, state = state, model = model,
-                        // The quiet step for a phone with Shizuku or root: setup closes and Settings opens on System Bridge.
-                        onOpenBridge = {
-                            customizationPage = CustomizationPage.SYSTEM_BRIDGE
-                            sheet = "settings"
-                        })
-                }
-            }
             if (sheet == "widgets") OwnMethod {
                 val catalogProfiles = remember(state.profiles) { state.profiles.filter { it.isPersonal || it.isWork } }
                 val selectedProfile = catalogProfiles.firstOrNull { it.userSerial == picker.profileSerial }
@@ -1661,7 +1618,7 @@ fun LauncherScreen(
                     Column(Modifier.padding(FolioSpace.LARGE.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Rounded.Widgets, null, tint = Ink)
                         Spacer(Modifier.height(8.dp))
-                        Text(remember(id, widgets, swappedApps) { widgetLabel(launcherActivity, id, widgets, swappedApps) }, color = Ink, maxLines = 2, textAlign = TextAlign.Center)
+                        Text(remember(id, widgets) { widgetLabel(launcherActivity, id, widgets) }, color = Ink, maxLines = 2, textAlign = TextAlign.Center)
                     }
                 }
             }
@@ -1809,12 +1766,12 @@ fun LauncherScreen(
                 onEditIcon = if (app.isShortcut) null else {{ overlays.iconEditor = app.id; overlays.menu = null }},
                 onStack = if (pinned) {{ overlays.stackEditor = app.id; overlays.menu = null }} else null,
                 onRemoveApp = { overlays.removeApp = app.id; overlays.menu = null },
-                onDeleteApp = if (!app.isShortcut && canDelete(cameWithPhone(launcherActivity, app), app.isWork)) {{
+                onDeleteApp = if (!app.isShortcut && canDelete(cameWithPhone(launcherActivity, app.packageName), app.isWork)) {{
                     overlays.menu = null; deleteApp(app) }} else null)
         }
         appsById[overlays.removeApp]?.let { app ->
             val onHome = state.layout.indexOfShortcut(app.id) != null
-            val options = remember(app.id, app.iconFrom, onHome) { removeOptions(cameWithPhone(launcherActivity, app), app.isWork, onHome) }
+            val options = remember(app.id, onHome) { removeOptions(cameWithPhone(launcherActivity, app.packageName), app.isWork, onHome) }
             RemoveAppAlert(app, options, onDismiss = { overlays.removeApp = null }, onChoice = { choice ->
                 overlays.removeApp = null
                 when (choice) {

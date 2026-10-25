@@ -32,7 +32,7 @@ It stops by itself after 6 hours, or when you tap **Stop recording**. Then **Cop
 - **Per minute table**: one row per minute. `front%` and `screen%` say how much of that minute Folio was in front and the screen was on, so you can match a CPU or jank bump to what you were doing.
 - **Folds** are counted from big changes of window size (the phone folding or unfolding). The fold animation itself has no hook yet; `PerfLog.noteFold()` is there to call from it.
 
-To compare cases (idle, in Home, folding, the optional root hinge helper), make one run for each and read the same lines.
+To compare cases (idle, in Home, folding), make one run for each and read the same lines.
 
 ## 2. `tools/perf-capture.sh` (OS-attributed)
 

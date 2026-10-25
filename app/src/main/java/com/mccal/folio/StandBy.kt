@@ -175,8 +175,7 @@ internal fun rememberStandBySignals(activity: Activity, ways: StandByWays, plugg
  * now playing. Dim red at night. Tap anywhere or open the phone flat to leave.
  */
 @Composable
-internal fun StandByOverlay(way: StandByWay?, ready: Boolean, pose: FoldingFeature.Orientation?, blocked: Boolean, status: DeviceStatus,
-    onShowing: (Boolean) -> Unit = {}) {
+internal fun StandByOverlay(way: StandByWay?, ready: Boolean, pose: FoldingFeature.Orientation?, blocked: Boolean, status: DeviceStatus) {
     var active by remember { mutableStateOf(false) }
     var dismissed by remember { mutableStateOf(false) }
     var shown by remember { mutableStateOf<StandByWay?>(null) }
@@ -203,8 +202,6 @@ internal fun StandByOverlay(way: StandByWay?, ready: Boolean, pose: FoldingFeatu
         onDispose { if (turn && before != null) activity.requestedOrientation = before }
     }
     BackHandler(active) { active = false; dismissed = true }
-    // Home keeps everything else off StandBy while it's up (MainActivity: the setup reminder).
-    DisposableEffect(active) { onShowing(active); onDispose { if (active) onShowing(false) } }
 
     AnimatedVisibility(active, enter = fadeIn(tween(500)), exit = fadeOut(tween(300))) {
         Box(Modifier.fillMaxSize().background(Color.Black)

@@ -214,11 +214,10 @@ class DiscoverActivity : DiscoverPageActivity() {
         val startupApps = DiscoverSession.apps
         setContent {
             val state by model.state.collectAsStateWithLifecycle()
-            val status = ScreenshotMode.status(monitor.state.collectAsStateWithLifecycle().value, ScreenshotMode.on.collectAsStateWithLifecycle().value)
+            val status = monitor.state.collectAsStateWithLifecycle().value
             DuoTheme {
                 BackHandler { DiscoverSession.requestHome(this) }
-                // The same swap as Home: Discover collects its own state, so it applies it here too.
-                DiscoverDock(rememberDisguised(if (state.loading) state.copy(apps = startupApps) else state), status, fullSize.value, onLaunch = ::launchApp,
+                DiscoverDock(if (state.loading) state.copy(apps = startupApps) else state, status, fullSize.value, onLaunch = ::launchApp,
                     onHome = { DiscoverSession.requestHome(this) }, onSearch = { DiscoverSession.home(this, search = true) },
                     onReady = { viewportReady = true; openFeed() })
             }

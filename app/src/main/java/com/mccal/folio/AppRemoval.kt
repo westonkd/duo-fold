@@ -51,15 +51,8 @@ internal fun canDelete(cameWithPhone: Boolean, isWork: Boolean) = !cameWithPhone
 internal fun cameWithPhone(context: Context, packageName: String): Boolean = shippedWithPhone(context.packageManager, packageName) ?: true
 
 /**
- * Remove App and Delete App for [app] as Home shows it. A Screenshot Mode stand-in is one of the phone's own apps, so a
- * swapped app is removed like one: no Delete App, and the alert says only Android can delete it. Otherwise a screenshot
- * of the menu would give the swap away, since the real stand-in never offers Delete.
- */
-internal fun cameWithPhone(context: Context, app: AppEntry): Boolean = app.iconFrom != null || cameWithPhone(context, app.packageName)
-
-/**
  * Whether [packageName] shipped with the phone, updated or not; null when Android won't say. The one check behind
- * Delete App (unknown means no Delete) and Screenshot Mode's stand-ins (unknown means not a stand-in).
+ * Delete App (unknown means no Delete).
  */
 internal fun shippedWithPhone(pm: android.content.pm.PackageManager, packageName: String): Boolean? = runCatching {
     pm.getApplicationInfo(packageName, 0).flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0

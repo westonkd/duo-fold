@@ -22,9 +22,8 @@ class TranslatableTextTest {
 
     @Test fun `strings meant for people don't hide in enum constructors`() {
         // An enum is built before any Context exists, so an English label written there can never be translated.
-        // The exceptions hold names that stay as they are in every language: search engines, assistants, and the
-        // iPhone apps Arrange Like iPhone matches by name.
-        val namesNotTranslated = setOf("WebSearch.kt", "AssistPickerActivity.kt", "IPhoneHome.kt", "FolioVoiceInteraction.kt")
+        // The exceptions hold names that stay as they are in every language: search engines and assistants.
+        val namesNotTranslated = setOf("WebSearch.kt", "AssistPickerActivity.kt", "FolioVoiceInteraction.kt")
         val enumLabel = Regex("""enum class \w+\([^)]*val (label|title): String""")
         val bad = sources.filter { it.name !in namesNotTranslated && enumLabel.containsMatchIn(it.readText()) }.map { it.name }
         assertTrue("An enum in $bad holds a label as String; hold a string resource id instead.", bad.isEmpty())

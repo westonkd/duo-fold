@@ -10,7 +10,7 @@ All paths below are relative to `app/src/main/java/com/mccal/folio/`.
 
 | Area | Entry points | Responsibility |
 | --- | --- | --- |
-| Activity and setup | `MainActivity.kt`, `SetupExperience.kt` | Android intents/results, Home selection, fresh-install setup and optional access |
+| Activity | `MainActivity.kt` | Android intents/results and Home selection |
 | App catalog and saved layout | `LauncherModel.kt`, `ProfileSupport.kt` | Observable launcher state, profile-aware identities, package changes and persistence |
 | Home and navigation | `LauncherScreen.kt`, `LauncherPager.kt`, `PageGestures.kt`, `WorkspacePageMotion.kt` | Page composition, shared gestures, unfolded pairs and page motion |
 | Editing and folders | `HomeEditing.kt`, `HomeDrag.kt`, `FolderEditing.kt`, `FolderPanel.kt` | Placement rules, drag previews, insertion, folders and cancellation |
@@ -46,13 +46,11 @@ The live path keeps a persistent Google window and live Home graphics layers. He
 
 ## Persistence and recovery
 
-Setup uses separate preferences and classifies existing installations before the model creates default state. Completion is stored before closing the welcome sheet, so upgrades do not show onboarding or replace layouts.
-
 A selected photo is decoded into private staging before **Apply** replaces the committed background. URI permission belongs to that selection operation and is released when no longer needed. Failed or canceled selection preserves the existing background. Never explicitly recycle a bitmap already published to Compose; rendering may still reference it. Activity and ready-file recovery have tests; provider process death during early decode remains a separate validation gap.
 
 ## Testing changes
 
-Pure placement, gesture-decision, sizing, profile, status and setup rules have JVM tests under `app/src/test/`. Native widget/provider behavior, real sheet Back handling, Android results and live Discover require emulator integration checks under `app/src/androidTest/`.
+Pure placement, gesture-decision, sizing, profile and status rules have JVM tests under `app/src/test/`. Native widget/provider behavior, real sheet Back handling, Android results and live Discover require emulator integration checks under `app/src/androidTest/`.
 
 Start with a focused regression that reproduces the behavior, then run the relevant build/unit/lint checks described in [Contributing](../CONTRIBUTING.md). Integration fixtures need a disposable emulator with their expected apps/providers. Record real binding tuples before testing and preserve them during cleanup; preferences alone are not a complete widget backup. Cover/inner dimension overrides test layout behavior, not physical hinge timing or real-device performance.
 

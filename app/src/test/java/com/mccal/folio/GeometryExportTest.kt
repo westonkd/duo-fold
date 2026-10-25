@@ -40,7 +40,7 @@ class GeometryExportTest {
                 val cells = HomeCellLayout.forPage(g, widgets)
                 val icons = (0 until 4 * g.appRows).joinToString(",") { i -> val row = 2 + i / 4; "[${cells.x(i % 4, row)},${cells.y(row)}]" }
                 rows += """{"name":"$name","rot":$rotated,"half":$half,"dock":"$dock","status":"$status","sim":$sim,"rw":$rw,"rh":$rh,""" +
-                    """"scale":$scale,"w":$w,"h":$h,"micro":${isMicroWindow(w, h)},"microApps":${microAppCount(w)},"appRows":${g.appRows},""" +
+                    """"scale":$scale,"w":$w,"h":$h,"appRows":${g.appRows},""" +
                     """"expanded":${g.expanded},"split":${g.splitColumns},"hDock":${g.horizontalDock},"beside":${g.dockBesideRail},""" +
                     """"homeWidth":${g.homeWidth},"grid":${g.gridWidth},"icon":${g.iconSize},"row":${g.rowHeight},"widget":${g.widgetHeight},""" +
                     """"top":${g.contentTop},"statusTop":${g.statusTop},"dockTop":${g.dockTop},"dockH":${g.dockHeight},""" +

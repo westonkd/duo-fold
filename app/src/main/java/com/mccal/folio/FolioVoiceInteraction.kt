@@ -78,3 +78,24 @@ internal enum class SideKeyHold(val label: String, val action: String?, val pack
             context.getSharedPreferences(PREFS, 0).edit().putString(KEY, value.name).apply()
     }
 }
+
+/** Samsung's "Side button › Press and hold" screen, when this phone has it. */
+internal fun sideKeySettings(context: android.content.Context): Intent? =
+    Intent("com.samsung.android.intent.action.SIDE_KEY_LONG_PRESS_SETTINGS")
+        .takeIf { it.resolveActivity(context.packageManager) != null }
+
+/** Samsung stores the side key hold action as a global setting; 2 is the digital assistant. */
+internal fun sideKeyHoldIsAssistant(context: android.content.Context) =
+    runCatching { android.provider.Settings.Global.getInt(context.contentResolver, "function_key_config_longpress_type") }.getOrNull() == 2
+
+/** Samsung's "Side button › Double press" screen, when this phone has it. */
+internal fun sideKeyDoublePressSettings(context: android.content.Context): Intent? =
+    Intent("com.samsung.android.intent.action.SIDE_KEY_DOUBLE_PRESS_SETTINGS")
+        .takeIf { it.resolveActivity(context.packageManager) != null }
+
+/** Whether Samsung's double press opens Google Wallet (its settings name the app it launches). */
+internal fun sideKeyDoublePressIsWallet(context: android.content.Context): Boolean = runCatching {
+    val r = context.contentResolver
+    listOf("function_key_config_doublepress_value", "function_key_config_doublepress_intent")
+        .any { android.provider.Settings.Global.getString(r, it)?.contains("com.google.android.apps.walletnfcrel") == true }
+}.getOrDefault(false)

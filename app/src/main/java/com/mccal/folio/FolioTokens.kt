@@ -108,8 +108,6 @@ internal object FolioColors {
     val InvalidDrop = Color(0xFFFF6B6B)
     /** The bezel drawn around a phone in the Customization previews. */
     val PreviewBezel = Color(0xFF0B0B0C)
-    /** Supporting text on [LightBackground]-style cards in light appearance (iOS secondaryLabel). */
-    val SecondaryLabelOnLight = Color(0xFF6C6C70)
     /** Supporting text on dark glass and sheets. */
     val SecondaryLabel = Color.White.copy(alpha = .62f)
 }

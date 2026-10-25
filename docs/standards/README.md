@@ -53,7 +53,7 @@ Nobody has to fix the whole tree before shipping a feature.
 | [State and data](state-data.md) | `STA` | Who owns each piece of state, persistence, migrations |
 | [Performance](performance.md) | `PRF` | Critical journeys, budgets, measuring |
 | [Accessibility](accessibility.md) | `A11Y` | TalkBack, targets, contrast, text size, Reduce Motion, RTL |
-| [Privacy and permissions](privacy-permissions.md) | `PRV` | Access, network, data, the System Bridge tier |
+| [Privacy and permissions](privacy-permissions.md) | `PRV` | Access, network, data, privilege tiers |
 | [Testing](testing.md) | `TST` | What gets tested where, and what "done" means |
 | [Releases](releases.md) | `REL` | Branches, the changelog, version numbers, betas, and what goes out beside a build |
 | [Site and docs](site.md) | `WEB` | foliolauncher.com and public pages: where facts come from, voice, pictures, privacy, checks |

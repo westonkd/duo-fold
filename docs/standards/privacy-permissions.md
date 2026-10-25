@@ -52,8 +52,7 @@ Put the answers in the PR and in PERMISSIONS.md before it ships:
 
 ### Tiers
 
-- **PRV-17 MUST** make every feature work without root. Root, Shizuku or ADB grants may only add optional extras, and
-  only in the separate System Bridge tier, clearly labelled and off by default.
+- **PRV-17 MUST** make every feature work without root, Shizuku or ADB grants. Folio uses none of them.
 - **PRV-18 MUST** keep the accessibility service, notification listener and similar powerful services to what their
   PERMISSIONS.md row says, and explain them plainly, including why some banking apps react to accessibility services.
 

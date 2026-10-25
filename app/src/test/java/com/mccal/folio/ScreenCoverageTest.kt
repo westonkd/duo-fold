@@ -137,19 +137,6 @@ class ScreenCoverageTest {
             yield(Triple(w, h) { problems(w, h).filter { it.startsWith("invalid") || it.startsWith("dock row") || it.startsWith("row") } })
     })
 
-    @Test fun `micro cover mode covers only tiny windows and its apps always fit`() {
-        for ((w, h) in listOf(240f to 260f, 260f to 260f, 280f to 280f, 300f to 300f, 320f to 320f, 300f to 420f))
-            org.junit.Assert.assertTrue("${w}×$h", isMicroWindow(w, h))
-        for ((w, h) in listOf(321f to 321f, 360f to 640f, 320f to 640f, 640f to 320f, 475f to 751f, 280f to 480f))
-            org.junit.Assert.assertFalse("${w}×$h", isMicroWindow(w, h))
-        for (w in 200..480) {
-            val n = microAppCount(w.toFloat())
-            org.junit.Assert.assertTrue("$w: $n apps", 2 * 18f + n * 48f + (n - 1).coerceAtLeast(0) * 10f <= w)
-        }
-        org.junit.Assert.assertEquals(4, microAppCount(260f))
-        org.junit.Assert.assertEquals(5, microAppCount(320f))
-    }
-
     /** Galaxy Z Fold8 (labels on, measured status, default settings): both screens have room for a fifth app row. */
     @Test fun `fold8 cover and inner screens fit five app rows`() {
         val cover = homeGeometry(475f, 751f, LayoutPreset(), true, statusHeight = 160f)

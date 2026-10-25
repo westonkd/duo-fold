@@ -22,7 +22,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -198,27 +197,24 @@ internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modif
     badgePlacement: BadgePlacement = BadgePlacement.DEFAULT) {
     val context = LocalContext.current
     val launcherLook = LocalIconLook.current
-    // While Screenshot Mode swaps this app, every lookup below is the stand-in's, so none of the real app's picture,
-    // pack icon, live face or glyph shows under the stand-in's name.
-    val src = app.iconFrom ?: app
     // This app's own look, if it has one, over the launcher's.
-    val override = LocalAppIconStyles.current[src.id]
+    val override = LocalAppIconStyles.current[app.id]
     val look = remember(launcherLook, override) { override?.applyTo(launcherLook) ?: launcherLook }
-    val kind = remember(src.component.packageName, look.liveIcons) { if (look.liveIcons) LiveIcons.kind(context, src.component.packageName) else null }
+    val kind = remember(app.component.packageName, look.liveIcons) { if (look.liveIcons) LiveIcons.kind(context, app.component.packageName) else null }
     val accent = if (look.style == IconStyle.TINTED) look.tint else null
     val lookShape = remember(look.shape) { look.shape.toShape() }
     // Pack lookup: null until it finishes, then the pack's icon or none. An icon pack's own Clock or Calendar icon wins
     // over the live one, so a pack keeps one consistent look; live icons fill in where the pack has nothing.
-    val packLookup by androidx.compose.runtime.produceState<PackLookup?>(if (look.pack == null) PackLookup(null) else null, look.pack, src.id) {
+    val packLookup by androidx.compose.runtime.produceState<PackLookup?>(if (look.pack == null) PackLookup(null) else null, look.pack, app.id) {
         value = PackLookup(look.pack?.let { pack ->
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { IconPacks.icon(context, pack, src.component, 192) }
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { IconPacks.icon(context, pack, app.component, 192) }
         })
     }
     val packIcon = packLookup?.icon
     // Your own picture for this app wins over every other look. Until it loads, the last one drawn at this stamp is used, so it doesn't flash.
     val stamp = override?.picture ?: 0L
-    val picture by androidx.compose.runtime.produceState(if (stamp > 0L) AppIconPictures.cached(src.id, stamp) else null, src.id, stamp) {
-        value = if (stamp > 0L) AppIconPictures.load(context, src.id, stamp) else null
+    val picture by androidx.compose.runtime.produceState(if (stamp > 0L) AppIconPictures.cached(app.id, stamp) else null, app.id, stamp) {
+        value = if (stamp > 0L) AppIconPictures.load(context, app.id, stamp) else null
     }
     val liveKind = kind.takeIf { packLookup != null && packIcon == null && picture == null }
     // Default style follows the app's real icon: a dark system icon theme (like iDark through Theme Park) gets the dark
@@ -226,7 +222,7 @@ internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modif
     // Automatic follows the other icons on Home (an icon theme often leaves Calendar and Clock alone), falling back
     // to this app's own icon before those have been measured.
     val iconsAreDark = LocalIconsAreDark.current
-    val darkSource = iconsAreDark ?: remember(src.icon) { kind != null && isDarkIcon(src.icon) }
+    val darkSource = iconsAreDark ?: remember(app.icon) { kind != null && isDarkIcon(app.icon) }
     val palette = when {
         look.style == IconStyle.TINTED -> LivePalette.of(IconStyle.TINTED, accent)
         look.style == IconStyle.CLEAR -> LivePalette.of(IconStyle.CLEAR, null)
@@ -234,7 +230,7 @@ internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modif
         look.liveLook == "DARK" -> LivePalette.of(IconStyle.DARK, null)
         else -> LivePalette.of(if (look.style == IconStyle.DEFAULT && darkSource) IconStyle.DARK else look.style, accent)
     }
-    val badgeCount = if (!badge || look.badges == BadgeStyle.OFF || app.iconFrom != null) 0 else LocalBadgeCounts.current[src.component.packageName] ?: 0
+    val badgeCount = if (!badge || look.badges == BadgeStyle.OFF) 0 else LocalBadgeCounts.current[app.component.packageName] ?: 0
     val lighting = if (look.style != IconStyle.CLEAR) {
         val wallpaper = LocalWallpaperTone.current.primary
         val dimmed = look.style == IconStyle.DARK
@@ -248,9 +244,9 @@ internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modif
             picture != null -> { val shown = remember(picture) { picture!!.asImageBitmap() }; Image(shown, null, fill.lit()) }
             liveKind == LiveIcons.Kind.CALENDAR -> CalendarIcon(fill.lit(), palette, iconShape)
             liveKind == LiveIcons.Kind.CLOCK -> ClockIcon(fill.lit(), palette, iconShape)
-            look.style == IconStyle.CLEAR -> ClearIcon(src, packIcon, fill)
+            look.style == IconStyle.CLEAR -> ClearIcon(app, packIcon, fill)
             else -> {
-                val source = packIcon ?: src.icon
+                val source = packIcon ?: app.icon
                 val bitmap = remember(source) { source.asImageBitmap() }
                 val fills = remember(source) { runCatching { fillsEdges(source.width, source.height) { x, y -> android.graphics.Color.alpha(source.getPixel(x, y)) } }.getOrDefault(false) }
                 val filter = remember(look.style, look.tint) { filterFor(look) }
@@ -265,7 +261,7 @@ internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modif
                 liveKind == LiveIcons.Kind.CALENDAR -> if (look.badgeColor == BadgeColor.SOFT) Color(softened(IconRed.toArgb())) else IconRed
                 liveKind == LiveIcons.Kind.CLOCK -> if (look.badgeColor == BadgeColor.SOFT) Color(softened(IconOrange.toArgb())) else IconOrange
                 else -> {
-                    val source = packIcon ?: src.icon
+                    val source = packIcon ?: app.icon
                     val soft = look.badgeColor == BadgeColor.SOFT
                     val accent by produceState(BadgeAccents.cached(source, soft), source, soft) {
                         if (value == null) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { BadgeAccents.of(source, soft) }
@@ -276,7 +272,7 @@ internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modif
             IconBadge(badgeCount, look.badges, color, look.badgeLook, look.badgeSize.scale, badgePlacement)
         }
         // Updating: the icon dims under an iOS-style progress ring until the installer finishes.
-        if (app.iconFrom == null) installProgressFor(app.component.packageName)?.let { progress -> InstallRing(progress, fill) }
+        installProgressFor(app.component.packageName)?.let { progress -> InstallRing(progress, fill) }
     }
 }
 
@@ -363,11 +359,10 @@ private fun CalendarIcon(modifier: Modifier, palette: LivePalette, shape: androi
 private fun ClockIcon(modifier: Modifier, palette: LivePalette, shape: androidx.compose.ui.graphics.Shape = IconContinuousShape) {
     // The tick is read while drawing, so a second redraws the hands without recomposing the icon.
     val tick = rememberSecondTick()
-    val screenshot by ScreenshotMode.on.collectAsState()
     Box(modifier.clip(shape).background(palette.clockBackground)) {
         Canvas(Modifier.fillMaxSize()) {
             tick.value // subscribes this draw to the second tick
-            val now = ScreenshotMode.now(screenshot).toLocalTime()
+            val now = java.time.LocalTime.now()
             val c = Offset(size.width / 2, size.height / 2)
             val r = size.minDimension * .42f
             drawCircle(palette.clockFace, r, c)

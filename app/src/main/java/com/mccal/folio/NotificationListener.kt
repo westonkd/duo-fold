@@ -186,7 +186,7 @@ class NotificationListener : NotificationListenerService() {
 
     companion object {
         private val notificationsMutable = MutableStateFlow<List<NotificationItem>>(emptyList())
-        val notifications: StateFlow<List<NotificationItem>> = ScreenshotMode.hide(notificationsMutable.asStateFlow(), emptyList())
+        val notifications: StateFlow<List<NotificationItem>> = notificationsMutable.asStateFlow()
 
         fun openNotification(context: Context, item: NotificationItem) {
             val sent = sendAllowingLaunch(context, item.contentIntent)
@@ -194,7 +194,7 @@ class NotificationListener : NotificationListenerService() {
                 ?.let { runCatching { context.startActivity(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
         }
         private val mutable = MutableStateFlow<NowPlaying?>(null)
-        val media: StateFlow<NowPlaying?> = ScreenshotMode.hide(mutable.asStateFlow(), null)
+        val media: StateFlow<NowPlaying?> = mutable.asStateFlow()
         private const val PUBLISH_COALESCE_MS = 120L
         private val iconCache = android.util.LruCache<String, Bitmap>(64)
         private val artCache = android.util.LruCache<String, Bitmap>(8)

@@ -33,3 +33,7 @@ internal object Ticker {
 
 @Composable internal fun rememberSecondTick(): State<Long> = Ticker.seconds.collectAsStateWithLifecycle()
 @Composable internal fun rememberMinuteTick(): State<Long> = Ticker.minutes.collectAsStateWithLifecycle()
+
+/** The time a Folio clock shows, refreshed with [tick]. */
+@Composable
+internal fun displayNow(tick: Any?): java.time.LocalDateTime = androidx.compose.runtime.remember(tick) { java.time.LocalDateTime.now() }

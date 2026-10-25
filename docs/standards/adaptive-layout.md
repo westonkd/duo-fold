@@ -34,7 +34,7 @@ makes that enforceable, and it's why Folio can be ready for tri-folds and flip c
   - **Tier A** (≥ 320 wide, ≥ 480 high): the full experience, and the Home page fits without scrolling at text
     scale ≤ 1.3.
   - **Tier B** (≥ 320 wide, 320 to 479 high): everything works, reflowed (split columns); content may scroll.
-  - **Tier C** (< 320 wide, or a micro cover): focused `MicroHome` mode.
+  - **Tier C** (< 320 wide, or a micro cover): the regular layout, scrolling where it must.
   - **600+**: the adaptive large layout.
 - **ADP-6 MUST** add boundary and sweep cases to `ScreenCoverageTest` / `ScreenMatrixTest` for any layout change, not
   device names.

@@ -51,11 +51,9 @@ class MainActivity : ComponentActivity() {
     /** Opened from Android Settings (Home app gear / "Additional settings in the app"). */
     private val settingsRequests = mutableIntStateOf(0)
     private val defaultHome = mutableStateOf(false)
-    private val showFirstRun = mutableStateOf(false)
     private val showWhatsNew = mutableStateOf(false)
     private val whatsNewRequested = mutableStateOf(false)
     private val showDevBuild = mutableStateOf(false)
-    private lateinit var setupExperience: SetupExperience
     private lateinit var status: DeviceStatusMonitor
     private var openingDiscover = false
     private var shadeSetupDialog: android.app.AlertDialog? = null
@@ -64,14 +62,12 @@ class MainActivity : ComponentActivity() {
     private var recreatingShadeSetup = false
     // The gestures dialog asked to show while the build page or What's New was up; it shows when they close.
     private var shadeSetupWaiting = false
-    // The gestures dialog is up (or waiting to be): the setup reminder card holds back until it's gone.
-    private val shadeSetupUp = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // The wallpaper theme must be chosen before the window exists (switching to it starts the screen again).
         if (usesSystemWallpaper(this)) setTheme(R.style.Theme_Duo_Wallpaper)
         super.onCreate(savedInstanceState)
-        setupExperience = SetupExperience(this)
+        showWhatsNew.value = savedInstanceState == null && WhatsNew.shouldShow(this)
         Installs.start(this); NewApps.load(this)
         FocusScheduler.run(this)
         // Focus triggers (folding, charging, headphones): listen only while some Focus uses one.
@@ -83,9 +79,6 @@ class MainActivity : ComponentActivity() {
         // USER_PRESENT is a protected system broadcast delivered to runtime receivers.
         androidx.core.content.ContextCompat.registerReceiver(this, unlockReceiver, android.content.IntentFilter(Intent.ACTION_USER_PRESENT),
             androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
-        showFirstRun.value = setupExperience.entryDecision(SetupExperience.hadLauncherState(this)) ==
-            SetupEntryDecision.SHOW
-        showWhatsNew.value = savedInstanceState == null && WhatsNew.shouldShow(this, firstRun = showFirstRun.value)
         // Folio Dev only: its builds keep one version name, so What's New never shows; this page is keyed to the commit.
         // Not tied to savedInstanceState: after an install the app is killed and Android restores Home from saved state, which
         // is exactly when a new build needs announcing. The commit check keeps it to once per build.
@@ -114,7 +107,7 @@ class MainActivity : ComponentActivity() {
             // Home is fully drawn once its own apps are in; at a start they come ahead of the rest.
             androidx.activity.compose.ReportDrawnWhen { savedState.homeReady }
             val safeMode = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(SafeMode.active) }
-            val state = rememberDisguised(FocusPages.effective(if (safeMode.value) SafeMode.effective(savedState) else savedState))
+            val state = FocusPages.effective(if (safeMode.value) SafeMode.effective(savedState) else savedState)
             androidx.compose.runtime.LaunchedEffect(Unit) { kotlinx.coroutines.delay(31_000); SafeMode.markStable(this@MainActivity) }
             // Saveable: a theme or language change recreates the activity, and the answer must not be asked again.
             val safeAcknowledged = androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
@@ -125,7 +118,7 @@ class MainActivity : ComponentActivity() {
                     androidx.compose.material3.Text(getString(R.string.restart_normally)) } },
                 dismissButton = { androidx.compose.material3.TextButton(onClick = { safeAcknowledged.value = true }) {
                     androidx.compose.material3.Text(getString(R.string.continue_in_safe_mode)) } })
-            val deviceStatus = ScreenshotMode.status(status.state.collectAsStateWithLifecycle().value, ScreenshotMode.on.collectAsStateWithLifecycle().value)
+            val deviceStatus = status.state.collectAsStateWithLifecycle().value
             // Folio shows its own status in the rail, so hide Android's status bar on Home (it
             // stays in apps, and a swipe from the very top edge reveals it briefly).
             androidx.compose.runtime.LaunchedEffect(state.verticalStatus) {
@@ -235,7 +228,6 @@ class MainActivity : ComponentActivity() {
                 LocalAppIconStyles provides state.appIconStyles,
                 LocalIconsAreDark provides iconsAreDark,
                 LocalRecentPackages provides recentPackages,
-                LocalSwappedApps provides androidx.compose.runtime.remember(state.apps) { swappedByPackage(state.apps) },
                 LocalBadgeCounts provides badgeCounts, LocalInstallProgress provides installProgress, LocalNewApps provides newApps, LocalFolderColors provides state.folderColors) { FoldTransitionHost(FeatureScopes.on(state.featureScopes, DUET_ID, state.foldEffect,
                     screenFor(androidx.compose.ui.platform.LocalConfiguration.current.fitsRegularHomeLayout())), state.foldIntensity, state.stayAwakeOnFold,
                     // Reduce Motion: a plain shade, no frost, tilt, shrink or picture moving (DYN-11: motion becomes a fade).
@@ -256,23 +248,16 @@ class MainActivity : ComponentActivity() {
                     isDefaultHome = defaultHome.value, deviceStatus = deviceStatus, onStatusMode = ::setStatusMode, onWallpaperPreview = ::previewWallpaper,
                     onDiscover = ::openDiscover, searchRequests = searchRequests.intValue, settingsRequests = settingsRequests.intValue,
                     onLaunchFrom = ::launchApp, onGoogleSearch = ::openGoogleSearch,
-                    showFirstRun = showFirstRun.value,
-                    onFinishFirstRun = ::finishFirstRun,
-                    onShadeSetup = ::showShadeSetup, onShowWelcome = { SetupReplay.active = true; showFirstRun.value = true }, onShowWhatsNew = { whatsNewRequested.value = true })
+                    onShadeSetup = ::showShadeSetup, onShowWhatsNew = { whatsNewRequested.value = true })
                 }
                 // StandBy's ways in (Settings › Fold & Displays): half-open, charging on its side and a tent on the cover.
-                val standByShowing = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
                 val halfOpenPose = rememberHalfOpenPose(this@MainActivity)
                 val hinge = androidx.compose.runtime.remember { hasHinge(this@MainActivity) }
                 val standByWays = StandByWays(state.standBy && hinge, state.standByCharging, state.standByTent && hinge)
                 val standBySignals = rememberStandBySignals(this@MainActivity, standByWays, deviceStatus.charging, halfOpenPose != null)
                 StandByOverlay(standByWay(standByWays, standBySignals), standByWay(standByWays, standBySignals.copy(still = true)) != null,
-                    halfOpenPose, blocked = overlayOpen, status = deviceStatus, onShowing = { standByShowing.value = it })
+                    halfOpenPose, blocked = overlayOpen, status = deviceStatus)
                 LockCover(lockCoverVisible.value && state.lockCover) { lockCoverVisible.value = false }
-                // Nothing draws over StandBy while it's up: the setup reminder waits.
-                // One prompt at a time: the card also waits while the gestures dialog is up, and comes back when it closes.
-                SetupReminderCard(defaultHome.value, blocked = overlayOpen || standByShowing.value || showFirstRun.value || !defaultHome.value || shadeSetupUp.value, onMakeDefault = ::makeDefault,
-                    onShadeSetup = ::showShadeSetup) { SettingsLink.page = CustomizationPage.PERMISSIONS; settingsRequests.intValue++ }
                 // The gestures dialog never opens on top of either sheet: it waits here and shows once both are closed.
                 val startupSheet = startupSheetUp()
                 androidx.compose.runtime.LaunchedEffect(startupSheet) {
@@ -380,11 +365,8 @@ class MainActivity : ComponentActivity() {
     internal fun openSpotlight() { spotlightVisible.value = true }
     private fun closeOverlays() { spotlightVisible.value = false }
 
-    /**
-     * The Home button is the way out of anything. Setup is shown again next time (or from Settings › Help › Show Welcome
-     * Again), so an overlay can never leave Home stuck behind it with no way back.
-     */
-    private fun closeEverything() { closeOverlays(); showFirstRun.value = false; lockCoverVisible.value = false }
+    /** The Home button is the way out of anything, so an overlay can never leave Home stuck behind it with no way back. */
+    private fun closeEverything() { closeOverlays(); lockCoverVisible.value = false }
 
     internal fun openAndroidShade(panel: ShadePanel) {
         when (SystemShadeAccessibilityService.open(this, panel)) {
@@ -403,7 +385,7 @@ class MainActivity : ComponentActivity() {
         if (shadeSetupDialog?.isShowing == true) return
         ownShadeSetupExternally()
         // Two prompts at once read as one: after an install, a restored gestures dialog came up over the build page.
-        if (startupSheetUp()) { shadeSetupWaiting = true; shadeSetupUp.value = true; return }
+        if (startupSheetUp()) { shadeSetupWaiting = true; return }
         shadeSetupDialog = android.app.AlertDialog.Builder(this)
             .setTitle(getString(R.string.turn_on_folio_gestures))
             .setMessage("Android asks you to turn this on yourself:\n\n" +
@@ -430,17 +412,9 @@ class MainActivity : ComponentActivity() {
             }
             .also { dialog -> dialog.setOnDismissListener {
                 shadeSetupDialog = null
-                shadeSetupUp.value = false
                 if (!returningFromShadeSettings && !recreatingShadeSetup) releaseShadeSetupOwnership()
             } }
             .show()
-        shadeSetupUp.value = true
-    }
-
-    private fun finishFirstRun() {
-        setupExperience.finish()
-        showFirstRun.value = false
-        SetupReplay.active = false
     }
 
     private fun ownShadeSetupExternally() {
@@ -481,7 +455,7 @@ class MainActivity : ComponentActivity() {
         if (opensSettings(intent)) settingsRequests.intValue++
         else if (intent.hasCategory(Intent.CATEGORY_HOME) || fromAppIcon(intent) || intent.getStringExtra("duo_destination") == "home") {
             // Pressing the Home button on Home goes to the first page; from an app (stopped, so true here) it keeps the page you left.
-            val overlayOpen = spotlightVisible.value || showFirstRun.value || lockCoverVisible.value
+            val overlayOpen = spotlightVisible.value || lockCoverVisible.value
             homeFromFront.value = intent.hasCategory(Intent.CATEGORY_HOME) && !stoppedSinceHome && !overlayOpen
             closeEverything(); homeRequests.intValue++
         }

@@ -54,8 +54,8 @@ that shape of mistake.
 
 ### Pictures
 
-- **WEB-11 MUST** use real screenshots, taken in Screenshot Mode (9:41, no personal notifications, no private device
-  names or calendar data), or label the image "Design preview, not final". A mockup never looks like a shipped
+- **WEB-11 MUST** use real screenshots, with no personal notifications, no private device
+  names or calendar data, or label the image "Design preview, not final". A mockup never looks like a shipped
   feature, and AI-generated phone screens never stand in for Folio's.
 - **WEB-12 MUST** give every image useful alt text and declared dimensions. An image wider than three times its slot is
   wasted bytes.
@@ -150,7 +150,7 @@ Measured on 1 and 2 Oct 2026, against folio-site `main`.
 | 1b | Flag any sentence on a page that makes a privacy or safety claim ("never", "no tracking", "safe") and is not in the registry, so a person reviews new phrasings | S |
 | 2 | A lint for em dashes and banned words in `src/` (WEB-7) | S |
 | 3 | Lighthouse over every page type, not six (WEB-22), and a test that a failing page really turns the run red | S |
-| 4 | Screenshots for the timeline stops and the tweak pages, from Screenshot Mode (WEB-11, 13) | M |
+| 4 | Screenshots for the timeline stops and the tweak pages (WEB-11, 13) | M |
 | 5 | The release workflow attaches `signing-certificate.txt` every time, so the fallback in WEB-4 is never used | S |
 | 6 | Confirm the `site.yml` dispatch fires on the next real release (WEB-26) | S |
 | 7 | Tab order through the interactive pages with a real keyboard and a screen reader (WEB-19) | S |

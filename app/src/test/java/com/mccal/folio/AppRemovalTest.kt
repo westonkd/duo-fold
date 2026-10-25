@@ -47,21 +47,10 @@ class AppRemovalTest {
         assertTrue(canDelete(cameWithPhone = false, isWork = false))
     }
 
-    @Test fun `a Screenshot Mode stand-in is removed like the phone's own app, so the menu can't give the swap away`() {
+    @Test fun `an app Android won't describe counts as one that came with the phone`() {
         val context = RuntimeEnvironment.getApplication()
-        val camera = AppEntry("com.android.camera/.Main", "Camera", Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888))
-        val swapped = spotify.copy(label = "Camera", iconFrom = camera)
-        assertTrue(cameWithPhone(context, swapped))
-        assertFalse(canDelete(cameWithPhone(context, swapped), swapped.isWork))
-        assertEquals(RemoveReason.CAME_WITH_PHONE, removeOptions(cameWithPhone(context, swapped), swapped.isWork, onHome = true).reason)
-    }
-
-    @Test fun `one check says what shipped with the phone, and each caller picks its own answer for unknown`() {
-        val context = RuntimeEnvironment.getApplication()
-        // A package Android won't describe: unknown, so no Delete for it, and it is never a stand-in.
         assertEquals(null, shippedWithPhone(context.packageManager, "com.example.not.installed"))
         assertTrue(cameWithPhone(context, "com.example.not.installed"))
-        assertTrue(systemPackages(context, setOf("com.example.not.installed")).isEmpty())
     }
 
     @Test fun `Cancel on Android's confirmation is not a failure, and a package that is gone was deleted`() {

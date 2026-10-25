@@ -117,7 +117,7 @@ class MoreRowsTest {
         assertEquals("a${shown - 1}", dropApp(HomeLayout(full, emptyList()), "new", DropTarget.Home(shown - 1)).slotAt(shown))
     }
 
-    @Test fun `widget spots, candidates and arrange like iPhone use only shown rows`() {
+    @Test fun `widget spots and candidates use only shown rows`() {
         val shown = visibleHomeRows(4) * GRID_COLUMNS
         val layout = HomeLayout(List(shown) { "a$it" }, List(4) { null }, emptyList())
         assertEquals(1 to homeCellIndex(1, 0), firstFreeWidgetSpot(layout, 2, 2, appRows = 4))
@@ -125,12 +125,6 @@ class MoreRowsTest {
         assertNull(firstFreeWidgetSpot(layout, 2, 7, appRows = 4))
         assertNull(widgetCandidate(layout, 9, shown, 2, 2, rows = visibleHomeRows(4)))
         assertNotNull(widgetCandidate(layout, 9, shown, 2, 2))
-        // Displaced apps move to page 2's shown cells.
-        val first = HomeLayout(List(HOME_CELLS + shown) { if (it < 24) "old$it" else if (it >= HOME_CELLS) "p$it" else null }, List(4) { null })
-        val arranged = arrangeLikeIPhone(first, mapOf(IPhoneApp.values().first() to "iphone"), appRows = 4)
-        val displaced = arranged.slots.withIndex().filter { (i, id) -> id != null && first.slots.getOrNull(i) != id && id != "iphone" }
-        assertTrue(displaced.isNotEmpty())
-        assertTrue(displaced.all { (i, _) -> homeCellShown(i, 4) })
     }
 
     @Test fun `pages draw the shown rows, or more where something already sits lower`() {

@@ -46,8 +46,6 @@ data class AppEntry(
     /** The name Android reports, kept so a custom name can be changed or cleared without reloading apps. */
     val systemLabel: String = label,
     val kind: ProfileKind = if (isWork) ProfileKind.WORK else ProfileKind.PERSONAL,
-    /** The stock app this one is shown as while Screenshot Mode swaps it ([ScreenshotDisguise]), or null. */
-    val iconFrom: AppEntry? = null,
 ) {
     val packageName: String get() = component.packageName
     /** A pinned shortcut (a website or app action someone added to Home) rather than an app. */
@@ -626,8 +624,7 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
                     val pins = if (sourceSchema < 6 && needsMigration) migrateSchema5Apps(legacyPins) else legacyPins
                     val availableIds = entries.mapTo(mutableSetOf(), AppEntry::id)
                     val authoritative = apps.authoritativeProfiles
-                    // Screenshot Mode's swap list lives in its own file, so its apps are checked here too.
-                    val removedIds = removedAppIds(old.trackedAppIds() + ScreenshotSwap.chosen(getApplication()), availableIds,
+                    val removedIds = removedAppIds(old.trackedAppIds(), availableIds,
                         authoritative, temporarilyUnavailable, removed, userManager.getSerialNumberForUser(Process.myUserHandle()),
                         apps.removedProfiles)
                     // iOS "Add to Home Screen": a newly downloaded app also goes to the first free spot on Home.
@@ -653,7 +650,7 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
                     old.copy(apps = entries, profiles = profiles, homeSlots = reconciled.slots, leadingSlots = reconciled.leadingSlots,
                         dock = trimmedDock(reconciled.dock), folders = reconciled.folders,
                         iconStacks = IconStacks.prune(old.iconStacks, old.iconStacks.keys + old.iconStacks.values.flatten() - removedIds),
-                        appNames = old.appNames - removedIds, iconActions = old.iconActions - removedIds, appIconStyles = old.appIconStyles - removedIds.also { gone -> AppIconPictures.deleteAll(getApplication(), gone.filter { old.appIconStyles[it]?.hasPicture == true }); ScreenshotSwap.forget(getApplication(), gone) },
+                        appNames = old.appNames - removedIds, iconActions = old.iconActions - removedIds, appIconStyles = old.appIconStyles - removedIds.also { gone -> AppIconPictures.deleteAll(getApplication(), gone.filter { old.appIconStyles[it]?.hasPicture == true }) },
                         canUndoEdit = old.canUndoEdit && old.layout == reconciled, loading = false, homeAppsLoaded = true,
                         error = if (statePayloadInvalid) old.error else null)
                 }
@@ -1143,9 +1140,6 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
     fun setCornerRadius(value: Float) = updateSettings(soon = true) { it.copy(cornerRadius = value.coerceIn(16f, 72f)) }
     fun setFolderColumns(value: Int) = updateSettings(soon = false) { it.copy(folderColumns = value.takeIf { v -> v in setOf(0, 3, 4) } ?: 0) }
     fun setLabelSize(value: LabelSize) = updateSettings(soon = false) { it.copy(labelSize = value) }
-    fun setExperienceProfile(profile: ExperienceProfile) = updateSettings(soon = false) { it.withProfile(profile) }
-    /** Setup's first question: where you are coming from (see [StartingPoint]). */
-    internal fun setStartingPoint(point: StartingPoint) = updateSettings(soon = false) { it.withStartingPoint(point) }
     fun setHoldDelay(value: HoldDelay) = updateSettings(soon = false) { it.copy(holdDelay = value) }
     fun setMotionSpeed(value: MotionSpeed) = updateSettings(soon = false) { it.copy(motionSpeed = value) }
     fun setPageEffect(value: PageEffect) = updateSettings(soon = false) { it.withPageEffect(value) }
@@ -1181,12 +1175,6 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
     fun removeTodayWidget(id: Int) = updateSettings(soon = false) { it.copy(todayWidgets = TodayWidgets.remove(it.todayWidgets, id)) }
     fun moveTodayWidget(id: Int, delta: Int) = updateSettings(soon = false) { it.copy(todayWidgets = TodayWidgets.move(it.todayWidgets, id, delta)) }
     fun removePlacement(source: DropTarget) = commitLayout(removePlacement(mutable.value.layout, source))
-    /** Arranges Home's first page and dock like iPhone's with the matching installed apps (undoable). */
-    fun arrangeLikeIPhone(): Boolean {
-        saveLayoutSnapshot("Before Arrange Like iPhone")
-        val state = mutable.value
-        return commitLayout(arrangeLikeIPhone(state.layout, resolveIPhoneApps(getApplication(), state.apps, state.messagesApp), state.homeAppRows))
-    }
     private fun commitLayout(requested: HomeLayout): Boolean {
         if (statePayloadInvalid) return false
         // The dock is as big as what is in it (four at least), so a place left empty at its end closes.

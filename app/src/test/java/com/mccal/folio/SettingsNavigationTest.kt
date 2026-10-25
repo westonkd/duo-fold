@@ -16,7 +16,6 @@ class SettingsNavigationTest {
 
     @Test fun `Back names the page it returns to`() {
         assertEquals(R.string.general, settingsBackLabel(CustomizationPage.CREDITS, columns = 1))
-        assertEquals(R.string.advanced, settingsBackLabel(CustomizationPage.SYSTEM_BRIDGE, columns = 1))
         assertEquals(R.string.tweaks, settingsBackLabel(CustomizationPage.TWEAK, columns = 1))
         assertEquals(R.string.folio, settingsBackLabel(CustomizationPage.GENERAL, columns = 1))
         assertNull("the list has nowhere to go back to", settingsBackLabel(CustomizationPage.OVERVIEW, columns = 1))

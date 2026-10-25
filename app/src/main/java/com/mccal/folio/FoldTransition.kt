@@ -1,6 +1,5 @@
 package com.mccal.folio
 
-import android.content.SharedPreferences
 import androidx.compose.ui.layout.onSizeChanged
 import android.content.Context
 import android.graphics.RenderEffect
@@ -278,7 +277,7 @@ private fun SnapshotMorph(expanded: Boolean, coverShot: androidx.compose.ui.grap
 }
 
 /** Hinge steps + learned timing → target effect strength over time. */
-internal class FoldTimeline(private val context: Context, private val suLauncher: SuLauncher = ProcessSuLauncher) : SensorEventListener {
+internal class FoldTimeline(private val context: Context) : SensorEventListener {
     /** Rung whenever something happens that can start the effect, so the idle loop wakes at once. */
     val wake = kotlinx.coroutines.channels.Channel<Unit>(kotlinx.coroutines.channels.Channel.CONFLATED)
     private val sensors = context.getSystemService(SensorManager::class.java)
@@ -293,13 +292,8 @@ internal class FoldTimeline(private val context: Context, private val suLauncher
     // What this phone's hinge sensor reports, learned from its readings and remembered. The Fold8's public sensor is
     // stepped (0/90/180), so the motion between steps is predicted from learned timing; a continuous sensor is
     // followed directly.
-    private fun publicTracker() = HingeTracker(if (hinge == null) HingeCapability.POSTURE_ONLY
-        else if (prefs.getString(hingeCapabilityKey(HingeSource.PUBLIC_SENSOR), null) == HingeCapability.CONTINUOUS.name) HingeCapability.CONTINUOUS else HingeCapability.STEPPED)
-    private var tracker = publicTracker()
-    // Which feed the readings come from (ADR 0012): the public sensor, or the root helper when the owner has tested it and switched it on.
-    private var source = HingeSource.PUBLIC_SENSOR
-    private var rootFeed: RootHingeFeed? = null
-    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+    private val tracker = HingeTracker(if (hinge == null) HingeCapability.POSTURE_ONLY
+        else if (prefs.getString(HINGE_CAPABILITY_KEY, null) == HingeCapability.CONTINUOUS.name) HingeCapability.CONTINUOUS else HingeCapability.STEPPED)
     private val continuous get() = tracker.capability == HingeCapability.CONTINUOUS
     private var angleAt = 0L
     // A real movement, not sensor jitter: what the stall checks measure from on continuous sensors.
@@ -340,7 +334,7 @@ internal class FoldTimeline(private val context: Context, private val suLauncher
     fun trace(now: Long, target: Float, m: Float) {
         if (!tracing) return
         runCatching {
-            android.util.Log.d(TRACE_TAG, "t=$now src=$source cap=${tracker.capability} raw=${tracker.raw} vis=${tracker.visual?.let { "%.1f".format(it) }} " +
+            android.util.Log.d(TRACE_TAG, "t=$now cap=${tracker.capability} raw=${tracker.raw} vis=${tracker.visual?.let { "%.1f".format(it) }} " +
                 "exp=$expanded wait=$waitingForPanel close=${closeStartAt >= 0} reopen=${reopenedAt >= 0} coverOpen=${coverOpeningAt >= 0} lit=${litAt >= 0} " +
                 "target=${"%.3f".format(target)} m=${"%.3f".format(m)} follow=${followMs.toInt()}")
         }
@@ -363,71 +357,11 @@ internal class FoldTimeline(private val context: Context, private val suLauncher
 
     fun start() {
         tracing = runCatching { android.util.Log.isLoggable(TRACE_TAG, android.util.Log.DEBUG) }.getOrDefault(false)
-        val apk = context.applicationInfo.sourceDir
-        val su = RootHingeStore.suPath(context)
-        // The kill switch and the root options are read again whenever they change, so turning them off stops the helper at once.
-        listOf(SystemBridge.PREFS, RootHingeStore.PREFS).forEach { context.getSharedPreferences(it, Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(rootGate) }
-        if (su != null && rootAllowed()) startRootFeed(apk, su) else registerPublic()
-    }
-
-    /** A continuous feed proven by the owner's test: followed directly, remembered apart from the public sensor's. */
-    private fun startRootFeed(apk: String, su: String) {
-        useSource(HingeSource.ROOT_HELPER, HingeCapability.CONTINUOUS)
-        rootFeed = RootHingeFeed(suLauncher, apk, su,
-            onSample = { s -> main.post { if (source == HingeSource.ROOT_HELPER) { onAngle(s.angleDegrees, s.timestampNanos, SystemClock.uptimeMillis()); wake.trySend(Unit) } } },
-            onLost = { main.post { rootLost() } }, now = { SystemClock.elapsedRealtime() }).also { it.start() }
-    }
-
-    fun stop() {
-        listOf(SystemBridge.PREFS, RootHingeStore.PREFS).forEach { context.getSharedPreferences(it, Context.MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener(rootGate) }
-        rootFeed?.stop(); rootFeed = null
-        sensors?.unregisterListener(this)
-    }
-
-    /** Whether the root hinge feed may run right now: the owner's options and the System Bridge switch. */
-    private fun rootAllowed() = RootHingeStore.advanced(context) && RootHingeStore.useInFold(context) &&
-        hingeSource(SystemBridge.broker(context)) == HingeSource.ROOT_HELPER
-
-    private val rootGate = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        main.post {
-            traceEvent("root gate: $key changed, feed=${rootFeed != null} allowed=${rootAllowed()} off=${SystemBridge.isOff(context)} advanced=${RootHingeStore.advanced(context)} use=${RootHingeStore.useInFold(context)}")
-            val allowed = rootAllowed()
-            if (rootFeed != null && !allowed) {
-                traceEvent("root feed stopped by the gate")
-                rootFeed?.stop(); rootFeed = null
-                registerPublic()
-                wake.trySend(Unit)
-            } else if (rootFeed == null && allowed) {
-                // Switched back on (or the root options turned on) while Home is open: start the feed now, not at the next start.
-                val su = RootHingeStore.suPath(context)
-                if (su != null) {
-                    traceEvent("root feed started by the gate")
-                    sensors?.unregisterListener(this)
-                    startRootFeed(context.applicationInfo.sourceDir, su)
-                    wake.trySend(Unit)
-                }
-            }
-        }
-    }
-
-    private fun registerPublic() {
-        useSource(HingeSource.PUBLIC_SENSOR, null)
         hinge?.let { sensors?.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
     }
 
-    /** The root feed ended by itself: say so, and carry on with the public sensor, whose stepped prediction always works. */
-    private fun rootLost() {
-        if (source != HingeSource.ROOT_HELPER) return
-        rootFeed?.stop(); rootFeed = null
-        RootHingeStore.markLost(context)
-        registerPublic()
-        wake.trySend(Unit)
-    }
-
-    private fun useSource(next: HingeSource, learned: HingeCapability?) {
-        if (source == next && learned == null) return
-        source = next
-        tracker = if (next == HingeSource.ROOT_HELPER) HingeTracker(learned ?: HingeCapability.CONTINUOUS) else publicTracker()
+    fun stop() {
+        sensors?.unregisterListener(this)
     }
 
     fun onDisplaySwitched(now: Long) {
@@ -453,7 +387,7 @@ internal class FoldTimeline(private val context: Context, private val suLauncher
         val previous = tracker.raw
         val wasFlat = tracker.flat
         val wasClosed = tracker.closed
-        if (tracker.feed(value, timestampNs)) prefs.edit().putString(hingeCapabilityKey(source), tracker.capability.name).apply()
+        if (tracker.feed(value, timestampNs)) prefs.edit().putString(HINGE_CAPABILITY_KEY, tracker.capability.name).apply()
         angleAt = now
         if (!expanded) {
             val before = coverAngle
@@ -675,6 +609,7 @@ private const val COVER_LIGHT_REACH = .42f
 private const val COVER_OPEN_STALL_MS = 2_000L
 private const val FOLLOW_MS = 28f
 private const val TRACE_TAG = "FolioFoldTrace"
+private const val HINGE_CAPABILITY_KEY = "fold_hinge_capability"
 /** Letting go of the effect (a held, half-open phone): a short, soft release instead of a snap. */
 private const val RELEASE_FOLLOW_MS = 150f
 /** After reopening, how long the effect may keep following the hinge before it lets go on its own. */

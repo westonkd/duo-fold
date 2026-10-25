@@ -29,7 +29,22 @@ data class ActionRef(val id: String, val args: Map<String, String> = emptyMap())
     }
 }
 
-/** What an action needs before it can run. Access beyond a normal app is asked for by the broker, not assumed. */
+/**
+ * How much an operation can hurt, independent of how much access it needs. Ordered from least to most, so a comparison
+ * says which asks for more care.
+ */
+internal enum class OperationRisk {
+    /** Reads only. Nothing to undo. */
+    OBSERVE,
+    /** Undoes itself or can be undone automatically. */
+    REVERSIBLE,
+    /** Persists, and Folio knows how to put it back. */
+    STATEFUL,
+    /** Can interrupt apps or the system while it runs. */
+    DISRUPTIVE,
+}
+
+/** What an action needs before it can run. */
 internal enum class ActionNeeds {
     /** Nothing: an ordinary app can do it. */
     NONE,

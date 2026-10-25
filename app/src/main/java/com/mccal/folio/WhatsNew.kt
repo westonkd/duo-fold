@@ -103,14 +103,14 @@ internal object WhatsNew {
 
     /**
      * Whether to show What's New now: only after an update to a version with notes, once. A first install records the
-     * version without showing (the welcome covers it).
+     * version without showing.
      */
-    fun shouldShow(context: Context, firstRun: Boolean): Boolean {
+    fun shouldShow(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS, 0)
         val current = currentVersion(context)
         val seen = prefs.getString(SEEN, null)
         if (seen == current) return false
-        if (firstRun || seen == null && !context.getSharedPreferences(SettingKeys.PREFS, 0).contains(SettingKeys.STATE)) {
+        if (seen == null && !context.getSharedPreferences(SettingKeys.PREFS, 0).contains(SettingKeys.STATE)) {
             markSeen(context); return false
         }
         return notes(context).any { it.version == releaseVersion(context) }
