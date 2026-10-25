@@ -3,6 +3,7 @@ package com.mccal.folio
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
@@ -63,24 +64,33 @@ internal data class ContinuousRoundedShape(val fraction: Float) : Shape {
 internal val IconContinuousShape = ContinuousRoundedShape(ICON_CORNER_FRACTION)
 
 internal object IconLight {
-    const val RIM_LEAD = .5f
-    const val RIM_SIDE = .08f
-    const val RIM_TRAIL = .24f
-    const val SHEEN = .14f
-    const val SHADE = .08f
+    const val RIM_LEAD = .72f
+    const val RIM_SIDE = .1f
+    const val RIM_TRAIL = .3f
+    const val SHEEN = .2f
+    const val SHADE = .14f
     const val WASH = .1f
+    const val GLINT = .26f
+    const val EDGE = .14f
     const val EDGE_ALPHA = 200
     const val RIM_WIDTH = .014f
+    const val SHADOW_DP = 3f
+    const val SHADOW_AMBIENT = .18f
+    const val SHADOW_SPOT = .32f
 }
 
+internal fun Modifier.iconRestingShadow(): Modifier = shadow(IconLight.SHADOW_DP.dp, IconContinuousShape, clip = false,
+    ambientColor = Color.Black.copy(alpha = IconLight.SHADOW_AMBIENT), spotColor = Color.Black.copy(alpha = IconLight.SHADOW_SPOT))
+
 @Immutable
-internal data class IconLighting(val rimLead: Color, val rimSide: Color, val rimTrail: Color, val sheen: Float, val shade: Float, val wash: Color?)
+internal data class IconLighting(val rimLead: Color, val rimSide: Color, val rimTrail: Color, val sheen: Float, val shade: Float, val wash: Color?,
+    val glint: Float = 0f, val edge: Color = Color.Transparent)
 
 internal fun iconLighting(wallpaper: Int?): IconLighting {
     fun white(alpha: Float) = Color.White.copy(alpha = alpha)
     val wash = wallpaper?.let { lerp(Color.White, Color(it).copy(alpha = 1f), IconLight.WASH) }
     return IconLighting(white(IconLight.RIM_LEAD), white(IconLight.RIM_SIDE), white(IconLight.RIM_TRAIL),
-        IconLight.SHEEN, IconLight.SHADE, wash)
+        IconLight.SHEEN, IconLight.SHADE, wash, IconLight.GLINT, Color.Black.copy(alpha = IconLight.EDGE))
 }
 
 internal fun fillsEdges(width: Int, height: Int, alphaAt: (Int, Int) -> Int): Boolean {
@@ -98,12 +108,17 @@ internal fun Modifier.iconLighting(shape: Shape, light: IconLighting): Modifier 
         start = Offset.Zero, end = Offset(size.width, size.height))
     val sheen = Brush.verticalGradient(listOf(Color.White.copy(alpha = light.sheen), Color.Transparent), startY = 0f, endY = size.height * .5f)
     val shade = Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = light.shade)), startY = size.height * .6f, endY = size.height)
+    val glint = Brush.radialGradient(listOf(Color.White.copy(alpha = light.glint), Color.Transparent),
+        center = Offset(size.width * .2f, size.height * .08f), radius = size.minDimension * .42f)
     val stroke = Stroke(rimWidth)
+    val edge = Stroke(rimWidth * .8f)
     onDrawWithContent {
         drawContent()
         light.wash?.let { drawOutline(outline, it, blendMode = BlendMode.Multiply) }
         drawOutline(outline, sheen)
         drawOutline(outline, shade)
+        if (light.glint > 0f) drawOutline(outline, glint)
+        if (light.edge.alpha > 0f) drawOutline(outline, light.edge, style = edge)
         translate(rimWidth / 2f, rimWidth / 2f) { drawOutline(rimOutline, rim, style = stroke) }
     }
 }

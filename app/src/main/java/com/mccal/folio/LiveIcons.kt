@@ -149,16 +149,17 @@ internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modif
     val wallpaper = LocalWallpaperTone.current.primary
     val lighting = remember(wallpaper) { iconLighting(wallpaper) }
     fun Modifier.lit(fills: Boolean = true): Modifier = if (fills) iconLighting(IconContinuousShape, lighting) else this
+    val source = packIcon ?: app.icon
+    val fills = remember(source) { runCatching { fillsEdges(source.width, source.height) { x, y -> android.graphics.Color.alpha(source.getPixel(x, y)) } }.getOrDefault(false) }
+    val shaped = picture != null || liveKind != null || fills
     Box(modifier.semantics { contentDescription?.let { this.contentDescription = it } }) {
-        val fill = Modifier.fillMaxSize().clip(IconContinuousShape)
+        val fill = Modifier.fillMaxSize().then(if (shaped) Modifier.iconRestingShadow() else Modifier).clip(IconContinuousShape)
         when {
             picture != null -> { val shown = remember(picture) { picture!!.asImageBitmap() }; Image(shown, null, fill.lit()) }
             liveKind == LiveIcons.Kind.CALENDAR -> CalendarIcon(fill.lit(), palette)
             liveKind == LiveIcons.Kind.CLOCK -> ClockIcon(fill.lit(), palette)
             else -> {
-                val source = packIcon ?: app.icon
                 val bitmap = remember(source) { source.asImageBitmap() }
-                val fills = remember(source) { runCatching { fillsEdges(source.width, source.height) { x, y -> android.graphics.Color.alpha(source.getPixel(x, y)) } }.getOrDefault(false) }
                 Image(bitmap, null, fill.lit(fills))
             }
         }

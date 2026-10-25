@@ -176,7 +176,8 @@ internal enum class GlassRole(val rim: Float, val light: Float, val inset: Boole
 
 @androidx.compose.runtime.Immutable
 internal data class GlassSpec(val bodyStart: Color, val bodyEnd: Color, val light: Float, val grain: Float,
-    val rimLead: Color, val rimSide: Color, val rimTrail: Color, val lift: Float)
+    val rimLead: Color, val rimSide: Color, val rimTrail: Color, val lift: Float, val edge: Color = Color.Transparent,
+    val glint: Float = 0f)
 
 internal const val LIQUID_FROST = .30f
 internal const val SEARCH_FIELD_FROST = .12f
@@ -237,12 +238,14 @@ internal fun rememberCrossWindowBlur(): Boolean {
 internal object LiquidGlass {
     const val TONE_MIX = .22f
     const val END_FROST = .78f
-    const val LIGHT = .14f
+    const val LIGHT = .2f
     const val GRAIN = .045f
-    const val RIM_BRIGHT = .62f
-    const val RIM_SIDE = .10f
-    const val RIM_FAINT = .26f
-    const val LIFT = .22f
+    const val RIM_BRIGHT = .82f
+    const val RIM_SIDE = .12f
+    const val RIM_FAINT = .34f
+    const val LIFT = .28f
+    const val EDGE = .16f
+    const val GLINT = .34f
 }
 
 internal fun liquidGlassSpec(base: Color, frost: Float, role: GlassRole, primary: Int? = null, secondary: Int? = null): GlassSpec {
@@ -253,7 +256,8 @@ internal fun liquidGlassSpec(base: Color, frost: Float, role: GlassRole, primary
     val faint = Color.White.copy(alpha = LiquidGlass.RIM_FAINT * role.rim)
     val side = Color.White.copy(alpha = LiquidGlass.RIM_SIDE)
     return GlassSpec(start, end, LiquidGlass.LIGHT * role.light, LiquidGlass.GRAIN,
-        if (role.inset) faint else bright, side, if (role.inset) bright else faint, LiquidGlass.LIFT * role.lift)
+        if (role.inset) faint else bright, side, if (role.inset) bright else faint, LiquidGlass.LIFT * role.lift,
+        Color.Black.copy(alpha = LiquidGlass.EDGE * role.rim), if (role.inset) 0f else LiquidGlass.GLINT * role.light)
 }
 
 private object GlassGrain {
@@ -284,7 +288,8 @@ internal fun androidx.compose.ui.Modifier.drawLiquidGlass(shape: androidx.compos
     drawWithCache {
         val outline = shape.createOutline(size, layoutDirection, this)
         val rimWidth = 1.2.dp.toPx()
-        val rimOutline = shape.createOutline(androidx.compose.ui.geometry.Size(size.width - rimWidth, size.height - rimWidth), layoutDirection, this)
+        val rimInset = rimWidth + .8.dp.toPx()
+        val rimOutline = shape.createOutline(androidx.compose.ui.geometry.Size(size.width - rimInset, size.height - rimInset), layoutDirection, this)
         val body = androidx.compose.ui.graphics.Brush.linearGradient(listOf(spec.bodyStart, spec.bodyEnd),
             androidx.compose.ui.geometry.Offset.Zero, androidx.compose.ui.geometry.Offset(size.width, size.height))
         val light = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.White.copy(alpha = spec.light), Color.Transparent),
@@ -294,7 +299,11 @@ internal fun androidx.compose.ui.Modifier.drawLiquidGlass(shape: androidx.compos
         val rim = androidx.compose.ui.graphics.Brush.linearGradient(
             0f to spec.rimLead, .35f to spec.rimSide, .65f to spec.rimSide, 1f to spec.rimTrail,
             start = androidx.compose.ui.geometry.Offset.Zero, end = androidx.compose.ui.geometry.Offset(size.width, size.height))
+        val glint = androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color.White.copy(alpha = spec.glint), Color.Transparent),
+            center = androidx.compose.ui.geometry.Offset(size.width * .12f, size.height * .04f), radius = minOf(size.width, size.height) * .45f)
         val stroke = androidx.compose.ui.graphics.drawscope.Stroke(rimWidth)
+        val edgeWidth = .8.dp.toPx()
+        val edge = androidx.compose.ui.graphics.drawscope.Stroke(edgeWidth)
         val shadow = if (spec.lift > 0f) liftShadow(outline, spec.lift, 18.dp.toPx(), 6.dp.toPx()) else null
         onDrawBehind {
             shadow?.let { (path, paint) ->
@@ -311,7 +320,9 @@ internal fun androidx.compose.ui.Modifier.drawLiquidGlass(shape: androidx.compos
                 drawOutline(outline, bloom)
             }
             drawOutline(outline, GlassGrain.brush, alpha = spec.grain)
-            translate(rimWidth / 2f, rimWidth / 2f) { drawOutline(rimOutline, rim, style = stroke) }
+            if (spec.glint > 0f) drawOutline(outline, glint)
+            if (spec.edge.alpha > 0f) drawOutline(outline, spec.edge, style = edge)
+            translate(rimWidth / 2f + edgeWidth / 2f, rimWidth / 2f + edgeWidth / 2f) { drawOutline(rimOutline, rim, style = stroke) }
         }
     }
 
