@@ -74,8 +74,7 @@ changelog_at() { git show "$1:CHANGELOG.md" 2>/dev/null || true; }
 unreleased_bullets() {
     awk '
         /^## \[/ { inside = ($0 ~ /Unreleased/) ; next }
-        inside && /^- / { count++ }
-        END { print count + 0 }
+        inside && /^- / { print }
     ' <<< "$(changelog_at "$1")"
 }
 has_unreleased() {
@@ -103,10 +102,9 @@ elif ! has_unreleased HEAD; then
     fail "REL-7  CHANGELOG.md has no '## [x.y.z] - Unreleased' section to add to.
         Open one for the next version and put this change's line in it."
 else
-    before=$(unreleased_bullets "$merge_base")
-    after=$(unreleased_bullets HEAD)
-    if (( after > before )); then
-        pass "REL-7  $((after - before)) line(s) added to the Unreleased notes"
+    added=$(grep -cvxFf <(unreleased_bullets "$merge_base") <(unreleased_bullets HEAD) || true)
+    if (( added > 0 )); then
+        pass "REL-7  $added new or reworded line(s) in the Unreleased notes"
     else
         fail "REL-7  this changes what ships but adds no line to the Unreleased notes.
         Changed: $(echo "$ships" | head -3 | tr '\n' ' ')$([[ $(echo "$ships" | wc -l) -gt 3 ]] && echo '…')
