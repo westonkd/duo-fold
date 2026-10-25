@@ -2,6 +2,7 @@
 
 package com.mccal.folio
 
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.ui.res.stringResource
 import android.appwidget.AppWidgetProviderInfo
 import android.os.UserManager
@@ -241,7 +242,7 @@ fun LauncherScreen(
     val pageGestures = remember(pager) { PageGestureLimits(pager) }
     SideEffect { pageGestures.editing = drag.active || widgetSession != null || resize.active }
     val pageFling = androidx.compose.foundation.pager.PagerDefaults.flingBehavior(pager, pagerSnapDistance = pageGestures,
-        snapAnimationSpec = FolioMotion.spring(1f to androidx.compose.animation.core.Spring.StiffnessMediumLow * 1.2f))
+        snapAnimationSpec = FolioMotion.spring(FolioMotion.Page))
     val scope = rememberCoroutineScope()
     var previousHomePages by remember { mutableIntStateOf(homePages) }
     var previousEditRevision by remember { mutableIntStateOf(state.editRevision) }
@@ -276,7 +277,7 @@ fun LauncherScreen(
         drag.clear(); widgetSession = null; resize.stop(); sheet = ""; picker.packageName = null
         picker.exactTarget = false; widgetPlacementMessage = null; overlays.closeAll(); homeEdit.stop()
         focus.clearFocus(); keyboard?.hide()
-        pager.animateScrollToPage(page)
+        pager.glideToPage(page)
     } }
     // Given half of a split screen, show a Home page (one cover-sized page beside the app) rather than where Folio was left.
     val splitScreen = androidx.compose.ui.platform.LocalConfiguration.current.let { launcherActivity.isInMultiWindowMode }
@@ -301,7 +302,7 @@ fun LauncherScreen(
     // trying again can't mend, so there it brings back the choices above.
     val onProblem = { if (model.layoutDamaged) problemDismissed = false else model.refresh() }
     LaunchedEffect(searchRequests) { if (searchRequests > 0) { drag.clear(); widgetSession = null; resize.stop(); sheet = ""; picker.packageName = null; picker.exactTarget = false; overlays.menu = null
-        if (!state.googleSearch || !onGoogleSearch(null)) pager.animateScrollToPage(homePages)
+        if (!state.googleSearch || !onGoogleSearch(null)) pager.glideToPage(homePages)
     } }
     val widgetPickerBack = {
         if (widgetSession != null) {
@@ -317,15 +318,15 @@ fun LauncherScreen(
     val libraryBackActive = sheet.isEmpty() && !launcherActivity.spotlightVisible.value &&
         pager.currentPage == visibleHomePages && !resize.active && !drag.active && overlays.menu == null && !homeEdit.active
     PredictiveBack(enabled = libraryBackActive, onProgress = { libraryBack = it }, onCancel = { libraryBack = 0f },
-        onBack = { focus.clearFocus(); scope.launch { pager.animateScrollToPage(0); libraryBack = 0f } })
+        onBack = { focus.clearFocus(); scope.launch { pager.glideToPage(0); libraryBack = 0f } })
     BackHandler(enabled = sheet.isEmpty() && !launcherActivity.spotlightVisible.value && !libraryBackActive) { if (resize.active) resize.stop() else if (drag.active) {
         val destination = if (drag.source?.target is DropTarget.Library) homePages else drag.originPage.coerceAtMost(homePages - 1)
         drag.clear(); scope.launch { pager.scrollToPage(destination) }
     } else if (overlays.menu != null) overlays.menu = null else if (homeEdit.active) homeEdit.stop()
         // Previewing (Folio isn't the Home app yet): Back on the first page leaves, like any other app.
         else if (!isDefaultHome && pager.currentPage == 0) launcherActivity.moveTaskToBack(true)
-        else { focus.clearFocus(); scope.launch { pager.animateScrollToPage(0) } } }
-    val openLibrary = { scope.launch { pager.animateScrollToPage(homePages) }; Unit }
+        else { focus.clearFocus(); scope.launch { pager.glideToPage(0) } } }
+    val openLibrary = { scope.launch { pager.glideToPage(homePages) }; Unit }
     val dragWindowPage = if (expandedWorkspace && (drag.active || widgetSession != null)) pager.settledPage else pager.currentPage
     val eligibleDragPages = remember(expandedWorkspace, dragWindowPage, visibleHomePages) {
         if (expandedWorkspace && dragWindowPage in 0 until visibleHomePages) {
@@ -362,7 +363,7 @@ fun LauncherScreen(
     LaunchedEffect(blockedDock) {
         if (!blockedDock) return@LaunchedEffect
         haptic.perform(FolioHaptic.Refuse)
-        if (!dockReduceMotion) listOf(-8f, 8f, -5f, 5f, 0f).forEach { dockShake.animateTo(it, tween(55)) }
+        if (!dockReduceMotion) { dockShake.snapTo(0f); dockShake.animateTo(0f, FolioMotion.spring(FolioMotion.Shake), FolioMotion.SHAKE_VELOCITY) }
     }
     val widgetRawTarget = widgetSession?.let { session -> drag.regions.values.firstOrNull {
         it.target is DropTarget.Home && it.page in eligibleDragPages && it.bounds.contains(session.pointer)
@@ -445,21 +446,33 @@ fun LauncherScreen(
             else -> state.layout
         }
     }
-    val edgeWidth = with(LocalDensity.current) { 30.dp.toPx() }
+    var pageDotsBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
+    val edgeWidth = with(LocalDensity.current) { DRAG_EDGE_DP.dp.toPx() }
     val edgePointer = widgetSession?.takeIf { it.dragging }?.pointer ?: drag.pointer
     val edgeActive = (drag.active && drag.moved) || widgetSession?.dragging == true
     val edge = if (!edgeActive) 0 else dragEdgeDirection(edgePointer, drag.rootBounds, edgeWidth)
     LaunchedEffect(edgeActive, edge) {
         if (edge != 0) while (drag.active || widgetSession?.dragging == true) {
-            delay(650)
+            delay(DRAG_EDGE_HOLD_MS)
             val next = (pager.currentPage + edge).coerceIn(0, homePages)
             if ((!drag.active && widgetSession?.dragging != true) || next == pager.currentPage) break
+            haptic.perform(FolioHaptic.Step)
             // Do not key this effect on currentPage: it changes halfway through the
             // animation and would cancel the turn before the inner grid is visible.
             // Once the hold commits a turn, finish its animation while the finger moves
             // into the incoming page. Leaving the edge cancels only the next hold timer.
-            scope.launch { pager.animateScrollToPage(next) }.join()
+            scope.launch { pager.glideToPage(next) }.join()
         }
+    }
+    val dotSlop = with(LocalDensity.current) { FolioTouch.MIN.dp.toPx() / 2f }
+    val dotHover = if (!edgeActive) null else pageDotUnder(drag.pointer, pageDotsBounds, visibleHomePages, dotSlop)
+    LaunchedEffect(dotHover) {
+        val target = dotHover?.coerceIn(0, homePages) ?: return@LaunchedEffect
+        if (target == pager.currentPage) return@LaunchedEffect
+        delay(DOT_HOVER_MS)
+        if (!drag.active && widgetSession?.dragging != true) return@LaunchedEffect
+        haptic.perform(FolioHaptic.Step)
+        pager.glideToPage(target)
     }
     fun finishDrag(cancelled: Boolean) {
         val source = drag.source ?: return
@@ -524,10 +537,21 @@ fun LauncherScreen(
         }
     }
 
+    val homeReturn = remember { Animatable(1f) }
+    LaunchedEffect(HomeReturn.plays) {
+        if (HomeReturn.plays == 0 || dockReduceMotion) return@LaunchedEffect
+        homeReturn.snapTo(0f)
+        homeReturn.animateTo(1f, FolioMotion.spring(FolioMotion.Settle))
+    }
     Box(Modifier.fillMaxSize().graphicsLayer {
         // The 0.6.9 motion pass (MO5): Home steps back a little while a folder is open; not under Reduce Motion.
         if (!dockReduceMotion && FolderOpening.id != null) {
             val s = FolderOpening.homeScale(FolderOpening.progress); scaleX = s; scaleY = s
+        }
+        if (homeReturn.value < 1f) {
+            val s = HomeReturn.scale(homeReturn.value)
+            scaleX *= s; scaleY *= s
+            transformOrigin = HomeReturn.transformOrigin(drag.landing.rootInWindow, size)
         }
     }.testTag("launcher-root").onGloballyPositioned { drag.landing.rootInWindow = it.boundsInWindow().topLeft }.homeDragInput(drag,
         enabled = sheet.isEmpty() && overlays.menu == null && !resize.active && pager.currentPage >= 0,
@@ -896,8 +920,8 @@ fun LauncherScreen(
                                 }
                             }
                         }.description(R.string.page_scrubber),
-                        transitionSpec = { (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(180)) togetherWith
-                            androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(120)))
+                        transitionSpec = { (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(FolioMotion.FADE_MS)) togetherWith
+                            androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(FolioMotion.FADE_MS)))
                             .using(androidx.compose.animation.SizeTransform(clip = false)) },
                         contentAlignment = Alignment.Center) { view ->
                         if (view == StripView.PILL) HomeSearchPill { if (!state.googleSearch || !onGoogleSearch(null)) launcherActivity.openSpotlight() }
@@ -912,15 +936,16 @@ fun LauncherScreen(
                             val dotWorm = !LocalReduceMotion.current && visibleHomePages <= 6
                             val dotDensity = LocalDensity.current
                             val dotInk = LocalHomeInk.current
-                            Row(Modifier.heightIn(min = 30.dp).background(if (scrubbing) Color.White.copy(alpha = .18f) else Color.Transparent, CircleShape)
-                                .then(if (dotWorm) Modifier.dotWorm({ (pager.currentPage + pager.currentPageOffsetFraction) }, homePages, dotInk.primary, with(dotDensity) { 28.dp.toPx() },
+                            Row(Modifier.heightIn(min = 30.dp).onGloballyPositioned { pageDotsBounds = it.boundsInWindow() }
+                                .background(if (scrubbing) Color.White.copy(alpha = .18f) else Color.Transparent, CircleShape)
+                                .then(if (dotWorm) Modifier.dotWorm({ (pager.currentPage + pager.currentPageOffsetFraction) }, homePages, dotInk.primary, with(dotDensity) { PAGE_DOT_PITCH.dp.toPx() },
                                     with(dotDensity) { (if (scrubbing) FolioSpace.SNUG.dp else 0.dp).toPx() }, with(dotDensity) { 3.dp.toPx() }) else Modifier)
                                 .padding(horizontal = if (scrubbing) FolioSpace.SNUG.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
                             if (visibleHomePages <= 6) repeat(visibleHomePages) { index ->
-                                Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) {
-                                    if (index == homePages) Icon(Icons.Rounded.Add, null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                    else if (dotWorm) Box(Modifier.size(4.dp).background(dotInk.faint, CircleShape))
-                                    else Box(Modifier.size(if (index == pager.currentPage) 6.dp else 4.dp).background(if (index == pager.currentPage) LocalHomeInk.current.primary else LocalHomeInk.current.faint, CircleShape))
+                                Box(Modifier.size(PAGE_DOT_PITCH.dp), contentAlignment = Alignment.Center) {
+                                    if (index == homePages) Icon(Icons.Rounded.Add, null, tint = dotInk.primary, modifier = Modifier.size(12.dp))
+                                    else if (dotWorm) Box(Modifier.size(PAGE_DOT_SIZE.dp).background(dotInk.faint, CircleShape))
+                                    else Box(Modifier.size(PAGE_DOT_SIZE.dp).background(if (index == pager.currentPage) LocalHomeInk.current.primary else LocalHomeInk.current.faint, CircleShape))
                                 }
                             } else Text("${minOf(pager.currentPage + 1, homePages)} / $homePages", color = Color.White, fontSize = FolioType.GROUP_LABEL.sp)
                             }
@@ -930,8 +955,8 @@ fun LauncherScreen(
                                 .padding(horizontal = if (scrubbing) FolioSpace.SNUG.dp else 0.dp)) {
                                 repeat(visibleHomePages) { index ->
                                     val dotLabel = if (index == homePages) stringResource(R.string.new_home_page) else stringResource(R.string.home_page, index + 1)
-                                    Box(Modifier.width(28.dp).fillMaxHeight()
-                                        .clickable(role = Role.Button, onClickLabel = dotLabel) { scope.launch { pager.animateScrollToPage(index) } }
+                                    Box(Modifier.width(PAGE_DOT_PITCH.dp).fillMaxHeight()
+                                        .clickable(role = Role.Button, onClickLabel = dotLabel) { scope.launch { pager.glideToPage(index) } }
                                         .semantics { contentDescription = dotLabel }.testTag("home-page-dot-$index"))
                                 }
                             }
@@ -950,8 +975,10 @@ fun LauncherScreen(
                     state.leftHanded -> Alignment.TopEnd
                     else -> Alignment.TopStart
                 }).width(pagerWidth),
-                enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { if (geometry.expanded) it / 2 else -it / 2 },
-                exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { if (geometry.expanded) it / 2 else -it / 2 }) {
+                enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(FolioMotion.FADE_MS)) +
+                    androidx.compose.animation.slideInVertically(FolioMotion.spring(FolioMotion.Settle, IntOffset.VisibilityThreshold)) { if (geometry.expanded) it / 2 else -it / 2 },
+                exit = androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(FolioMotion.FADE_MS)) +
+                    androidx.compose.animation.slideOutVertically(FolioMotion.spring(FolioMotion.Firm, IntOffset.VisibilityThreshold)) { if (geometry.expanded) it / 2 else -it / 2 }) {
                 Row(Modifier.fillMaxWidth().padding(start = FolioSpace.COMFY.dp, end = FolioSpace.COMFY.dp,
                     top = if (geometry.expanded) 0.dp else FolioSpace.HAIR.dp).testTag("jiggle-bar"),
                     horizontalArrangement = if (geometry.expanded) Arrangement.spacedBy(FolioSpace.SMALL.dp, Alignment.End) else Arrangement.Start,
@@ -1230,7 +1257,7 @@ fun LauncherScreen(
                             }
                         } else Modifier)) {
                         Row(Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.folioSafeTop).padding(top = FolioSpace.SMALL.dp)
-                            .background(Glass.copy(alpha = .97f), RoundedCornerShape(22.dp))
+                            .toolbarGlass(CircleShape)
                             .testTag("widget-placement-toolbar"), verticalAlignment = Alignment.CenterVertically) {
                             TextButton(onClick = widgetPickerBack) { Text(stringResource(R.string.back_to_widgets)) }
                             if (session.candidate != null) Text(stringResource(R.string.replace_here), color = Ink,
@@ -1241,14 +1268,14 @@ fun LauncherScreen(
                                 val local = homeCellLocal(session.targetIndex ?: 0)
                                 val page = targetPage - 1
                                 widgetSession = session.copy(targetIndex = homeCellIndex(page, local))
-                                scope.launch { pager.animateScrollToPage(page.coerceAtLeast(0)) }
+                                scope.launch { pager.glideToPage(page.coerceAtLeast(0)) }
                             }) { Icon(Icons.Rounded.ChevronLeft, stringResource(R.string.previous_home_page)) }
                             Text("${session.span.width} × ${session.span.height}", color = Ink)
                             if (!session.dragging && session.candidate == null) IconButton(enabled = targetPage < homePages, onClick = {
                                 val local = homeCellLocal(session.targetIndex ?: 0)
                                 val page = (targetPage + 1).coerceAtMost(homePages)
                                 widgetSession = session.copy(targetIndex = homeCellIndex(page, local))
-                                scope.launch { pager.animateScrollToPage(page.coerceAtLeast(0)) }
+                                scope.launch { pager.glideToPage(page.coerceAtLeast(0)) }
                             }) { Icon(Icons.Rounded.ChevronRight, stringResource(R.string.next_home_page)) }
                             if (!session.dragging) TextButton(enabled = widgetDraft != null, onClick = {
                                 widgetDraft?.let { draft ->
@@ -1277,14 +1304,14 @@ fun LauncherScreen(
                             val previewX = if (specialAnchor != null) anchor.left
                                 else anchor.left + with(density) { 5.dp.toPx() }
                             Surface(Modifier.offset { IntOffset(previewX.roundToInt(), anchor.top.roundToInt()) }
-                                .size(previewWidth, previewHeight).testTag("widget-placement-preview")
+                                .size(previewWidth, previewHeight).toolbarGlass(RoundedCornerShape(FolioRadius.WIDGET.dp)).testTag("widget-placement-preview")
                                 .semantics { stateDescription = if (widgetDraft != null) launcherActivity.getString(R.string.ready_to_place) else launcherActivity.getString(R.string.no_room_here) },
-                                color = if (widgetDraft != null) Glass.copy(alpha = .82f) else Color(0xFFE7B6B6).copy(alpha = .9f),
-                                shape = RoundedCornerShape(FolioRadius.PANEL.dp), border = androidx.compose.foundation.BorderStroke(3.dp,
-                                    if (widgetDraft != null) Color.White else FolioColors.InvalidDrop)) {
+                                color = if (widgetDraft != null) Color.Transparent else FolioColors.InvalidDrop.copy(alpha = .35f),
+                                shape = RoundedCornerShape(FolioRadius.WIDGET.dp), border = if (widgetDraft != null) null
+                                    else androidx.compose.foundation.BorderStroke(3.dp, FolioColors.InvalidDrop)) {
                                 Box(Modifier.fillMaxSize()) {
                                     if (sessionEntry != null) WidgetProviderPreview(sessionEntry, session.span,
-                                        Modifier.fillMaxSize().padding(5.dp).clip(RoundedCornerShape(18.dp)))
+                                        Modifier.fillMaxSize().padding(5.dp).clip(RoundedCornerShape((FolioRadius.WIDGET - 5).dp)))
                                     else Column(Modifier.align(Alignment.Center).padding(FolioSpace.MEDIUM.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(session.provider?.loadLabel(launcherActivity.packageManager)?.toString()
@@ -1300,7 +1327,7 @@ fun LauncherScreen(
                                         Text("${session.span.width} × ${session.span.height}", color = Ink)
                                     }
                                     if (widgetDraft == null) Box(Modifier.matchParentSize()
-                                        .background(Color(0xFFB83B3B).copy(alpha = .34f)), contentAlignment = Alignment.Center) {
+                                        .background(FolioColors.RedLight.copy(alpha = .3f)), contentAlignment = Alignment.Center) {
                                         Text(stringResource(R.string.no_room_here), color = Color.White, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
@@ -1310,11 +1337,11 @@ fun LauncherScreen(
                             Surface(Modifier.offset { IntOffset((session.pointer.x - 90.dp.toPx()).roundToInt(),
                                 (session.pointer.y - 60.dp.toPx()).roundToInt()) }.size(180.dp, 120.dp)
                                 .testTag("widget-placement-preview").semantics { stateDescription = noRoomHere },
-                                color = Color(0xFFE7B6B6).copy(alpha = .9f), shape = RoundedCornerShape(FolioRadius.PANEL.dp)) {
+                                color = FolioColors.InvalidDrop.copy(alpha = .35f), shape = RoundedCornerShape(FolioRadius.WIDGET.dp)) {
                                 Box(contentAlignment = Alignment.Center) {
                                     if (sessionEntry != null) WidgetProviderPreview(sessionEntry, session.span,
-                                        Modifier.fillMaxSize().padding(5.dp).clip(RoundedCornerShape(18.dp)))
-                                    Box(Modifier.matchParentSize().background(Color(0xFFB83B3B).copy(alpha = .34f)),
+                                        Modifier.fillMaxSize().padding(5.dp).clip(RoundedCornerShape((FolioRadius.WIDGET - 5).dp)))
+                                    Box(Modifier.matchParentSize().background(FolioColors.RedLight.copy(alpha = .3f)),
                                         contentAlignment = Alignment.Center) { Text(stringResource(R.string.no_room_here), color = Color.White) }
                                 }
                             }
@@ -1323,14 +1350,14 @@ fun LauncherScreen(
                 }
                 widgetPlacementMessage?.let { message ->
                     Surface(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(FolioSpace.XL.dp),
-                        color = Glass, shape = RoundedCornerShape(FolioRadius.FLOATING.dp)) { Text(message, Modifier.padding(FolioSpace.LARGE.dp), color = Ink) }
+                        color = Glass, shape = CircleShape) { Text(message, Modifier.padding(horizontal = FolioSpace.XL.dp, vertical = FolioSpace.MEDIUM.dp), color = Ink) }
                 }
             }
         }
         val landing = drag.landing
         (if (drag.active && landing.lifted) drag.source?.appId else landing.flyingId)?.let { appsById[it] }?.let { app ->
             val side = with(LocalDensity.current) { landing.size.toDp() }
-            val shape = RoundedCornerShape(side * .24f)
+            val shape = IconContinuousShape
             AppIcon(app, stringResource(R.string.moving_named, app.label), Modifier
                 .offset {
                     val p = if (drag.active) landing.heldAt(drag.pointer - drag.rootOrigin) else landing.position.value
@@ -1345,23 +1372,21 @@ fun LauncherScreen(
         }
         if (drag.active) {
             if (drag.moved) {
-                if (pager.currentPage > 0) Box(Modifier.align(Alignment.CenterStart).width(6.dp).height(112.dp)
-                    .background(Color.White.copy(alpha = if (edge < 0) .9f else .3f), RoundedCornerShape(6.dp)).testTag("drag-edge-left"))
-                if (pager.currentPage < homePages) Box(Modifier.align(Alignment.CenterEnd).width(6.dp).height(112.dp)
-                    .background(Color.White.copy(alpha = if (edge > 0) .9f else .3f), RoundedCornerShape(6.dp)).testTag("drag-edge-right"))
+                if (pager.currentPage > 0) DragEdgeTab(-1, edge < 0, Modifier.align(Alignment.CenterStart).testTag("drag-edge-left"))
+                if (pager.currentPage < homePages) DragEdgeTab(1, edge > 0, Modifier.align(Alignment.CenterEnd).testTag("drag-edge-right"))
             }
             appsById[drag.source?.appId]?.takeUnless { drag.landing.lifted }?.let { app ->
                 val size = 66.dp
                 val px = with(LocalDensity.current) { size.toPx() }
                 AppIcon(app, stringResource(R.string.moving_named, app.label), Modifier
                     .offset { IntOffset((drag.pointer.x - drag.rootOrigin.x - px / 2).roundToInt(), (drag.pointer.y - drag.rootOrigin.y - px * .65f).roundToInt()) }
-                    .size(size).shadow(16.dp, RoundedCornerShape(FolioRadius.GROUP.dp)).clip(RoundedCornerShape(FolioRadius.GROUP.dp)).testTag("drag-ghost"))
+                    .size(size).shadow(16.dp, IconContinuousShape).clip(IconContinuousShape).testTag("drag-ghost"))
             }
             drag.source?.appId?.let { state.layout.folder(it) }?.let { folder ->
                 Surface(Modifier.offset { IntOffset((drag.pointer.x - drag.rootOrigin.x - 42.dp.toPx()).roundToInt(),
                     (drag.pointer.y - drag.rootOrigin.y - 52.dp.toPx()).roundToInt()) }.size(84.dp)
-                    .shadow(16.dp, RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)).testTag("folder-drag-ghost"),
-                    color = Glass.copy(alpha = .96f), shape = RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)) {
+                    .toolbarGlass(IconContinuousShape).testTag("folder-drag-ghost"),
+                    color = Color.Transparent, shape = IconContinuousShape) {
                     Box(contentAlignment = Alignment.Center) { Text(folder.title, color = Ink, textAlign = TextAlign.Center) }
                 }
             }
@@ -1370,8 +1395,8 @@ fun LauncherScreen(
                 val x = with(LocalDensity.current) { width.toPx() }
                 val y = with(LocalDensity.current) { height.toPx() }
                 Surface(Modifier.offset { IntOffset((drag.pointer.x - x / 2).roundToInt(), (drag.pointer.y - y * .65f).roundToInt()) }
-                    .size(width, height).shadow(16.dp, RoundedCornerShape(FolioRadius.PANEL.dp)).testTag("drag-ghost"),
-                    color = Glass.copy(alpha = .95f), shape = RoundedCornerShape(FolioRadius.PANEL.dp)) {
+                    .size(width, height).toolbarGlass(RoundedCornerShape(FolioRadius.WIDGET.dp)).testTag("drag-ghost"),
+                    color = Color.Transparent, shape = RoundedCornerShape(FolioRadius.WIDGET.dp)) {
                     Column(Modifier.padding(FolioSpace.LARGE.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Rounded.Widgets, null, tint = Ink)
                         Spacer(Modifier.height(8.dp))
@@ -1381,8 +1406,8 @@ fun LauncherScreen(
             }
             if (blockedDock) Surface(
                 Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.folioSafeTop)
-                    .padding(top = FolioSpace.COMPACT.dp, start = FolioSpace.XL.dp, end = 100.dp),
-                color = Glass.copy(alpha = .96f), shape = RoundedCornerShape(FolioRadius.FLOATING.dp)
+                    .padding(top = FolioSpace.COMPACT.dp, start = FolioSpace.XL.dp, end = 100.dp).toolbarGlass(CircleShape),
+                color = Color.Transparent, shape = CircleShape
             ) {
                 Text(stringResource(R.string.dock_full_move_an_app_out_first),
                     Modifier.padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.MEDIUM.dp), color = Ink, fontSize = FolioType.FOOTNOTE.sp)
@@ -1393,8 +1418,8 @@ fun LauncherScreen(
                 // A centered target overlaps the expanded workspace's right-hand first cell.
                 Modifier.align(railBottom(state.leftHanded)).navigationBarsPadding().railEdge(state.leftHanded, 12.dp).padding(bottom = FolioSpace.MEDIUM.dp)
                     .width(DOCK_WIDTH.dp).height(64.dp)
-                    .dropRegion(drag, DropTarget.Remove).testTag("remove-drop-target"),
-                color = if (target == DropTarget.Remove) Color(0xFFB33B3B) else Glass.copy(alpha = .96f), shape = RoundedCornerShape(FolioRadius.PANEL.dp)) {
+                    .toolbarGlass(CircleShape).dropRegion(drag, DropTarget.Remove).testTag("remove-drop-target"),
+                color = if (target == DropTarget.Remove) FolioColors.RedLight else Color.Transparent, shape = CircleShape) {
                 Column(Modifier.fillMaxSize().padding(vertical = FolioSpace.SNUG.dp), verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Rounded.DeleteOutline, null)
@@ -1428,7 +1453,7 @@ fun LauncherScreen(
                     with(density) { 18.dp.toPx() }).coerceAtLeast(resize.pitchY)
                 Box(Modifier.offset { IntOffset(bounds.left.roundToInt(), bounds.top.roundToInt()) }
                     .size(with(density) { widthPx.toDp() }, with(density) { heightPx.toDp() })
-                    .border(3.dp, if (valid) Color.White else FolioColors.InvalidDrop, RoundedCornerShape(FolioRadius.PANEL.dp))
+                    .border(3.dp, if (valid) Color.White else FolioColors.InvalidDrop, RoundedCornerShape(FolioRadius.WIDGET.dp))
                     .testTag("widget-resize-preview-$slot")) {
                     Box(Modifier.align(Alignment.BottomEnd).offset(12.dp, 12.dp).size(44.dp)
                         .background(if (valid) Color.White else FolioColors.InvalidDrop, CircleShape)
@@ -1448,14 +1473,14 @@ fun LauncherScreen(
                         Icon(Icons.Rounded.OpenInFull, stringResource(R.string.drag_to_resize_widget), tint = Ink, modifier = Modifier.size(22.dp))
                     }
                     Row(Modifier.align(Alignment.TopCenter).padding(top = FolioSpace.SMALL.dp)
-                        .background(Glass.copy(alpha = .96f), RoundedCornerShape(FolioRadius.GROUPED_CARD.dp))) {
+                        .toolbarGlass(CircleShape)) {
                         TextButton(onClick = { resize.stop() }) { Text(stringResource(R.string.cancel)) }
                         TextButton(enabled = valid, onClick = {
                             model.resizeWidget(slot, resize.width, resize.height); resize.stop()
                         }) { Text(stringResource(R.string.apply)) }
                     }
                     if (!feasible) Text(stringResource(R.string.move_this_widget_into_the_six_row_grid_b),
-                        color = Color.White, modifier = Modifier.align(Alignment.Center).clip(RoundedCornerShape(FolioRadius.CARD.dp)).background(Color.Black.copy(alpha = .65f)).padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.COMPACT.dp))
+                        color = Color.White, modifier = Modifier.align(Alignment.Center).clip(CircleShape).background(Color.Black.copy(alpha = .65f)).padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.COMPACT.dp))
                 }
             }
         }
@@ -1538,13 +1563,13 @@ fun LauncherScreen(
                     sheet = "widgets"
                 }, onWallpaper = { sheet = "settings:wallpaper" },
                 onCustomize = { sheet = "settings" },
-                onAddPage = { val page = model.addPage(); if (page >= 0) scope.launch { pager.animateScrollToPage(page) } },
+                onAddPage = { val page = model.addPage(); if (page >= 0) scope.launch { pager.glideToPage(page) } },
                 onRemovePage = if (homeCellPage(index) == homePages - 1 && homePages > 1 && state.layout.contentPageCount < homePages) {{
-                    if (model.removeLastEmptyPage()) scope.launch { pager.animateScrollToPage(homePages - 2) }
+                    if (model.removeLastEmptyPage()) scope.launch { pager.glideToPage(homePages - 2) }
                 }} else null)
         }
         revealFolderPage?.let { page ->
-            LaunchedEffect(page, homePages) { if (page < homePages) { pager.animateScrollToPage(page); revealFolderPage = null } }
+            LaunchedEffect(page, homePages) { if (page < homePages) { pager.glideToPage(page); revealFolderPage = null } }
         }
         overlays.newFolder?.let { firstId ->
             val first = appsById[firstId]
@@ -1685,13 +1710,12 @@ internal fun libraryEdges(statusInCorner: Boolean, leftHanded: Boolean, spansWin
 @Composable
 private fun PreviewBar(onUseAsHome: () -> Unit, onExit: () -> Unit) {
     val ink = LocalHomeInk.current
-    Row(Modifier.padding(bottom = FolioSpace.SNUG.dp).heightIn(min = 48.dp).clip(RoundedCornerShape(FolioRadius.PANEL.dp))
-        .background(Glass.copy(alpha = LIQUID_FROST)).border(1.dp, GlassOutlineColor, RoundedCornerShape(FolioRadius.PANEL.dp))
+    Row(Modifier.padding(bottom = FolioSpace.SNUG.dp).heightIn(min = 48.dp).liquidGlass(CircleShape, LIQUID_FROST, GlassRole.CAPSULE)
         .padding(start = FolioSpace.LARGE.dp, end = FolioSpace.TINY.dp).testTag("home-setup"), verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(R.string.preview), color = ink.secondary, fontSize = FolioType.SUBHEAD.sp, modifier = Modifier.semantics { heading() })
         Spacer(Modifier.width(12.dp))
         Text(stringResource(R.string.use_as_home), color = LocalAccent.current.ink, fontSize = FolioType.SUBHEAD.sp, fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.clip(RoundedCornerShape(FolioRadius.ROW.dp)).clickable(onClick = onUseAsHome)
+            modifier = Modifier.clip(CircleShape).clickable(onClick = onUseAsHome)
                 .heightIn(min = 48.dp).wrapContentHeight().padding(horizontal = FolioSpace.SMALL.dp).testTag("preview-use-as-home"))
         IconButton(onClick = onExit, Modifier.size(48.dp).testTag("preview-exit")) {
             Icon(Icons.Rounded.Close, stringResource(R.string.exit_preview), tint = ink.secondary, modifier = Modifier.size(18.dp))
@@ -1716,4 +1740,31 @@ internal fun DamagedLayoutDialog(newerFolio: Boolean, onRestore: () -> Unit, onN
             TextButton(onClick = onNotNow) { Text(stringResource(R.string.not_now)) }
             if (!newerFolio) TextButton(onClick = onStartFresh) { Text(stringResource(R.string.start_fresh), color = FolioColors.Red) }
         } })
+}
+
+private suspend fun androidx.compose.foundation.pager.PagerState.glideToPage(page: Int) =
+    animateScrollToPage(page, animationSpec = FolioMotion.spring(FolioMotion.Page))
+
+private const val PAGE_DOT_PITCH = 16
+private const val PAGE_DOT_SIZE = 6
+private const val DRAG_EDGE_DP = 44
+private const val DRAG_EDGE_HOLD_MS = 500L
+private const val DOT_HOVER_MS = 350L
+
+internal fun pageDotUnder(point: androidx.compose.ui.geometry.Offset, dots: androidx.compose.ui.geometry.Rect, count: Int, slop: Float): Int? {
+    if (dots.isEmpty || count <= 0) return null
+    if (point.y < dots.top - slop || point.y > dots.bottom + slop || point.x < dots.left || point.x >= dots.right) return null
+    return ((point.x - dots.left) / dots.width * count).toInt().coerceIn(0, count - 1)
+}
+
+@Composable
+private fun DragEdgeTab(direction: Int, hovered: Boolean, modifier: Modifier) {
+    val grow by animateFloatAsState(if (hovered) 1f else 0f, FolioMotion.spring(FolioMotion.Control), label = "drag edge")
+    val ink = LocalHomeInk.current
+    Box(modifier.padding(horizontal = FolioSpace.TINY.dp).width(28.dp).height(120.dp)
+        .graphicsLayer { val s = 1f + .15f * grow; scaleX = s; scaleY = s; alpha = .7f + .3f * grow }
+        .liquidGlass(CircleShape, homeControlFrost(ink.dark) + .3f * grow, GlassRole.CAPSULE, Color.White),
+        contentAlignment = Alignment.Center) {
+        Icon(if (direction < 0) Icons.Rounded.ChevronLeft else Icons.Rounded.ChevronRight, null, tint = ink.primary, modifier = Modifier.size(22.dp))
+    }
 }

@@ -1,5 +1,6 @@
 package com.mccal.folio
 
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -92,7 +93,7 @@ internal fun Modifier.iconSwipes(
 @Composable
 internal fun StackPeek(size: androidx.compose.ui.unit.Dp) {
     Box(Modifier.size(size).graphicsLayer { translationY = 4.dp.toPx(); scaleX = .86f; scaleY = .86f }
-        .clip(RoundedCornerShape(size * .24f)).background(Color.White.copy(alpha = .28f)))
+        .clip(IconContinuousShape).background(Color.White.copy(alpha = .28f)))
 }
 
 /**
@@ -161,10 +162,10 @@ internal fun IconStackEditor(anchor: AppEntry, apps: List<AppEntry>, chosen: Lis
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.stack_1, anchor.label), color = Color.White, fontSize = FolioType.TITLE3.sp, fontWeight = FontWeight.Bold)
-                Text(stringResource(R.string.swipe_down_on_1_to_open_these_2_of_3, anchor.label, chosen.size, IconStacks.MAX), color = Color.White.copy(alpha = .6f), fontSize = FolioType.FOOTNOTE.sp)
+                Text(stringResource(R.string.swipe_down_on_1_to_open_these_2_of_3, anchor.label, chosen.size, IconStacks.MAX), color = FolioColors.SecondaryLabel, fontSize = FolioType.FOOTNOTE.sp)
             }
             Text(stringResource(R.string.done), color = LocalAccent.current.ink, fontSize = FolioType.BODY.sp, fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.clip(RoundedCornerShape(FolioRadius.CONTROL.dp)).clickable(onClick = onDone).padding(FolioSpace.SMALL.dp))
+                modifier = Modifier.clip(CircleShape).clickable(onClick = onDone).padding(FolioSpace.SMALL.dp))
         }
         AppCheckList(shown, query, { query = it }, checked = { it.id in chosen }, enabled = { it.id in chosen || chosen.size < IconStacks.MAX },
             checkedLabel = stringResource(R.string.in_stack), uncheckedLabel = stringResource(R.string.not_in_stack), onToggle = { onToggle(it.id) }, modifier = Modifier.weight(1f))

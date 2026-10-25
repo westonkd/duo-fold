@@ -1,5 +1,6 @@
 package com.mccal.folio
 
+import androidx.compose.foundation.shape.CircleShape
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -78,7 +79,7 @@ internal fun UpNextCard(onClick: () -> Unit) {
     GlassCard(onClick = onClick) {
         Column {
             Text(today.format(DateTimeFormatter.ofPattern("EEEE")).uppercase(), color = FolioColors.Red, fontSize = FolioType.CAPTION.sp, fontWeight = FontWeight.Bold, letterSpacing = .6.sp)
-            Text(today.dayOfMonth.toString(), color = ink.primary, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, lineHeight = 32.sp)
+            Text(today.dayOfMonth.toString(), color = ink.primary, fontSize = FolioType.TITLE.sp, fontWeight = FontWeight.SemiBold, lineHeight = (FolioType.TITLE + 2).sp)
         }
         when {
             !allowed -> Column(Modifier.clip(RoundedCornerShape(FolioRadius.CONTROL.dp)).clickable { ask.launch(Manifest.permission.READ_CALENDAR) }) {
@@ -88,8 +89,8 @@ internal fun UpNextCard(onClick: () -> Unit) {
             }
             events.isNotEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(FolioSpace.SNUG.dp)) {
                 events.take(2).forEach { e ->
-                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { UpNext.openEvent(context, e) }, verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.width(3.dp).height(30.dp).clip(RoundedCornerShape(2.dp)).background(e.color?.let { Color(it) } ?: LocalAccent.current.fill))
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.CONTROL.dp)).clickable { UpNext.openEvent(context, e) }, verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.width(3.dp).height(30.dp).clip(CircleShape).background(e.color?.let { Color(it) } ?: LocalAccent.current.fill))
                         Spacer(Modifier.width(6.dp))
                         Column {
                             Text(e.title, color = ink.primary, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -129,7 +130,7 @@ internal fun BigClockCard(onClick: () -> Unit) {
         (if (t.toLocalDate() != today) t.format(DateTimeFormatter.ofPattern("EEE ")) else "") + t.format(DateTimeFormatter.ofPattern(if (is24) "HH:mm" else "h:mm a"))
     }
     val shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = if (!ink.dark) .25f else 0f), blurRadius = 8f)
-    BoxWithConstraints(Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.PANEL.dp)).clickable(onClick = onClick)
+    BoxWithConstraints(Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.WIDGET.dp)).clickable(onClick = onClick)
         .semantics(mergeDescendants = true) {}, contentAlignment = Alignment.Center) {
         val big = (maxHeight.value * .46f).coerceAtMost(maxWidth.value * .3f).sp
         Column(Modifier.fillMaxWidth().padding(horizontal = FolioSpace.SMALL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -173,7 +174,7 @@ internal fun SuggestionsCard(onEdit: () -> Unit) {
                 apps.take(columns * rows).chunked(columns).forEach { row ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                         row.forEach { app ->
-                            AppIcon(app, app.label, Modifier.size(icon).clip(RoundedCornerShape(icon * .24f)).clickable { home.launch(app) })
+                            AppIcon(app, app.label, Modifier.size(icon).clip(IconContinuousShape).clickable { home.launch(app) })
                         }
                         repeat(columns - row.size) { Spacer(Modifier.size(icon)) }
                     }

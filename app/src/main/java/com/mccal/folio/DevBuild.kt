@@ -177,7 +177,7 @@ internal fun DevBuildSheet(info: DevBuildInfo, seen: DevBuildSeen, onDismiss: ()
             val scroll = rememberScrollState()
             Column(Modifier.weight(1f).edgeFade(scroll).verticalScroll(scroll)) {
                 Column(Modifier.fillMaxWidth().padding(top = FolioSpace.MEDIUM.dp, bottom = FolioSpace.SMALL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    androidx.compose.foundation.layout.Box(Modifier.size(72.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)).background(amber), contentAlignment = Alignment.Center) {
+                    androidx.compose.foundation.layout.Box(Modifier.size(72.dp).clip(IconContinuousShape).background(amber), contentAlignment = Alignment.Center) {
                         androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Build, null, tint = white, modifier = Modifier.size(36.dp))
                     }
                     Text(when (kind) { DevBuild.Kind.FIRST -> DevText.WELCOME; DevBuild.Kind.NEW -> DevText.NEW_BUILD; DevBuild.Kind.REOPENED -> DevText.THIS_BUILD },
@@ -222,7 +222,7 @@ internal fun DevBuildSheet(info: DevBuildInfo, seen: DevBuildSeen, onDismiss: ()
             }
             val allDone = info.notes.isNotEmpty() && ticks.size == info.notes.size
             androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(top = FolioSpace.SMALL.dp).heightIn(min = 52.dp)
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(FolioRadius.CARD.dp)).background(LocalAccent.current.fill)
+                .clip(androidx.compose.foundation.shape.CircleShape).background(LocalAccent.current.fill)
                 .clickable(onClick = onDismiss).testTag("dev-build-done"), contentAlignment = Alignment.Center) {
                 Text(if (allDone) DevText.ALL_DONE else if (kind == DevBuild.Kind.REOPENED) DevText.DONE else DevText.CONTINUE, color = white, fontSize = FolioType.BODY.sp,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
@@ -238,12 +238,12 @@ internal fun DevBuildSheet(info: DevBuildInfo, seen: DevBuildSeen, onDismiss: ()
 /** One row like What's New's: a soft icon, a bold line and a smaller one under it. */
 @Composable private fun DevRow(icon: androidx.compose.ui.graphics.vector.ImageVector, tint: androidx.compose.ui.graphics.Color, title: String, detail: String) {
     Row(Modifier.fillMaxWidth().padding(top = FolioSpace.COMFY.dp).semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.Top) {
-        androidx.compose.foundation.layout.Box(Modifier.size(44.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(FolioRadius.CARD.dp)).background(tint.copy(alpha = .18f)), contentAlignment = Alignment.Center) {
+        androidx.compose.foundation.layout.Box(Modifier.size(44.dp).clip(IconContinuousShape).background(tint.copy(alpha = .18f)), contentAlignment = Alignment.Center) {
             androidx.compose.material3.Icon(icon, null, tint = tint, modifier = Modifier.size(24.dp))
         }
         Column(Modifier.padding(start = FolioSpace.COMFY.dp).weight(1f)) {
             Text(title, color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.BODY.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
-            Text(detail, color = androidx.compose.ui.graphics.Color.White.copy(alpha = .68f), fontSize = FolioType.SUBHEAD.sp, modifier = Modifier.padding(top = FolioSpace.HAIR.dp))
+            Text(detail, color = FolioColors.SecondaryLabel, fontSize = FolioType.SUBHEAD.sp, modifier = Modifier.padding(top = FolioSpace.HAIR.dp))
         }
     }
 }

@@ -175,12 +175,11 @@ internal fun DockAppColumn(
             val highlighted = drag.active && target == cell
             val gap = hiddenIndex == index
             Box(Modifier.slot(index)
-                .background(if (highlighted) Color.White.copy(alpha = .3f) else Color.Transparent, RoundedCornerShape(FolioRadius.GROUP.dp)),
+                .then(if (highlighted) Modifier.liquidGlass(RoundedCornerShape(FolioRadius.GROUP.dp), LIBRARY_TILE_FROST, GlassRole.TILE) else Modifier),
                 contentAlignment = Alignment.Center) {
                 when {
                     gap -> Box(Modifier.size(iconSize.dp).testTag("drag-gap-dock-$index")
-                        .background(Glass.copy(alpha = .16f), RoundedCornerShape(FolioRadius.CARD.dp))
-                        .border(2.dp, Color.White.copy(alpha = .55f), RoundedCornerShape(FolioRadius.CARD.dp)))
+                        .liquidGlass(IconContinuousShape, LIBRARY_TILE_FROST, GlassRole.FIELD))
                     previewId == null -> Icon(Icons.Rounded.Add, null, tint = Color.White, modifier = Modifier.size(24.dp))
                 }
             }
@@ -211,7 +210,7 @@ internal fun DockAppColumn(
                         else androidx.compose.animation.core.snap(), label = "dock insertion $id") // english-only
                 val visible = previewIndex >= 0 && renderIndex != hiddenIndex
                 val opacity by animateFloatAsState(
-                    if (!visible) 0f else if (dimDragged && id == draggedId) .28f else 1f,
+                    if (!visible) 0f else if (dimDragged && id == draggedId) .28f else 1f, androidx.compose.animation.core.tween(FolioMotion.FADE_MS),
                     label = "dock insertion visibility $id", // english-only
                 )
                 Box(Modifier.offset { animatedOffset }.then(if (horizontal) Modifier.fillMaxHeight().width(rowHeight.dp) else Modifier.fillMaxWidth().height(rowHeight.dp)).graphicsLayer { alpha = opacity * drag.landing.cellAlpha(id) }
@@ -280,7 +279,7 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
                 else folder.appIds.mapNotNull { apps[it]?.packageName }.distinct().sumOf { counts[it] ?: 0 }
             val tileShape = IconContinuousShape
             Box(Modifier.fillMaxSize().clip(tileShape)
-                .liquidGlass(tileShape, if (tint != null) .78f else .72f, GlassRole.TILE, tint ?: Glass)
+                .liquidGlass(tileShape, if (tint != null) FOLDER_TILE_TINTED_FROST else FOLDER_TILE_FROST, GlassRole.TILE, tint ?: Glass)
                 .testTag("folder-drop-${folder.id}")) {
             folder.appIds.take(4).forEachIndexed { index, id ->
                 apps[id]?.let { app ->
@@ -338,7 +337,7 @@ internal fun AppTile(app: AppEntry, size: Float, labels: Boolean, modifier: Modi
                 val p = plate()
                 alpha = if (still) p else if (p > .001f) 1f else 0f
                 val grown = 1f + FolderOrRoom.PLATE_GROWTH * (if (still) 1f else p); scaleX = grown; scaleY = grown
-            }.liquidGlass(IconContinuousShape, .72f, GlassRole.TILE))
+            }.liquidGlass(IconContinuousShape, FOLDER_TILE_FROST, GlassRole.TILE))
             if (app.id in LocalStackedApps.current) StackPeek(iconSize)
             AppIcon(app, null, Modifier.fillMaxSize()
                 .graphicsLayer { if (plate != null && !still) { val inside = 1f - (1f - FolderOrRoom.ICON_INSIDE) * plate(); scaleX = inside; scaleY = inside } }

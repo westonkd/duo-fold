@@ -204,7 +204,7 @@ internal fun WidgetProviderPreview(entry: WidgetCatalogEntry, span: WidgetSpan, 
                 contentScale = ContentScale.Fit)
             CatalogPreview.Missing -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(entry.providerLabel, style = MaterialTheme.typography.bodySmall, color = Color.White)
-                Text("${span.width} × ${span.height}", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = .6f))
+                Text("${span.width} × ${span.height}", style = MaterialTheme.typography.labelSmall, color = FolioColors.SecondaryLabel)
             }
             null -> CircularProgressIndicator(Modifier.size(26.dp), strokeWidth = 3.dp, color = Color.White)
         }
@@ -274,7 +274,7 @@ internal fun VisualWidgetPicker(
         color = Color(0xFF111114).copy(alpha = .97f), contentColor = ink) {
         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.folioSafeTop).navigationBarsPadding().padding(horizontal = 18.dp)) {
             Row(Modifier.fillMaxWidth().padding(top = FolioSpace.SNUG.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.widgets), color = ink, fontSize = 32.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.widgets), color = ink, fontSize = FolioType.LARGE_TITLE.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Box(Modifier.size(FolioTouch.MIN.dp).clickable(onClickLabel = stringResource(R.string.close), onClick = onBack),
                     contentAlignment = Alignment.Center) {
                     Box(Modifier.size(36.dp).clip(CircleShape).background(Color.White.copy(alpha = .14f)), contentAlignment = Alignment.Center) {
@@ -282,7 +282,7 @@ internal fun VisualWidgetPicker(
                     }
                 }
             }
-            Row(Modifier.fillMaxWidth().padding(vertical = FolioSpace.MEDIUM.dp).clip(RoundedCornerShape(FolioRadius.ROW.dp)).background(Color.White.copy(alpha = .12f))
+            Row(Modifier.fillMaxWidth().padding(vertical = FolioSpace.MEDIUM.dp).clip(CircleShape).background(Color.White.copy(alpha = .12f))
                 .padding(horizontal = FolioSpace.MEDIUM.dp, vertical = FolioSpace.COMPACT.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Search, null, tint = secondary, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
@@ -342,7 +342,7 @@ internal fun VisualWidgetPicker(
                     items(if (cappedFolio) builtins.take(columns) else builtins, key = { "builtin-${it.first}" }) { (id, label, icon) ->
                         GalleryCard(label, stringResource(R.string.folio), stringResource(if (id == BIG_CLOCK_WIDGET) R.string.wide else R.string.small), Modifier.testTag("widget-builtin-$id")
                             .clickable { focusManager.clearFocus(); keyboard?.hide(); onBuiltin(id) }) {
-                            Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(22.dp))
+                            Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(FolioRadius.WIDGET.dp))
                                 .background(Color.White.copy(alpha = .1f)), contentAlignment = Alignment.Center) {
                                 Icon(icon, null, tint = ink, modifier = Modifier.size(44.dp))
                             }
@@ -376,7 +376,7 @@ internal fun VisualWidgetPicker(
                             dimmed = span == null) {
                             val ratio = span?.let { it.width.toFloat() / it.height } ?: 1f
                             val previewTag = "widget-preview-${entry.provider.provider.flattenToString()}${if (entry.isWork) "-profile-${entry.userSerial}" else ""}"
-                            Box(Modifier.fillMaxWidth().aspectRatio(ratio.coerceIn(.7f, 2.2f)).clip(RoundedCornerShape(22.dp)).testTag(previewTag)) {
+                            Box(Modifier.fillMaxWidth().aspectRatio(ratio.coerceIn(.7f, 2.2f)).clip(RoundedCornerShape(FolioRadius.WIDGET.dp)).testTag(previewTag)) {
                                 WidgetProviderPreview(entry, span ?: WidgetSpan(2, 2), Modifier.fillMaxSize())
                             }
                         }
@@ -426,7 +426,7 @@ private fun WidgetAppRow(apps: List<Pair<String, Bitmap?>>, selected: String?, l
                 .selectable(on, onClick = { onSelect(key) }, role = androidx.compose.ui.semantics.Role.Tab)
                 .padding(vertical = FolioSpace.SMALL.dp).testTag("widget-app-${if (key == FOLIO_WIDGETS) "folio" else key}"),
                 horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(Modifier.size(44.dp).clip(RoundedCornerShape(11.dp)).background(Color.White.copy(alpha = .1f)), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(44.dp).clip(IconContinuousShape).background(Color.White.copy(alpha = .1f)), contentAlignment = Alignment.Center) {
                     icon?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize()) }
                         ?: Icon(Icons.Rounded.Widgets, null, tint = Color.White, modifier = Modifier.size(24.dp))
                 }

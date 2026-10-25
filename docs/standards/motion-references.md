@@ -59,7 +59,7 @@ Easing and timing are chosen once and reused, not picked per element. The web ve
 }
 ```
 
-In Folio the same job is done by `FolioMotion` (`Settle`, `Quick`, `Firm`) and `MotionSpeed.spring`, with Reduce Motion
+In Folio the same job is done by `FolioMotion` (`Settle`, `Quick`, `Firm`, `Page`) and `FolioMotion.spring`, with Reduce Motion
 through `LocalReduceMotion`.
 
 ## What to study, in the order suggested
@@ -141,7 +141,7 @@ were morphing interfaces, elastic controls, magnetic interactions and image tran
 | Idea | In Folio |
 |---|---|
 | Spring playground with live stiffness, damping and duration | The most useful one. A Mockup Lab scene ("Spring lab") with sliders, a replay button, a Reduce Motion comparison, and a readout in Compose terms (`spring(dampingRatio, stiffness)`, plus Apple's response and bounce). Tuning a feel there, then copying the numbers into `FolioMotion`, is cheaper than rebuilding the app per try. Proposed as MO0 in the 0.6.9 plan. |
-| Spring toggles and elastic controls | Switch and button press feel. Touch-down scale near 0.96 that returns on a spring (MO8). |
+| Spring toggles and elastic controls | Switch and button press feel. Touch-down scale near 0.96 that returns on a spring (MO8). Folio's icons dip to 0.94 (`PressFeedback.DIP`). |
 | Sliding tab indicator, "liquid navigation" | The Market tab bar and the segmented controls: the selected pill moves between items instead of jumping. Cheap and visible. |
 | Morphing dialogs, expanding cards, shared elements | Icon to folder and icon to menu (MO5); the Market card to its package page. |
 | Dynamic-island morphing | The island already exists; its size and content changes are where a spring that carries velocity shows most. |
@@ -175,12 +175,12 @@ Each layer is added only when the one above it can't do the job.
 | Web idea | Folio, on Android |
 |---|---|
 | Shared-element transition | An icon grows into its folder or menu from its own bounds (DYN-10). Folio's overlays are `Dialog`s, so Compose's `sharedBounds` doesn't cross them and the bounds are passed by hand. |
-| Spring instead of a duration | `FolioMotion` springs through `MotionSpeed.spring`. Compose `spring()` with stiffness and damping ratio. |
+| Spring instead of a duration | `FolioMotion` springs through `FolioMotion.spring`. `FolioMotion.apple(duration, bounce)` turns Apple's way of naming a spring into a damping and stiffness pair. |
 | Layout animation (AutoAnimate) | `Modifier.animateItem()` in lazy lists, `animateContentSize()`, `AnimatedContent`. |
 | Number Flow | `AnimatedContent` per digit, or a vertical slide on the digit that changed. Candidates: battery, unread counts, install progress, the clock. |
 | One easing language | Named springs and durations only. No raw `spring(` outside the tokens (the research found about 40). |
 | Hover scale | There is no hover on a phone. The press state does the same job: a touch-down scale near 0.96 that returns on a spring. A mouse or stylus on a large screen can still get the hover. |
-| Reduced motion | `LocalReduceMotion`, and Animation Speed (`MotionSpeed`). |
+| Reduced motion | `LocalReduceMotion`. |
 | Smooth scroll sync (Lenis) | Not needed. Android's own fling and the pager's snap are the baseline. |
 | The frame budget | 120 Hz means 8.3 ms a frame. Smoothness is frames first, curves second. |
 

@@ -1,5 +1,6 @@
 package com.mccal.folio
 
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.clip
@@ -134,11 +135,11 @@ internal fun ModalBottomSheet(
     MaterialTheme(colorScheme = FolioSheetColors, typography = MaterialTheme.typography) {
         androidx.compose.material3.ModalBottomSheet(
             onDismissRequest = onDismissRequest, modifier = modifier, sheetState = sheetState,
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            shape = RoundedCornerShape(topStart = FolioRadius.SHEET_TOP.dp, topEnd = FolioRadius.SHEET_TOP.dp),
             containerColor = FolioColors.SecondaryBackground.copy(alpha = .97f), contentColor = Color.White,
             scrimColor = Color.Black.copy(alpha = .35f),
             dragHandle = { Box(Modifier.padding(top = FolioSpace.COMPACT.dp, bottom = FolioSpace.SNUG.dp).size(width = 36.dp, height = 5.dp)
-                .background(Color.White.copy(alpha = .3f), RoundedCornerShape(3.dp))) },
+                .background(Color.White.copy(alpha = .3f), CircleShape)) },
             properties = properties, content = {
                 // The sheet is its own window; hide the status bar there too so Home stays edge to edge.
                 val view = androidx.compose.ui.platform.LocalView.current
@@ -182,12 +183,12 @@ private fun FullScreenPage(onDismissRequest: () -> Unit, content: @Composable Co
             Box(Modifier.fillMaxSize()) {
                 // Predictive back: the page eases right and shrinks a little with the swipe, like Android's own screens.
                 val back = androidx.compose.animation.core.animateFloatAsState(SheetBackProgress.floatValue,
-                    FolioMotion.spring(1f to 1400f), label = "sheet back").value
+                    FolioMotion.spring(FolioMotion.Follow), label = "sheet back").value
                 androidx.compose.material3.Surface(Modifier.fillMaxSize().graphicsLayer {
                     translationX = size.width * slide.value + size.width * .08f * back
                     alpha = pageFade.value
                     scaleX = 1f - .1f * back; scaleY = scaleX
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape((28 * back).dp); clip = back > 0f
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape((FolioRadius.SHEET_TOP * back).dp); clip = back > 0f
                 }, color = Color.Black, contentColor = Color.White) {
                     androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()
                         .windowInsetsPadding(WindowInsets.folioSafeTop).navigationBarsPadding()
@@ -219,7 +220,7 @@ private fun FormSheet(onDismissRequest: () -> Unit, dismissOnBack: Boolean, widt
                             alpha = appear.value * fade.value
                             translationY = (1f - appear.value) * size.height * .12f
                         },
-                        shape = RoundedCornerShape(FolioRadius.CARD.dp), color = FolioColors.SecondaryBackground, contentColor = Color.White) {
+                        shape = RoundedCornerShape(FolioRadius.SHEET_TOP.dp), color = FolioColors.SecondaryBackground, contentColor = Color.White) {
                         androidx.compose.foundation.layout.Column(Modifier.padding(top = FolioSpace.COMFY.dp), content = content)
                     }
                 }
@@ -251,7 +252,7 @@ internal fun AlertDialog(onDismissRequest: () -> Unit, confirmButton: @Composabl
             MaterialTheme(colorScheme = FolioSheetColors.copy(primary = blue), typography = base) {
                 androidx.compose.foundation.layout.Column(modifier.width(270.dp)
                     .graphicsLayer { alpha = appear.value * fade.value; scaleX = 1.12f - .12f * appear.value; scaleY = scaleX }
-                    .clip(RoundedCornerShape(FolioRadius.CARD.dp)).background(FolioColors.SheetSurface.copy(alpha = .98f))) {
+                    .clip(RoundedCornerShape(FolioRadius.ALERT.dp)).background(FolioColors.SheetSurface.copy(alpha = .98f))) {
                     androidx.compose.foundation.layout.Column(Modifier.fillMaxWidth().padding(start = FolioSpace.LARGE.dp, end = FolioSpace.LARGE.dp, top = 19.dp, bottom = FolioSpace.LARGE.dp),
                         horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally, verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(FolioSpace.TINY.dp)) {
                         title?.let { androidx.compose.material3.ProvideTextStyle(androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = FolioType.BODY.sp,

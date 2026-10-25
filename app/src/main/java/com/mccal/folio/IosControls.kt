@@ -45,11 +45,11 @@ import androidx.compose.ui.unit.sp
 @Composable
 internal fun IosSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     val haptic = LocalHapticFeedback.current
-    val track by animateColorAsState(if (checked) FolioColors.GreenLight else FolioColors.TrackOff, label = "switch track")
+    val track by animateColorAsState(if (checked) FolioColors.GreenLight else FolioColors.TrackOff, androidx.compose.animation.core.tween(FolioMotion.FADE_MS), label = "switch track")
     val offset by animateDpAsState(if (checked) 20.dp else 0.dp, FolioMotion.spring(FolioMotion.calm(FolioMotion.Control, LocalReduceMotion.current)), label = "switch thumb")
     Box(modifier.minimumInteractiveComponentSize()
         .toggleable(checked, enabled = enabled, role = Role.Switch, onValueChange = {
-            haptic.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff); onCheckedChange(it)
+            haptic.perform(if (it) FolioHaptic.ToggleOn else FolioHaptic.ToggleOff); onCheckedChange(it)
         }), contentAlignment = Alignment.Center) {
         Box(Modifier.size(51.dp, 31.dp).clip(CircleShape).background(track).padding(FolioSpace.HAIR.dp)) {
             Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(offset.roundToPx(), 0) }.size(27.dp).shadow(2.dp, CircleShape).background(Color.White, CircleShape))
@@ -60,8 +60,8 @@ internal fun IosSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, mod
 /** iOS-style choice pill (a drop-in for the settings' FilterChips): white when selected, frosted when not. */
 @Composable
 internal fun IosChip(selected: Boolean, onClick: () -> Unit, label: @Composable () -> Unit, modifier: Modifier = Modifier) {
-    val background by animateColorAsState(if (selected) Color.White else Color.White.copy(alpha = .1f), label = "chip")
-    Box(modifier.heightIn(min = 36.dp).clip(RoundedCornerShape(FolioRadius.CONTROL.dp)).background(background)
+    val background by animateColorAsState(if (selected) Color.White else Color.White.copy(alpha = .1f), androidx.compose.animation.core.tween(FolioMotion.FADE_MS), label = "chip")
+    Box(modifier.heightIn(min = 36.dp).clip(CircleShape).background(background)
         .selectable(selected, role = Role.RadioButton, onClick = onClick).padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.SMALL.dp),
         contentAlignment = Alignment.Center) {
         androidx.compose.material3.ProvideTextStyle(TextStyle(color = if (selected) Color.Black else Color.White, fontSize = FolioType.COMPACT.sp,
@@ -72,13 +72,17 @@ internal fun IosChip(selected: Boolean, onClick: () -> Unit, label: @Composable 
 /** iOS search field: frosted rounded capsule, magnifier, placeholder and a clear button. */
 @Composable
 internal fun IosSearchField(query: String, onQuery: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier,
-    fieldModifier: Modifier = Modifier, ink: Color = Color.White, glass: Boolean = false, onSearch: (() -> Unit)? = null) {
+    fieldModifier: Modifier = Modifier, ink: Color = Color.White, glass: Boolean = false, darkGlass: Boolean = false,
+    minHeight: androidx.compose.ui.unit.Dp = 40.dp, onSearch: (() -> Unit)? = null) {
     // 40 dp at the normal text size, taller only when larger text needs it (A11Y-12). The row is as tall as its
     // content (IntrinsicSize.Min), so the clear button's fillMaxHeight fills the field, not the space around it.
-    val fieldShape = RoundedCornerShape(FolioRadius.ROW.dp)
-    Row(modifier.fillMaxWidth().clip(fieldShape).then(if (glass) Modifier.liquidGlass(fieldShape, LIBRARY_FIELD_FROST, GlassRole.CAPSULE)
-            else Modifier.background(ink.copy(alpha = SEARCH_FIELD_FROST)))
-        .heightIn(min = 40.dp).height(IntrinsicSize.Min).padding(start = FolioSpace.COMPACT.dp, end = FolioSpace.HAIR.dp), verticalAlignment = Alignment.CenterVertically) {
+    val fieldShape = CircleShape
+    Row(modifier.fillMaxWidth().clip(fieldShape).then(when {
+            darkGlass -> Modifier.liquidGlass(fieldShape, SEARCH_DARK_FROST, GlassRole.CAPSULE, FolioColors.SearchGlass)
+            glass -> Modifier.liquidGlass(fieldShape, LIBRARY_FIELD_FROST, GlassRole.CAPSULE)
+            else -> Modifier.background(ink.copy(alpha = SEARCH_FIELD_FROST))
+        })
+        .heightIn(min = minHeight).height(IntrinsicSize.Min).padding(start = FolioSpace.COMPACT.dp, end = FolioSpace.HAIR.dp), verticalAlignment = Alignment.CenterVertically) {
         androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Search, null, tint = ink.copy(alpha = .55f), modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))
         Box(Modifier.weight(1f)) {
@@ -170,22 +174,22 @@ internal fun <T> IosMenuRow(title: String, options: List<Pair<T, String>>, selec
         androidx.compose.material3.Text(title, color = Color.White, fontSize = FolioType.BODY.sp, modifier = Modifier.weight(1f))
         Box {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.material3.Text(current, color = Color.White.copy(alpha = .55f), fontSize = FolioType.BODY.sp, maxLines = 1)
+                androidx.compose.material3.Text(current, color = FolioColors.SecondaryLabel, fontSize = FolioType.BODY.sp, maxLines = 1)
                 androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.UnfoldMore, null, tint = Color.White.copy(alpha = .4f),
                     modifier = Modifier.padding(start = FolioSpace.HAIR.dp).size(18.dp))
             }
             FolioMenuPopup(open, onDismiss = { open = false }, tag = tag) {
                     options.forEachIndexed { index, (value, label) ->
-                        if (index > 0) androidx.compose.material3.HorizontalDivider(color = Color.White.copy(alpha = .1f), thickness = .5.dp)
+                        if (index > 0) MenuDivider()
                         Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable {
                             haptic.perform(FolioHaptic.Step); open = false; if (value != selected) onSelect(value)
                         }.padding(horizontal = FolioSpace.MEDIUM.dp), verticalAlignment = Alignment.CenterVertically) {
                             // iOS menus mark the choice with a leading checkmark and keep the labels lined up.
                             Box(Modifier.size(24.dp), contentAlignment = Alignment.CenterStart) {
                                 if (value == selected) androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Check, null,
-                                    tint = Color.White, modifier = Modifier.size(18.dp))
+                                    tint = FolioColors.LightLabel, modifier = Modifier.size(18.dp))
                             }
-                            androidx.compose.material3.Text(label, color = Color.White, fontSize = FolioType.BODY.sp)
+                            androidx.compose.material3.Text(label, color = FolioColors.LightLabel, fontSize = FolioType.BODY.sp)
                         }
                     }
             }
@@ -213,10 +217,9 @@ internal fun <T> IosMenuRow(title: String, options: List<Pair<T, String>>, selec
 internal fun FolioMenuPopup(expanded: Boolean, onDismiss: () -> Unit, tag: String? = null, content: @Composable ColumnScope.() -> Unit) {
     androidx.compose.material3.DropdownMenu(expanded, onDismiss,
         modifier = Modifier.widthIn(min = 200.dp, max = 280.dp).then(if (tag != null) Modifier.testTag("$tag-menu") else Modifier),
-        shape = RoundedCornerShape(FolioRadius.CARD.dp), containerColor = FolioColors.MenuSurface,
-        tonalElevation = 0.dp, shadowElevation = 24.dp,
-        border = androidx.compose.foundation.BorderStroke(.5.dp, Color.White.copy(alpha = .12f)),
-        content = content)
+        shape = RoundedCornerShape(FolioRadius.FLOATING.dp), containerColor = Color.Transparent,
+        tonalElevation = 0.dp, shadowElevation = 12.dp, border = null,
+        content = { androidx.compose.foundation.layout.Column(Modifier.menuGlass(RoundedCornerShape(FolioRadius.FLOATING.dp)), content = content) })
 }
 
 /**
@@ -256,7 +259,7 @@ internal fun FolioButton(
     }
     Row(
         modifier
-            .clip(RoundedCornerShape(FolioRadius.CARD.dp))
+            .clip(CircleShape)
             .background(background)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             // 48 dp tall, so a finger has the whole button rather than just its text (A11Y-1).
@@ -285,15 +288,15 @@ internal fun FolioButton(
 internal fun <T> IosSegmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier, tag: String? = null) {
     val haptic = LocalHapticFeedback.current
     val index = options.indexOfFirst { it.first == selected }.coerceAtLeast(0)
-    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth().height(36.dp).clip(RoundedCornerShape(FolioRadius.SEGMENT.dp))
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth().height(32.dp).clip(CircleShape)
         .background(Color.White.copy(alpha = .12f)).padding(FolioSpace.HAIR.dp).then(if (tag != null) Modifier.testTag(tag) else Modifier)) {
         val segment = maxWidth / options.size
         val x by animateDpAsState(segment * index, FolioMotion.spring(FolioMotion.calm(FolioMotion.Control, LocalReduceMotion.current)), label = "segment")
         Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(x.roundToPx(), 0) }.width(segment).fillMaxHeight()
-            .shadow(2.dp, RoundedCornerShape(FolioRadius.SEGMENT_THUMB.dp)).clip(RoundedCornerShape(FolioRadius.SEGMENT_THUMB.dp)).background(FolioColors.SegmentThumb))
+            .shadow(2.dp, CircleShape).clip(CircleShape).background(FolioColors.SegmentThumb))
         Row(Modifier.fillMaxSize()) {
             options.forEach { (value, label) ->
-                Box(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(FolioRadius.SEGMENT_THUMB.dp))
+                Box(Modifier.weight(1f).fillMaxHeight().clip(CircleShape)
                     .selectable(value == selected, role = Role.RadioButton) {
                         if (value != selected) { haptic.perform(FolioHaptic.Step); onSelect(value) }
                     }, contentAlignment = Alignment.Center) {

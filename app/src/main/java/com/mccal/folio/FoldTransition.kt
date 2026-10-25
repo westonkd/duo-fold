@@ -81,8 +81,8 @@ fun FoldTransitionHost(enabled: Boolean = true, stayAwake: Boolean = true, hapti
     fold.stayAwake = stayAwake
     // One light tick as the hinge passes halfway, opening or closing (idea from FoldFX).
     val tick by androidx.compose.runtime.rememberUpdatedState(enabled && haptics)
-    fold.onHalfway = { if (tick) view.performHapticFeedback(
-        if (Build.VERSION.SDK_INT >= 34) android.view.HapticFeedbackConstants.SEGMENT_TICK else android.view.HapticFeedbackConstants.CLOCK_TICK) }
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    fold.onHalfway = { if (tick) haptic.perform(FolioHaptic.Step) }
     // m: 0 = clean, 1 = fully half-folded look. cover = whole-screen mode on the cover display.
     var m by remember { mutableFloatStateOf(0f) }
 

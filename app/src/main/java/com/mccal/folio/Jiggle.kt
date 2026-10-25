@@ -65,14 +65,27 @@ internal class HomeEditMode {
 
 internal val LocalHomeEdit = staticCompositionLocalOf { HomeEditMode() }
 
-/** Shared wiggle phase (0..1) while jiggling, null otherwise. Read only in the draw phase. */
-internal val LocalJiggle = compositionLocalOf<State<Float>?> { null }
+/** Shared wiggle phase (counted in wiggles) and how far into the wiggle Home has eased, while jiggling. Read only in the draw phase. */
+internal class JiggleClock(val phase: State<Float>, val amplitude: State<Float>)
+
+internal val LocalJiggle = compositionLocalOf<JiggleClock?> { null }
+
+internal object JiggleMotion {
+    const val WIGGLE_MS = 280
+    const val CYCLE = 25
+    const val RATE_SPREAD = 2
+    const val DEGREES = 1.5f
+}
 
 @Composable
 internal fun ProvideJiggle(edit: HomeEditMode, content: @Composable () -> Unit) {
     val clock = if (edit.active && !LocalReduceMotion.current) {
         val transition = rememberInfiniteTransition(label = "jiggle")
-        transition.animateFloat(0f, 1f, infiniteRepeatable(tween(280, easing = LinearEasing)), label = "jiggle phase")
+        val phase = transition.animateFloat(0f, JiggleMotion.CYCLE.toFloat(),
+            infiniteRepeatable(tween(JiggleMotion.WIGGLE_MS * JiggleMotion.CYCLE, easing = LinearEasing)), label = "jiggle phase")
+        val amplitude = remember { Animatable(0f) }
+        LaunchedEffect(Unit) { amplitude.animateTo(1f, FolioMotion.spring(FolioMotion.Settle)) }
+        remember(phase) { JiggleClock(phase, amplitude.asState()) }
     } else null
     CompositionLocalProvider(LocalHomeEdit provides edit, LocalJiggle provides clock, content = content)
 }
@@ -84,10 +97,13 @@ internal fun Modifier.jiggle(key: Any, amount: Float = 1f): Modifier {
     val hash = key.hashCode()
     val seed = (hash and 0xFF) / 255f
     val direction = if (hash and 0x100 == 0) 1f else -1f
+    val wiggles = JiggleMotion.CYCLE + ((hash ushr 9) and 0xFF) % (JiggleMotion.RATE_SPREAD * 2 + 1) - JiggleMotion.RATE_SPREAD
+    val rate = wiggles.toFloat() / JiggleMotion.CYCLE
     return graphicsLayer {
-        val angle = 2f * PI.toFloat() * (clock.value + seed)
-        rotationZ = sin(angle) * 1.5f * amount * direction
-        translationY = cos(angle) * .5f * density * amount
+        val reach = clock.amplitude.value * amount
+        val angle = 2f * PI.toFloat() * (clock.phase.value * rate + seed)
+        rotationZ = sin(angle) * JiggleMotion.DEGREES * reach * direction
+        translationY = cos(angle) * .5f * density * reach
     }
 }
 
@@ -112,11 +128,13 @@ internal fun BoxScope.JiggleRemoveButton(label: String, inset: Dp = 0.dp, onRemo
 internal fun JigglePill(label: String, icon: ImageVector? = null, description: String = label, emphasized: Boolean = false,
     modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(modifier.minimumInteractiveComponentSize(), contentAlignment = Alignment.Center) {
-        Row(Modifier.heightIn(min = 34.dp).clip(CircleShape)
-            .background(if (emphasized) Color.White.copy(alpha = .92f) else Color.White.copy(alpha = .22f))
+        val homeInk = LocalHomeInk.current
+        Row(Modifier.heightIn(min = 34.dp)
+            .liquidGlass(CircleShape, if (emphasized) TOOLBAR_FROST else homeControlFrost(homeInk.dark), GlassRole.CAPSULE, Color.White)
+            .clip(CircleShape)
             .clickable(role = Role.Button, onClick = onClick).semantics { contentDescription = description }
             .padding(horizontal = if (label.isEmpty()) 7.dp else FolioSpace.LARGE.dp), verticalAlignment = Alignment.CenterVertically) {
-            val ink = if (emphasized) Color.Black else Color.White
+            val ink = if (emphasized) FolioColors.LightLabel else homeInk.primary
             icon?.let { Icon(it, null, tint = ink, modifier = Modifier.size(20.dp)) }
             if (label.isNotEmpty()) Text(label, color = ink, fontSize = FolioType.SUBHEAD.sp, fontWeight = FontWeight.SemiBold)
         }
@@ -127,7 +145,7 @@ internal fun JigglePill(label: String, icon: ImageVector? = null, description: S
 @Composable
 internal fun HomeSearchPill(onClick: () -> Unit) {
     val ink = LocalHomeInk.current
-    val frost = if (ink.dark) .45f else .2f
+    val frost = homeControlFrost(ink.dark)
     val reduceMotion = LocalReduceMotion.current
     val reveal = remember { Animatable(if (reduceMotion) 1f else 0f) }
     LaunchedEffect(Unit) { reveal.animateTo(1f, FolioMotion.spring(FolioMotion.Settle)) }

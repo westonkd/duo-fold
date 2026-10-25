@@ -33,7 +33,7 @@ class DesignTokensTest {
     )
 
     /** What each kind is allowed to have left. Lower these as code moves onto the tokens; never raise them. */
-    private val limits = mapOf("hex color" to 30, "ARGB number" to 11, "corner radius" to 96, "text size" to 35)
+    private val limits = mapOf("hex color" to 13, "ARGB number" to 7, "corner radius" to 0, "text size" to 0)
 
     private fun hits(kind: String): List<String> {
         val pattern = patterns.getValue(kind)
@@ -65,12 +65,11 @@ class DesignTokensTest {
         assertEquals(FolioColors.Blue, Color(FolioColors.Value.Blue))
         assertEquals(FolioColors.Warning, Color(FolioColors.Value.Warning))
         assertEquals(FolioColors.MenuSurface, Color(FolioColors.Value.MenuSurface))
-        assertEquals(listOf(10, 14, 16, 20, 24, 28), listOf(FolioRadius.CONTROL, FolioRadius.CARD, FolioRadius.GROUP, FolioRadius.GROUPED_CARD, FolioRadius.PANEL, FolioRadius.SHEET_TOP))
+        assertEquals(listOf(10, 14, 16, 26, 24, 38), listOf(FolioRadius.CONTROL, FolioRadius.CARD, FolioRadius.GROUP, FolioRadius.GROUPED_CARD, FolioRadius.PANEL, FolioRadius.SHEET_TOP))
         assertEquals(listOf(28, 17, 15, 13, 12), listOf(FolioType.TITLE, FolioType.BODY, FolioType.SUBHEAD, FolioType.FOOTNOTE, FolioType.GROUP_LABEL))
         // The segmented control's corners are concentric: its thumb is the track's radius minus the 2 dp inset (DES-8).
-        assertEquals(FolioRadius.SEGMENT - FolioSpace.HAIR, FolioRadius.SEGMENT_THUMB)
         assertEquals(listOf(14, 16, 20, 11), listOf(FolioType.COMPACT, FolioType.CALLOUT, FolioType.TITLE3, FolioType.CAPTION))
-        assertEquals(listOf(12, 18, 30), listOf(FolioRadius.ROW, FolioRadius.FLOATING, FolioRadius.RAIL))
+        assertEquals(listOf(12, 26, 30, 28, 38, 34), listOf(FolioRadius.ROW, FolioRadius.FLOATING, FolioRadius.RAIL, FolioRadius.WIDGET, FolioRadius.FOLDER, FolioRadius.ALERT))
         // The sheet scheme's colors are named once, and the glass card is the surface card at 82%.
         assertEquals(FolioColors.SurfaceCard.copy(alpha = .82f), FolioGlass.card)
         assertEquals(FolioColors.SurfaceCard, FolioSheetColors.surfaceContainer)

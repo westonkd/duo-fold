@@ -123,7 +123,7 @@ internal fun AppLibrary(
         CategoryFolder(stringResource(category.title), categorized[category].orEmpty(), onDismiss = { openCategory = null },
             onLaunch = { openCategory = null; onLaunchFrom(it, null) }, onActions = { openCategory = null; onActions(it) })
     }
-    val panelShape = RoundedCornerShape(FolioRadius.PANEL.dp)
+    val panelShape = RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)
     Surface(modifier, shape = panelShape,
         color = if (glass) Color.Transparent else MaterialTheme.colorScheme.surface,
         contentColor = ink) {
@@ -201,7 +201,7 @@ internal fun AppLibrary(
                                 else Modifier.clickable(onClick = click).semantics { onLongClick(appOptionsLabel) { onActions(app); true } })
                             .padding(vertical = FolioSpace.SNUG.dp), verticalAlignment = Alignment.CenterVertically) {
                             AppIcon(app, null, Modifier.size(40.dp)
-                                .onGloballyPositioned { iconPlace[0] = it }.clip(RoundedCornerShape(FolioRadius.CONTROL.dp)))
+                                .onGloballyPositioned { iconPlace[0] = it })
                             Row(Modifier.weight(1f).padding(start = FolioSpace.MEDIUM.dp), verticalAlignment = Alignment.CenterVertically) {
                                 NewAppDot(app.packageName, 7.dp)
                                 // A clone sits right beside its original with the same name; the line under it tells them apart.

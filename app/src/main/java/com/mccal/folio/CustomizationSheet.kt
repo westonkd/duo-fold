@@ -1,5 +1,7 @@
 package com.mccal.folio
 
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -118,13 +120,13 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                     SheetGroup {
                         TweakRow(Icons.Rounded.GridView, FolioColors.Value.Blue, stringResource(R.string.home), "customization-home",
                             if (backgrounds.previewPending) stringResource(R.string.photo_ready) else null, selected = pick(CustomizationPage.HOME), chevron = !sidebar) { onPage(CustomizationPage.HOME) }
-                        MenuDivider()
+                        SheetDivider()
                         TweakRow(Icons.Rounded.Search, FolioColors.Value.Gray, stringResource(R.string.search), "customization-search", selected = pick(CustomizationPage.SEARCH), chevron = !sidebar) { onPage(CustomizationPage.SEARCH) }
-                        MenuDivider()
+                        SheetDivider()
                         TweakRow(Icons.Rounded.Gesture, FolioColors.Value.Teal, stringResource(R.string.gestures), "customization-gestures", selected = pick(CustomizationPage.GESTURES), chevron = !sidebar) { onPage(CustomizationPage.GESTURES) }
-                        MenuDivider()
+                        SheetDivider()
                         TweakRow(Icons.Rounded.Devices, FolioColors.Value.Pink, stringResource(R.string.fold), "customization-fold", selected = pick(CustomizationPage.FOLD), chevron = !sidebar) { onPage(CustomizationPage.FOLD) }
-                        MenuDivider()
+                        SheetDivider()
                         TweakRow(Icons.Rounded.Settings, FolioColors.Value.Gray, stringResource(R.string.general), "customization-general", selected = pick(CustomizationPage.GENERAL), chevron = !sidebar) { onPage(CustomizationPage.GENERAL) }
                     }
     }
@@ -132,7 +134,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     val overviewActions: @Composable ColumnScope.() -> Unit = {
                     if (!isDefaultHome || state.canUndoEdit) SheetGroup {
                         if (!isDefaultHome) IosActionRow(stringResource(R.string.set_as_home_app), "default-home-settings", onClick = onMakeDefault)
-                        if (!isDefaultHome && state.canUndoEdit) MenuDivider()
+                        if (!isDefaultHome && state.canUndoEdit) SheetDivider()
                         if (state.canUndoEdit) IosActionRow(stringResource(R.string.undo_last_layout_change), onClick = { model.undoEdit(); onClose() })
                     }
     }
@@ -147,8 +149,8 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     val split = settingsSplits(maxWidth.value, maxHeight.value, androidx.compose.ui.platform.LocalConfiguration.current.classScale, keyboardDp)
     // In the split view the list is always on screen, so the page beside it is Home until another is picked.
     val shown = if (split && page == CustomizationPage.OVERVIEW) CustomizationPage.HOME else page
-    val pageContent: @Composable ColumnScope.() -> Unit = {
-            when (shown) {
+    val pageContent: @Composable ColumnScope.(CustomizationPage) -> Unit = { target ->
+            when (target) {
                 CustomizationPage.OVERVIEW -> {
                     overviewActions()
                     overviewRows(null, false)
@@ -168,7 +170,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                             IosActionRow(stringResource(R.string.set), "background-set",
                                 enabled = candidate != null || backgrounds.pendingArt != null,
                                 onClick = { if (backgrounds.previewPending) backgrounds.applyPreview() else backgrounds.setPendingArt() })
-                            MenuDivider()
+                            SheetDivider()
                             IosActionRow(stringResource(R.string.cancel), "background-cancel",
                                 onClick = { if (backgrounds.previewPending) backgrounds.cancelPreview() else backgrounds.cancelPendingArt() })
                         } else if (backgrounds.justSet) SheetGroup {
@@ -237,9 +239,6 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         CardNote(stringResource(R.string.off_new_downloads_go_to_the_app_library))
                     }
                     SettingsCard(stringResource(R.string.search)) {
-                        // One choice instead of a switch: what sits above the dock at rest.
-                        IosMenuRow(stringResource(R.string.home_strip), HomeStrip.entries.map { it to stringResource(it.label) }, state.homeStrip, model::setHomeStrip, tag = "home-strip")
-                        CardNote(stringResource(R.string.home_strip_note))
                         SettingsSwitch(stringResource(R.string.search_button_opens_the_google_app), state.googleSearch, model::setGoogleSearch, "google-search-switch")
                         CardNote(stringResource(R.string.when_off_the_search_button_opens_spotlig))
                     }
@@ -327,7 +326,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         TweakRow(Icons.Rounded.NewReleases, FolioColors.Value.Green, stringResource(R.string.what_s_new), "customization-whats-new",
                             "v" + WhatsNew.currentVersion(generalContext)) { onClose(); onShowWhatsNew() }
                         if (DevBuild.isDevApp(generalContext) && DevBuild.load(generalContext) != null) {
-                            MenuDivider()
+                            SheetDivider()
                             TweakRow(Icons.Rounded.Build, FolioColors.Value.Orange, DevBuild.THIS_BUILD_LABEL, "customization-dev-build",
                                 DevBuild.load(generalContext)?.sha) { onClose(); DevBuild.reopen.intValue++ }
                         }
@@ -336,9 +335,9 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                     SheetGroupLabel(stringResource(R.string.backup))
                     SheetGroup {
                         IosActionRow(stringResource(R.string.save_backup), "layout-save-folder", onClick = { namingBackup = true })
-                        MenuDivider()
+                        SheetDivider()
                         IosActionRow(stringResource(R.string.save_backup_to_files), "layout-export", onClick = onExportLayout)
-                        MenuDivider()
+                        SheetDivider()
                         IosActionRow(stringResource(R.string.restore_from_backup), "layout-import", onClick = onImportLayout)
                     }
                     CardNote(
@@ -361,9 +360,16 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     }
     if (!split) Column(Modifier.fillMaxSize().padding(horizontal = FolioSpace.LARGE.dp)) {
         SettingsNavBar(settingsBackLabel(page, columns = 1)?.let { stringResource(it) }, onBack, onClose)
-        SettingsLargeTitle(stringResource(page.title))
-        Column(Modifier.weight(1f).edgeFade(bodyScroll).verticalScroll(bodyScroll).padding(bottom = FolioSpace.XL.dp),
-            verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) { pageContent() }
+        val pushReduced = LocalReduceMotion.current
+        androidx.compose.animation.AnimatedContent(page, Modifier.weight(1f), label = "settings page",
+            transitionSpec = { settingsPush(targetState.ordinal > initialState.ordinal, pushReduced) }) { target ->
+            val scroll = if (target == page) bodyScroll else remember { androidx.compose.foundation.ScrollState(bodyScroll.value) }
+            Column(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black)) {
+                SettingsLargeTitle(stringResource(target.title))
+                Column(Modifier.weight(1f).edgeFade(scroll).verticalScroll(scroll).padding(bottom = FolioSpace.XL.dp),
+                    verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) { pageContent(target) }
+            }
+        }
     } else {
         // Half folded with the fold running down the screen, the divider goes on the fold, so no row sits on the
         // crease (iPhone Duo: controls move away from the fold). Flat, it's a share of the width.
@@ -400,23 +406,33 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                 // page gets a way back, named for where it goes, not only the sidebar button, which doesn't read as one.
                 SettingsNavBar(settingsBackLabel(page, columns)?.let { stringResource(it) }, onBack, onClose,
                     leading = if (tiled) null else ({ SidebarButton { sidebarOpen = !sidebarOpen } }))
-                SettingsLargeTitle(stringResource(shown.title))
-                Column(Modifier.weight(1f).edgeFade(bodyScroll).verticalScroll(bodyScroll).padding(bottom = FolioSpace.XL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Column(Modifier.widthIn(max = 720.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) {
-                        pageContent()
+                val pushReduced = LocalReduceMotion.current || tiled
+                androidx.compose.animation.AnimatedContent(shown, Modifier.weight(1f), label = "settings page",
+                    transitionSpec = { settingsPush(targetState.ordinal > initialState.ordinal, pushReduced) }) { target ->
+                    val scroll = if (target == shown) bodyScroll else remember { androidx.compose.foundation.ScrollState(bodyScroll.value) }
+                    Column(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black)) {
+                        SettingsLargeTitle(stringResource(target.title))
+                        Column(Modifier.weight(1f).edgeFade(scroll).verticalScroll(scroll).padding(bottom = FolioSpace.XL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Column(Modifier.widthIn(max = 720.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) {
+                                pageContent(target)
+                            }
+                        }
                     }
                 }
             }
         }
         if (!tiled) {
             val reduceMotion = LocalReduceMotion.current
-            androidx.compose.animation.AnimatedVisibility(sidebarOpen, enter = androidx.compose.animation.fadeIn(), exit = androidx.compose.animation.fadeOut()) {
+            androidx.compose.animation.AnimatedVisibility(sidebarOpen, enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(FolioMotion.FADE_MS)),
+                exit = androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(FolioMotion.FADE_MS))) {
                 Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = .4f))
                     .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) { sidebarOpen = false })
             }
             androidx.compose.animation.AnimatedVisibility(sidebarOpen,
-                enter = if (reduceMotion) androidx.compose.animation.fadeIn() else androidx.compose.animation.slideInHorizontally { -it },
-                exit = if (reduceMotion) androidx.compose.animation.fadeOut() else androidx.compose.animation.slideOutHorizontally { -it }) {
+                enter = if (reduceMotion) androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(FolioMotion.FADE_MS))
+                    else androidx.compose.animation.slideInHorizontally(FolioMotion.spring(FolioMotion.Sheet, androidx.compose.ui.unit.IntOffset.VisibilityThreshold)) { -it },
+                exit = if (reduceMotion) androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(FolioMotion.FADE_MS))
+                    else androidx.compose.animation.slideOutHorizontally(FolioMotion.spring(FolioMotion.Firm, androidx.compose.ui.unit.IntOffset.VisibilityThreshold)) { -it }) {
                 Box(Modifier.fillMaxHeight().background(FolioColors.SecondaryBackground)) { sidebar() }
             }
         }
@@ -426,7 +442,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
 
 /** The iPad/iPhone Duo sidebar toggle: shows or hides the settings list over the page. */
 @Composable private fun SidebarButton(onClick: () -> Unit) {
-    Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).clickable(onClickLabel = stringResource(R.string.show_or_hide_the_settings_list), onClick = onClick)
+    Box(Modifier.size(44.dp).clip(CircleShape).clickable(onClickLabel = stringResource(R.string.show_or_hide_the_settings_list), onClick = onClick)
         .testTag("settings-sidebar-toggle"), contentAlignment = Alignment.Center) {
         Icon(Icons.Rounded.ViewSidebar, null, tint = LocalAccent.current.ink, modifier = Modifier.size(26.dp))
     }
@@ -450,7 +466,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     }
 }
 
-@Composable private fun SettingsLargeTitle(title: String) = Text(title, color = androidx.compose.ui.graphics.Color.White, fontSize = 32.sp,
+@Composable private fun SettingsLargeTitle(title: String) = Text(title, color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.LARGE_TITLE.sp,
     fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = FolioSpace.TINY.dp, bottom = FolioSpace.SMALL.dp))
 
 /** iOS Settings row: colored rounded icon square, title, optional value, chevron. */
@@ -468,7 +484,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
         .clickable(onClick = onClick).padding(horizontal = if (open) 9.dp else FolioSpace.COMFY.dp, vertical = if (open) FolioSpace.SNUG.dp else FolioSpace.SMALL.dp).testTag(tag)
         .then(if (selected != null) Modifier.semantics { this.selected = selected; role = androidx.compose.ui.semantics.Role.Tab } else Modifier),
         verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(30.dp).clip(RoundedCornerShape(7.dp)).background(androidx.compose.ui.graphics.Color(color)), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(30.dp).clip(IconContinuousShape).background(androidx.compose.ui.graphics.Color(color)), contentAlignment = Alignment.Center) {
             Icon(icon, null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(19.dp))
         }
         Spacer(Modifier.width(12.dp))
@@ -519,11 +535,11 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     CardNote(stringResource(R.string.everything_stays_on_your_phone_folio_has), Modifier.padding(horizontal = FolioSpace.TINY.dp))
     SheetGroup {
         perms.forEachIndexed { index, perm ->
-            if (index > 0) MenuDivider()
+            if (index > 0) SheetDivider()
             Row(Modifier.fillMaxWidth().clickable(onClick = perm.action).padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.COMPACT.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(perm.name, color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.BODY.sp)
-                    Text(stringResource(R.string.used_by_1, perm.usedBy), color = androidx.compose.ui.graphics.Color.White.copy(alpha = .55f), fontSize = FolioType.FOOTNOTE.sp)
+                    Text(stringResource(R.string.used_by_1, perm.usedBy), color = FolioColors.SecondaryLabel, fontSize = FolioType.FOOTNOTE.sp)
                 }
                 Text(stringResource(if (perm.allowed) R.string.allowed else R.string.state_off), color = if (perm.allowed) FolioColors.Green
                     else androidx.compose.ui.graphics.Color.White.copy(alpha = .5f), fontSize = FolioType.SUBHEAD.sp)
@@ -700,7 +716,7 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
                             Box(Modifier.offset(x = (cells.x(w.column, w.row) + 5f + geometry.cellWidth * w.offsetX).dp, y = (cells.y(w.row) + rowPitch * w.offsetY).dp)
                                 .size((geometry.cellWidth * w.spanX - 10f).dp, (cells.spanHeight(w.row, w.spanY) - 18f).coerceAtLeast(48f).dp)) {
                                 if (w.id < 0) BuiltinWidgetCard(w.id, w.slot) {}
-                                else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.PANEL.dp)).background(glass.copy(alpha = LIQUID_FROST)), contentAlignment = Alignment.Center) {
+                                else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.WIDGET.dp)).background(glass.copy(alpha = LIQUID_FROST)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Rounded.Widgets, null, tint = ink.secondary, modifier = Modifier.size(32.dp))
                                 }
                             }
@@ -796,15 +812,14 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
 
 /** A folder as Home draws it (first four apps on glass or the folder's color), without Home's drag and launch hooks. */
 @Composable private fun PreviewFolder(folder: FolderEntry, apps: Map<String, AppEntry>, size: Float) {
-    val shape = RoundedCornerShape((size * .24f).dp)
+    val shape = IconContinuousShape
     val tint = LocalFolderColors.current[folder.id]?.let { androidx.compose.ui.graphics.Color(it) }
-    Box(Modifier.size(size.dp).clip(shape).background(tint?.copy(alpha = .78f) ?: Glass.copy(alpha = .72f))
-        .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = .55f), shape)) {
+    Box(Modifier.size(size.dp).clip(shape).liquidGlass(shape, if (tint != null) FOLDER_TILE_TINTED_FROST else FOLDER_TILE_FROST, GlassRole.TILE, tint ?: Glass)) {
         folder.appIds.take(4).forEachIndexed { index, id ->
             apps[id]?.let { app ->
                 AppIcon(app, null, Modifier.align(when (index) {
                     0 -> Alignment.TopStart; 1 -> Alignment.TopEnd; 2 -> Alignment.BottomStart; else -> Alignment.BottomEnd
-                }).padding(5.dp).size((size * .38f).dp).clip(RoundedCornerShape(6.dp)))
+                }).padding(5.dp).size((size * .38f).dp))
             }
         }
     }
@@ -889,7 +904,7 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
                 IconButton(onClick = { onRemoveWidget(placement.slot) }, modifier = Modifier.semantics { contentDescription = removeLabel }) {
                     Icon(Icons.Rounded.RemoveCircle, null, tint = FolioColors.Red) }
             }
-            MenuDivider()
+            SheetDivider()
         }
         IosActionRow(stringResource(R.string.add_widget_to_this_page), onClick = { onAddWidget(homePage) })
     }
@@ -927,7 +942,7 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
 /** Beta label beside a title, like TestFlight features. */
 @Composable private fun BetaTag() {
     Text(stringResource(R.string.beta), color = FolioColors.Orange, fontSize = FolioType.CAPTION.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
-        modifier = Modifier.padding(start = FolioSpace.SMALL.dp).border(1.dp, FolioColors.Orange, RoundedCornerShape(5.dp))
+        modifier = Modifier.padding(start = FolioSpace.SMALL.dp).border(1.dp, FolioColors.Orange, CircleShape)
             .padding(horizontal = 5.dp, vertical = 1.dp))
 }
 
@@ -990,7 +1005,7 @@ internal fun layoutSnapshotsShown(layoutHistory: Boolean, layoutDamaged: Boolean
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(stringResource(R.string.saved_to_1, FolioFiles.displayPath), fontSize = FolioType.FOOTNOTE.sp)
                 androidx.compose.foundation.text.BasicTextField(name, { name = it.take(60) },
-                    Modifier.padding(top = FolioSpace.MEDIUM.dp).fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                    Modifier.padding(top = FolioSpace.MEDIUM.dp).fillMaxWidth().clip(RoundedCornerShape(FolioRadius.CONTROL.dp))
                         .background(androidx.compose.ui.graphics.Color.White.copy(alpha = .1f)).padding(horizontal = FolioSpace.COMPACT.dp, vertical = FolioSpace.SMALL.dp)
                         .focusRequester(focus).testTag("backup-name"),
                     singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.SUBHEAD.sp),
@@ -1025,4 +1040,14 @@ internal fun layoutSnapshotsShown(layoutHistory: Boolean, layoutDamaged: Boolean
             imeAction = androidx.compose.ui.text.input.ImeAction.Done),
         decorationBox = { inner -> Box { if (text.isEmpty()) Text("https://example.com/search?q=%s", color = androidx.compose.ui.graphics.Color.White.copy(alpha = .35f), fontSize = FolioType.SUBHEAD.sp); inner() } })
     CardNote(stringResource(when { text.isBlank() -> R.string.custom_search_blank; valid -> R.string.custom_search_note; else -> R.string.custom_search_invalid }))
+}
+
+private fun settingsPush(forward: Boolean, reduced: Boolean): androidx.compose.animation.ContentTransform {
+    val fadeIn = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(FolioMotion.FADE_MS))
+    val fadeOut = androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(FolioMotion.FADE_MS))
+    if (reduced) return androidx.compose.animation.ContentTransform(fadeIn, fadeOut)
+    val slide = FolioMotion.spring(FolioMotion.Sheet, androidx.compose.ui.unit.IntOffset.VisibilityThreshold)
+    val enter = androidx.compose.animation.slideInHorizontally(slide) { if (forward) it else -it / 3 }
+    val exit = androidx.compose.animation.slideOutHorizontally(slide) { if (forward) -it / 3 else it } + fadeOut
+    return androidx.compose.animation.ContentTransform(enter, exit, targetContentZIndex = if (forward) 1f else -1f)
 }

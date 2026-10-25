@@ -119,18 +119,20 @@ internal fun SpotlightOverlay(visible: Boolean, progress: () -> Float, state: La
     // keyboard focus from the visible one, so it was removed.)
     var composed by remember { mutableStateOf(false) }
     if (visible) composed = true
+    val openHaptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    LaunchedEffect(visible) { if (visible) openHaptic.perform(FolioHaptic.GestureDone) }
     LaunchedEffect(visible) {
         if (!visible) { snapshotFlow { progress() }.first { it <= .001f }; composed = false }
     }
     if (!composed) return
-    val lift = with(androidx.compose.ui.platform.LocalDensity.current) { 24.dp.toPx() }
+    val lift = with(androidx.compose.ui.platform.LocalDensity.current) { 48.dp.toPx() }
     val look = spotlightLook(LocalHomeInk.current)
     Box(Modifier.fillMaxSize().graphicsLayer { alpha = progress() }.background(look.backdrop)
         .then(if (visible) Modifier.clickable(remember { MutableInteractionSource() }, null, onClick = onClose) else Modifier))
     Box(Modifier.fillMaxSize().graphicsLayer {
         val p = progress()
         // Moves with the back swipe's preview, fades only as it closes (OverlayBack).
-        alpha = OverlayBack.unpreviewed(p); translationY = -lift * (1f - p); scaleX = .96f + .04f * p; scaleY = scaleX
+        alpha = OverlayBack.unpreviewed(p); translationY = -lift * (1f - p); scaleX = .9f + .1f * p; scaleY = scaleX
         transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, 0f)
     }) { CompositionLocalProvider(LocalHomeInk provides look.ink) { SpotlightContent(state, active = visible, onClose, onLaunch, onAddToHome) } }
 }
@@ -248,14 +250,14 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
                 // The whole capsule is the tap target, not just the text line.
                 Modifier.weight(1f).clickable(remember { MutableInteractionSource() }, null) { fieldScope.launch { raiseKeyboard() } },
                 fieldModifier = Modifier.focusRequester(focus).onFocusChanged { fieldFocused = it.isFocused }.testTag("spotlight-field"),
-                ink = ink.primary, glass = true, onSearch = {
+                ink = Color.White, glass = true, darkGlass = true, minHeight = 48.dp, onSearch = {
                     when {
                         appHits.isNotEmpty() -> launch(appHits.first())
                         q.isNotEmpty() -> { onClose(); openEnterSearch(context, state, q) }
                     }
                 })
             Text(stringResource(R.string.cancel), color = ink.primary, fontSize = FolioType.BODY.sp,
-                modifier = Modifier.padding(start = FolioSpace.HAIR.dp).heightIn(min = 48.dp).clip(RoundedCornerShape(FolioRadius.CONTROL.dp))
+                modifier = Modifier.padding(start = FolioSpace.HAIR.dp).heightIn(min = 48.dp).clip(CircleShape)
                     .clickable { focusManager.clearFocus(force = true); keyboard?.hide(); onClose() }
                     .padding(horizontal = FolioSpace.MEDIUM.dp, vertical = FolioSpace.COMFY.dp).testTag("spotlight-cancel"))
             }
@@ -332,7 +334,7 @@ private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) 
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
         Text(title, color = LocalHomeInk.current.secondary, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(start = FolioSpace.TINY.dp))
-        val shape = RoundedCornerShape(FolioRadius.PANEL.dp)
+        val shape = RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)
         Column(Modifier.fillMaxWidth().clip(shape)
             .liquidGlass(shape, LIBRARY_TILE_FROST, GlassRole.TILE)
             .padding(FolioSpace.MEDIUM.dp),
@@ -414,7 +416,7 @@ private fun ResultRow(icon: ImageVector, title: String, subtitle: String?, trail
     val ink = LocalHomeInk.current
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.ROW.dp)).clickable(onClick = onClick).padding(horizontal = FolioSpace.SMALL.dp, vertical = FolioSpace.COMPACT.dp),
         verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(34.dp).clip(RoundedCornerShape(FolioRadius.SEGMENT.dp)).background(ink.primary.copy(alpha = SPOTLIGHT_CHIP)), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(34.dp).clip(IconContinuousShape).background(ink.primary.copy(alpha = SPOTLIGHT_CHIP)), contentAlignment = Alignment.Center) {
             Icon(icon, null, tint = ink.primary, modifier = Modifier.size(20.dp))
         }
         Spacer(Modifier.width(12.dp))

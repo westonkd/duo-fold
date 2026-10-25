@@ -2,6 +2,7 @@
 
 package com.mccal.folio
 
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.ui.res.stringResource
 import android.appwidget.AppWidgetProviderInfo
 import android.os.UserManager
@@ -319,7 +320,8 @@ internal fun HomePagePane(
         // Only as much room as the Edit bar actually needs above this page's first row; pushing the whole grid down by a
         // fixed amount cut off the bottom row's labels on screens that already had space at the top.
         // Unfolded, the bar sits in the space above the widget row, so the grid doesn't move at all (like iPad).
-        val editRoom by animateDpAsState(if (roomWanted && !geometry.expanded) (JIGGLE_BAR_BOTTOM - geometry.contentTop.dp).coerceAtLeast(0.dp) else 0.dp, label = "jiggle room")
+        val editRoom by animateDpAsState(if (roomWanted && !geometry.expanded) (JIGGLE_BAR_BOTTOM - geometry.contentTop.dp).coerceAtLeast(0.dp) else 0.dp,
+            FolioMotion.spring(FolioMotion.Settle, androidx.compose.ui.unit.Dp.VisibilityThreshold), label = "jiggle room")
         Column(Modifier.offset(x = 16.dp).width(geometry.gridWidth.dp).fillMaxHeight()
             .verticalScroll(homeScroll).padding(top = geometry.contentTop.dp + editRoom, bottom = FolioSpace.SMALL.dp)) {
             SharedHomeGrid(page, state.homeSlots, state.leadingSlots, previewSlots, previewLeadingSlots, previewWidgetPlacements,
@@ -338,8 +340,8 @@ internal fun HomePagePane(
 @Composable
 internal fun CircleControl(icon: ImageVector, label: String, tag: String, visualSize: Dp, action: () -> Unit) {
     IconButton(onClick = action, modifier = Modifier.size(visualSize.coerceAtLeast(48.dp)).testTag(tag)) {
-        Box(Modifier.size(visualSize).testTag("$tag-visual").background(Glass.copy(alpha = .22f), CircleShape)
-            .border(1.dp, Color.White.copy(alpha = .25f), CircleShape), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(visualSize).testTag("$tag-visual").liquidGlass(CircleShape, LIBRARY_TILE_FROST, GlassRole.CAPSULE),
+            contentAlignment = Alignment.Center) {
             Icon(icon, label, tint = Color.White, modifier = Modifier.size(22.dp))
         }
     }
@@ -429,7 +431,7 @@ internal fun SharedHomeGrid(
     val fold = hinge?.let { h -> with(density) {
         foldDisplacement(cells, renderedRows, gridTopDp, h.startPx.toDp().value, h.endPx.toDp().value, widgetRows)
     } }
-    val foldShift by animateFloatAsState(fold?.second ?: 0f, FolioMotion.spring(.85f to 380f), label = "fold shift")
+    val foldShift by animateFloatAsState(fold?.second ?: 0f, FolioMotion.spring(FolioMotion.Sheet), label = "fold shift")
     val foldRow = fold?.first ?: Int.MAX_VALUE
     fun rowTop(row: Int) = cells.y(row) + if (row >= foldRow) foldShift else 0f
     CompositionLocalProvider(LocalHomeIconSize provides geometry.iconSize) {
@@ -460,14 +462,11 @@ internal fun SharedHomeGrid(
                     // Only on an empty cell outside jiggle mode, so a tap on an app or folder isn't held back waiting
                     // for a second one.
                     onDoubleClick = onEmptyDoubleTap?.takeIf { savedId == null && !edit.active && !drag.active })
-                .background(if (highlighted) Glass.copy(alpha = .25f) else Color.Transparent, RoundedCornerShape(FolioRadius.GROUP.dp))
-                .border(if (highlighted) 2.dp else 0.dp,
-                    if (highlighted) Color.White.copy(alpha = .8f) else Color.Transparent, RoundedCornerShape(FolioRadius.GROUP.dp)),
+                .then(if (highlighted) Modifier.liquidGlass(RoundedCornerShape(FolioRadius.GROUP.dp), LIBRARY_TILE_FROST, GlassRole.TILE) else Modifier),
                 contentAlignment = Alignment.TopCenter) {
                 if (showsDropHint(drag.active, drag.source?.appId != null, gap, previewId, globalIndex in widgetCells)) Box(
                     Modifier.size(iconSize.dp).testTag(if (gap) "drag-gap-home-$globalIndex" else "empty-home-slot-$globalIndex")
-                        .background(Glass.copy(alpha = if (gap) .16f else .08f), RoundedCornerShape(18.dp))
-                        .border(if (gap) 2.dp else 1.dp, Color.White.copy(alpha = if (gap) .55f else .3f), RoundedCornerShape(18.dp)))
+                        .liquidGlass(IconContinuousShape, if (gap) LIBRARY_TILE_FROST else SEARCH_FIELD_FROST, GlassRole.FIELD))
             }
         }
 
@@ -490,7 +489,7 @@ internal fun SharedHomeGrid(
                 )
                 val visible = previewIndex != null && previewIndex in pageRange && renderIndex != hiddenIndex
                 val opacity by animateFloatAsState(
-                    if (dimDragged && id == draggedId) .28f else 1f,
+                    if (dimDragged && id == draggedId) .28f else 1f, androidx.compose.animation.core.tween(FolioMotion.FADE_MS),
                     label = "home insertion visibility $id", // english-only
                 )
                 val plateOn = drag.mergePreview == id
@@ -542,9 +541,9 @@ internal fun SharedHomeGrid(
                     val name = remember(widgets.pendingProvider) { widgets.pendingLabel() } ?: stringResource(R.string.widget)
                     val waiting = stringResource(R.string.widget_waiting_for_setup, name)
                     Surface(Modifier.offset(x = x, y = y.dp).width(width).height(height.dp)
+                        .toolbarGlass(RoundedCornerShape(FolioRadius.WIDGET.dp))
                         .testTag("widget-pending-${placement.slot}").semantics(mergeDescendants = true) { contentDescription = waiting },
-                        color = Glass.copy(alpha = .72f),
-                        shape = RoundedCornerShape(FolioRadius.PANEL.dp), border = androidx.compose.foundation.BorderStroke(2.dp, Color.White)) {
+                        color = Color.Transparent, shape = RoundedCornerShape(FolioRadius.WIDGET.dp)) {
                         Column(Modifier.padding(FolioSpace.COMFY.dp), verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 3.dp)

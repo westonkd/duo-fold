@@ -132,11 +132,11 @@ internal fun AppPanel(app: AppEntry, onDismiss: () -> Unit, onOpen: () -> Unit) 
                 media?.let { m ->
                     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.GROUP.dp)).background(Color.White.copy(alpha = .08f)).padding(FolioSpace.COMPACT.dp),
                         verticalAlignment = Alignment.CenterVertically) {
-                        (m.art ?: m.icon)?.let { Image(it.asImageBitmap(), null, Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))) }
+                        (m.art ?: m.icon)?.let { Image(it.asImageBitmap(), null, Modifier.size(40.dp).clip(IconContinuousShape)) }
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text(m.title, color = Color.White, fontSize = FolioType.COMPACT.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            m.subtitle?.let { Text(it, color = Color.White.copy(alpha = .6f), fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                            m.subtitle?.let { Text(it, color = FolioColors.SecondaryLabel, fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                         }
                         val t = runCatching { m.controller.transportControls }.getOrNull()
                         TransportButton(Icons.Rounded.FastRewind, stringResource(R.string.media_previous), 30.dp) { t?.skipToPrevious() }
@@ -153,7 +153,7 @@ internal fun AppPanel(app: AppEntry, onDismiss: () -> Unit, onOpen: () -> Unit) 
                         Column(Modifier.fillMaxWidth().clickable { onDismiss(); NotificationListener.openNotification(context, item) }
                             .padding(horizontal = FolioSpace.MEDIUM.dp, vertical = 9.dp)) {
                             Text(item.title ?: item.appLabel, color = Color.White, fontSize = FolioType.COMPACT.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            item.text?.let { Text(it, color = Color.White.copy(alpha = .7f), fontSize = FolioType.FOOTNOTE.sp, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+                            item.text?.let { Text(it, color = FolioColors.SecondaryLabel, fontSize = FolioType.FOOTNOTE.sp, maxLines = 2, overflow = TextOverflow.Ellipsis) }
                         }
                     }
                 }
@@ -167,7 +167,7 @@ internal fun AppPanel(app: AppEntry, onDismiss: () -> Unit, onOpen: () -> Unit) 
                     }
                 }
                 if (media == null && notifications.isEmpty() && actions.isEmpty())
-                    Text(stringResource(R.string.no_shortcuts_or_notifications_for_1, app.label), color = Color.White.copy(alpha = .6f), fontSize = FolioType.FOOTNOTE.sp)
+                    Text(stringResource(R.string.no_shortcuts_or_notifications_for_1, app.label), color = FolioColors.SecondaryLabel, fontSize = FolioType.FOOTNOTE.sp)
             }
         }
     }

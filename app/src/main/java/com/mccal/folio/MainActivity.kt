@@ -114,7 +114,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             val overlayProgress by rememberSettlingProgress(if (overlayOpen) 1f else 0f,
-                FolioMotion.spring(.86f to androidx.compose.animation.core.Spring.StiffnessMediumLow))
+                FolioMotion.spring(FolioMotion.Settle))
             // A back swipe that closed Spotlight keeps its preview until the close ends; the next one starts clean (MO7).
             val overlayShowing = spotlightVisible.value
             androidx.compose.runtime.LaunchedEffect(overlayShowing) { if (overlayShowing) OverlayBack.swipe.snapTo(0f) }
@@ -237,6 +237,10 @@ class MainActivity : ComponentActivity() {
         super.onStart(); widgets.host.startListening()
         // A new build can also arrive while this activity is alive in a restored task, so look again each time it starts.
         if (!showDevBuild.value && DevBuild.shouldShow(this)) showDevBuild.value = true
+    }
+    override fun onRestart() {
+        super.onRestart()
+        HomeReturn.returned()
     }
     override fun onStop() {
         stoppedSinceHome = true
@@ -366,6 +370,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun launchApp(app: AppEntry, bounds: android.graphics.Rect? = null) {
+        HomeReturn.launched(bounds)
         RecentApps.record(this, app.id)
         NewApps.opened(this, app.packageName)
         noteBadgeSeen(app.packageName)

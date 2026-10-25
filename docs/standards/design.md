@@ -30,7 +30,7 @@ Folio's own identity takes over.
 ### Tokens
 
 - **DES-4 MUST** take colors from `FolioColors` (or `FolioColors.Value`, where a color is held as a number), glass fills from `FolioGlass`, springs from `FolioMotion`, and app
-  label sizes from `LabelSize` (new code). A hex literal is allowed only inside a token file, a theme file, or a
+  label sizes from `HOME_LABEL_SP` (new code). A hex literal is allowed only inside a token file, a theme file, or a
   deliberately fixed artwork such as `DuneWallpaper`.
 - **DES-5 MUST NOT** re-type a token's value. `Color(0xFF0A84FF)` outside `FolioTokens.kt` is a bug waiting to drift.
 - **DES-6 SHOULD** use the spacing, radius and type scales below. A value off the scale needs a reason in a comment.
@@ -43,8 +43,8 @@ These are the values Folio already used most, so adopting them changed nothing o
 | Scale | Values |
 |---|---|
 | Spacing (dp) | 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32 |
-| Corner radius (dp) | 10 (small controls), 14 (menus, alerts, form sheets, cards), 16 (sheet groups), 20 (grouped cards), 24 (panels), 28 (sheet top); 12 rows and search fields, 18 floating menus, 22 notification cards, 30 dock and rail capsules; 9 and 7 for a segmented control's track and thumb. Icon and thumbnail corners follow their size (DES-8a) |
-| Type (sp) | 28 Bold title, 17 body, 16 callout, 15 subheadline, 14 compact (dense rows, chips), 13 footnote, 12 SemiBold caps group label (+.4 tracking), 20 title 3, 11 caption; Home labels via `LabelSize` |
+| Corner radius (dp) | iOS 26 and 27's values. Capsules for search fields, buttons, chips, pills, segmented controls and toasts. 10 (a pressed highlight), 12 (list rows), 14 (small cards, thumbnails), 16 (sheet groups' highlights), 24 (panels), 26 (menus, grouped cards, Spotlight's platters), 28 (widgets), 30 (dock and rail), 34 (alerts), 38 (open folders, sheets). Icon and thumbnail corners follow their size (DES-8a), and a container around icons is concentric with them (DES-8) |
+| Type (sp) | 34 Bold large title (pages, sheets, open folders), 28 title, 22 title 2, 20 title 3, 17 body, 16 callout, 15 subheadline, 14 compact (dense rows, chips), 13 footnote, 12 SemiBold caps group label (+.4 tracking), 11 caption, 40 a widget's big number; Home labels via `HOME_LABEL_SP` |
 | Row height (dp) | 48 action and menu rows, 52 navigation rows |
 
 - **DES-8 SHOULD** make corners concentric: an inner radius is the outer radius minus the padding between them.
@@ -87,8 +87,10 @@ These are the values Folio already used most, so adopting them changed nothing o
 
 ### Theming
 
-- **DES-19 MUST** draw Home surfaces in the light appearance through `LocalDuoPalette`. Sheets and overlays are dark by
-  design (`FolioSheetColors`); a new sheet follows that unless a Gap item changes it.
+- **DES-19 MUST** draw Home surfaces in the light appearance through `LocalDuoPalette`. Menus, folders and the App
+  Library's cards are light glass (`menuGlass`, `FOLDER_FROST`), as in iOS 27. Spotlight's search field is the one dark
+  glass surface (`FolioColors.SearchGlass`), because iOS 27 draws search that way in light appearance too. Settings and
+  sheets are still dark (`FolioSheetColors`) until they move to light (Gap 7).
 
 ### Words
 
@@ -100,9 +102,9 @@ These are the values Folio already used most, so adopting them changed nothing o
 
 Good:
 
-- `FolioColors`, `FolioGlass`, `FolioMotion`, `MotionSpeed`, `LabelSize` exist (`FolioTokens.kt`, `FolioGlass.kt`).
+- `FolioColors`, `FolioGlass`, `FolioMotion` exist (`FolioTokens.kt`, `FolioGlass.kt`).
 - A real iOS component set: `IosSwitch`, `IosSegmented`, `IosMenuRow`, `GroupedCard`, `SheetGroup`, and
-  `ModalBottomSheet` / `AlertDialog` replacements that shadow Material's by name (`FolioSheet.kt:89`, `:243`).
+  `ModalBottomSheet` / `AlertDialog` replacements that shadow Material's by name (`FolioSheet.kt:116`, `:237`).
 - Glass is Liquid glass everywhere on Home, blur is window-level, and there's no per-frame blur.
 - Icon looks, shapes, badges, live icons and icon packs all flow through `AppIcon` and `LocalIconLook`.
 
@@ -133,3 +135,4 @@ Not yet:
 | 4 | ~~Light-surface variants and named status colors~~ (done: `Warning`, `RedSoft`, `CyanLight`, `Teal`, `SheetSurface`, `MenuSurface`, `LightBackground`, plus `FolioColors.Value` for colors held as numbers) | S |
 | 5 | ~~A check that counts raw colors, radii and text sizes outside the token files~~ (done: `DesignTokensTest`) | S |
 | 6 | Remove the drawn backgrounds (`DuneWallpaper`'s dunes, `MoonColumnWallpaper`) and replace them with licensed art under DES-2a and DES-2b, keeping the picker, the drift and the scrim | M |
+| 7 | Settings and sheets in the light appearance, with iOS 26 capsule alert buttons | L |

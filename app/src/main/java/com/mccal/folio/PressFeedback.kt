@@ -17,7 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
  * shadow (all graphics-layer values read when drawing, so nothing recomposes per frame), and no scale at all under Reduce Motion, only a dim.
  */
 internal object PressFeedback {
-    const val DIP = .9f
+    const val DIP = .94f
     const val DIP_ALPHA = .9f
     const val LIFT = 1.06f
     const val LIFT_SHADOW_DP = 12f

@@ -144,7 +144,7 @@ data class LauncherState(
     /** Badge counts already seen, by package name: the count that was showing when the app was last opened. */
     val badgesSeen: Map<String, Int> = emptyMap(),
     /** iOS "Search" capsule on Home in place of the page dots. */
-    val homeStrip: HomeStrip = HomeStrip.SEARCH,
+    val homeStrip: HomeStrip = HomeStrip.DOTS,
     /** Swipe down on Home: SPOTLIGHT, NOTIFICATIONS (Android's notification shade) or OFF. */
     val swipeDownHome: String = "SPOTLIGHT",
     /** App for messaging contacts from Spotlight: null = default texting app, or OpenBubbles/BlueBubbles. */
@@ -1034,7 +1034,6 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
         val trimmed = BadgesWhenOpened.trimmed(counts, seen)
         if (trimmed != seen) updateSettings(soon = true) { it.copy(badgesSeen = trimmed) }
     }
-    fun setHomeStrip(value: HomeStrip) = updateSettings(soon = false) { it.copy(homeStrip = value) }
     fun setSwipeDownHome(value: String) = updateSettings(soon = false) { it.copy(swipeDownHome = value) }
     fun setMessagesApp(pkg: String?) = updateSettings(soon = false) { it.copy(messagesApp = pkg) }
     fun setFolderColor(folderId: String, color: Long?) = updateSettings(soon = false) {
@@ -1435,7 +1434,7 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         badgeStyle = runCatching { BadgeStyle.valueOf(j.optString("badgeStyle")) }.getOrDefault(BadgeStyle.DOT),
         badgesWhenOpened = j.optBoolean("badgesWhenOpened", false),
         badgesSeen = j.optJSONObject("badgesSeen")?.let { o -> o.keys().asSequence().associateWith { o.getInt(it) }.filterValues { it > 0 } } ?: emptyMap(),
-        homeStrip = HomeStrip.read(j.optString("homeStrip").takeIf { it.isNotEmpty() }, j.optBoolean("searchPill", true)),
+        homeStrip = HomeStrip.DOTS,
         // Up to 0.6.0 this was a switch for Spotlight alone.
         swipeDownHome = j.optString("swipeDownHome", "").ifBlank { if (j.optBoolean("swipeDownSearch", true)) "SPOTLIGHT" else "OFF" },
         messagesApp = j.optString("messagesApp").takeIf { it.isNotBlank() && it != "null" },

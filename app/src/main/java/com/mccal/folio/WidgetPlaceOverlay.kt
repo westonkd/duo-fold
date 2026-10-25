@@ -1,5 +1,6 @@
 package com.mccal.folio
 
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -98,7 +99,7 @@ internal fun WidgetPlaceOverlay(
             })
         Box(Modifier.offset { IntOffset(widgetBox.left.roundToInt(), widgetBox.top.roundToInt()) }
             .size(with(density) { bounds.width.toDp() }, with(density) { bounds.height.toDp() })
-            .border(BorderStroke(3.dp, line), RoundedCornerShape(FolioRadius.PANEL.dp))
+            .border(BorderStroke(3.dp, line), RoundedCornerShape(FolioRadius.WIDGET.dp))
             .testTag("widget-place-frame-${placement.slot}")
             .semantics { contentDescription = clockName }
             .pointerInput(placement.slot) {
@@ -109,7 +110,7 @@ internal fun WidgetPlaceOverlay(
         FlowRow(Modifier.align(if (bottom) Alignment.BottomCenter else Alignment.TopCenter)
             .padding(start = FolioSpace.MEDIUM.dp, end = FolioSpace.MEDIUM.dp, top = FolioSpace.MEDIUM.dp,
                 bottom = if (bottom) 120.dp else FolioSpace.MEDIUM.dp)
-            .background(Glass.copy(alpha = .96f), RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)),
+            .toolbarGlass(RoundedCornerShape(FolioRadius.FLOATING.dp)),
             horizontalArrangement = Arrangement.Center, verticalArrangement = Arrangement.Center, itemVerticalAlignment = Alignment.CenterVertically) {
             listOf(Triple(R.string.move_left, Icons.Rounded.ArrowBack, -1f to 0f), Triple(R.string.move_up, Icons.Rounded.ArrowUpward, 0f to -1f),
                 Triple(R.string.move_down, Icons.Rounded.ArrowDownward, 0f to 1f), Triple(R.string.move_right, Icons.Rounded.ArrowForward, 1f to 0f))
@@ -127,7 +128,7 @@ internal fun WidgetPlaceOverlay(
             TextButton(enabled = valid, onClick = { onApply(column, row) }) { Text(stringResource(R.string.apply)) }
         }
         if (!valid) Text(stringResource(R.string.taken_by_apps), color = Color.White,
-            modifier = Modifier.align(Alignment.Center).background(Color.Black.copy(alpha = .65f), RoundedCornerShape(FolioRadius.CARD.dp))
+            modifier = Modifier.align(Alignment.Center).background(Color.Black.copy(alpha = .65f), CircleShape)
                 .padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.COMPACT.dp))
     }
 }

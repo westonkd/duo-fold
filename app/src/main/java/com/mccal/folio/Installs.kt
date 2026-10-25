@@ -136,7 +136,7 @@ internal fun DownloadingApps(labelColor: androidx.compose.ui.graphics.Color) {
         androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(FolioSpace.COMFY.dp)) {
             items(downloads, key = { it.packageName }) { d ->
                 androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.width(72.dp), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.size(56.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(FolioRadius.CARD.dp))
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.size(56.dp).clip(IconContinuousShape)
                         .background(androidx.compose.ui.graphics.Color.White.copy(alpha = .16f))) {
                         d.icon?.let { androidx.compose.foundation.Image(it.asImageBitmap(), null, androidx.compose.ui.Modifier.fillMaxSize()) }
                         InstallRing(d.progress, androidx.compose.ui.Modifier.fillMaxSize())

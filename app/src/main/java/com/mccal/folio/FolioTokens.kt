@@ -98,6 +98,16 @@ internal object FolioColors {
     val PreviewBezel = Color(0xFF0B0B0C)
     /** Supporting text on dark glass and sheets. */
     val SecondaryLabel = Color.White.copy(alpha = .62f)
+    /** Search's glass: iOS 27 draws the search field as a dark bubble with silver edges, even in light appearance. */
+    val SearchGlass = Color(0xFF151518)
+    /** iOS's label in light appearance: text on light glass (menus). */
+    val LightLabel = Color(0xFF1C1C1E)
+    /** iOS's secondaryLabel in light appearance. */
+    val LightSecondaryLabel = Color(0x993C3C43)
+    /** iOS's separator in light appearance: hairlines between rows on light glass. */
+    val LightSeparator = Color(0x4A3C3C43)
+    /** The wider gap between groups of rows in a light menu. */
+    val LightGroupGap = Color(0x143C3C43)
 }
 
 /**
@@ -135,35 +145,44 @@ internal object FolioSpace {
 
 /** Folio's corner radii, in dp. Inner corners are concentric: outer radius minus the padding between them (DES-8). */
 internal object FolioRadius {
-    /** Small controls: chips, search fields, inline buttons. */
+    /** A small pressed highlight: a back button or a row inside a sheet. Chips, search fields and buttons are capsules (iOS 26). */
     const val CONTROL = 10
-    /** Menus, alerts, form sheets and cards. */
+    /** Small cards and thumbnails. */
     const val CARD = 14
     /** Groups inside a sheet. */
     const val GROUP = 16
-    /** Grouped settings cards. */
-    const val GROUPED_CARD = 20
+    /** Grouped settings cards, Spotlight's platters and the A to Z list: iOS 26's inset grouped 26 pt. */
+    const val GROUPED_CARD = 26
     /** Panels and large surfaces. */
     const val PANEL = 24
-    /** The top corners of a bottom sheet. */
-    const val SHEET_TOP = 28
-    /** List rows, search fields and small cards that sit on a sheet. */
+    /** The top corners of a bottom sheet and a form sheet's corners. */
+    const val SHEET_TOP = 38
+    /** An alert's card. */
+    const val ALERT = 34
+    /** List rows and small cards that sit on a sheet. */
     const val ROW = 12
-    /** Floating menus and action sheets. */
-    const val FLOATING = 18
+    /** Floating menus and action sheets: iOS 26's 26 pt. */
+    const val FLOATING = 26
+    /** Home Screen widgets, iOS 26's 28 pt. */
+    const val WIDGET = 28
+    /** An open folder's card, and an App Library category opened the same way. */
+    const val FOLDER = 38
     /** The dock and the side rail: a capsule. */
     const val RAIL = 30
-    /** A segmented control's track. */
-    const val SEGMENT = 9
-    /** A segmented control's thumb: the track's radius minus its 2 dp inset, so the corners stay concentric (DES-8). */
-    const val SEGMENT_THUMB = 7
 }
 
 /**
  * Folio's type scale, in sp, following iOS's text styles. Home app labels use [HOME_LABEL_SP] instead.
  */
 internal object FolioType {
+    /** iOS Large Title: a sheet's or page's title, an open folder's name. */
+    const val LARGE_TITLE = 34
+    /** iOS Title 1. */
     const val TITLE = 28
+    /** iOS Title 2. */
+    const val TITLE2 = 22
+    /** The big number on a Home widget: a clock's time, a calendar's date. */
+    const val WIDGET_HERO = 40
     const val BODY = 17
     const val SUBHEAD = 15
     const val FOOTNOTE = 13
@@ -217,6 +236,19 @@ internal object FolioMotion {
     val Menu = .78f to 650f
     /** A settle that starts with the finger's speed (a flick, a drop): visibly passes the line and eases back. Never for a tap. */
     val Bounce = .7f to 480f
+    /** Moving between Home pages: a swipe's settle and every jump to a page (a dot, the App Library, Back, Add Page). */
+    val Page = 1f to 480f
+    /** Following a finger through predictive back: stiff, so it keeps up. */
+    val Follow = 1f to 1400f
+    /** A refusal: the dock shaking its head. Deliberately underdamped, and started with a push ([SHAKE_VELOCITY]). */
+    val Shake = .22f to 900f
+    const val SHAKE_VELOCITY = 260f
+
+    /** Apple's way of naming a spring: how long it feels, and how much it overshoots (0 none, .15 brisk, .3 bouncy). */
+    fun apple(duration: Float, bounce: Float): Pair<Float, Float> {
+        val omega = 2f * kotlin.math.PI.toFloat() / duration
+        return (1f - bounce) to omega * omega
+    }
 
     fun <T> spring(pair: Pair<Float, Float>, visibilityThreshold: T? = null) =
         androidx.compose.animation.core.spring(dampingRatio = pair.first, stiffness = pair.second, visibilityThreshold = visibilityThreshold)

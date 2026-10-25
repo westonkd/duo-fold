@@ -276,14 +276,14 @@ internal class EverywhereOverlay(private val service: AccessibilityService) {
                             .padding(vertical = FolioSpace.MEDIUM.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(FolioSpace.MEDIUM.dp)) {
                             apps.forEach { app ->
                                 val hostView = androidx.compose.ui.platform.LocalView.current
-                                Image(app.icon.asImageBitmap(), null, Modifier.size(50.dp).clip(RoundedCornerShape(13.dp))
+                                Image(app.icon.asImageBitmap(), null, Modifier.size(50.dp).clip(IconContinuousShape)
                                     .combinedClickable(onClick = { closeDock(); launch(app) }, onLongClick = {
                                         // Drag beside the current app for split screen.
                                         if (startSplitDrag(hostView, service, app.component, app.user, "", app.icon)) closeDock()
                                     }))
                             }
                             if (apps.isNotEmpty()) HorizontalDivider(Modifier.width(40.dp), color = Color.White.copy(alpha = .2f))
-                            Box(Modifier.size(50.dp).clip(RoundedCornerShape(13.dp)).background(Color.White.copy(alpha = .16f)).clickable {
+                            Box(Modifier.size(50.dp).clip(IconContinuousShape).background(Color.White.copy(alpha = .16f)).clickable {
                                 closeDock(); service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
                             }, contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Home, stringResource(R.string.home_label), tint = Color.White) }
                         }
@@ -391,7 +391,7 @@ private fun ButtonBar(onAction: (Int) -> Unit, onLift: (Float, Boolean) -> Unit)
             .alpha(alpha)
             .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress(
-                    onDragStart = { touched = System.currentTimeMillis(); haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress) },
+                    onDragStart = { touched = System.currentTimeMillis(); haptic.perform(FolioHaptic.PickedUp) },
                     onDragEnd = { onLift(0f, true) },
                     onDragCancel = { onLift(0f, true) },
                     onDrag = { change, drag -> change.consume(); onLift(drag.y, false) })
@@ -406,7 +406,7 @@ private fun ButtonBar(onAction: (Int) -> Unit, onLift: (Float, Boolean) -> Unit)
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(BUTTON_BAR_HEIGHT_DP.dp / 2))
                     .clickable(onClickLabel = label) {
                         touched = System.currentTimeMillis()
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.ContextClick)
+                        haptic.perform(FolioHaptic.Open)
                         onAction(action)
                     }, contentAlignment = androidx.compose.ui.Alignment.Center) {
                     androidx.compose.material3.Icon(icon, label, tint = ink, modifier = androidx.compose.ui.Modifier.size((BUTTON_BAR_HEIGHT_DP * .46f).dp)
