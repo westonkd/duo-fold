@@ -446,21 +446,33 @@ fun LauncherScreen(
             else -> state.layout
         }
     }
-    val edgeWidth = with(LocalDensity.current) { 30.dp.toPx() }
+    var pageDotsBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
+    val edgeWidth = with(LocalDensity.current) { DRAG_EDGE_DP.dp.toPx() }
     val edgePointer = widgetSession?.takeIf { it.dragging }?.pointer ?: drag.pointer
     val edgeActive = (drag.active && drag.moved) || widgetSession?.dragging == true
     val edge = if (!edgeActive) 0 else dragEdgeDirection(edgePointer, drag.rootBounds, edgeWidth)
     LaunchedEffect(edgeActive, edge) {
         if (edge != 0) while (drag.active || widgetSession?.dragging == true) {
-            delay(650)
+            delay(DRAG_EDGE_HOLD_MS)
             val next = (pager.currentPage + edge).coerceIn(0, homePages)
             if ((!drag.active && widgetSession?.dragging != true) || next == pager.currentPage) break
+            haptic.perform(FolioHaptic.Step)
             // Do not key this effect on currentPage: it changes halfway through the
             // animation and would cancel the turn before the inner grid is visible.
             // Once the hold commits a turn, finish its animation while the finger moves
             // into the incoming page. Leaving the edge cancels only the next hold timer.
             scope.launch { pager.glideToPage(next) }.join()
         }
+    }
+    val dotSlop = with(LocalDensity.current) { FolioTouch.MIN.dp.toPx() / 2f }
+    val dotHover = if (!edgeActive) null else pageDotUnder(drag.pointer, pageDotsBounds, visibleHomePages, dotSlop)
+    LaunchedEffect(dotHover) {
+        val target = dotHover?.coerceIn(0, homePages) ?: return@LaunchedEffect
+        if (target == pager.currentPage) return@LaunchedEffect
+        delay(DOT_HOVER_MS)
+        if (!drag.active && widgetSession?.dragging != true) return@LaunchedEffect
+        haptic.perform(FolioHaptic.Step)
+        pager.glideToPage(target)
     }
     fun finishDrag(cancelled: Boolean) {
         val source = drag.source ?: return
@@ -924,15 +936,16 @@ fun LauncherScreen(
                             val dotWorm = !LocalReduceMotion.current && visibleHomePages <= 6
                             val dotDensity = LocalDensity.current
                             val dotInk = LocalHomeInk.current
-                            Row(Modifier.heightIn(min = 30.dp).background(if (scrubbing) Color.White.copy(alpha = .18f) else Color.Transparent, CircleShape)
-                                .then(if (dotWorm) Modifier.dotWorm({ (pager.currentPage + pager.currentPageOffsetFraction) }, homePages, dotInk.primary, with(dotDensity) { 28.dp.toPx() },
+                            Row(Modifier.heightIn(min = 30.dp).onGloballyPositioned { pageDotsBounds = it.boundsInWindow() }
+                                .background(if (scrubbing) Color.White.copy(alpha = .18f) else Color.Transparent, CircleShape)
+                                .then(if (dotWorm) Modifier.dotWorm({ (pager.currentPage + pager.currentPageOffsetFraction) }, homePages, dotInk.primary, with(dotDensity) { PAGE_DOT_PITCH.dp.toPx() },
                                     with(dotDensity) { (if (scrubbing) FolioSpace.SNUG.dp else 0.dp).toPx() }, with(dotDensity) { 3.dp.toPx() }) else Modifier)
                                 .padding(horizontal = if (scrubbing) FolioSpace.SNUG.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
                             if (visibleHomePages <= 6) repeat(visibleHomePages) { index ->
-                                Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) {
-                                    if (index == homePages) Icon(Icons.Rounded.Add, null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                    else if (dotWorm) Box(Modifier.size(4.dp).background(dotInk.faint, CircleShape))
-                                    else Box(Modifier.size(if (index == pager.currentPage) 6.dp else 4.dp).background(if (index == pager.currentPage) LocalHomeInk.current.primary else LocalHomeInk.current.faint, CircleShape))
+                                Box(Modifier.size(PAGE_DOT_PITCH.dp), contentAlignment = Alignment.Center) {
+                                    if (index == homePages) Icon(Icons.Rounded.Add, null, tint = dotInk.primary, modifier = Modifier.size(12.dp))
+                                    else if (dotWorm) Box(Modifier.size(PAGE_DOT_SIZE.dp).background(dotInk.faint, CircleShape))
+                                    else Box(Modifier.size(PAGE_DOT_SIZE.dp).background(if (index == pager.currentPage) LocalHomeInk.current.primary else LocalHomeInk.current.faint, CircleShape))
                                 }
                             } else Text("${minOf(pager.currentPage + 1, homePages)} / $homePages", color = Color.White, fontSize = FolioType.GROUP_LABEL.sp)
                             }
@@ -942,7 +955,7 @@ fun LauncherScreen(
                                 .padding(horizontal = if (scrubbing) FolioSpace.SNUG.dp else 0.dp)) {
                                 repeat(visibleHomePages) { index ->
                                     val dotLabel = if (index == homePages) stringResource(R.string.new_home_page) else stringResource(R.string.home_page, index + 1)
-                                    Box(Modifier.width(28.dp).fillMaxHeight()
+                                    Box(Modifier.width(PAGE_DOT_PITCH.dp).fillMaxHeight()
                                         .clickable(role = Role.Button, onClickLabel = dotLabel) { scope.launch { pager.glideToPage(index) } }
                                         .semantics { contentDescription = dotLabel }.testTag("home-page-dot-$index"))
                                 }
@@ -1359,10 +1372,8 @@ fun LauncherScreen(
         }
         if (drag.active) {
             if (drag.moved) {
-                if (pager.currentPage > 0) Box(Modifier.align(Alignment.CenterStart).width(6.dp).height(112.dp)
-                    .background(Color.White.copy(alpha = if (edge < 0) .9f else .3f), CircleShape).testTag("drag-edge-left"))
-                if (pager.currentPage < homePages) Box(Modifier.align(Alignment.CenterEnd).width(6.dp).height(112.dp)
-                    .background(Color.White.copy(alpha = if (edge > 0) .9f else .3f), CircleShape).testTag("drag-edge-right"))
+                if (pager.currentPage > 0) DragEdgeTab(-1, edge < 0, Modifier.align(Alignment.CenterStart).testTag("drag-edge-left"))
+                if (pager.currentPage < homePages) DragEdgeTab(1, edge > 0, Modifier.align(Alignment.CenterEnd).testTag("drag-edge-right"))
             }
             appsById[drag.source?.appId]?.takeUnless { drag.landing.lifted }?.let { app ->
                 val size = 66.dp
@@ -1733,3 +1744,27 @@ internal fun DamagedLayoutDialog(newerFolio: Boolean, onRestore: () -> Unit, onN
 
 private suspend fun androidx.compose.foundation.pager.PagerState.glideToPage(page: Int) =
     animateScrollToPage(page, animationSpec = FolioMotion.spring(FolioMotion.Page))
+
+private const val PAGE_DOT_PITCH = 16
+private const val PAGE_DOT_SIZE = 6
+private const val DRAG_EDGE_DP = 44
+private const val DRAG_EDGE_HOLD_MS = 500L
+private const val DOT_HOVER_MS = 350L
+
+internal fun pageDotUnder(point: androidx.compose.ui.geometry.Offset, dots: androidx.compose.ui.geometry.Rect, count: Int, slop: Float): Int? {
+    if (dots.isEmpty || count <= 0) return null
+    if (point.y < dots.top - slop || point.y > dots.bottom + slop || point.x < dots.left || point.x >= dots.right) return null
+    return ((point.x - dots.left) / dots.width * count).toInt().coerceIn(0, count - 1)
+}
+
+@Composable
+private fun DragEdgeTab(direction: Int, hovered: Boolean, modifier: Modifier) {
+    val grow by animateFloatAsState(if (hovered) 1f else 0f, FolioMotion.spring(FolioMotion.Control), label = "drag edge")
+    val ink = LocalHomeInk.current
+    Box(modifier.padding(horizontal = FolioSpace.TINY.dp).width(28.dp).height(120.dp)
+        .graphicsLayer { val s = 1f + .15f * grow; scaleX = s; scaleY = s; alpha = .7f + .3f * grow }
+        .liquidGlass(CircleShape, homeControlFrost(ink.dark) + .3f * grow, GlassRole.CAPSULE, Color.White),
+        contentAlignment = Alignment.Center) {
+        Icon(if (direction < 0) Icons.Rounded.ChevronLeft else Icons.Rounded.ChevronRight, null, tint = ink.primary, modifier = Modifier.size(22.dp))
+    }
+}
