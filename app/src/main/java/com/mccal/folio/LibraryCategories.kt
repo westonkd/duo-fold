@@ -87,12 +87,12 @@ private fun spokenName(app: AppEntry): String = if (app.kind == ProfileKind.CLON
 internal fun CategoryCard(title: String, apps: List<AppEntry>, modifier: Modifier, labelColor: Color = Color.White, onLaunch: (AppEntry) -> Unit, onOpen: () -> Unit) {
     val showAllText = stringResource(R.string.show_all_apps_in, apps.size, title)
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        val tileShape = RoundedCornerShape(FolioRadius.PANEL.dp)
-        BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(1f).clip(tileShape)
-            .liquidGlass(tileShape, LIBRARY_TILE_FROST, GlassRole.TILE)
-            .padding(FolioSpace.MEDIUM.dp)) {
+        BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(1f)) {
+            val inset = FolioSpace.MEDIUM.dp
             val gap = 10.dp
-            val cell = (maxWidth - gap) / 2
+            val cell = (maxWidth - inset * 2 - gap) / 2
+            val tileShape = ContinuousRoundedShape(concentricRadius(cell.value * ICON_CORNER_FRACTION, inset.value) / maxWidth.value)
+            Box(Modifier.fillMaxSize().clip(tileShape).liquidGlass(tileShape, LIBRARY_TILE_FROST, GlassRole.TILE).padding(inset)) {
             val big = if (apps.size > 4) apps.take(3) else apps.take(4)
             val rest = if (apps.size > 4) apps.drop(3) else emptyList()
             Column(verticalArrangement = Arrangement.spacedBy(gap)) {
@@ -102,13 +102,13 @@ internal fun CategoryCard(title: String, apps: List<AppEntry>, modifier: Modifie
                         when {
                             index < big.size -> AppIcon(big[index], spokenName(big[index]), Modifier.size(cell)
                                 .clickable { onLaunch(big[index]) }, badge = true)
-                            index == 3 && rest.isNotEmpty() -> Box(Modifier.size(cell).clip(RoundedCornerShape(cell * .24f))
+                            index == 3 && rest.isNotEmpty() -> Box(Modifier.size(cell).clip(IconContinuousShape)
                                 .clickable(onClick = onOpen).semantics { contentDescription = showAllText }) {
                                 val mini = (cell - 4.dp) / 2
                                 Column(verticalArrangement = Arrangement.spacedBy(FolioSpace.TINY.dp)) {
                                     rest.take(4).chunked(2).forEach { pair ->
                                         Row(horizontalArrangement = Arrangement.spacedBy(FolioSpace.TINY.dp)) {
-                                            pair.forEach { AppIcon(it, null, Modifier.size(mini).clip(RoundedCornerShape(mini * .24f))) }
+                                            pair.forEach { AppIcon(it, null, Modifier.size(mini)) }
                                         }
                                     }
                                 }
@@ -117,6 +117,7 @@ internal fun CategoryCard(title: String, apps: List<AppEntry>, modifier: Modifie
                         }
                     }
                 }
+            }
             }
         }
         Text(title, color = labelColor, fontSize = FolioType.GROUP_LABEL.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -145,15 +146,15 @@ internal fun CategoryFolder(title: String, apps: List<AppEntry>, onDismiss: () -
                 Column(Modifier.width(width).graphicsLayer {
                     alpha = appear.value * fade.value; scaleX = .9f + .1f * appear.value; scaleY = scaleX
                 }) {
-                    Text(title, color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    Text(title, color = Color.White, fontSize = FolioType.TITLE.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(start = FolioSpace.SMALL.dp, bottom = FolioSpace.MEDIUM.dp))
                     // Lazy, so a category with dozens of apps only builds the rows on screen as it opens.
                     val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
-                    val cardShape = RoundedCornerShape(36.dp)
+                    val cardShape = RoundedCornerShape(FolioRadius.FOLDER.dp)
                     androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
                         androidx.compose.foundation.lazy.grid.GridCells.Fixed(columns),
                         Modifier.fillMaxWidth().heightIn(max = availableHeight - 64.dp)
-                            .liquidGlass(cardShape, LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.SheetSurface)
+                            .liquidGlass(cardShape, FOLDER_FROST, GlassRole.PANEL, Color.White)
                             .clip(cardShape)
                             .pointerInput(Unit) { detectTapGestures() }
                             .edgeFade(gridState).testTag("category-folder"),
@@ -164,7 +165,7 @@ internal fun CategoryFolder(title: String, apps: List<AppEntry>, onDismiss: () -
                             Column(Modifier.clip(RoundedCornerShape(FolioRadius.CARD.dp))
                                 .combinedClickable(onLongClick = { onActions(app) }) { onLaunch(app) }.padding(vertical = FolioSpace.TINY.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally) {
-                                AppIcon(app, null, Modifier.size(54.dp), badge = true)
+                                AppIcon(app, null, Modifier.size(FOLDER_ICON_SIZE.dp), badge = true)
                                 Text(app.label, color = Color.White, fontSize = FolioType.CAPTION.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.padding(top = FolioSpace.TINY.dp, start = FolioSpace.HAIR.dp, end = FolioSpace.HAIR.dp))
                                 // A clone sits beside its original with the same name, as in the A to Z list.

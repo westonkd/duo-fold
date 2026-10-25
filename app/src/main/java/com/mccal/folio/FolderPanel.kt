@@ -196,14 +196,13 @@ internal fun FolderPanel(
         // the button, the same anchored-menu pattern FolderChild's own "..." button already uses below.
         var folderMenu by remember { mutableStateOf(false) }
         Row(verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = FolioSpace.COMFY.dp)
+            modifier = Modifier.width(folderW.dp).padding(start = FolioSpace.SMALL.dp, bottom = FolioSpace.MEDIUM.dp)
                 .onGloballyPositioned { headerHeightPx = it.size.height.toFloat() }
                 .graphicsLayer { alpha = FolderOpening.contentAlpha(appear.value) }) {
-            Spacer(Modifier.size(FolioTouch.MIN.dp))
             androidx.compose.foundation.text.BasicTextField(title, { title = it },
-                Modifier.weight(1f, fill = false).widthIn(max = 320.dp).testTag("folder-name"), singleLine = true,
-                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 28.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+                Modifier.weight(1f).testTag("folder-name"), singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = FolioType.TITLE.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Start),
                 cursorBrush = androidx.compose.ui.graphics.SolidColor(Color.White),
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
                 keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { if (title.isNotBlank()) onRename(title) }))
@@ -221,8 +220,8 @@ internal fun FolderPanel(
                                 .clickable(onClickLabel = stringResource(if (swatch == null) R.string.no_folder_color else R.string.folder_color)) { onColor(swatch) },
                                 contentAlignment = Alignment.Center) {
                                 Box(Modifier.size(30.dp).clip(androidx.compose.foundation.shape.CircleShape)
-                                    .background(swatch?.let { Color(it) } ?: Color.White.copy(alpha = .18f))
-                                    .then(if (selected) Modifier.border(2.5.dp, Color.White, androidx.compose.foundation.shape.CircleShape) else Modifier))
+                                    .background(swatch?.let { Color(it) } ?: FolioColors.LightSeparator)
+                                    .then(if (selected) Modifier.border(2.5.dp, FolioColors.LightLabel, androidx.compose.foundation.shape.CircleShape) else Modifier))
                             }
                         }
                     }
@@ -275,10 +274,10 @@ internal fun FolderPanel(
             return androidx.compose.ui.geometry.Offset((onScreen[0] - inWindow[0]).toFloat(), (onScreen[1] - inWindow[1]).toFloat()) +
                 windowPoint - latestHomeOrigin()
         }
-        val cardShape = RoundedCornerShape(38.dp)
+        val cardShape = RoundedCornerShape(FolioRadius.FOLDER.dp)
         RegisterOpenWindow(LauncherSheets)
         Surface(Modifier.width(folderW.dp).height(folderH.dp)
-            .liquidGlass(cardShape, LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.SurfaceCard)
+            .liquidGlass(cardShape, FOLDER_FROST, GlassRole.PANEL, Color.White)
             .onGloballyPositioned { cardBounds = it.boundsInWindow() }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -451,7 +450,7 @@ internal object FolderBadge {
      * (Alignment and offset both follow the layout direction). TOP_END would pull the badge in clear of the button instead.
      */
     val CORNER = BadgeCorner.TOP_START
-    const val ICON = 58f
+    const val ICON = FOLDER_ICON_SIZE
     const val BUTTON = 36f
 
     /** How far right, in dp from the icon's left edge, a badge may reach in a cell [cellWidth] dp wide (icon centered). */

@@ -112,11 +112,13 @@ internal fun BoxScope.JiggleRemoveButton(label: String, inset: Dp = 0.dp, onRemo
 internal fun JigglePill(label: String, icon: ImageVector? = null, description: String = label, emphasized: Boolean = false,
     modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(modifier.minimumInteractiveComponentSize(), contentAlignment = Alignment.Center) {
-        Row(Modifier.heightIn(min = 34.dp).clip(CircleShape)
-            .background(if (emphasized) Color.White.copy(alpha = .92f) else Color.White.copy(alpha = .22f))
+        val homeInk = LocalHomeInk.current
+        Row(Modifier.heightIn(min = 34.dp)
+            .liquidGlass(CircleShape, if (emphasized) TOOLBAR_FROST else homeControlFrost(homeInk.dark), GlassRole.CAPSULE, Color.White)
+            .clip(CircleShape)
             .clickable(role = Role.Button, onClick = onClick).semantics { contentDescription = description }
             .padding(horizontal = if (label.isEmpty()) 7.dp else FolioSpace.LARGE.dp), verticalAlignment = Alignment.CenterVertically) {
-            val ink = if (emphasized) Color.Black else Color.White
+            val ink = if (emphasized) FolioColors.LightLabel else homeInk.primary
             icon?.let { Icon(it, null, tint = ink, modifier = Modifier.size(20.dp)) }
             if (label.isNotEmpty()) Text(label, color = ink, fontSize = FolioType.SUBHEAD.sp, fontWeight = FontWeight.SemiBold)
         }
@@ -127,7 +129,7 @@ internal fun JigglePill(label: String, icon: ImageVector? = null, description: S
 @Composable
 internal fun HomeSearchPill(onClick: () -> Unit) {
     val ink = LocalHomeInk.current
-    val frost = if (ink.dark) .45f else .2f
+    val frost = homeControlFrost(ink.dark)
     val reduceMotion = LocalReduceMotion.current
     val reveal = remember { Animatable(if (reduceMotion) 1f else 0f) }
     LaunchedEffect(Unit) { reveal.animateTo(1f, FolioMotion.spring(FolioMotion.Settle)) }

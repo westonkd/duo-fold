@@ -186,7 +186,7 @@ internal fun AppContextMenu(
                     // The menu fades as it grows and shrinks, so closing reads as going back into the icon.
                     alpha = (appear.value * 1.4f).coerceIn(0f, 1f)
                 }
-                .liquidGlass(RoundedCornerShape(FolioRadius.FLOATING.dp), LIQUID_OVERLAY_FROST, GlassRole.FLOATING, FolioColors.PopoverSurface)
+                .menuGlass(RoundedCornerShape(FolioRadius.FLOATING.dp))
                 .clip(RoundedCornerShape(FolioRadius.FLOATING.dp))
                 .clickable(remember { MutableInteractionSource() }, null) {}
                 .fadingVerticalScroll()) {
@@ -195,7 +195,7 @@ internal fun AppContextMenu(
                         onDismiss()
                         startQuickAction(context, app, action)
                     }
-                    if (i == shownActions.lastIndex) Box(Modifier.fillMaxWidth().height(8.dp).background(Color.Black.copy(alpha = .25f)))
+                    if (i == shownActions.lastIndex) Box(Modifier.fillMaxWidth().height(8.dp).background(FolioColors.LightGroupGap))
                     else MenuDivider()
                 }
                 MenuRow(stringResource(R.string.edit_home_screen), Icons.Rounded.AppRegistration) { onMove() }
@@ -240,7 +240,7 @@ internal fun AppContextMenu(
 @Composable
 internal fun MenuRow(label: String, icon: ImageVector? = null, bitmap: Bitmap? = null, destructive: Boolean = false,
     tag: String? = null, onClick: () -> Unit) {
-    val tint = if (destructive) FolioColors.RedOnDark else Color.White
+    val tint = if (destructive) FolioColors.RedLight else FolioColors.LightLabel
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClick = onClick)
         .then(if (tag != null) Modifier.testTag(tag) else Modifier).padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.MEDIUM.dp),
         verticalAlignment = Alignment.CenterVertically) {
@@ -248,14 +248,14 @@ internal fun MenuRow(label: String, icon: ImageVector? = null, bitmap: Bitmap? =
             modifier = Modifier.weight(1f))
         Spacer(Modifier.width(10.dp))
         when {
-            bitmap != null -> Image(bitmap.asImageBitmap(), null, Modifier.size(22.dp).clip(RoundedCornerShape(5.dp)))
+            bitmap != null -> Image(bitmap.asImageBitmap(), null, Modifier.size(22.dp).clip(IconContinuousShape))
             icon != null -> Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp))
         }
     }
 }
 
 @Composable
-internal fun MenuDivider() = HorizontalDivider(color = Color.White.copy(alpha = .1f), thickness = .5.dp)
+internal fun MenuDivider() = HorizontalDivider(color = FolioColors.LightSeparator, thickness = .5.dp)
 
 /** Rename an app: the typed name replaces the label everywhere, and an empty field puts Android's name back. */
 @Composable
@@ -294,3 +294,6 @@ internal fun RenameAppAlert(app: AppEntry, onDismiss: () -> Unit, onRename: (Str
 
 /** Reduce Motion: the menu fades out over this long instead of going back into the icon. */
 private const val MENU_FADE_MS = 150
+
+@Composable
+internal fun SheetDivider() = HorizontalDivider(color = Color.White.copy(alpha = .1f), thickness = .5.dp)

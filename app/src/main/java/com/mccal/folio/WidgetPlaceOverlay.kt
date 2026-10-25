@@ -109,7 +109,7 @@ internal fun WidgetPlaceOverlay(
         FlowRow(Modifier.align(if (bottom) Alignment.BottomCenter else Alignment.TopCenter)
             .padding(start = FolioSpace.MEDIUM.dp, end = FolioSpace.MEDIUM.dp, top = FolioSpace.MEDIUM.dp,
                 bottom = if (bottom) 120.dp else FolioSpace.MEDIUM.dp)
-            .background(Glass.copy(alpha = .96f), RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)),
+            .toolbarGlass(RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)),
             horizontalArrangement = Arrangement.Center, verticalArrangement = Arrangement.Center, itemVerticalAlignment = Alignment.CenterVertically) {
             listOf(Triple(R.string.move_left, Icons.Rounded.ArrowBack, -1f to 0f), Triple(R.string.move_up, Icons.Rounded.ArrowUpward, 0f to -1f),
                 Triple(R.string.move_down, Icons.Rounded.ArrowDownward, 0f to 1f), Triple(R.string.move_right, Icons.Rounded.ArrowForward, 1f to 0f))

@@ -184,6 +184,22 @@ internal const val SEARCH_FIELD_FROST = .12f
 internal const val LIQUID_OVERLAY_FROST = .72f
 internal const val LIBRARY_TILE_FROST = .22f
 internal const val LIBRARY_FIELD_FROST = .2f
+internal const val MENU_FROST = .84f
+internal const val FOLDER_FROST = .24f
+internal const val TOOLBAR_FROST = .9f
+internal const val FOLDER_TILE_FROST = .72f
+internal const val FOLDER_TILE_TINTED_FROST = .78f
+
+internal fun homeControlFrost(darkInk: Boolean) = if (darkInk) .45f else .2f
+
+@androidx.compose.runtime.Composable
+internal fun androidx.compose.ui.Modifier.menuGlass(shape: androidx.compose.ui.graphics.Shape): androidx.compose.ui.Modifier =
+    liquidGlass(shape, MENU_FROST, GlassRole.FLOATING, Color.White)
+
+@androidx.compose.runtime.Composable
+internal fun androidx.compose.ui.Modifier.toolbarGlass(shape: androidx.compose.ui.graphics.Shape): androidx.compose.ui.Modifier =
+    liquidGlass(shape, TOOLBAR_FROST, GlassRole.FLOATING)
+
 internal const val LIBRARY_BLUR_DP = 40
 internal const val LIBRARY_BLUR_STEPS = 10
 private const val BLUR_LAYER_ALPHA = .001f

@@ -118,13 +118,13 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                     SheetGroup {
                         TweakRow(Icons.Rounded.GridView, FolioColors.Value.Blue, stringResource(R.string.home), "customization-home",
                             if (backgrounds.previewPending) stringResource(R.string.photo_ready) else null, selected = pick(CustomizationPage.HOME), chevron = !sidebar) { onPage(CustomizationPage.HOME) }
-                        MenuDivider()
+                        SheetDivider()
                         TweakRow(Icons.Rounded.Search, FolioColors.Value.Gray, stringResource(R.string.search), "customization-search", selected = pick(CustomizationPage.SEARCH), chevron = !sidebar) { onPage(CustomizationPage.SEARCH) }
-                        MenuDivider()
+                        SheetDivider()
                         TweakRow(Icons.Rounded.Gesture, FolioColors.Value.Teal, stringResource(R.string.gestures), "customization-gestures", selected = pick(CustomizationPage.GESTURES), chevron = !sidebar) { onPage(CustomizationPage.GESTURES) }
-                        MenuDivider()
+                        SheetDivider()
                         TweakRow(Icons.Rounded.Devices, FolioColors.Value.Pink, stringResource(R.string.fold), "customization-fold", selected = pick(CustomizationPage.FOLD), chevron = !sidebar) { onPage(CustomizationPage.FOLD) }
-                        MenuDivider()
+                        SheetDivider()
                         TweakRow(Icons.Rounded.Settings, FolioColors.Value.Gray, stringResource(R.string.general), "customization-general", selected = pick(CustomizationPage.GENERAL), chevron = !sidebar) { onPage(CustomizationPage.GENERAL) }
                     }
     }
@@ -132,7 +132,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     val overviewActions: @Composable ColumnScope.() -> Unit = {
                     if (!isDefaultHome || state.canUndoEdit) SheetGroup {
                         if (!isDefaultHome) IosActionRow(stringResource(R.string.set_as_home_app), "default-home-settings", onClick = onMakeDefault)
-                        if (!isDefaultHome && state.canUndoEdit) MenuDivider()
+                        if (!isDefaultHome && state.canUndoEdit) SheetDivider()
                         if (state.canUndoEdit) IosActionRow(stringResource(R.string.undo_last_layout_change), onClick = { model.undoEdit(); onClose() })
                     }
     }
@@ -168,7 +168,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                             IosActionRow(stringResource(R.string.set), "background-set",
                                 enabled = candidate != null || backgrounds.pendingArt != null,
                                 onClick = { if (backgrounds.previewPending) backgrounds.applyPreview() else backgrounds.setPendingArt() })
-                            MenuDivider()
+                            SheetDivider()
                             IosActionRow(stringResource(R.string.cancel), "background-cancel",
                                 onClick = { if (backgrounds.previewPending) backgrounds.cancelPreview() else backgrounds.cancelPendingArt() })
                         } else if (backgrounds.justSet) SheetGroup {
@@ -327,7 +327,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         TweakRow(Icons.Rounded.NewReleases, FolioColors.Value.Green, stringResource(R.string.what_s_new), "customization-whats-new",
                             "v" + WhatsNew.currentVersion(generalContext)) { onClose(); onShowWhatsNew() }
                         if (DevBuild.isDevApp(generalContext) && DevBuild.load(generalContext) != null) {
-                            MenuDivider()
+                            SheetDivider()
                             TweakRow(Icons.Rounded.Build, FolioColors.Value.Orange, DevBuild.THIS_BUILD_LABEL, "customization-dev-build",
                                 DevBuild.load(generalContext)?.sha) { onClose(); DevBuild.reopen.intValue++ }
                         }
@@ -336,9 +336,9 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                     SheetGroupLabel(stringResource(R.string.backup))
                     SheetGroup {
                         IosActionRow(stringResource(R.string.save_backup), "layout-save-folder", onClick = { namingBackup = true })
-                        MenuDivider()
+                        SheetDivider()
                         IosActionRow(stringResource(R.string.save_backup_to_files), "layout-export", onClick = onExportLayout)
-                        MenuDivider()
+                        SheetDivider()
                         IosActionRow(stringResource(R.string.restore_from_backup), "layout-import", onClick = onImportLayout)
                     }
                     CardNote(
@@ -519,7 +519,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     CardNote(stringResource(R.string.everything_stays_on_your_phone_folio_has), Modifier.padding(horizontal = FolioSpace.TINY.dp))
     SheetGroup {
         perms.forEachIndexed { index, perm ->
-            if (index > 0) MenuDivider()
+            if (index > 0) SheetDivider()
             Row(Modifier.fillMaxWidth().clickable(onClick = perm.action).padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.COMPACT.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(perm.name, color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.BODY.sp)
@@ -796,10 +796,9 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
 
 /** A folder as Home draws it (first four apps on glass or the folder's color), without Home's drag and launch hooks. */
 @Composable private fun PreviewFolder(folder: FolderEntry, apps: Map<String, AppEntry>, size: Float) {
-    val shape = RoundedCornerShape((size * .24f).dp)
+    val shape = IconContinuousShape
     val tint = LocalFolderColors.current[folder.id]?.let { androidx.compose.ui.graphics.Color(it) }
-    Box(Modifier.size(size.dp).clip(shape).background(tint?.copy(alpha = .78f) ?: Glass.copy(alpha = .72f))
-        .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = .55f), shape)) {
+    Box(Modifier.size(size.dp).clip(shape).liquidGlass(shape, if (tint != null) FOLDER_TILE_TINTED_FROST else FOLDER_TILE_FROST, GlassRole.TILE, tint ?: Glass)) {
         folder.appIds.take(4).forEachIndexed { index, id ->
             apps[id]?.let { app ->
                 AppIcon(app, null, Modifier.align(when (index) {
@@ -889,7 +888,7 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
                 IconButton(onClick = { onRemoveWidget(placement.slot) }, modifier = Modifier.semantics { contentDescription = removeLabel }) {
                     Icon(Icons.Rounded.RemoveCircle, null, tint = FolioColors.Red) }
             }
-            MenuDivider()
+            SheetDivider()
         }
         IosActionRow(stringResource(R.string.add_widget_to_this_page), onClick = { onAddWidget(homePage) })
     }

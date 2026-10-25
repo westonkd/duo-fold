@@ -11,6 +11,10 @@ internal fun dockCornerRadius(thickness: Float, iconSize: Float): Float {
 }
 
 const val HOME_ICON_SIZE = 66f
+const val FOLDER_ICON_SIZE = 58f
+const val LIST_ICON_SIZE = 40f
+
+internal fun concentricRadius(innerRadius: Float, padding: Float) = innerRadius + padding
 const val HOME_ROW_GAP = 8f
 const val DOCK_WIDTH = 68f
 

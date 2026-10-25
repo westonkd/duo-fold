@@ -171,8 +171,8 @@ internal fun WidgetSlot(id: Int, slot: Int, controller: WidgetController, modifi
         val displayedContentSize = WidgetContentSize(maxWidth.value, maxHeight.value)
         if (id == NEEDS_BINDING_WIDGET) {
             val restore = controller.restoreDescriptor(slot)
-            Surface(Modifier.fillMaxSize().testTag("widget-restore-$slot"), color = Glass.copy(alpha = .88f),
-                shape = RoundedCornerShape(FolioRadius.PANEL.dp), border = androidx.compose.foundation.BorderStroke(2.dp, Color.White.copy(alpha = .7f))) {
+            Surface(Modifier.fillMaxSize().toolbarGlass(RoundedCornerShape(FolioRadius.WIDGET.dp)).testTag("widget-restore-$slot"), color = Color.Transparent,
+                shape = RoundedCornerShape(FolioRadius.WIDGET.dp)) {
                 Column(Modifier.padding(FolioSpace.MEDIUM.dp), verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(restore?.title ?: stringResource(R.string.saved_widget), color = Ink, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
@@ -271,8 +271,8 @@ internal fun BuiltinWidgetCard(id: Int, slot: Int, opensApp: Boolean = false, on
             Text(stringResource(R.string.your_widgets), color = Color.White, fontSize = FolioType.SUBHEAD.sp, maxLines = 1)
             Text(stringResource(R.string.tap_to_choose), color = Color.White.copy(alpha = .8f), fontSize = FolioType.GROUP_LABEL.sp)
         }
-        else -> Surface(Modifier.fillMaxSize().clickable(onClick = onAdd), color = Glass.copy(alpha = .18f),
-            shape = RoundedCornerShape(FolioRadius.PANEL.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = .25f))) {
+        else -> Surface(Modifier.fillMaxSize().liquidGlass(RoundedCornerShape(FolioRadius.WIDGET.dp), LIBRARY_TILE_FROST, GlassRole.TILE).clickable(onClick = onAdd),
+            color = Color.Transparent, shape = RoundedCornerShape(FolioRadius.WIDGET.dp)) {
             Column(Modifier.padding(FolioSpace.MEDIUM.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(Icons.Rounded.Add, null, tint = Color.White)
                 Text(if (id >= 0) stringResource(R.string.widget_unavailable) else stringResource(R.string.add_widget), color = Color.White, fontSize = FolioType.GROUP_LABEL.sp)

@@ -1230,7 +1230,7 @@ fun LauncherScreen(
                             }
                         } else Modifier)) {
                         Row(Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.folioSafeTop).padding(top = FolioSpace.SMALL.dp)
-                            .background(Glass.copy(alpha = .97f), RoundedCornerShape(22.dp))
+                            .toolbarGlass(CircleShape)
                             .testTag("widget-placement-toolbar"), verticalAlignment = Alignment.CenterVertically) {
                             TextButton(onClick = widgetPickerBack) { Text(stringResource(R.string.back_to_widgets)) }
                             if (session.candidate != null) Text(stringResource(R.string.replace_here), color = Ink,
@@ -1277,14 +1277,14 @@ fun LauncherScreen(
                             val previewX = if (specialAnchor != null) anchor.left
                                 else anchor.left + with(density) { 5.dp.toPx() }
                             Surface(Modifier.offset { IntOffset(previewX.roundToInt(), anchor.top.roundToInt()) }
-                                .size(previewWidth, previewHeight).testTag("widget-placement-preview")
+                                .size(previewWidth, previewHeight).toolbarGlass(RoundedCornerShape(FolioRadius.WIDGET.dp)).testTag("widget-placement-preview")
                                 .semantics { stateDescription = if (widgetDraft != null) launcherActivity.getString(R.string.ready_to_place) else launcherActivity.getString(R.string.no_room_here) },
-                                color = if (widgetDraft != null) Glass.copy(alpha = .82f) else Color(0xFFE7B6B6).copy(alpha = .9f),
-                                shape = RoundedCornerShape(FolioRadius.PANEL.dp), border = androidx.compose.foundation.BorderStroke(3.dp,
-                                    if (widgetDraft != null) Color.White else FolioColors.InvalidDrop)) {
+                                color = if (widgetDraft != null) Color.Transparent else FolioColors.InvalidDrop.copy(alpha = .35f),
+                                shape = RoundedCornerShape(FolioRadius.WIDGET.dp), border = if (widgetDraft != null) null
+                                    else androidx.compose.foundation.BorderStroke(3.dp, FolioColors.InvalidDrop)) {
                                 Box(Modifier.fillMaxSize()) {
                                     if (sessionEntry != null) WidgetProviderPreview(sessionEntry, session.span,
-                                        Modifier.fillMaxSize().padding(5.dp).clip(RoundedCornerShape(18.dp)))
+                                        Modifier.fillMaxSize().padding(5.dp).clip(RoundedCornerShape((FolioRadius.WIDGET - 5).dp)))
                                     else Column(Modifier.align(Alignment.Center).padding(FolioSpace.MEDIUM.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(session.provider?.loadLabel(launcherActivity.packageManager)?.toString()
@@ -1300,7 +1300,7 @@ fun LauncherScreen(
                                         Text("${session.span.width} × ${session.span.height}", color = Ink)
                                     }
                                     if (widgetDraft == null) Box(Modifier.matchParentSize()
-                                        .background(Color(0xFFB83B3B).copy(alpha = .34f)), contentAlignment = Alignment.Center) {
+                                        .background(FolioColors.RedLight.copy(alpha = .3f)), contentAlignment = Alignment.Center) {
                                         Text(stringResource(R.string.no_room_here), color = Color.White, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
@@ -1310,11 +1310,11 @@ fun LauncherScreen(
                             Surface(Modifier.offset { IntOffset((session.pointer.x - 90.dp.toPx()).roundToInt(),
                                 (session.pointer.y - 60.dp.toPx()).roundToInt()) }.size(180.dp, 120.dp)
                                 .testTag("widget-placement-preview").semantics { stateDescription = noRoomHere },
-                                color = Color(0xFFE7B6B6).copy(alpha = .9f), shape = RoundedCornerShape(FolioRadius.PANEL.dp)) {
+                                color = FolioColors.InvalidDrop.copy(alpha = .35f), shape = RoundedCornerShape(FolioRadius.WIDGET.dp)) {
                                 Box(contentAlignment = Alignment.Center) {
                                     if (sessionEntry != null) WidgetProviderPreview(sessionEntry, session.span,
-                                        Modifier.fillMaxSize().padding(5.dp).clip(RoundedCornerShape(18.dp)))
-                                    Box(Modifier.matchParentSize().background(Color(0xFFB83B3B).copy(alpha = .34f)),
+                                        Modifier.fillMaxSize().padding(5.dp).clip(RoundedCornerShape((FolioRadius.WIDGET - 5).dp)))
+                                    Box(Modifier.matchParentSize().background(FolioColors.RedLight.copy(alpha = .3f)),
                                         contentAlignment = Alignment.Center) { Text(stringResource(R.string.no_room_here), color = Color.White) }
                                 }
                             }
@@ -1360,8 +1360,8 @@ fun LauncherScreen(
             drag.source?.appId?.let { state.layout.folder(it) }?.let { folder ->
                 Surface(Modifier.offset { IntOffset((drag.pointer.x - drag.rootOrigin.x - 42.dp.toPx()).roundToInt(),
                     (drag.pointer.y - drag.rootOrigin.y - 52.dp.toPx()).roundToInt()) }.size(84.dp)
-                    .shadow(16.dp, RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)).testTag("folder-drag-ghost"),
-                    color = Glass.copy(alpha = .96f), shape = RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)) {
+                    .toolbarGlass(IconContinuousShape).testTag("folder-drag-ghost"),
+                    color = Color.Transparent, shape = IconContinuousShape) {
                     Box(contentAlignment = Alignment.Center) { Text(folder.title, color = Ink, textAlign = TextAlign.Center) }
                 }
             }
@@ -1370,8 +1370,8 @@ fun LauncherScreen(
                 val x = with(LocalDensity.current) { width.toPx() }
                 val y = with(LocalDensity.current) { height.toPx() }
                 Surface(Modifier.offset { IntOffset((drag.pointer.x - x / 2).roundToInt(), (drag.pointer.y - y * .65f).roundToInt()) }
-                    .size(width, height).shadow(16.dp, RoundedCornerShape(FolioRadius.PANEL.dp)).testTag("drag-ghost"),
-                    color = Glass.copy(alpha = .95f), shape = RoundedCornerShape(FolioRadius.PANEL.dp)) {
+                    .size(width, height).toolbarGlass(RoundedCornerShape(FolioRadius.WIDGET.dp)).testTag("drag-ghost"),
+                    color = Color.Transparent, shape = RoundedCornerShape(FolioRadius.WIDGET.dp)) {
                     Column(Modifier.padding(FolioSpace.LARGE.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Rounded.Widgets, null, tint = Ink)
                         Spacer(Modifier.height(8.dp))
@@ -1381,8 +1381,8 @@ fun LauncherScreen(
             }
             if (blockedDock) Surface(
                 Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.folioSafeTop)
-                    .padding(top = FolioSpace.COMPACT.dp, start = FolioSpace.XL.dp, end = 100.dp),
-                color = Glass.copy(alpha = .96f), shape = RoundedCornerShape(FolioRadius.FLOATING.dp)
+                    .padding(top = FolioSpace.COMPACT.dp, start = FolioSpace.XL.dp, end = 100.dp).toolbarGlass(CircleShape),
+                color = Color.Transparent, shape = CircleShape
             ) {
                 Text(stringResource(R.string.dock_full_move_an_app_out_first),
                     Modifier.padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.MEDIUM.dp), color = Ink, fontSize = FolioType.FOOTNOTE.sp)
@@ -1393,8 +1393,8 @@ fun LauncherScreen(
                 // A centered target overlaps the expanded workspace's right-hand first cell.
                 Modifier.align(railBottom(state.leftHanded)).navigationBarsPadding().railEdge(state.leftHanded, 12.dp).padding(bottom = FolioSpace.MEDIUM.dp)
                     .width(DOCK_WIDTH.dp).height(64.dp)
-                    .dropRegion(drag, DropTarget.Remove).testTag("remove-drop-target"),
-                color = if (target == DropTarget.Remove) Color(0xFFB33B3B) else Glass.copy(alpha = .96f), shape = RoundedCornerShape(FolioRadius.PANEL.dp)) {
+                    .toolbarGlass(CircleShape).dropRegion(drag, DropTarget.Remove).testTag("remove-drop-target"),
+                color = if (target == DropTarget.Remove) FolioColors.RedLight else Color.Transparent, shape = CircleShape) {
                 Column(Modifier.fillMaxSize().padding(vertical = FolioSpace.SNUG.dp), verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Rounded.DeleteOutline, null)
@@ -1448,7 +1448,7 @@ fun LauncherScreen(
                         Icon(Icons.Rounded.OpenInFull, stringResource(R.string.drag_to_resize_widget), tint = Ink, modifier = Modifier.size(22.dp))
                     }
                     Row(Modifier.align(Alignment.TopCenter).padding(top = FolioSpace.SMALL.dp)
-                        .background(Glass.copy(alpha = .96f), RoundedCornerShape(FolioRadius.GROUPED_CARD.dp))) {
+                        .toolbarGlass(CircleShape)) {
                         TextButton(onClick = { resize.stop() }) { Text(stringResource(R.string.cancel)) }
                         TextButton(enabled = valid, onClick = {
                             model.resizeWidget(slot, resize.width, resize.height); resize.stop()
@@ -1685,8 +1685,7 @@ internal fun libraryEdges(statusInCorner: Boolean, leftHanded: Boolean, spansWin
 @Composable
 private fun PreviewBar(onUseAsHome: () -> Unit, onExit: () -> Unit) {
     val ink = LocalHomeInk.current
-    Row(Modifier.padding(bottom = FolioSpace.SNUG.dp).heightIn(min = 48.dp).clip(RoundedCornerShape(FolioRadius.PANEL.dp))
-        .background(Glass.copy(alpha = LIQUID_FROST)).border(1.dp, GlassOutlineColor, RoundedCornerShape(FolioRadius.PANEL.dp))
+    Row(Modifier.padding(bottom = FolioSpace.SNUG.dp).heightIn(min = 48.dp).liquidGlass(CircleShape, LIQUID_FROST, GlassRole.CAPSULE)
         .padding(start = FolioSpace.LARGE.dp, end = FolioSpace.TINY.dp).testTag("home-setup"), verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(R.string.preview), color = ink.secondary, fontSize = FolioType.SUBHEAD.sp, modifier = Modifier.semantics { heading() })
         Spacer(Modifier.width(12.dp))

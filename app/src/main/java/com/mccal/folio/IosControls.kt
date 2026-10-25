@@ -176,16 +176,16 @@ internal fun <T> IosMenuRow(title: String, options: List<Pair<T, String>>, selec
             }
             FolioMenuPopup(open, onDismiss = { open = false }, tag = tag) {
                     options.forEachIndexed { index, (value, label) ->
-                        if (index > 0) androidx.compose.material3.HorizontalDivider(color = Color.White.copy(alpha = .1f), thickness = .5.dp)
+                        if (index > 0) MenuDivider()
                         Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable {
                             haptic.perform(FolioHaptic.Step); open = false; if (value != selected) onSelect(value)
                         }.padding(horizontal = FolioSpace.MEDIUM.dp), verticalAlignment = Alignment.CenterVertically) {
                             // iOS menus mark the choice with a leading checkmark and keep the labels lined up.
                             Box(Modifier.size(24.dp), contentAlignment = Alignment.CenterStart) {
                                 if (value == selected) androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Check, null,
-                                    tint = Color.White, modifier = Modifier.size(18.dp))
+                                    tint = FolioColors.LightLabel, modifier = Modifier.size(18.dp))
                             }
-                            androidx.compose.material3.Text(label, color = Color.White, fontSize = FolioType.BODY.sp)
+                            androidx.compose.material3.Text(label, color = FolioColors.LightLabel, fontSize = FolioType.BODY.sp)
                         }
                     }
             }
@@ -213,10 +213,9 @@ internal fun <T> IosMenuRow(title: String, options: List<Pair<T, String>>, selec
 internal fun FolioMenuPopup(expanded: Boolean, onDismiss: () -> Unit, tag: String? = null, content: @Composable ColumnScope.() -> Unit) {
     androidx.compose.material3.DropdownMenu(expanded, onDismiss,
         modifier = Modifier.widthIn(min = 200.dp, max = 280.dp).then(if (tag != null) Modifier.testTag("$tag-menu") else Modifier),
-        shape = RoundedCornerShape(FolioRadius.CARD.dp), containerColor = FolioColors.MenuSurface,
-        tonalElevation = 0.dp, shadowElevation = 24.dp,
-        border = androidx.compose.foundation.BorderStroke(.5.dp, Color.White.copy(alpha = .12f)),
-        content = content)
+        shape = RoundedCornerShape(FolioRadius.FLOATING.dp), containerColor = Color.Transparent,
+        tonalElevation = 0.dp, shadowElevation = 12.dp, border = null,
+        content = { androidx.compose.foundation.layout.Column(Modifier.menuGlass(RoundedCornerShape(FolioRadius.FLOATING.dp)), content = content) })
 }
 
 /**

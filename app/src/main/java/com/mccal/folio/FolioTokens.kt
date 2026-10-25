@@ -98,6 +98,14 @@ internal object FolioColors {
     val PreviewBezel = Color(0xFF0B0B0C)
     /** Supporting text on dark glass and sheets. */
     val SecondaryLabel = Color.White.copy(alpha = .62f)
+    /** iOS's label in light appearance: text on light glass (menus). */
+    val LightLabel = Color(0xFF1C1C1E)
+    /** iOS's secondaryLabel in light appearance. */
+    val LightSecondaryLabel = Color(0x993C3C43)
+    /** iOS's separator in light appearance: hairlines between rows on light glass. */
+    val LightSeparator = Color(0x4A3C3C43)
+    /** The wider gap between groups of rows in a light menu. */
+    val LightGroupGap = Color(0x143C3C43)
 }
 
 /**
@@ -151,6 +159,10 @@ internal object FolioRadius {
     const val ROW = 12
     /** Floating menus and action sheets. */
     const val FLOATING = 18
+    /** Home Screen widgets, iOS 26's 28 pt. */
+    const val WIDGET = 28
+    /** An open folder's card, and an App Library category opened the same way. */
+    const val FOLDER = 38
     /** The dock and the side rail: a capsule. */
     const val RAIL = 30
     /** A segmented control's track. */
