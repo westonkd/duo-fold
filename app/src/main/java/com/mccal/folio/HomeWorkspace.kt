@@ -104,6 +104,8 @@ import java.time.format.DateTimeFormatter
 internal fun ExpandedWorkspace(
     pager: androidx.compose.foundation.pager.PagerState,
     motion: WorkspacePageMotion,
+    dockColumn: Dp,
+    dockColumnLeads: Boolean,
     visibleHomePages: Int,
     panelWidth: Dp,
     contentHeight: Dp,
@@ -139,33 +141,37 @@ internal fun ExpandedWorkspace(
     val stride = motion.homeStride
     val initialHomeOrigin = with(density) { panelWidth.toPx() }
     val homePaneWidth = with(density) { (geometry.gridWidth + 16f).dp.toPx() }
+    val dockColumnWidth = with(density) { dockColumn.toPx() }
     val stateHolder = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
-    val visibleHomes by remember(pager, motion, visibleHomePages, initialHomeOrigin, homePaneWidth) {
+    val visibleHomes by remember(pager, motion, visibleHomePages, initialHomeOrigin, homePaneWidth, dockColumnWidth) {
         derivedStateOf(structuralEqualityPolicy()) {
             val physicalPosition = pager.currentPage + pager.currentPageOffsetFraction
             val scroll = motion.offset(physicalPosition)
             val intersectingHomes = (0 until visibleHomePages).filter { page ->
                 val start = initialHomeOrigin + page * stride
-                start + homePaneWidth > scroll && start < scroll + viewportWidth
+                start + homePaneWidth > scroll - dockColumnWidth && start < scroll + viewportWidth + dockColumnWidth
             }
             val retentionAnchor = pager.currentPage
             (intersectingHomes + (retentionAnchor - 1..retentionAnchor + 1))
                 .filter { it in 0 until visibleHomePages }.distinct().sorted()
         }
     }
-    val place: Modifier.(Float) -> Modifier = { x ->
-        offset {
-            val physicalPosition = pager.currentPage + pager.currentPageOffsetFraction
-            IntOffset((x - motion.offset(physicalPosition)).roundToInt(), 0)
-        }
-    }
     val leadingX = initialHomeOrigin - stride
-    val showLeading by remember(pager, motion, panelWidth, leadingX, homePaneWidth) {
+    val pagerStart = if (dockColumnLeads) dockColumnWidth else 0f
+    fun beyondDockColumn(x: Float): Float =
+        if (dockColumnLeads) -dockColumnWidth * ((leadingX - x) / stride).coerceIn(0f, 1f)
+        else dockColumnWidth * ((x - initialHomeOrigin) / stride).coerceIn(0f, 1f)
+    fun Modifier.place(x: Float, clearDockColumn: Boolean = true): Modifier = offset {
+        val physicalPosition = pager.currentPage + pager.currentPageOffsetFraction
+        val shown = x - motion.offset(physicalPosition)
+        IntOffset((pagerStart + shown + if (clearDockColumn) beyondDockColumn(shown) else 0f).roundToInt(), 0)
+    }
+    val showLeading by remember(pager, motion, panelWidth, leadingX, homePaneWidth, dockColumnWidth) {
         derivedStateOf(structuralEqualityPolicy()) {
             val physicalPosition = pager.currentPage + pager.currentPageOffsetFraction
             val scroll = motion.offset(physicalPosition)
             panelWidth.value > 0f && physicalPosition < 1f &&
-                leadingX - scroll + homePaneWidth > 0f
+                leadingX - scroll + homePaneWidth > -dockColumnWidth
         }
     }
     val libraryPhysicalPage = visibleHomePages
@@ -212,7 +218,8 @@ internal fun ExpandedWorkspace(
 
         if (showLibrary) {
             key("library-pane") {
-                Box(Modifier.place((visibleHomePages - 1) * stride + viewportWidth).fillMaxSize()) {
+                Box(Modifier.place((visibleHomePages - 1) * stride + viewportWidth, clearDockColumn = !dockColumnLeads)
+                    .width(with(density) { viewportWidth.toDp() }).fillMaxHeight()) {
                     AppLibrary(state, libraryQuery, onLibraryQuery, onLaunch, onPinned,
                         onActions = onActions,
                         modifier = Modifier.fillMaxSize()
