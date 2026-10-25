@@ -41,7 +41,7 @@ makes that enforceable, and it's why Folio can be ready for tri-folds and flip c
 
 ### One continuous interface
 
-- **ADP-7 MUST** keep the same hierarchy folded and unfolded. Unfolding reveals more (Today View beside Home, a
+- **ADP-7 MUST** keep the same hierarchy folded and unfolded. Unfolding reveals more (the leading workspace, a
   Settings sidebar, a second page); it never turns into a different launcher.
 - **ADP-8 MUST NOT** stretch. With regular width: one column becomes two, a navigation stack becomes a split view,
   a tab bar becomes a sidebar.
@@ -58,8 +58,7 @@ makes that enforceable, and it's why Folio can be ready for tri-folds and flip c
   avoid it (`FoldAvoidingBox`, `foldSafeSpan`). Scrollable content may cross it.
 - **ADP-13 MUST** put controls on the bottom half in tabletop, information on the top (`FoldRole.CONTROLS` /
   `INFO`), and the list and detail either side of a book hinge.
-- **ADP-14 MUST** treat postures as adaptations, never as the only place a feature exists. StandBy is an extra, not
-  the one way to see the clock.
+- **ADP-14 MUST** treat postures as adaptations, never as the only place a feature exists.
 - **ADP-15 MUST** keep the layout correct when fold information is missing: use window geometry alone.
 
 ### Insets
@@ -122,7 +121,6 @@ Not yet:
 | Site | Rule | Why | Remove when |
 |---|---|---|---|
 | `CameraArea.kt:22-33` | ADP-1 | The Fold8 (SM-F971) inner camera isn't in `DisplayCutout` | The platform reports it |
-| `DiscoverBounds.kt` | ADP-1 | Window Extensions 8 to 10 alignment hint, audited | Those versions age out |
 
 ## Gaps
 

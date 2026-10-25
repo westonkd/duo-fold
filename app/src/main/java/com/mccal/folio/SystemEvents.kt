@@ -16,7 +16,7 @@ import androidx.lifecycle.LifecycleOwner
 
 /**
  * The Charging trigger's moment: the cable going in. Plugged in counts as charging, as it does
- * for the Side Bar and StandBy, so a phone held at a charge limit (Samsung's battery protection) fires it on plug-in,
+ * for the Side Bar, so a phone held at a charge limit (Samsung's battery protection) fires it on plug-in,
  * and the battery topping back up at the limit doesn't fire it again. The first reading after Folio starts listening
  * is the state it was already in, not news.
  */

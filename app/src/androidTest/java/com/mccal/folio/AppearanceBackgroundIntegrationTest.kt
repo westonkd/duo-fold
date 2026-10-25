@@ -28,8 +28,7 @@ import kotlin.math.abs
 
 @RunWith(AndroidJUnit4::class)
 class AppearanceBackgroundIntegrationTest {
-    private val compose = createAndroidComposeRule<MainActivity>()
-    @get:Rule val rules = org.junit.rules.RuleChain.outerRule(WithoutNativeFeed()).around(compose)
+    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     private fun model() = ViewModelProvider(compose.activity)[LauncherModel::class.java]
     private fun ready() = compose.waitUntil(15_000) { !model().state.value.loading }
     private fun settings() {
@@ -179,20 +178,20 @@ class AppearanceBackgroundIntegrationTest {
             assertTrue(abs(android.graphics.Color.green(pixel) - 0x6f) <= 16)
             assertTrue(abs(android.graphics.Color.blue(pixel) - 0x42) <= 16)
             selected.recycle()
-            LiveDiscover.owner.get()?.let { owner ->
+            FolioActions.home?.get()?.let { owner ->
                 assertEquals(layout, ViewModelProvider(owner)[LauncherModel::class.java].state.value.layout)
             }
         } finally {
             InstrumentationRegistry.getInstrumentation().runOnMainSync {
-                LiveDiscover.owner.get()?.backgrounds?.cancelPreview()
-                LiveDiscover.owner.get()?.backgrounds?.cancelPendingSelection()
+                FolioActions.home?.get()?.backgrounds?.cancelPreview()
+                FolioActions.home?.get()?.backgrounds?.cancelPendingSelection()
             }
             resolver.delete(media, null, null)
             restore(backgroundPrefs, oldBackground)
             if (oldPhoto == null) privatePhoto.delete() else privatePhoto.writeBytes(oldPhoto)
             restoreStagedPhotoFiles(appContext, oldStagedPhotos)
             InstrumentationRegistry.getInstrumentation().runOnMainSync { LauncherBackgroundCache.changed(null) }
-            LiveDiscover.owner.get()?.let { owner ->
+            FolioActions.home?.get()?.let { owner ->
                 assertEquals(layout, ViewModelProvider(owner)[LauncherModel::class.java].state.value.layout)
             }
         }
@@ -284,7 +283,7 @@ class AppearanceBackgroundIntegrationTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val device = UiDevice.getInstance(instrumentation)
         val directory = instrumentation.targetContext.cacheDir
-        val owner = LiveDiscover.owner.get()
+        val owner = FolioActions.home?.get()
         val controller = owner?.backgrounds
         File(directory, "$name-state.txt").writeText(buildString {
             appendLine("package=${device.currentPackageName}")

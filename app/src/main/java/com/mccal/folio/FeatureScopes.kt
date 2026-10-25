@@ -2,7 +2,7 @@ package com.mccal.folio
 
 import androidx.compose.material.icons.rounded.*
 
-/** Where a tweak can be overridden (Choicy-style scopes). Focus overrides come later. */
+/** Where a tweak can be overridden (Choicy-style scopes). */
 enum class FolioScreen(@androidx.annotation.StringRes val label: Int) { COVER(R.string.cover_screen), INNER(R.string.inner_screen) }
 
 /** DEFAULT inherits the tweak's main switch; ON/OFF force it on that screen. */

@@ -27,7 +27,6 @@ enum class FolioTrigger(@androidx.annotation.StringRes val label: Int, val gestu
 enum class FolioAction(@androidx.annotation.StringRes val label: Int) {
     NONE(R.string.nothing), SPOTLIGHT(R.string.spotlight), NOTIFICATIONS(R.string.notifications_title), CONTROL_CENTER(R.string.quick_settings),
     LOCK(R.string.lock_screen), SCREENSHOT(R.string.screenshot), TORCH(R.string.flashlight), DND_ON(R.string.do_not_disturb_on), DND_OFF(R.string.do_not_disturb_off),
-    FOCUS_SLEEP(R.string.sleep_focus_on_off), FOCUS_WORK(R.string.work_focus_on_off), FOCUS_PERSONAL(R.string.personal_focus_on_off), FOCUS_OFF(R.string.turn_off_focus),
 }
 
 internal object FolioActions {
@@ -80,10 +79,6 @@ internal object FolioActions {
                     true
                 }
             }.getOrDefault(false)
-            FolioAction.FOCUS_SLEEP -> FocusScheduler.toggle(context, "sleep")
-            FolioAction.FOCUS_WORK -> FocusScheduler.toggle(context, "work")
-            FolioAction.FOCUS_PERSONAL -> FocusScheduler.toggle(context, "personal")
-            FolioAction.FOCUS_OFF -> FocusScheduler.setActive(context, null)
             FolioAction.DND_ON, FolioAction.DND_OFF -> return runCatching {
                 context.getSystemService(NotificationManager::class.java).setInterruptionFilter(
                     if (action == FolioAction.DND_ON) NotificationManager.INTERRUPTION_FILTER_PRIORITY else NotificationManager.INTERRUPTION_FILTER_ALL)

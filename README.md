@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/folio-inner-today.webp" width="720" alt="Folio on the unfolded Galaxy Z Fold8: the Today View with search, Suggestions and widgets on the left, Home with widgets and apps on the right, and the Side Bar with the time, battery and dock along the edge">
+  <img src="docs/images/folio-inner-today.webp" width="720" alt="Folio on the unfolded Galaxy Z Fold8: Home with widgets and apps, and the Side Bar with the time, battery and dock along the edge">
 </p>
 
 <div align="center">
@@ -121,10 +121,9 @@ There's a lot to this launcher, and it's fun. I hope you have as much fun with i
 
 **The iOS stuff**
 - Side Bar with the status bar and the dock.
-- Spotlight, Today View, Smart Stacks and the widget gallery.
+- Spotlight, Smart Stacks and the widget gallery.
 - Jiggle mode, folders, Icon Stacks, per-page icon size and labels, and App Library search.
 - Clear Badge from an app's long-press menu.
-- Focus modes with schedules and the Home pages you want to see.
 - Download rings on updating apps, blue dots on new ones, and Add to Home Screen for shortcuts and websites.
 - Settings built like iOS: menus with checkmarks, segmented controls, switches, sheets and alerts. What's New shows up after updates.
 
@@ -143,7 +142,7 @@ There's a lot to this launcher, and it's fun. I hope you have as much fun with i
 **Private**
 - No accounts, no ads, no analytics. Folio itself doesn't send anything anywhere unless you share a crash report or check
   for updates (which only asks GitHub for the latest release).
-  Google search, Discover and widgets from other apps use those apps' own services. Every permission is optional and
+  Google search and widgets from other apps use those apps' own services. Every permission is optional and
   explained where it's used. Every permission is listed in [PERMISSIONS.md](PERMISSIONS.md), with what happens if you
   say no; more about data in [PRIVACY.md](PRIVACY.md).
 
@@ -161,11 +160,10 @@ There's a lot to this launcher, and it's fun. I hope you have as much fun with i
 
 Android doesn't allow everything iOS does, so a few things work differently:
 
-- **Lock screen:** Folio can't replace Android's lock screen. The Lock Cover shows after you unlock.
+- **Lock screen:** Folio can't replace Android's lock screen.
 - **Status Bar in other apps:** Android doesn't let an app reserve space inside other apps, so the Side Bar status stays on Home. The dock can float over other apps with the gestures service.
 - **Pull-downs:** opening Android's notifications and Quick Settings from the top corners of Home needs Folio's accessibility (gestures) service.
 - **Folding from Home on Samsung:** set Settings › Display › Continue apps on cover screen to Always, or the phone locks when you fold.
-- **Google Discover** needs the Google app and depends on your phone supporting it.
 
 ## Install
 

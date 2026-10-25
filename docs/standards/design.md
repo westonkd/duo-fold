@@ -70,7 +70,7 @@ These are the values Folio already used most, so adopting them changed nothing o
 
 ### Color and materials
 
-- **DES-12 MUST** reserve the accent color for what needs attention: selection, badges, an active Focus, unfinished
+- **DES-12 MUST** reserve the accent color for what needs attention: selection, badges, unfinished
   setup. If everything is blue, nothing is.
 - **DES-13 MUST** use `FolioColors.Red` (or `RedLight` on light surfaces) only for destructive actions and errors.
 - **DES-14 MUST** draw Home's glass surfaces with Liquid glass (`liquidGlass`), the one glass Folio has.

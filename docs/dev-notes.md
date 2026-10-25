@@ -8,4 +8,3 @@ it for each build.
 - Settings > Icons & Side Bar > Status: turn on Stronger rings on the cover and the inner screen
 - Put a widget at the top of a page: the rows below it are evenly spaced and the dock lines up
 - Edit Home with the dock on the Side Bar: drag the handle under the dock
-- Focus > Also Turn On When: Charging turns a Focus on and off; turned off by hand it stays off

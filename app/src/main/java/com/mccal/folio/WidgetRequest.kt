@@ -12,8 +12,8 @@ import androidx.compose.runtime.setValue
 /**
  * What the widget picker is open for: where the widget will go, and whether the list is narrowed to one app.
  *
- * A widget can be headed for a slot on Home, for the Smart Stack at a placement, or for the Today View, and the
- * picker itself can be opened from an app's own menu — seven pieces of state in [LauncherScreen] that were set in
+ * A widget can be headed for a slot on Home or for the Smart Stack at a placement, and the picker itself can be
+ * opened from an app's own menu — six pieces of state in [LauncherScreen] that were set in
  * the same breath every time the picker opened. They are saved, so a picker left open across a fold still knows
  * what it was asked for.
  */
@@ -23,7 +23,6 @@ internal class WidgetRequest(
     targetIndex: Int = Int.MIN_VALUE,
     exactTarget: Boolean = false,
     stackSlot: Int? = null,
-    toToday: Boolean = false,
     packageName: String? = null,
     profileSerial: Long? = null,
 ) {
@@ -36,9 +35,6 @@ internal class WidgetRequest(
 
     /** Set while the picker is adding to the Smart Stack at this placement slot. */
     var stackSlot by mutableStateOf(stackSlot)
-
-    /** Set while the picker is adding to the Today View. */
-    var toToday by mutableStateOf(toToday)
 
     /** The app whose widgets are being shown, and which profile's copy of it; null lists everything. */
     var packageName by mutableStateOf(packageName)
@@ -53,10 +49,9 @@ internal class WidgetRequest(
 
     companion object {
         val Saver = listSaver<WidgetRequest, Any?>(
-            save = { listOf(it.slot, it.targetIndex, it.exactTarget, it.stackSlot, it.toToday, it.packageName, it.profileSerial) },
+            save = { listOf(it.slot, it.targetIndex, it.exactTarget, it.stackSlot, it.packageName, it.profileSerial) },
             restore = {
-                WidgetRequest(it[0] as Int, it[1] as Int, it[2] as Boolean, it[3] as Int?, it[4] as Boolean,
-                    it[5] as String?, it[6] as Long?)
+                WidgetRequest(it[0] as Int, it[1] as Int, it[2] as Boolean, it[3] as Int?, it[4] as? String, it[5] as? Long)
             },
         )
     }

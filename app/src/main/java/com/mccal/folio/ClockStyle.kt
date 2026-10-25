@@ -91,7 +91,7 @@ data class BigClockStyle(
 internal fun BigClockStyle?.orDefault() = this ?: BigClockStyle()
 
 /** The real styles (by widget slot) and a setter, provided once where `model`/`state` are in scope (LauncherScreen).
- * A preview that provides no value (Settings' Home preview, Today View) reads an empty map and a no-op setter. */
+ * A preview that provides no value (Settings' Home preview) reads an empty map and a no-op setter. */
 internal class BigClockStyles(val bySlot: Map<Int, BigClockStyle>, val set: (Int, BigClockStyle?) -> Unit)
 // compositionLocalOf, not static: a static local recomposes everything under its provider when the value changes,
 // and this changes on every tick of the weight slider - only the clocks that read it should redraw.

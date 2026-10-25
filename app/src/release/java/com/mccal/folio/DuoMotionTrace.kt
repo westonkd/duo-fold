@@ -2,8 +2,6 @@ package com.mccal.folio
 
 /** Release builds contain no active motion diagnostics. */
 internal object DuoMotionTrace {
-    const val enabled = false
-    fun event(name: String, details: String) = Unit
     fun begin(anchor: Int, position: Float, x: Float, y: Float): Session? = null
 
     class Session {

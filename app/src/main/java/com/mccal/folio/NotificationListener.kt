@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** A notification as shown on badges, the Lock Cover and an app's panel. */
+/** A notification as shown on badges and an app's panel. */
 data class NotificationItem(val key: String, val packageName: String, val appLabel: String, val icon: Bitmap?,
     val title: String?, val text: String?, val contentIntent: android.app.PendingIntent?)
 

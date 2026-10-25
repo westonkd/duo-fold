@@ -37,16 +37,12 @@ internal object LauncherBackgroundCache {
     @Volatile var bitmap: Bitmap? = null
     @Volatile var identity: String? = null
     val revision = mutableIntStateOf(0)
-    private val listeners = mutableSetOf<() -> Unit>()
 
     fun changed(bitmap: Bitmap?, identity: String? = null) {
         this.bitmap = bitmap
         this.identity = identity
         revision.intValue++
-        listeners.toList().forEach { it() }
     }
-    fun listen(listener: () -> Unit) { listeners += listener }
-    fun forget(listener: () -> Unit) { listeners -= listener }
 }
 
 /** The one photo the user picked. Written by [LauncherBackgroundController] and nothing else. */
@@ -139,7 +135,6 @@ internal fun cachedLauncherBackground(context: Context): Bitmap? {
 
 class LauncherBackgroundController(
     private val activity: ComponentActivity,
-    private val onExternalResultChanged: (Boolean) -> Unit,
 ) : DefaultLifecycleObserver {
     var photoSelected by mutableStateOf(launcherBackgroundEnabled(activity))
         private set
@@ -256,21 +251,17 @@ class LauncherBackgroundController(
             pickerPending = false
             previewPending = true
             loading = true
-            onExternalResultChanged(false)
             if (pendingUri != null && operation != null) decode(Uri.parse(pendingUri), operation)
             else failPreviewRestore(activity.getString(R.string.the_pending_photo_selection_could_not_be))
         } else if (previewPhase == PHASE_READY) {
             pickerPending = false
             previewPending = true
             loading = true
-            onExternalResultChanged(false)
             prefs.edit().remove(PENDING_URI).apply()
             if (operation != null && persistedPreviewFile?.isFile == true) {
                 restorePreview(persistedPreviewFile, operation)
             } else failPreviewRestore(activity.getString(R.string.the_pending_photo_preview_could_not_be_r))
-        } else if (pickerPending) {
-            onExternalResultChanged(true)
-        } else onExternalResultChanged(false)
+        }
         if (photoSelected && LauncherBackgroundCache.bitmap == null) activity.lifecycleScope.launch {
             val startingRevision = LauncherBackgroundCache.revision.intValue
             val loaded = withContext(Dispatchers.IO) { loadLauncherBackground(activity.applicationContext) }
@@ -288,7 +279,6 @@ class LauncherBackgroundController(
         generation++; pickerPending = true; loading = false; errorMessage = null; successMessage = null
         prefs.edit().putBoolean(PICKER_PENDING, true).putString(PENDING_OPERATION, UUID.randomUUID().toString())
             .remove(PENDING_URI).remove(PREVIEW_PHASE).remove(PREVIEW_FILE).apply()
-        onExternalResultChanged(true)
         try { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
         catch (error: Exception) {
             Diagnostics.caught("Wallpaper: opening the photo picker", error)
@@ -310,7 +300,6 @@ class LauncherBackgroundController(
         prefs.edit().putBoolean(BACKGROUND_ENABLED, false).remove(BACKGROUND_ID).remove(PICKER_PENDING).remove(PENDING_URI)
             .remove(PENDING_OPERATION).remove(PREVIEW_PHASE).remove(PREVIEW_FILE).apply()
         photoSelected = false; errorMessage = null; successMessage = activity.getString(R.string.no_background_behind_home)
-        onExternalResultChanged(false)
         cleanupStagedFiles()
     }
 
@@ -388,7 +377,6 @@ class LauncherBackgroundController(
                 if (!granted) forgetPreviewGrant(operation)
             }
         }
-        onExternalResultChanged(false)
         decode(uri, operation)
     }
 
@@ -479,7 +467,6 @@ class LauncherBackgroundController(
             prefs.edit().remove(PICKER_PENDING).remove(PENDING_URI).remove(PENDING_OPERATION)
                 .remove(PREVIEW_PHASE).remove(PREVIEW_FILE).apply()
         } else prefs.edit().remove(PICKER_PENDING).apply()
-        onExternalResultChanged(false)
     }
 
     private fun failPreviewRestore(message: String) {
@@ -503,7 +490,6 @@ class LauncherBackgroundController(
             .remove(PREVIEW_PHASE).remove(PREVIEW_FILE).apply()
         pickerPending = false
         previewPending = false
-        onExternalResultChanged(false)
     }
 
     private fun pendingOperation() = runCatching { prefs.getString(PENDING_OPERATION, null) }.getOrNull()

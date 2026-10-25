@@ -194,34 +194,6 @@ class WidgetStacksTest {
     }
 }
 
-class TodayViewTest {
-    private fun w(id: Int, size: TodaySize) = TodayWidget(id, size)
-
-    @Test fun rowsPackSmallWidgetsInPairs() {
-        val rows = todayRows(listOf(w(1, TodaySize.SMALL), w(2, TodaySize.SMALL), w(3, TodaySize.MEDIUM), w(4, TodaySize.SMALL)))
-        assertEquals(listOf(listOf(1, 2), listOf(3), listOf(4)), rows.map { r -> r.map { it.id } })
-    }
-
-    @Test fun largeNeverSharesARow() {
-        val rows = todayRows(listOf(w(1, TodaySize.SMALL), w(2, TodaySize.LARGE), w(3, TodaySize.SMALL)))
-        assertEquals(listOf(listOf(1), listOf(2), listOf(3)), rows.map { r -> r.map { it.id } })
-    }
-
-    @Test fun sizeFromHomeFootprint() {
-        assertEquals(TodaySize.SMALL, TodaySize.forSpan(2, 2))
-        assertEquals(TodaySize.MEDIUM, TodaySize.forSpan(4, 2))
-        assertEquals(TodaySize.LARGE, TodaySize.forSpan(4, 4))
-    }
-
-    @Test fun editsKeepOrderAndIgnoreDuplicates() {
-        val list = listOf(w(1, TodaySize.SMALL), w(2, TodaySize.SMALL), w(3, TodaySize.MEDIUM))
-        assertEquals(list, TodayWidgets.add(list, w(2, TodaySize.LARGE)))
-        assertEquals(listOf(2, 1, 3), TodayWidgets.move(list, 1, 1).map { it.id })
-        assertEquals(list, TodayWidgets.move(list, 1, -1))
-        assertEquals(setOf(1, 2, 3), TodayWidgets.retained(list + w(CLOCK_WIDGET, TodaySize.SMALL)))
-    }
-}
-
 class SoftBadgeTest {
     private fun hsv(argb: Int): Pair<Float, Float> {
         val r = (argb shr 16 and 255) / 255f; val g = (argb shr 8 and 255) / 255f; val b = (argb and 255) / 255f
@@ -239,14 +211,6 @@ class SoftBadgeTest {
         val soft = softened(0xFF0000FF.toInt())
         assertTrue((soft and 255) > (soft shr 16 and 255)) // still bluer than red
         assertNull(softBadgeColor(IntArray(576) { 0xFF808080.toInt() }))
-    }
-}
-
-class PageBoundsTest {
-    @Test fun minPageBlocksSwipingPastIt() {
-        assertEquals(1f, boundedPagePosition(0.4f, 1, 5, minPage = 1))
-        assertEquals(0.4f, boundedPagePosition(0.4f, 1, 5))
-        assertEquals(1, releasePage(0.6f, 1, 5, velocity = 9999f, threshold = 250f, minPage = 1))
     }
 }
 

@@ -14,7 +14,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -98,26 +97,12 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-/**
- * Holding a built-in widget where nothing around it takes the hold: the Today View, where it starts editing. Null on
- * Home, whose own long press picks the widget up or opens its options.
- */
-internal val LocalWidgetHold = staticCompositionLocalOf<(() -> Unit)?> { null }
-
-/** A built-in widget's tap, and its hold where [LocalWidgetHold] gives one. */
-@Composable
-internal fun Modifier.widgetTap(onClick: () -> Unit): Modifier {
-    val hold = LocalWidgetHold.current ?: return clickable(onClick = onClick)
-    return combinedClickable(onLongClickLabel = stringResource(R.string.edit), onLongClick = hold, onClick = onClick)
-}
-
 @Composable
 internal fun GlassCard(modifier: Modifier = Modifier, onClick: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val cardShape = RoundedCornerShape(FolioRadius.PANEL.dp)
-    Surface(modifier.fillMaxSize().clip(cardShape).liquidGlass(cardShape, LIQUID_FROST, GlassRole.PANEL).widgetTap(onClick),
+    Surface(modifier.fillMaxSize().clip(cardShape).liquidGlass(cardShape, LIQUID_FROST, GlassRole.PANEL).clickable(onClick = onClick),
         color = Color.Transparent, shape = cardShape) {
-        // Like iOS widgets, the whole card scales with its size, so a narrower column (the Today View beside
-        // Home in portrait) shrinks the text instead of clipping it.
+        // Like iOS widgets, the whole card scales with its size, so a smaller card shrinks the text instead of clipping it.
         BoxWithConstraints {
             val scale = (minOf(maxWidth, maxHeight) / 150.dp).coerceIn(.6f, 1f)
             val density = LocalDensity.current
@@ -262,8 +247,8 @@ internal fun builtinWidgetApp(id: Int): Intent? = when (id) {
 }
 
 /**
- * One of Folio's own widgets. With [opensApp] (Home and the Today View) tapping a clock or a date opens that app, and
- * holding the card is the way to its options, or in the Today View to editing. A tap while editing still does [onAdd],
+ * One of Folio's own widgets. With [opensApp] (Home) tapping a clock or a date opens that app, and holding the card is
+ * the way to its options. A tap while editing still does [onAdd],
  * as does one on a phone with nothing to open it with; the preview in Settings leaves [opensApp] off.
  */
 @Composable

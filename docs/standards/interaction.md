@@ -13,7 +13,7 @@ widget", "pick up this icon" or "open Spotlight". This standard keeps those mean
   |---|---|
   | Tap | The obvious action (open, toggle, select) |
   | Long press | More about this object: its context menu, then pickup if the finger moves |
-  | Horizontal swipe on Home | Exactly one page (Discover and Today View at the leading edge) |
+  | Horizontal swipe on Home | Exactly one page |
   | Swipe down on Home | Android's notifications (top left), Android's Quick Settings (top right), Spotlight (elsewhere); configurable |
   | Swipe up | App Library, or an icon's panel where enabled |
   | Back / predictive back | Close the top-most transient surface, then leave editing |
@@ -50,7 +50,7 @@ widget", "pick up this icon" or "open Spotlight". This standard keeps those mean
 
 - **INT-12 MUST** express thresholds in dp or as a fraction of the page, never pixels. Folio's current values are the
   reference: page release at 250dp/s or min(20% page, 72dp); icon swipes at 28dp with a 0.6 axis ratio; edge paging
-  at 30dp with a 650 ms hold; Discover dismiss at min(72dp, 25% width).
+  at 30dp with a 650 ms hold.
 - **INT-13 SHOULD** keep one page per swipe (`PageGestureLimits`) in every layout, paired or single.
 
 ### Haptics

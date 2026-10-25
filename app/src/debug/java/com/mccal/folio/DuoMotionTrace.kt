@@ -8,14 +8,8 @@ internal object DuoMotionTrace {
     private const val TAG = "DuoMotion"
     private val nextGesture = AtomicLong()
 
-    val enabled: Boolean get() = Log.isLoggable(TAG, Log.DEBUG)
-
-    fun event(name: String, details: String) {
-        if (enabled) Log.d(TAG, "$name $details")
-    }
-
     fun begin(anchor: Int, position: Float, x: Float, y: Float): Session? {
-        if (!enabled) return null
+        if (!Log.isLoggable(TAG, Log.DEBUG)) return null
         return Session(nextGesture.incrementAndGet()).also {
             it.write("down", "anchor=$anchor position=$position x=$x y=$y")
         }

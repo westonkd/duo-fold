@@ -54,10 +54,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.rememberGraphicsLayer
-import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
@@ -124,7 +121,7 @@ fun LauncherScreen(
     homeFromFront: Boolean = false,
     onLaunch: (AppEntry) -> Unit, onMakeDefault: () -> Unit, onAppInfo: (AppEntry) -> Unit,
     isDefaultHome: Boolean, deviceStatus: DeviceStatus, onStatusMode: (Boolean) -> Unit, onWallpaperPreview: () -> Unit,
-    onDiscover: () -> Unit = {}, searchRequests: Int = 0, settingsRequests: Int = 0,
+    searchRequests: Int = 0, settingsRequests: Int = 0,
     onLaunchFrom: (AppEntry, android.graphics.Rect?) -> Unit = { app, _ -> onLaunch(app) },
     onGoogleSearch: (android.graphics.Rect?) -> Boolean = { false },
     onShadeSetup: () -> Unit = {},
@@ -151,7 +148,7 @@ fun LauncherScreen(
     val overlays = rememberHomeOverlays()
     var customizationPage by rememberSaveable { mutableStateOf(CustomizationPage.OVERVIEW) }
     LaunchedEffect(sheet) {
-        if (sheet != "widgets") { picker.stackSlot = null; picker.toToday = false }
+        if (sheet != "widgets") picker.stackSlot = null
     }
     var savedPage by rememberSaveable { mutableIntStateOf(0) }
     var lastHomePage by rememberSaveable { mutableIntStateOf(0) }
@@ -190,29 +187,14 @@ fun LauncherScreen(
         }
     }
     val launcherRootView = LocalView.current.rootView
-    DisposableEffect(sheet == "widgets") {
-        val active = sheet == "widgets"
-        if (active) LiveDiscover.setExternalResultPending(launcherActivity, "main", "widget-picker", true)
-        onDispose { if (active) LiveDiscover.setExternalResultPending(launcherActivity, "main", "widget-picker", false) }
-    }
     val appsById = remember(state.apps) { state.apps.associateBy { it.id } }
     val drag = remember { HomeDragState() }
-    val folderOwnsInput = overlays.folder != null || drag.source?.folderId != null
-    DisposableEffect(folderOwnsInput) {
-        if (folderOwnsInput) LiveDiscover.setExternalResultPending(launcherActivity, "main", "folder-panel", true)
-        onDispose { if (folderOwnsInput) LiveDiscover.setExternalResultPending(launcherActivity, "main", "folder-panel", false) }
-    }
     val haptic = LocalHapticFeedback.current
     val homeEdit = remember { HomeEditMode() }
     homeEdit.onRemove = { target -> if (target is DropTarget.Widget) widgets.remove(target.index) else model.removePlacement(target) }
-    // While a Focus hides Home pages, editing is locked; trying explains why instead.
-    val focusLock = LocalFocusLock.current
-    var lockNotice by remember { mutableIntStateOf(0) }
-    LaunchedEffect(focusLock) { if (focusLock != null) homeEdit.stop() }
     // Long-press on empty Home starts jiggle mode (iPhone); a second long-press opens the Home options.
     val onEmptyLongPress: (Int) -> Unit = { index ->
-        if (focusLock != null) { haptic.perform(FolioHaptic.Refuse); lockNotice++ }
-        else if (homeEdit.active) overlays.emptyCell = index
+        if (homeEdit.active) overlays.emptyCell = index
         else { homeEdit.lastEmptyIndex = index; haptic.perform(FolioHaptic.PickedUp); homeEdit.start() }
     }
     val homePages = state.homePages
@@ -221,24 +203,11 @@ fun LauncherScreen(
     var expandedWorkspace by remember { mutableStateOf(false) }
     /** Where the jiggle bar's Edit button is, so its menu opens right under it. */
     var editPillBounds by remember { mutableStateOf<androidx.compose.ui.unit.IntRect?>(null) }
-    // The page left of Home is Folio's Today View, Google Discover when chosen and available, or nothing at all.
-    val todayMode = state.leftPage == "TODAY"
-    val discoverMode = state.leftPage == "DISCOVER"
-    // Only Discover hosted beside Home reads the recorded Home layer.
-    val hostedDiscover = discoverMode && DiscoverBounds.available
-    val currentTodayMode by rememberUpdatedState(todayMode)
-    val firstHome = if (todayMode || (discoverMode && DiscoverBounds.available)) 1 else 0
-    DisposableEffect(discoverMode) {
-        // Only Discover mode starts Google's hidden feed window (any other choice closes one that's running).
-        if (!discoverMode) LiveDiscover.setExternalResultPending(launcherActivity, "main", "today-view", true)
-        onDispose { if (!discoverMode) LiveDiscover.setExternalResultPending(launcherActivity, "main", "today-view", false) }
-    }
     val pageCount = visibleHomePages + 1
-    val nativePager = rememberPagerState(initialPage = savedPage.coerceIn(-firstHome, pageCount - 1) + firstHome, pageCount = { pageCount + firstHome })
-    val pager = remember(nativePager) { LauncherPager(nativePager, firstHome) }
-    LaunchedEffect(nativePager, firstHome, visibleHomePages) {
+    val pager = rememberPagerState(initialPage = savedPage.coerceIn(0, pageCount - 1), pageCount = { pageCount })
+    LaunchedEffect(pager, visibleHomePages) {
         try {
-            snapshotFlow { libraryShown(nativePager.currentPage + nativePager.currentPageOffsetFraction, firstHome + visibleHomePages) }
+            snapshotFlow { libraryShown(pager.currentPage + pager.currentPageOffsetFraction, visibleHomePages) }
                 .collect { LibraryShown.floatValue = it }
         } finally {
             LibraryShown.floatValue = 0f
@@ -246,7 +215,7 @@ fun LauncherScreen(
     }
     LaunchedEffect(pager) {
         var swiping = false
-        try { snapshotFlow { pager.state.isScrollInProgress }.collect { now ->
+        try { snapshotFlow { pager.isScrollInProgress }.collect { now ->
             if (now && !swiping) { PerfLog.begin(PerfScenario.HOME_SWIPE); swiping = true }
             else if (!now && swiping) { PerfLog.end(PerfScenario.HOME_SWIPE); swiping = false }
         } } finally { if (swiping) PerfLog.end(PerfScenario.HOME_SWIPE) }
@@ -274,9 +243,9 @@ fun LauncherScreen(
             priorPendingPlacement = null
         }
     }
-    val pageGestures = remember(nativePager) { PageGestureLimits(nativePager) }
-    SideEffect { pageGestures.editing = drag.active || widgetSession != null || resize.active; LiveDiscover.allowNativeOpen = pager.currentPage == 0 && !drag.active && widgetSession == null && !resize.active }
-    val pageFling = androidx.compose.foundation.pager.PagerDefaults.flingBehavior(nativePager, pagerSnapDistance = pageGestures,
+    val pageGestures = remember(pager) { PageGestureLimits(pager) }
+    SideEffect { pageGestures.editing = drag.active || widgetSession != null || resize.active }
+    val pageFling = androidx.compose.foundation.pager.PagerDefaults.flingBehavior(pager, pagerSnapDistance = pageGestures,
         snapAnimationSpec = MotionSpeed.spring(1f, androidx.compose.animation.core.Spring.StiffnessMediumLow * 1.2f))
     // Page Effects, resolved once here so nothing about the feature is consulted where it doesn't apply:
     // NONE adds no layer, no pager read and no per-frame work at all. Off with Reduce Motion (DYN-11, A11Y-14), and
@@ -284,48 +253,7 @@ fun LauncherScreen(
     // the coordinates under the finger.
     val pageEffect = if (!LocalReduceMotion.current && !drag.active && !resize.active && widgetSession == null)
         state.pageEffect.spec else PageEffect.NONE.spec
-    var nativeMotion by remember { mutableStateOf(false) }
-    DisposableEffect(nativePager) {
-        val callback: (Float) -> Unit = { progress ->
-            val scrolling = nativePager.isScrollInProgress
-            if (DuoMotionTrace.enabled) DuoMotionTrace.event("native_callback_received",
-                "progress=$progress scrolling=$scrolling nativeMotion=$nativeMotion current=${nativePager.currentPage} offset=${nativePager.currentPageOffsetFraction}")
-            if (!scrolling || nativeMotion) {
-                val priorNativeMotion = nativeMotion
-                nativeMotion = progress > 0f && progress < 1f
-                val position = 1f - progress
-                val page = position.roundToInt()
-                if (DuoMotionTrace.enabled) DuoMotionTrace.event("native_callback_accepted",
-                    "progress=$progress nativeMotion=$priorNativeMotion->$nativeMotion requestPage=$page requestOffset=${position - page}")
-                nativePager.requestScrollToPage(page, position - page)
-            } else if (DuoMotionTrace.enabled) DuoMotionTrace.event("native_callback_rejected",
-                "progress=$progress reason=compose_scrolling nativeMotion=$nativeMotion")
-        }
-        LiveDiscover.onNativeProgress = callback
-        onDispose { if (LiveDiscover.onNativeProgress === callback) LiveDiscover.onNativeProgress = null }
-    }
-    LaunchedEffect(nativePager) {
-        snapshotFlow { Triple((1f - nativePager.currentPage - nativePager.currentPageOffsetFraction).coerceIn(0f, 1f), nativePager.isScrollInProgress, nativeMotion) to (nativePager.targetPage < firstHome) }
-            .collect { (motion, towardFeed) ->
-                val (progress, scrolling, native) = motion
-                if (firstHome > 0 && !currentTodayMode) {
-                    if (DuoMotionTrace.enabled) DuoMotionTrace.event("pager_observer",
-                        "progress=$progress scrolling=$scrolling nativeMotion=$native towardFeed=$towardFeed")
-                    if (scrolling) {
-                        if (nativeMotion && DuoMotionTrace.enabled) DuoMotionTrace.event("native_owner_cleared",
-                            "reason=compose_scrolling progress=$progress")
-                        nativeMotion = false
-                        LiveDiscover.page(progress, true, towardFeed)
-                    } else if (!native) LiveDiscover.page(progress, false)
-                }
-            }
-    }
     val scope = rememberCoroutineScope()
-    DisposableEffect(pager) {
-        val callback = { scope.launch { pager.animateScrollToPage(0) }; Unit }
-        LiveDiscover.onHomeRequest = callback
-        onDispose { if (LiveDiscover.onHomeRequest === callback) LiveDiscover.onHomeRequest = null }
-    }
     var previousHomePages by remember { mutableIntStateOf(homePages) }
     var previousEditRevision by remember { mutableIntStateOf(state.editRevision) }
     val focus = androidx.compose.ui.platform.LocalFocusManager.current
@@ -353,12 +281,9 @@ fun LauncherScreen(
     LaunchedEffect(state.verticalStatus) { onStatusMode(state.verticalStatus) }
     LaunchedEffect(homeRequests) { if (homeRequests > 0) {
         // An app can pause Home after the destination is visible but before its settle completes.
-        // A Focus with its own Home page brings Home back there, like iOS Focus pages.
-        val active = state.focusModes.firstOrNull { it.id == state.activeFocus }
-        val focusPage = focusLock?.let { FocusPages.openPage(active, it.realPages) } ?: FocusModes.homePage(active, homePages)
         // Something open on Home (a sheet, a menu, a folder, edit mode) is closed by this press and nothing more.
         val somethingOpen = sheet.isNotEmpty() || homeEdit.active || widgetSession != null || resize.active || picker.packageName != null || overlays.anyOpen
-        val page = homePressPage(homeFromFront, somethingOpen, focusPage, pager.currentPage, homePages, lastHomePage)
+        val page = homePressPage(homeFromFront, somethingOpen, pager.currentPage, homePages, lastHomePage)
         drag.clear(); widgetSession = null; resize.stop(); sheet = ""; picker.packageName = null
         picker.exactTarget = false; widgetPlacementMessage = null; overlays.closeAll(); homeEdit.stop()
         focus.clearFocus(); keyboard?.hide()
@@ -367,11 +292,6 @@ fun LauncherScreen(
     // Given half of a split screen, show a Home page (one cover-sized page beside the app) rather than where Folio was left.
     val splitScreen = androidx.compose.ui.platform.LocalConfiguration.current.let { launcherActivity.isInMultiWindowMode }
     LaunchedEffect(splitScreen) { splitViewHomePage(splitScreen, pager.currentPage, homePages, lastHomePage)?.let { pager.scrollToPage(it) } }
-    // Turning on a Focus with a Home page goes straight there.
-    LaunchedEffect(state.activeFocus) {
-        val active = state.focusModes.firstOrNull { it.id == state.activeFocus }
-        (focusLock?.let { FocusPages.openPage(active, it.realPages) } ?: FocusModes.homePage(active, homePages))?.let { pager.animateScrollToPage(it) }
-    }
     LaunchedEffect(settingsRequests) { if (settingsRequests > 0) {
         drag.clear(); widgetSession = null; resize.stop(); overlays.menu = null; homeEdit.stop()
         SettingsLink.page?.also { customizationPage = it; SettingsLink.page = null }
@@ -417,22 +337,7 @@ fun LauncherScreen(
         // Previewing (Folio isn't the Home app yet): Back on the first page leaves, like any other app.
         else if (!isDefaultHome && pager.currentPage == 0) launcherActivity.moveTaskToBack(true)
         else { focus.clearFocus(); scope.launch { pager.animateScrollToPage(0) } } }
-    val openDiscover = { if (firstHome > 0) scope.launch { pager.animateScrollToPage(-1) } else if (discoverMode) onDiscover(); Unit }
     val openLibrary = { scope.launch { pager.animateScrollToPage(homePages) }; Unit }
-    val todayContent: @Composable (Modifier) -> Unit = { pageModifier ->
-        TodayView(state, widgets, pageModifier,
-            onSearch = { launcherActivity.openSpotlight() }, onLaunch = onLaunch,
-            onAddWidget = { picker.toToday = true; picker.anyApp(); sheet = "widgets" },
-            onRemove = model::removeTodayWidget, onMove = model::moveTodayWidget)
-    }
-    val leftPageContent: @Composable (Modifier) -> Unit = { pageModifier ->
-        when {
-            !todayMode -> DiscoverContent(pageModifier.padding(start = FolioSpace.LARGE.dp, top = FolioSpace.LARGE.dp, bottom = FolioSpace.LARGE.dp))
-            expandedWorkspace && state.todayUnfolded != "PAGE" -> Box(pageModifier)
-            else -> todayContent(pageModifier)
-        }
-    }
-
     val dragWindowPage = if (expandedWorkspace && (drag.active || widgetSession != null)) pager.settledPage else pager.currentPage
     val eligibleDragPages = remember(expandedWorkspace, dragWindowPage, visibleHomePages) {
         if (expandedWorkspace && dragWindowPage in 0 until visibleHomePages) {
@@ -453,7 +358,6 @@ fun LauncherScreen(
     LaunchedEffect(drag.active, drag.moved) {
         val source = drag.source
         val id = source?.appId
-        if (focusLock != null && drag.active && drag.moved) { drag.clear(); overlays.menu = null; lockNotice++; return@LaunchedEffect }
         if (drag.active && drag.moved && id != null && overlays.menu == id) { overlays.menu = null; homeEdit.start() }
         // Dragging out of the App Library heads to Home only once the app actually moves (holding just shows the menu).
         // (An app carried out of an open folder has a Library target too, but it is already on Home: it must not move the page.)
@@ -625,32 +529,21 @@ fun LauncherScreen(
             if (!moved && !cancelled) {
                 // A held dock app already shows its menu; only an empty slot opens the app chooser.
                 if (source.target is DropTarget.Dock) { if (source.appId == null) { dockSlot = source.target.index; sheet = "dock" } else overlays.menu = source.appId }
-                else if (source.target is DropTarget.Widget) { if (focusLock != null) lockNotice++ else { picker.slot = source.target.index; sheet = "widgetActions" } }
+                else if (source.target is DropTarget.Widget) { picker.slot = source.target.index; sheet = "widgetActions" }
                 else if (source.appId?.let(::isFolderId) == true) overlays.folder = source.appId
                 else if (source.folderId == null) overlays.menu = source.appId
             }
         }
     }
 
-    val homeLayer = rememberGraphicsLayer()
-    DisposableEffect(homeLayer) {
-        homeLayer.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen
-        LiveDiscover.homeLayer = homeLayer
-        onDispose { if (LiveDiscover.homeLayer === homeLayer) LiveDiscover.homeLayer = null }
-    }
     // The hold delay covers all of Home, including the root detector that picks icons up, which is built here.
     WithHoldDelay(state.holdDelay) {
     Box(Modifier.fillMaxSize().graphicsLayer {
-        // The feed frame reuses the pager's render nodes in another window. Give Main
-        // a complete render target so cross-window damage cannot erase stationary controls.
-        // Only Google Discover's hosted feed needs it; with Today View an extra offscreen pass just costs frames.
-        compositingStrategy = if (!hostedDiscover) androidx.compose.ui.graphics.CompositingStrategy.Auto
-            else androidx.compose.ui.graphics.CompositingStrategy.Offscreen
         // The 0.6.9 motion pass (MO5): Home steps back a little while a folder is open; not under Reduce Motion.
         if (!dockReduceMotion && FolderOpening.id != null) {
             val s = FolderOpening.homeScale(FolderOpening.progress); scaleX = s; scaleY = s
         }
-    }.onSizeChanged { LiveDiscover.fullSize = androidx.compose.ui.geometry.Size(it.width.toFloat(), it.height.toFloat()) }.testTag("launcher-root").onGloballyPositioned { drag.landing.rootInWindow = it.boundsInWindow().topLeft }.homeDragInput(drag,
+    }.testTag("launcher-root").onGloballyPositioned { drag.landing.rootInWindow = it.boundsInWindow().topLeft }.homeDragInput(drag,
         enabled = sheet.isEmpty() && overlays.menu == null && !resize.active && pager.currentPage >= 0,
         page = pager.currentPage, eligiblePages = eligibleDragPages, onStart = {
             focus.clearFocus(); keyboard?.hide(); haptic.perform(FolioHaptic.PickedUp)
@@ -709,7 +602,7 @@ fun LauncherScreen(
         // The scrim (iOS's legibility gradient, A11Y-9 and DES-16) rides inside the layer the background is already cached in, so it costs nothing per frame.
         if (!state.systemWallpaper || !launcherActivity.showsWallpaper) DuneWallpaper(Modifier.foldMotionWallpaper(), scrim = scrim)
         else {
-            if (backgroundMoves) SystemWallpaperParallax(nativePager)
+            if (backgroundMoves) SystemWallpaperParallax(pager)
             // Android's wallpaper is the system's to draw, so there is no cached layer of Folio's to bake the scrim
             // into: here it is two gradient bands of fill a frame, in the window's own render node, with no new layer.
             if (scrim.draws) Box(Modifier.fillMaxSize().homeScrim(scrim))
@@ -740,8 +633,8 @@ fun LauncherScreen(
                 labelHeight = with(density) { LocalLabelSize.current.lineSp.sp.toDp().value } + 6f, inLibrary = inLibrary,
                 homeBottomSpace = if (isDefaultHome) 44f else 88f,
                 // The rail's round controls, counted as the column at its bottom draws them: Search without the search
-                // pill or off the Home pages, and Back to Home on Discover. Home's own count anchors the dock.
-                railControls = (if (pager.currentPage == -1) 1 else 0) + (if (!state.searchPill || pager.currentPage !in 0 until homePages) 1 else 0),
+                // pill or off the Home pages. Home's own count anchors the dock.
+                railControls = if (!state.searchPill || pager.currentPage !in 0 until homePages) 1 else 0,
                 homeRailControls = if (state.searchPill) 0 else 1, classScale = classScale, appRows = homeAppRows,
                 foldAtCenter = hinge?.vertical == true, fillSpace = state.homeRows == 0, shrinkIconsForRows = state.homeRows > BASE_APP_ROWS)
             // Half folded like a laptop: the status (information) stays above the hinge and the dock (controls) goes
@@ -769,13 +662,6 @@ fun LauncherScreen(
             }
             LaunchedEffect(geometry.gridWidth, geometry.widgetHeight, geometry.rowHeight) { resize.stop() }
             SideEffect { expandedWorkspace = geometry.expanded }
-            // Unfolded with Today View beside Home (or off), there's nothing to the left of Home: spring back.
-            val noLeftPageUnfolded = todayMode && geometry.expanded && state.todayUnfolded != "PAGE"
-            // Stop the swipe itself (not just spring back): the Today View is already on screen beside Home.
-            SideEffect { pageGestures.minPage = if (noLeftPageUnfolded) firstHome else 0 }
-            LaunchedEffect(noLeftPageUnfolded, pager.settledPage) {
-                if (noLeftPageUnfolded && pager.settledPage < 0) pager.animateScrollToPage(0)
-            }
             LaunchedEffect(geometry.expanded) {
                 if (!geometry.expanded) {
                     val sessionTargetsLeading = widgetSession?.let { session ->
@@ -811,8 +697,8 @@ fun LauncherScreen(
             // bar gets a clear gap above it.
             val controlsSpace = if (isDefaultHome) maxOf(44.dp, bottomControlsHeight) else maxOf(88.dp, bottomControlsHeight + 12.dp)
             val bottomSpace = controlsSpace + if (geometry.horizontalDock) (geometry.dockBarHeight + 16f).dp else 0.dp
-            val workspaceMotion = if (geometry.expanded) remember(firstHome, visibleHomePages, pagerWidth, homeStride, density) {
-                WorkspacePageMotion(firstHome, visibleHomePages, with(density) { pagerWidth.toPx() }, with(density) { homeStride.toPx() })
+            val workspaceMotion = if (geometry.expanded) remember(visibleHomePages, pagerWidth, homeStride, density) {
+                WorkspacePageMotion(visibleHomePages, with(density) { pagerWidth.toPx() }, with(density) { homeStride.toPx() })
             } else null
             val dockScroll = rememberScrollState()
             var gestureOriginInRoot by remember { mutableStateOf(Offset.Zero) }
@@ -820,7 +706,7 @@ fun LauncherScreen(
             var scrubberBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
             // The edit-mode dock grabber, so a downward drag on it moves the dock instead of opening Spotlight or the shade (#326).
             var grabberBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
-            val pagerInputEnabled = pager.currentPage in -firstHome..visibleHomePages && !drag.active &&
+            val pagerInputEnabled = pager.currentPage in 0..visibleHomePages && !drag.active &&
                 widgetSession == null && !resize.active && sheet.isEmpty() && overlays.menu == null &&
                 overlays.folder == null && overlays.emptyCell == null && overlays.newFolder == null &&
                 launcherActivity.backups.preview == null && !launcherActivity.backups.pickerPending &&
@@ -831,7 +717,7 @@ fun LauncherScreen(
                 gestureOriginInRoot = it.boundsInRoot().topLeft
                 gestureOriginInWindow = it.boundsInWindow().topLeft
             }.onePageGestures(
-                nativePager,
+                pager,
                 pageGestures,
                 motion = workspaceMotion,
                 enabled = pagerInputEnabled,
@@ -870,42 +756,20 @@ fun LauncherScreen(
                     }
                     else launcherActivity.openAndroidShade(panel)
                 },
-                onLeadingOverscroll = if (firstHome == 0 && discoverMode) onDiscover else null,
             )) {
             val pagerModifier = Modifier.align(if (state.leftHanded) Alignment.TopEnd else Alignment.TopStart)
                 .fillMaxHeight().width(pagerWidth)
-                .drawWithContent {
-                    // The recorded Home layer only feeds Google Discover's frame; Today View and None draw directly.
-                    if (!hostedDiscover) drawContent()
-                    else {
-                        homeLayer.record { this@drawWithContent.drawContent() }
-                        drawLayer(homeLayer)
-                    }
-                    LiveDiscover.host.get()?.invalidateFrame()
-                }.testTag("app-pager")
-                .discoverSwipe(discoverMode && firstHome == 0 && pager.currentPage == 0 && !drag.active && sheet.isEmpty() &&
-                    overlays.menu == null, onDiscover)
-                .onGloballyPositioned {
-                    if (firstHome > 0 && !todayMode) {
-                        val bounds = it.boundsInWindow()
-                        LiveDiscover.pagerOrigin = bounds.topLeft
-                        val padding = 32 * density.density
-                        LiveDiscover.prepare(launcherActivity,
-                            android.graphics.Rect((bounds.left + padding).toInt(), (bounds.top + padding).toInt(),
-                                (bounds.right - 16 * density.density).toInt(), (bounds.bottom - padding).toInt()), bounds.width)
-                    }
-                }
-                .semantics { stateDescription = if (pager.currentPage == -1) launcherActivity.getString(R.string.discover) else if (pager.currentPage == visibleHomePages) launcherActivity.getString(R.string.all_apps) else launcherActivity.getString(R.string.home_page_1_d_of_2_d, pager.currentPage + 1, visibleHomePages)
+                .testTag("app-pager")
+                .semantics { stateDescription = if (pager.currentPage == visibleHomePages) launcherActivity.getString(R.string.all_apps) else launcherActivity.getString(R.string.home_page_1_d_of_2_d, pager.currentPage + 1, visibleHomePages)
                     // Polite: TalkBack says the new page when a swipe lands, without cutting off what it was reading (A11Y-7).
                     liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite }
             if (geometry.expanded) {
                 Box(pagerModifier) {
-                    // PagerState remains the source of truth for native Discover progress,
-                    // snapping, accessibility state, and programmatic page requests.
-                    HorizontalPager(nativePager, Modifier.fillMaxSize(), userScrollEnabled = false,
-                        key = { if (it < firstHome) "discover" else if (it - firstHome == visibleHomePages) "library" else "home-${it - firstHome}" }) { }
+                    // PagerState remains the source of truth for snapping, accessibility state, and programmatic page requests.
+                    HorizontalPager(pager, Modifier.fillMaxSize(), userScrollEnabled = false,
+                        key = { if (it == visibleHomePages) "library" else "home-$it" }) { }
                     ExpandedWorkspace(
-                        nativePager = nativePager, motion = workspaceMotion!!, firstHome = firstHome,
+                        pager = pager, motion = workspaceMotion!!,
                         visibleHomePages = visibleHomePages, panelWidth = panelWidth,
                         contentHeight = contentHeight, bottomSpace = bottomSpace, geometry = geometry,
                         state = state, previewSlots = previewLayout.slots, previewLeadingSlots = previewLayout.leadingSlots,
@@ -914,38 +778,29 @@ fun LauncherScreen(
                         libraryQuery = libraryQuery, onLibraryQuery = { libraryQuery = it },
                         onLaunch = onLaunch, onLaunchFrom = onLaunchFrom, onPinned = model::setPinned,
                         onTurnOnWork = { model.turnOnWork(it) },
-                        onActions = { overlays.menu = it.id }, onWidget = { if (focusLock != null) lockNotice++ else { picker.slot = it; sheet = "widgetActions" } },
+                        onActions = { overlays.menu = it.id }, onWidget = { picker.slot = it; sheet = "widgetActions" },
                         onFolder = { overlays.folder = it },
                         onEmptyWidget = onEmptyLongPress,
-                        onMove = { id, offset -> if (focusLock != null) lockNotice++ else model.move(id, offset) },
+                        onMove = { id, offset -> model.move(id, offset) },
                         onProblem = onProblem,
                         libraryBack = { libraryBack },
-                        leftPageContent = leftPageContent,
-                        besideContent = if (todayMode && state.todayUnfolded == "BESIDE") todayContent else null,
                     )
                 }
             } else {
-                HorizontalPager(nativePager, pagerModifier,
+                HorizontalPager(pager, pagerModifier,
                     // Keep adjacent Home panes attached so ordinary back-and-forth paging does
                     // not synchronously inflate provider RemoteViews inside the gesture frame.
-                    // Discover is two physical positions before Home 2. Retain both Home
-                    // neighbors to avoid reinflating Home 2's RemoteViews during native exit.
-                    beyondViewportPageCount = if (firstHome > 0) 2 else 1,
+                    beyondViewportPageCount = 1,
                     userScrollEnabled = !drag.active && !resize.active, flingBehavior = pageFling,
-                    key = { if (it < firstHome) "discover" else if (it - firstHome == visibleHomePages) "library" else "home-${it - firstHome}" }) { physicalPage ->
-                    val page = physicalPage - firstHome
-                    if (page == -1) {
-                        // Every page in this pager turns, not only Home: a cube whose neighbour slides in flat is not
-                        // a cube, and this is the page on Home's left.
-                        leftPageContent(Modifier.fillMaxSize().pageEffect(pageEffect, nativePager, physicalPage))
-                    } else if (page == visibleHomePages) {
+                    key = { if (it == visibleHomePages) "library" else "home-$it" }) { page ->
+                    if (page == visibleHomePages) {
                         AppLibrary(state, libraryQuery, { libraryQuery = it }, onLaunch, model::setPinned,
                             // Unfolded portrait: the Side Bar's status capsule sits in the top corner, so the library keeps
                             // the same side margin Home does instead of running underneath it.
                             onActions = { overlays.menu = it.id }, modifier = Modifier.fillMaxSize()
                                 // The page effect turns the whole page, so it goes outside the library's own layer:
                                 // that one pushes the library back as Home returns, and the two stack rather than fight.
-                                .pageEffect(pageEffect, nativePager, physicalPage)
+                                .pageEffect(pageEffect, pager, page)
                                 .graphicsLayer { val b = libraryBack; scaleX = 1f - .14f * b; scaleY = scaleX; alpha = 1f - .35f * b; translationX = size.width * .08f * b }
                                 .padding(top = FolioSpace.LARGE.dp, bottom = bottomSpace)
                                 .padding(libraryEdges(geometry.horizontalDock && !geometry.dockBesideRail && state.verticalStatus, preset.dockWidth, state.leftHanded,
@@ -961,14 +816,14 @@ fun LauncherScreen(
                         // grid beside the rail, so a cube pivoting on the Row would hinge on the window edge, out in
                         // the empty margin, instead of on the seam the pane shares with its neighbour.
                         Row(Modifier.fillMaxSize().testTag("home-surface"), horizontalArrangement = Arrangement.Center) {
-                            Box(Modifier.pageEffect(pageEffect, nativePager, physicalPage)) {
+                            Box(Modifier.pageEffect(pageEffect, pager, page)) {
                                 HomePagePane(page, state, previewLayout.slots, previewLayout.leadingSlots, previewLayout.widgetPlacements, appsById, geometry, contentHeight,
                                     bottomSpace, widgets, drag, target, insertionTarget, showLargeWidget = false,
                                     onLaunch = onLaunchFrom, onActions = { overlays.menu = it.id },
-                                    onWidget = { if (focusLock != null) lockNotice++ else { picker.slot = it; sheet = "widgetActions" } },
+                                    onWidget = { picker.slot = it; sheet = "widgetActions" },
                                     onFolder = { overlays.folder = it },
                                     onEmptyWidget = onEmptyLongPress,
-                                    onMove = { id, offset -> if (focusLock != null) lockNotice++ else model.move(id, offset) },
+                                    onMove = { id, offset -> model.move(id, offset) },
                                     onProblem = onProblem)
                             }
                             // The pane starts with a 16 dp margin before its grid. With nothing beside the page (dock at the
@@ -986,7 +841,6 @@ fun LauncherScreen(
                         statusHeight = with(density) { it.height.toDp().value }
                     },
                 compact = contentHeight < COMPACT_DOCK_MAX_HEIGHT_DP.dp, iconSize = dockIconSize(geometry.iconSize).dp, style = state.statusStyle,
-                focus = state.focusModes.firstOrNull { it.id == state.activeFocus },
                 onClick = { launcherActivity.openAndroidShade(ShadePanel.QUICK_SETTINGS) })
             // Background and border without clipping, so Harbor-style magnified icons can grow past the rail.
             // Portrait unfolded (iPhone Duo): a horizontal dock bar centered along the bottom, above the page controls.
@@ -1007,12 +861,6 @@ fun LauncherScreen(
             val dockPitchShown by animateFloatAsState(if (geometry.horizontalDock) dockPitch else geometry.dockRowHeight, dockSpec, label = "dock pitch")
             val dockRailHeightShown by animateFloatAsState(dockHeightShown, dockSpec, label = "dock height")
             val dockBarWidthShown = animateFloatAsState(dockBarWidth.value, dockSpec, label = "dock width").value.dp
-            // Like iPhone, the dock bar steps aside for Today View: it follows the swipe out, then leaves altogether so
-            // it can't sit over Today's widgets and Edit button (#25). Only the bar; the Side Bar dock is beside Today.
-            val dockStepsAsideForToday = todayMode && firstHome > 0 && geometry.horizontalDock
-            val dockAwayForToday by remember(dockStepsAsideForToday, nativePager) {
-                derivedStateOf { dockStepsAsideForToday && nativePager.currentPage + nativePager.currentPageOffsetFraction <= .02f }
-            }
             // Edit mode: a grabber under the Side Bar dock to drag it up or down (#21). Only where the dock follows a saved
             // position rather than the grid, and below the dock so it never takes a drag meant for a dock app.
             if (homeEdit.active && sheet.isEmpty() && !geometry.horizontalDock && !geometry.dockBesideRail && !geometry.splitColumns &&
@@ -1053,7 +901,7 @@ fun LauncherScreen(
             }
             val dockShape = RoundedCornerShape(dockCornerRadius(if (geometry.horizontalDock) geometry.dockBarHeight else preset.dockWidth,
                 dockIconSize(geometry.iconSize), state.iconShape).dp)
-            if (!dockAwayForToday) Box((if (geometry.horizontalDock) (if (hinge?.active == true && hinge.vertical)
+            Box((if (geometry.horizontalDock) (if (hinge?.active == true && hinge.vertical)
                     // Half folded like a book: the bar sits centered on the trailing half, off the hinge.
                     Modifier.align(Alignment.BottomEnd).padding(end = ((contentWidth / 2 - dockBarWidthShown) / 2).coerceAtLeast(0.dp))
                 else if (geometry.dockBesideRail)
@@ -1067,12 +915,6 @@ fun LauncherScreen(
                 else Modifier.align(railTop(state.leftHanded)).railEdge(state.leftHanded, 12.dp).offset(y = dockTopShown.dp)
                     .width(preset.dockWidth.dp).height(dockRailHeightShown.dp)).graphicsLayer {
                     translationX = dockShake.value * this.density
-                    if (dockStepsAsideForToday) {
-                        // Read here, not in composition, so following the swipe doesn't recompose the screen.
-                        val towardToday = (1f - nativePager.currentPage - nativePager.currentPageOffsetFraction).coerceIn(0f, 1f)
-                        alpha = 1f - towardToday
-                        translationY = towardToday * size.height * .6f
-                    }
                     // Composite the stationary dock independently of the shared pager layer (not while magnifying: it would clip).
                     compositingStrategy = if (state.dockMagnify) androidx.compose.ui.graphics.CompositingStrategy.Auto
                         else androidx.compose.ui.graphics.CompositingStrategy.Offscreen
@@ -1097,11 +939,6 @@ fun LauncherScreen(
                 if (!isDefaultHome && !homeEdit.active && !drag.active) PreviewBar(onUseAsHome = { sheet = ""; onMakeDefault() },
                     onExit = { launcherActivity.moveTaskToBack(true) })
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                    // Only when there is a page to the left of Home: with Today View and Discover both off, the
-                    // button led nowhere (reported on r/GalaxyFold, 18 Sep 2026).
-                    if (!drag.active && (firstHome > 0 || discoverMode)) IconButton(onClick = openDiscover, Modifier.size(FolioTouch.MIN.dp).testTag("discover-page-link")) {
-                        Icon(Icons.Rounded.Explore, stringResource(R.string.discover), tint = Color.White.copy(alpha = .65f), modifier = Modifier.size(17.dp))
-                    }
                     // iOS: a "Search" capsule where the page dots are; the dots come back while paging or editing.
                     // iOS: drag sideways along the Search pill or the dots to scrub through Home pages, a tick per page.
                     var scrubbing by remember { mutableStateOf(false) }
@@ -1109,7 +946,7 @@ fun LauncherScreen(
                     // Home is at rest on a page: the strip shows the Search button, nothing, or the dots, as chosen. Away from
                     // rest the dots always show, so there is always a way to tell where you are.
                     val atRest = !homeEdit.active && !drag.active && !scrubbing &&
-                        !nativePager.isScrollInProgress && pager.currentPage in 0 until homePages
+                        !pager.isScrollInProgress && pager.currentPage in 0 until homePages
                     val stripNow = stripView(state.homeStrip, atRest)
                     androidx.compose.animation.AnimatedContent(stripNow, label = "search pill",
                         // Cover screen only: unfolded, Home already shows two pages side by side.
@@ -1145,7 +982,7 @@ fun LauncherScreen(
                             val dotDensity = LocalDensity.current
                             val dotInk = LocalHomeInk.current
                             Row(Modifier.heightIn(min = 30.dp).background(if (scrubbing) Color.White.copy(alpha = .18f) else Color.Transparent, CircleShape)
-                                .then(if (dotWorm) Modifier.dotWorm({ pager.position }, homePages, dotInk.primary, with(dotDensity) { 28.dp.toPx() },
+                                .then(if (dotWorm) Modifier.dotWorm({ (pager.currentPage + pager.currentPageOffsetFraction) }, homePages, dotInk.primary, with(dotDensity) { 28.dp.toPx() },
                                     with(dotDensity) { (if (scrubbing) FolioSpace.SNUG.dp else 0.dp).toPx() }, with(dotDensity) { 3.dp.toPx() }) else Modifier)
                                 .padding(horizontal = if (scrubbing) FolioSpace.SNUG.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
                             if (visibleHomePages <= 6) repeat(visibleHomePages) { index ->
@@ -1204,7 +1041,6 @@ fun LauncherScreen(
                 .width(preset.dockWidth.dp), horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
                 val controlSize = dockIconSize(geometry.iconSize).dp
-                if (pager.currentPage == -1) CircleControl(Icons.Rounded.ArrowForward, stringResource(R.string.back_to_home), "discover-home", controlSize) { scope.launch { pager.animateScrollToPage(0) } }
                 val searchBounds = remember { android.graphics.Rect() }
                 if (!state.searchPill || pager.currentPage !in 0 until homePages) Box(Modifier.onGloballyPositioned { searchBounds.set(it.boundsInWindow().toAndroidBounds()) }) {
                     CircleControl(Icons.Rounded.Search, if (state.googleSearch) stringResource(R.string.search_google) else stringResource(R.string.search_apps), "search", controlSize) {
@@ -1305,8 +1141,6 @@ fun LauncherScreen(
                     }
                 }
             }
-            // iOS-style notice when editing is locked by a Focus.
-            FocusLockNotice(lockNotice, focusLock?.mode, Modifier.align(Alignment.TopCenter))
             if (sheet == "widgets") OwnMethod {
                 val catalogProfiles = remember(state.profiles) { state.profiles.filter { it.isPersonal || it.isWork } }
                 val selectedProfile = catalogProfiles.firstOrNull { it.userSerial == picker.profileSerial }
@@ -1338,12 +1172,6 @@ fun LauncherScreen(
                     footprint = footprint,
                     onBack = widgetPickerBack,
                     onTap = tap@{ provider ->
-                        if (picker.toToday) {
-                            val span = widgets.sizing(provider, pickerSizing)?.preferred
-                            widgets.addToToday(provider, span?.let { TodaySize.forSpan(it.width, it.height) } ?: TodaySize.MEDIUM, pickerSizing)
-                            picker.toToday = false; sheet = ""; picker.packageName = null
-                            return@tap
-                        }
                         picker.stackSlot?.let { stackSlot ->
                             val placement = model.placement(stackSlot)
                             val min = widgets.sizing(provider, pickerSizing)?.minimum
@@ -1392,7 +1220,6 @@ fun LauncherScreen(
                         }
                     },
                     onBuiltin = builtin@{ builtinId ->
-                        if (picker.toToday) { model.addTodayWidget(builtinId, TodaySize.SMALL); picker.toToday = false; sheet = ""; return@builtin }
                         picker.stackSlot?.let { stackSlot ->
                             model.addToStack(stackSlot, builtinId); picker.stackSlot = null; sheet = ""; picker.packageName = null
                             return@builtin
@@ -1427,7 +1254,7 @@ fun LauncherScreen(
                         scope.launch { pager.scrollToPage(homeCellPage(free ?: requested).coerceIn(0, homePages)) }
                     },
                     onDragStart = { provider, point ->
-                        if (picker.stackSlot == null && !picker.toToday) footprint(provider)?.let { span ->
+                        if (picker.stackSlot == null) footprint(provider)?.let { span ->
                             widgetSession = WidgetPickerSession(provider, picker.slot, span, point, dragging = true)
                             widgetPlacementMessage = null
                             scope.launch { pager.scrollToPage(lastHomePage.coerceIn(0, homePages - 1)) }
@@ -1755,7 +1582,6 @@ fun LauncherScreen(
             }} else null
             // iPhone-style menu next to the icon; "Edit Home Screen" starts jiggle mode for moving.
             AppContextMenu(app, onHome = pinned, hidden = app.id in state.hiddenApps,
-                lockedBy = focusLock?.mode?.name,
                 onDismiss = { overlays.menu = null }, onMove = { overlays.menu = null; haptic.perform(FolioHaptic.PickedUp); homeEdit.start() },
                 onAddOrRemove = { if (app.isShortcut) model.deleteShortcut(app) else model.setPinned(app.id, !pinned); overlays.menu = null },
                 onCreateFolder = { overlays.newFolder = app.id; overlays.menu = null }, hasFolders = state.folders.any { app.id !in it.appIds },
@@ -1866,8 +1692,7 @@ fun LauncherScreen(
                     },
                     onCarryFinish = { cancelled -> finishDrag(cancelled); overlays.folder = null },
                     homeRootOnScreen = { val at = IntArray(2); homeView.getLocationOnScreen(at); androidx.compose.ui.geometry.Offset(at[0].toFloat(), at[1].toFloat()) },
-                    // A Focus that hides Home pages locks editing, so there is nothing for Add Apps to do then.
-                    onLaunch = onLaunchFrom, onAddApps = if (focusLock == null) {{ overlays.addToFolder = id }} else null,
+                    onLaunch = onLaunchFrom, onAddApps = { overlays.addToFolder = id },
                     onMoveOut = { appId, destination ->
                         if (model.removeAppFromFolder(id, appId, destination)) overlays.folder = model.folder(id)?.id
                     })

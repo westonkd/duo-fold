@@ -1,15 +1,7 @@
 package com.mccal.folio
 
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import androidx.lifecycle.repeatOnLifecycle
 import android.app.role.RoleManager
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.imeAnimationTarget
-import androidx.compose.foundation.layout.isImeVisible
 import android.app.WallpaperManager
 import android.content.ComponentName
 import android.content.Intent
@@ -32,7 +24,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.core.view.doOnPreDraw
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 class MainActivity : ComponentActivity() {
@@ -55,11 +46,8 @@ class MainActivity : ComponentActivity() {
     private val whatsNewRequested = mutableStateOf(false)
     private val showDevBuild = mutableStateOf(false)
     private lateinit var status: DeviceStatusMonitor
-    private var openingDiscover = false
     private var shadeSetupDialog: android.app.AlertDialog? = null
     private var returningFromShadeSettings = false
-    private var shadeSetupOwnsExternalUi = false
-    private var recreatingShadeSetup = false
     // The gestures dialog asked to show while the build page or What's New was up; it shows when they close.
     private var shadeSetupWaiting = false
 
@@ -69,16 +57,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         showWhatsNew.value = savedInstanceState == null && WhatsNew.shouldShow(this)
         Installs.start(this); NewApps.load(this)
-        FocusScheduler.run(this)
-        // Focus triggers (folding, charging, headphones): listen only while some Focus uses one.
-        lifecycleScope.launch {
-            model.state.map { st -> st.focusModes.any { it.triggers.any } }.distinctUntilChanged().collectLatest { listening ->
-                if (listening) focusSignals(this@MainActivity).collect { model.onFocusSignals(it) }
-            }
-        }
-        // USER_PRESENT is a protected system broadcast delivered to runtime receivers.
-        androidx.core.content.ContextCompat.registerReceiver(this, unlockReceiver, android.content.IntentFilter(Intent.ACTION_USER_PRESENT),
-            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
         // Folio Dev only: its builds keep one version name, so What's New never shows; this page is keyed to the commit.
         // Not tied to savedInstanceState: after an install the app is killed and Android restores Home from saved state, which
         // is exactly when a new build needs announcing. The commit check keeps it to once per build.
@@ -87,15 +65,9 @@ class MainActivity : ComponentActivity() {
         val restoreShadeDialog = savedInstanceState?.getBoolean(SHADE_DIALOG_VISIBLE) == true
         enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
-        widgets = WidgetController(this, model) { active ->
-            LiveDiscover.setExternalResultPending(this, "main", "widget-setup", active)
-        }.also { it.restore(savedInstanceState) }
-        backups = BackupController(this, model, widgets) { active ->
-            LiveDiscover.setExternalResultPending(this, "main", "layout-backup", active)
-        }.also { it.restore() }
-        backgrounds = LauncherBackgroundController(this) { active ->
-            LiveDiscover.setExternalResultPending(this, "main", "launcher-background", active)
-        }
+        widgets = WidgetController(this, model).also { it.restore(savedInstanceState) }
+        backups = BackupController(this, model, widgets).also { it.restore() }
+        backgrounds = LauncherBackgroundController(this)
         status = DeviceStatusMonitor(this).also { lifecycle.addObserver(it) }
         lifecycle.addObserver(SystemEvents.Observer(this))
         updateDefaultHome()
@@ -107,7 +79,7 @@ class MainActivity : ComponentActivity() {
             // Home is fully drawn once its own apps are in; at a start they come ahead of the rest.
             androidx.activity.compose.ReportDrawnWhen { savedState.homeReady }
             val safeMode = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(SafeMode.active) }
-            val state = FocusPages.effective(if (safeMode.value) SafeMode.effective(savedState) else savedState)
+            val state = if (safeMode.value) SafeMode.effective(savedState) else savedState
             androidx.compose.runtime.LaunchedEffect(Unit) { kotlinx.coroutines.delay(31_000); SafeMode.markStable(this@MainActivity) }
             // Saveable: a theme or language change recreates the activity, and the answer must not be asked again.
             val safeAcknowledged = androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
@@ -128,13 +100,11 @@ class MainActivity : ComponentActivity() {
                     else show(androidx.core.view.WindowInsetsCompat.Type.statusBars())
                 }
             }
-            val overlayOpen = spotlightVisible.value || LauncherSheets.isOpen(this@MainActivity) ||
-                // Only a Lock Cover that's actually drawn blurs Home (turning the setting off mid-way must not leave a blur).
-                (lockCoverVisible.value && state.lockCover)
+            val overlayOpen = spotlightVisible.value || LauncherSheets.isOpen(this@MainActivity)
             MotionSpeed.current = state.motionSpeed
             // The trail for bug reports: what was open, and a heartbeat while Home is showing.
             val overlayName = listOfNotNull(getString(R.string.spotlight).takeIf { spotlightVisible.value },
-                "sheet".takeIf { LauncherSheets.isOpen(this@MainActivity) }, getString(R.string.lock_cover).takeIf { lockCoverVisible.value && state.lockCover })
+                "sheet".takeIf { LauncherSheets.isOpen(this@MainActivity) })
                 .joinToString(" + ").ifEmpty { null }
             androidx.compose.runtime.LaunchedEffect(overlayName) { Diagnostics.event(overlayName?.let { "Open: $it" } ?: getString(R.string.nothing_open_over_home)) }
             val regular = androidx.compose.ui.platform.LocalConfiguration.current.fitsRegularHomeLayout()
@@ -164,16 +134,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
             val newApps = NewApps.packages.collectAsStateWithLifecycle().value
-            // The Discover host is a not-touchable window stacked above the keyboard; Android drops every key
-            // tap "due to occlusion" while it exists. Remove it whenever a keyboard can be up.
-            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-            val imeUp = WindowInsets.isImeVisible ||
-                WindowInsets.imeAnimationTarget.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
-            val typing = spotlightVisible.value || imeUp
-            androidx.compose.runtime.DisposableEffect(typing) {
-                if (typing) LiveDiscover.setExternalResultPending(this@MainActivity, "main", "keyboard", true)
-                onDispose { if (typing) LiveDiscover.setExternalResultPending(this@MainActivity, "main", "keyboard", false) }
-            }
             val clearedBadges = BadgeClears.cleared.collectAsStateWithLifecycle().value
             // Recent-app dots (Beta): refreshed every minute while Home is showing.
             val recentPackages by androidx.compose.runtime.produceState(emptySet<String>(), state.dockRecentDots) {
@@ -224,7 +184,6 @@ class MainActivity : ComponentActivity() {
                 },
                 androidx.compose.ui.platform.LocalHapticFeedback provides (if (state.haptics) androidx.compose.ui.platform.LocalHapticFeedback.current else NoHaptics),
                 LocalIconLook provides IconLook(state.iconStyle, androidx.compose.ui.graphics.Color(iconTint), state.iconShape, state.iconPack, state.badgeStyle, state.badgeColor, state.liveIcons, state.liveIconLook, state.badgeLook, state.badgeSize),
-                LocalFocusLock provides FocusPages.lockingFocus(savedState)?.let { FocusLock(it, savedState.layout.pageCount) },
                 LocalAppIconStyles provides state.appIconStyles,
                 LocalIconsAreDark provides iconsAreDark,
                 LocalRecentPackages provides recentPackages,
@@ -246,18 +205,10 @@ class MainActivity : ComponentActivity() {
                 LauncherScreen(state, model, widgets, homeRequests.intValue, homeFromFront = homeFromFront.value,
                     onLaunch = { launchApp(it) }, onMakeDefault = ::makeDefault, onAppInfo = ::appInfo,
                     isDefaultHome = defaultHome.value, deviceStatus = deviceStatus, onStatusMode = ::setStatusMode, onWallpaperPreview = ::previewWallpaper,
-                    onDiscover = ::openDiscover, searchRequests = searchRequests.intValue, settingsRequests = settingsRequests.intValue,
+                    searchRequests = searchRequests.intValue, settingsRequests = settingsRequests.intValue,
                     onLaunchFrom = ::launchApp, onGoogleSearch = ::openGoogleSearch,
                     onShadeSetup = ::showShadeSetup, onShowWhatsNew = { whatsNewRequested.value = true })
                 }
-                // StandBy's ways in (Settings › Fold & Displays): half-open, charging on its side and a tent on the cover.
-                val halfOpenPose = rememberHalfOpenPose(this@MainActivity)
-                val hinge = androidx.compose.runtime.remember { hasHinge(this@MainActivity) }
-                val standByWays = StandByWays(state.standBy && hinge, state.standByCharging, state.standByTent && hinge)
-                val standBySignals = rememberStandBySignals(this@MainActivity, standByWays, deviceStatus.charging, halfOpenPose != null)
-                StandByOverlay(standByWay(standByWays, standBySignals), standByWay(standByWays, standBySignals.copy(still = true)) != null,
-                    halfOpenPose, blocked = overlayOpen, status = deviceStatus)
-                LockCover(lockCoverVisible.value && state.lockCover) { lockCoverVisible.value = false }
                 // The gestures dialog never opens on top of either sheet: it waits here and shows once both are closed.
                 val startupSheet = startupSheetUp()
                 androidx.compose.runtime.LaunchedEffect(startupSheet) {
@@ -288,9 +239,6 @@ class MainActivity : ComponentActivity() {
             } } }
         }
         FoldRenderExperiment.attach(this)
-        // Reassert the token after recreation (and after process restoration, where the
-        // in-memory owner set is empty) before any external UI can uncover Discover.
-        if (returningFromShadeSettings || restoreShadeDialog) ownShadeSetupExternally()
         if (restoreShadeDialog) window.decorView.post { if (!isFinishing && !isDestroyed) showShadeSetup() }
     }
 
@@ -306,10 +254,7 @@ class MainActivity : ComponentActivity() {
     }
     override fun onDestroy() {
         LauncherSheets.closeAllOf(this); LauncherPages.closeAllOf(this) // an entry left by a window that never closed cannot outlive its screen
-        runCatching { unregisterReceiver(unlockReceiver) }
-        recreatingShadeSetup = isChangingConfigurations
         shadeSetupDialog?.dismiss()
-        if (!isChangingConfigurations) releaseShadeSetupOwnership()
         super.onDestroy()
     }
     override fun onPause() {
@@ -325,48 +270,20 @@ class MainActivity : ComponentActivity() {
         Diagnostics.event("Home shown (${Diagnostics.screenSummary(this).substringBefore(',')})")
         Diagnostics.checkpoint(this, visible = true)
         FolioActions.home = java.lang.ref.WeakReference(this)
-        model.syncFocus()
-        // Unlock arrived just before Home resumed: show the cover now.
-        if (unlockedAt > 0 && android.os.SystemClock.uptimeMillis() - unlockedAt < 2_000 && model.state.value.lockCover) lockCoverVisible.value = true
-        unlockedAt = 0L
         if (SpotlightRequest.consume()) openSpotlight()
         FolioActions.pendingPanel?.let { FolioActions.pendingPanel = null; showPanel(it) }
-        if (returningFromShadeSettings) {
-            returningFromShadeSettings = false
-            releaseShadeSetupOwnership()
-        }
-        val discover = DiscoverSession.host.get()
-        if (discover != null) window.decorView.doOnPreDraw {
-            it.postOnAnimation { if (DiscoverSession.host.get() === discover) DiscoverSession.dismiss() }
-        }
+        returningFromShadeSettings = false
         model.refresh(); updateDefaultHome()
-        window.decorView.post {
-            if (!isFinishing && !isDestroyed && !LiveDiscover.viewport.isEmpty)
-                LiveDiscover.prepare(this, LiveDiscover.viewport, LiveDiscover.pageWidth)
-        }
     }
 
     /** The notifications on screen now, for Clear Badge. */
     internal var latestNotifications: List<NotificationItem> = emptyList()
     internal val spotlightVisible = androidx.compose.runtime.mutableStateOf(false)
-    /** Lock Cover: shown when the phone is unlocked straight to Home. */
-    private val lockCoverVisible = androidx.compose.runtime.mutableStateOf(false)
-    private var unlockedAt = 0L
-    private val unlockReceiver = object : android.content.BroadcastReceiver() {
-        override fun onReceive(context: android.content.Context, intent: Intent) {
-            if (!model.state.value.lockCover) return
-            unlockedAt = android.os.SystemClock.uptimeMillis()
-            if (FolioForeground.visible.value) lockCoverVisible.value = true
-        }
-    }
     /** Opens Spotlight, or Android's notifications or quick settings. */
     internal fun showPanel(panel: ShadePanel) { if (panel == ShadePanel.SEARCH) openSpotlight() else openAndroidShade(panel) }
 
     internal fun openSpotlight() { spotlightVisible.value = true }
     private fun closeOverlays() { spotlightVisible.value = false }
-
-    /** The Home button is the way out of anything, so an overlay can never leave Home stuck behind it with no way back. */
-    private fun closeEverything() { closeOverlays(); lockCoverVisible.value = false }
 
     internal fun openAndroidShade(panel: ShadePanel) {
         when (SystemShadeAccessibilityService.open(this, panel)) {
@@ -383,7 +300,6 @@ class MainActivity : ComponentActivity() {
 
     private fun showShadeSetup() {
         if (shadeSetupDialog?.isShowing == true) return
-        ownShadeSetupExternally()
         // Two prompts at once read as one: after an install, a restored gestures dialog came up over the build page.
         if (startupSheetUp()) { shadeSetupWaiting = true; return }
         shadeSetupDialog = android.app.AlertDialog.Builder(this)
@@ -399,35 +315,20 @@ class MainActivity : ComponentActivity() {
             .setNeutralButton(getString(R.string.app_info)) { _, _ ->
                 returningFromShadeSettings = true
                 runCatching { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))) }
-                    .onFailure { returningFromShadeSettings = false; releaseShadeSetupOwnership() }
+                    .onFailure { returningFromShadeSettings = false }
             }
             .setPositiveButton(getString(R.string.open_settings)) { _, _ ->
                 returningFromShadeSettings = true
                 val opened = runCatching { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }.isSuccess
                 if (!opened) {
                     returningFromShadeSettings = false
-                    releaseShadeSetupOwnership()
                     FolioNotice.show(this, getString(R.string.accessibility_settings_are_unavailable))
                 }
             }
-            .also { dialog -> dialog.setOnDismissListener {
-                shadeSetupDialog = null
-                if (!returningFromShadeSettings && !recreatingShadeSetup) releaseShadeSetupOwnership()
-            } }
+            .also { dialog -> dialog.setOnDismissListener { shadeSetupDialog = null } }
             .show()
     }
 
-    private fun ownShadeSetupExternally() {
-        if (shadeSetupOwnsExternalUi) return
-        shadeSetupOwnsExternalUi = true
-        LiveDiscover.setExternalResultPending(this, "main", "shade-service-setup", true)
-    }
-
-    private fun releaseShadeSetupOwnership() {
-        if (!shadeSetupOwnsExternalUi) return
-        shadeSetupOwnsExternalUi = false
-        LiveDiscover.setExternalResultPending(this, "main", "shade-service-setup", false)
-    }
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) setStatusMode(model.state.value.verticalStatus)
@@ -455,9 +356,9 @@ class MainActivity : ComponentActivity() {
         if (opensSettings(intent)) settingsRequests.intValue++
         else if (intent.hasCategory(Intent.CATEGORY_HOME) || fromAppIcon(intent) || intent.getStringExtra("duo_destination") == "home") {
             // Pressing the Home button on Home goes to the first page; from an app (stopped, so true here) it keeps the page you left.
-            val overlayOpen = spotlightVisible.value || lockCoverVisible.value
+            val overlayOpen = spotlightVisible.value
             homeFromFront.value = intent.hasCategory(Intent.CATEGORY_HOME) && !stoppedSinceHome && !overlayOpen
-            closeEverything(); homeRequests.intValue++
+            closeOverlays(); homeRequests.intValue++
         }
         intent.removeExtra("duo_destination")
     }
@@ -500,38 +401,6 @@ class MainActivity : ComponentActivity() {
     } catch (_: android.content.ActivityNotFoundException) { false }
       catch (_: SecurityException) { false }
 
-    private fun openDiscover() {
-        if (DiscoverEmbedding.supported(this)) {
-            if (openingDiscover) return
-            openingDiscover = true
-            // A very quick reopen can arrive before the previous return's deferred cleanup.
-            // Finish that session before taking a new image, so it cannot invalidate this copy.
-            DiscoverSession.dismiss()
-            DiscoverMotion.capture(this) {
-                openingDiscover = false
-                if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return@capture
-                DiscoverSession.apps = model.state.value.apps
-                startActivity(Intent(this, DiscoverActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or Intent.FLAG_ACTIVITY_NO_ANIMATION))
-            }
-        }
-        else showDiscoverFallback()
-    }
-
-    private fun showDiscoverFallback() {
-        val google = packageManager.getLaunchIntentForPackage(DiscoverClient.GOOGLE_PACKAGE)
-        android.app.AlertDialog.Builder(this)
-            .setTitle(getString(R.string.discover_isn_t_available_here))
-            .setMessage(getString(R.string.folio_can_t_place_the_discover_feed_besi))
-            .setNegativeButton(getString(R.string.stay_on_home), null)
-            .apply {
-                if (google != null) setPositiveButton(getString(R.string.open_google)) { _, _ ->
-                    runCatching { startActivity(google) }
-                }
-            }
-            .show()
-    }
-
     private fun makeDefault() {
         // Samsung may immediately cancel a role request; its Home settings is reliable.
         try { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) }
@@ -554,7 +423,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun setStatusMode(vertical: Boolean) {
-        LiveDiscover.host.get()?.statusMode(vertical)
         val controller = WindowCompat.getInsetsController(window, window.decorView)
         controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         if (vertical) controller.hide(WindowInsetsCompat.Type.statusBars()) else controller.show(WindowInsetsCompat.Type.statusBars())

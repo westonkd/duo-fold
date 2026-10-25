@@ -39,30 +39,28 @@ internal class PageGestureLimits(private val pager: PagerState) : NestedScrollCo
     var anchor: Int? = null
     var pointerDown = false
     var editing = false
-    /** Lowest physical page a swipe may reach (e.g. no Today View page while it's shown beside Home). */
-    var minPage = 0
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
         val start = anchor ?: return Offset.Zero
         if (!pointerDown || editing || source != NestedScrollSource.UserInput || available.x == 0f) return Offset.Zero
         val stride = pager.layoutInfo.pageSize + pager.layoutInfo.pageSpacing
         if (stride <= 0) return Offset.Zero
         val position = pager.currentPage + pager.currentPageOffsetFraction
-        val allowed = boundedPagePosition(position - available.x / stride, start, pager.pageCount, minPage)
+        val allowed = boundedPagePosition(position - available.x / stride, start, pager.pageCount)
         return Offset(available.x + (allowed - position) * stride, 0f)
     }
     override fun calculateTargetPage(startPage: Int, suggestedTargetPage: Int, velocity: Float,
         pageSize: Int, pageSpacing: Int): Int =
-        if (editing) suggestedTargetPage else boundedPagePosition(suggestedTargetPage.toFloat(), anchor ?: startPage, pager.pageCount, minPage).toInt()
+        if (editing) suggestedTargetPage else boundedPagePosition(suggestedTargetPage.toFloat(), anchor ?: startPage, pager.pageCount).toInt()
 }
 
-internal fun boundedPagePosition(position: Float, anchor: Int, count: Int, minPage: Int = 0): Float {
-    val low = maxOf(anchor - 1, minPage, 0).coerceAtMost(count - 1).coerceAtLeast(0)
+internal fun boundedPagePosition(position: Float, anchor: Int, count: Int): Float {
+    val low = maxOf(anchor - 1, 0).coerceAtMost(count - 1).coerceAtLeast(0)
     val high = (anchor + 1).coerceAtMost(count - 1).coerceAtLeast(low)
     return position.coerceIn(low.toFloat(), high.toFloat())
 }
 
 internal fun releasePage(position: Float, anchor: Int, count: Int, velocity: Float, threshold: Float,
-    distanceThreshold: Float = .2f, minPage: Int = 0): Int {
+    distanceThreshold: Float = .2f): Int {
     val displacement = position - anchor
     val candidate = when {
         velocity < -threshold -> floor(position + .0001f).toInt() + 1
@@ -70,7 +68,7 @@ internal fun releasePage(position: Float, anchor: Int, count: Int, velocity: Flo
         abs(displacement) >= distanceThreshold -> anchor + sign(displacement).toInt()
         else -> anchor
     }
-    return boundedPagePosition(candidate.toFloat(), anchor, count, minPage).toInt()
+    return boundedPagePosition(candidate.toFloat(), anchor, count).toInt()
 }
 
 /** iOS-style: pull down from the top-left for notifications, top-right for quick settings;
@@ -95,13 +93,11 @@ internal fun Modifier.onePageGestures(
     /** False for touches that belong to another control (e.g. the page scrubber) and must not page Home. */
     canStartGesture: (Offset) -> Boolean = { true },
     onDownwardSwipe: ((ShadePanel) -> Unit)? = null,
-    onLeadingOverscroll: (() -> Unit)? = null,
 ) : Modifier {
     val currentEnabled by rememberUpdatedState(enabled)
     val currentCanStartDownwardSwipe by rememberUpdatedState(canStartDownwardSwipe)
     val currentCanStartGesture by rememberUpdatedState(canStartGesture)
     val currentDownwardSwipe by rememberUpdatedState(onDownwardSwipe)
-    val currentLeadingOverscroll by rememberUpdatedState(onLeadingOverscroll)
     return nestedScroll(limits).pointerInput(pager, limits, motion) {
         coroutineScope {
             var motionJob: Job? = null
@@ -121,7 +117,6 @@ internal fun Modifier.onePageGestures(
                 var dragPositions: Channel<Float>? = null
                 var dragSlopOffset = 0f
                 var releaseVelocity = 0f
-                var leadingDrag = 0f
                 var canceled = false
                 var cancelReason: String? = null
                 try {
@@ -141,7 +136,6 @@ internal fun Modifier.onePageGestures(
                         // Match Compose's drag tracking, including Android's batched historical
                         // samples and its handling of the final finger-up event.
                         tracker.addPointerInputChange(change)
-                        leadingDrag = maxOf(leadingDrag, change.position.x - down.position.x)
                         val terminalRelease = event.type == PointerEventType.Release && change.changedToUp()
                         if (dragPositions == null && (change.pressed || terminalRelease)) {
                             val distance = change.position - down.position
@@ -175,17 +169,17 @@ internal fun Modifier.onePageGestures(
                                     fun visualOffset() = motion?.offset(position()) ?: position() * stride()
                                     try {
                                         pager.scroll(MutatePriority.UserInput) {
-                                            with(pager) { updateTargetPage((anchor - sign(distance.x).toInt()).coerceIn(limits.minPage.coerceAtMost(pager.pageCount - 1), pager.pageCount - 1)) }
+                                            with(pager) { updateTargetPage((anchor - sign(distance.x).toInt()).coerceIn(0, pager.pageCount - 1)) }
                                             fun moveBy(pixels: Float) {
                                                 val current = position()
                                                 val requested = motion?.positionAfterVisualDelta(current, pixels)
                                                     ?: (current + pixels / stride())
-                                                val allowed = boundedPagePosition(requested, anchor, pager.pageCount, limits.minPage)
+                                                val allowed = boundedPagePosition(requested, anchor, pager.pageCount)
                                                 scrollBy((allowed - current) * stride())
                                             }
                                             val dragStartVisualOffset = visualOffset()
                                             for (dragPosition in channel) {
-                                                if (dragPosition != 0f) with(pager) { updateTargetPage((anchor - sign(dragPosition).toInt()).coerceIn(limits.minPage.coerceAtMost(pager.pageCount - 1), pager.pageCount - 1)) }
+                                                if (dragPosition != 0f) with(pager) { updateTargetPage((anchor - sign(dragPosition).toInt()).coerceIn(0, pager.pageCount - 1)) }
                                                 moveBy(dragStartVisualOffset - dragPosition - visualOffset())
                                             }
                                             val velocity = if (canceled) 0f else releaseVelocity
@@ -199,12 +193,12 @@ internal fun Modifier.onePageGestures(
                                                 velocity > 0f -> -1
                                                 else -> 0
                                             }
-                                            val adjacent = (anchor + releaseDirection).coerceIn(limits.minPage.coerceAtMost(pager.pageCount - 1), pager.pageCount - 1)
+                                            val adjacent = (anchor + releaseDirection).coerceIn(0, pager.pageCount - 1)
                                             val releaseStride = motion?.stride(anchor, adjacent)
                                                 ?.takeIf { it > 0f } ?: stride()
                                             val target = if (canceled) position().roundToInt() else releasePage(
                                                 position(), anchor, pager.pageCount, velocity, 250f * density,
-                                                distanceThreshold = minOf(.2f, 72f * density / releaseStride), minPage = limits.minPage
+                                                distanceThreshold = minOf(.2f, 72f * density / releaseStride)
                                             )
                                             trace?.release(position(), velocity, target, canceled)
                                             with(pager) { updateTargetPage(target) }
@@ -225,9 +219,6 @@ internal fun Modifier.onePageGestures(
                                     } catch (failure: CancellationException) {
                                         trace?.motionCanceled(position(), visualOffset())
                                         throw failure
-                                    }
-                                    if (!canceled && anchor == 0 && leadingDrag >= 72f * density) {
-                                        currentLeadingOverscroll?.invoke()
                                     }
                                 }
                                 channel.trySend(distance.x - dragSlopOffset)

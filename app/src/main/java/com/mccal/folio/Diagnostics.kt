@@ -175,7 +175,6 @@ internal object Diagnostics {
             "density ${metrics.densityDpi} (default ${android.util.DisplayMetrics.DENSITY_DEVICE_STABLE})",
             "font ${config.fontScale}×",
             "animations ${scale}×",
-            "left page ${state?.optString("leftPage", "TODAY") ?: "?"}",
             "wallpaper ${if (state?.optBoolean("systemWallpaper", false) == true) "Android" else "Folio"}",
             "fold effect ${if (state?.optBoolean("foldEffect", true) != false) "on" else "off"}" +
                 " (Duet ${state?.optJSONObject("duet")?.optString("style")?.ifBlank { null } ?: "duo"}," +
@@ -371,7 +370,7 @@ internal inline fun <T> traced(section: String, block: () -> T): T {
  * notification access, A2 is Folio's accessibility service.
  */
 internal enum class CapabilityTier(val code: String, val risk: OperationRisk) {
-    /** Home, folders and Focus: every change has an Undo. */
+    /** Home and folders: every change has an Undo. */
     STANDARD("A0", OperationRisk.REVERSIBLE),
     /** Reads notifications; replying and dismissing one are changes that stay. */
     NOTIFICATIONS("A1", OperationRisk.STATEFUL),

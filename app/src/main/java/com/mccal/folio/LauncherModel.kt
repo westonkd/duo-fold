@@ -16,9 +16,6 @@ import android.os.UserHandle
 import android.os.UserManager
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -148,11 +145,6 @@ data class LauncherState(
     /** Fades the bar when you haven't touched it for a moment. */
     val buttonBarFade: Boolean = true,
     val iconStyle: IconStyle = IconStyle.DEFAULT,
-    val standBy: Boolean = true,
-    /** StandBy while charging on its side and still (iPhone's rule), on any screen. */
-    val standByCharging: Boolean = true,
-    /** StandBy in a tent on the cover screen, off the charger too; the Fold only shows a tent past halfway. */
-    val standByTent: Boolean = false,
     /** Spotlight sections the user turned off (names of [SpotlightSection]). */
     val spotlightHidden: Set<String> = emptySet(),
     /** Engine for Enter in search: a [WebSearchTarget] name. */
@@ -190,16 +182,6 @@ data class LauncherState(
     val layoutHistory: Boolean = false,
     /** Beta: a dot under dock apps used in the last hour (needs Usage Access). */
     val dockRecentDots: Boolean = false,
-    val focusModes: List<FocusMode> = DEFAULT_FOCUS_MODES,
-    /** The Focus that's on, by id; null when none. */
-    val activeFocus: String? = null,
-    /** The page left of Home: "TODAY" (Folio's Today View) or "DISCOVER" (Google Discover). */
-    val leftPage: String = "TODAY",
-    val todayWidgets: List<TodayWidget> = DEFAULT_TODAY_WIDGETS,
-    /** Unfolded: "PAGE" (swipe left of Home), "BESIDE" (always next to Home, iPad-style) or "OFF". */
-    val todayUnfolded: String = "PAGE",
-    /** The row of suggested apps at the top of Today View. The Suggestions widget and Spotlight have their own switches. */
-    val todaySuggestions: Boolean = true,
     /** Show Android's own home-screen wallpaper behind Folio (live wallpapers included) instead of Folio's background. */
     val systemWallpaper: Boolean = false,
     /** Text drawn on the wallpaper: "AUTO" follows the wallpaper, "LIGHT" white, "DARK" dark. */
@@ -232,8 +214,6 @@ data class LauncherState(
     /** Activator-style trigger → action (names of [FolioTrigger] → [FolioAction]). */
     val triggerActions: Map<String, String> = emptyMap(),
     val haptics: Boolean = true,
-    /** iPhone-style cover shown when unlocking straight to Home. */
-    val lockCover: Boolean = true,
     /** Per-screen overrides for tweaks: feature id → screen → "ON"/"OFF" (absent = follow the main switch). */
     val featureScopes: Map<String, Map<String, String>> = emptyMap(),
     /** Settings a tweak offers on its own page: tweak id → option id → value (see [TweakOptions]). Absent = the default. */
@@ -403,19 +383,8 @@ internal fun v9BackupNeeded(sourceSchema: Int, writtenSchema: Int, hasBackup: Bo
  */
 const val MORE_ROWS_SCHEMA = 9
 
-/**
- * Home's state. A [readOnly] model (Discover's) shows the saved Home but never saves it, and never takes Home's place as
- * [FolioSettingsBridge.liveModel], so a tile or Focus change made while it exists still reaches the model Home saves from.
- */
-class LauncherModel(application: Application, private val readOnly: Boolean) : AndroidViewModel(application) {
-    constructor(application: Application) : this(application, readOnly = false)
-
-    companion object {
-        /** For windows beside Home, like Discover: see [readOnly]. */
-        val readOnlyFactory = viewModelFactory {
-            initializer { LauncherModel(this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]!!, readOnly = true) }
-        }
-    }
+/** Home's state. */
+class LauncherModel(application: Application) : AndroidViewModel(application) {
     private data class RefreshedApps(val entries: List<AppEntry>, val profiles: List<AppProfile>,
         val authoritativeProfiles: Set<Long>, val removedProfiles: Set<Long>)
     private data class UndoImportSettings(val compact: LayoutPreset, val expanded: LayoutPreset, val labels: Boolean,
@@ -523,7 +492,7 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
 
     init {
         launcherApps.registerCallback(callback); refresh()
-        if (!readOnly) FolioSettingsBridge.liveModel = java.lang.ref.WeakReference(this)
+        FolioSettingsBridge.liveModel = java.lang.ref.WeakReference(this)
     }
 
     /** Settings › Refresh Icons: for a theme app that changes icons without telling launchers (#19). */
@@ -634,11 +603,7 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
                     pendingShortcuts.removeAll { p -> newShortcuts.any { it.packageName == p.first && it.shortcutId == p.second } }
                     addedPackages.removeAll(arrivals.map { it.packageName }.toSet())
                     val homeArrivals = (if (old.addNewAppsToHome) arrivals else emptyList()) + newShortcuts
-                    // While a Focus hides Home pages, new arrivals go to a page that's showing, not one you can't see.
-                    val hiddenCells = FocusPages.lockingFocus(old)?.pages?.let { shown ->
-                        (0 until old.layout.pageCount).filter { it !in shown }.flatMap { page -> (0 until HOME_CELLS).map { homeCellIndex(page, it) } }
-                    }.orEmpty()
-                    val blockedForArrivals = (old.widgetPlacements.filter { it.page >= 0 }.flatMap { it.coveredIndices() } + hiddenCells).toSet()
+                    val blockedForArrivals = old.widgetPlacements.filter { it.page >= 0 }.flatMap { it.coveredIndices() }.toSet()
                     val withArrivals = homeArrivals.fold(pins) { slots, app ->
                         if (app.id in old.dock || app.id in old.leadingSlots || old.folders.any { app.id in it.appIds }) slots
                         else pinHomeApp(slots, app.id, true, blockedForArrivals, old.homeAppRows)
@@ -1039,7 +1004,7 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
      * widgets Android no longer has are left out, and Undo is offered like any other layout change.
      */
     fun restoreLayoutSnapshot(snapshot: LayoutSnapshot): Boolean {
-        if (mutable.value.loading || FocusPages.lockingFocus(mutable.value) != null) return false
+        if (mutable.value.loading) return false
         // Over a damaged layout this is the way back, like a restored backup (see applyImportedLayout).
         val recovering = statePayloadInvalid
         saveLayoutSnapshot("Before restoring", force = true)
@@ -1067,73 +1032,6 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
         persist()
         return true
     }
-    /**
-     * Turns a Focus on (or all off with null) and applies it to Android. By hand, a trigger that holds won't undo it until something
-     * changes, and a Focus turned off while its schedule covers now stays off until that window ends (see FocusDismissals).
-     */
-    fun setFocus(id: String?, byHand: Boolean = true) {
-        if (byHand) {
-            FocusDismissals.record(getApplication(), mutable.value.focusModes, mutable.value.activeFocus, id)
-            val before = mutable.value.activeFocus
-            triggerState = if (id == null) FocusTriggers.onTurnedOffByHand(mutable.value.focusModes, triggerState, before) else FocusTriggers.onTurnedOnByHand(triggerState)
-            focusReasonState.value = null
-            rememberTriggerState()
-        }
-        applyFocus(id)
-    }
-    private fun applyFocus(id: String?) {
-        updateSettings(soon = false) { it.copy(activeFocus = id?.takeIf { f -> it.focusModes.any { m -> m.id == f } }) }
-        val state = mutable.value
-        FocusController.apply(getApplication(), state.focusModes, state.focusModes.firstOrNull { it.id == state.activeFocus })
-    }
-    // What turned the Focus on survives the app being closed, so a Focus a trigger turned on is still turned off when the trigger ends.
-    private var triggerState = FocusTriggerState(
-        byTrigger = triggerPrefs().getString("trigger_by", null),
-        reason = FocusReason.entries.firstOrNull { it.key == triggerPrefs().getString("trigger_reason", null) },
-        // A Focus turned off by hand while its trigger held stays off after the app is closed too, until its signals change.
-        suppressed = FocusTriggers.decodeSuppressed(triggerPrefs().getString("trigger_suppressed", null)))
-    private fun triggerPrefs() = getApplication<android.app.Application>().getSharedPreferences("focus_rules", 0)
-    private fun rememberTriggerState() = triggerPrefs().edit().putString("trigger_by", triggerState.byTrigger).putString("trigger_reason", triggerState.reason?.key)
-        .putString("trigger_suppressed", FocusTriggers.encodeSuppressed(triggerState.suppressed)).apply()
-    private val focusReasonState = kotlinx.coroutines.flow.MutableStateFlow<FocusReason?>(triggerState.reason)
-    /** Why the Focus that is on turned on by itself (unfolded, charging, headphones), or null when it was turned on by hand. */
-    val focusReason: kotlinx.coroutines.flow.StateFlow<FocusReason?> get() = focusReasonState
-    /** The phone's folding, charging or headphones changed: turns a Focus on or off by its triggers (see [FocusTriggers]). */
-    fun onFocusSignals(signals: FocusSignals) {
-        val state = mutable.value
-        val result = FocusTriggers.onSignals(state.focusModes, state.activeFocus, triggerState, signals)
-        triggerState = result.state
-        focusReasonState.value = result.state.reason
-        rememberTriggerState()
-        if (result.changed) {
-            applyFocus(result.active)
-            // Say what just happened, so a Focus turning itself on never feels like magic. Nothing is shown when Home is
-            // not on screen: the person is somewhere else and the Focus list says why.
-            val app = getApplication<android.app.Application>()
-            val on = state.focusModes.firstOrNull { it.id == result.active }
-            val text = if (on != null) app.getString(R.string.focus_island_on, on.name, result.state.reason?.let { app.getString(it.label(on)) }.orEmpty())
-                else state.focusModes.firstOrNull { it.id == state.activeFocus }?.let { app.getString(R.string.focus_island_off, it.name) }
-            if (text != null && FolioForeground.visible.value) FolioNotice.show(app, text)
-        }
-    }
-    fun updateFocusMode(mode: FocusMode) {
-        updateSettings(soon = false) { it.copy(focusModes = FocusModes.update(it.focusModes, mode)) }
-        FocusScheduler.schedule(getApplication(), mutable.value.focusModes)
-        if (mutable.value.activeFocus == mode.id) FocusController.apply(getApplication(), mutable.value.focusModes, mode)
-    }
-    /** Clears the Focus if its Do Not Disturb rule was turned off in Android (Quick Settings, a schedule…). */
-    fun syncFocus() {
-        val state = mutable.value
-        val active = state.focusModes.firstOrNull { it.id == state.activeFocus } ?: return
-        if (FocusController.isOnInAndroid(getApplication(), active) == false) {
-            // Turned off in Android: count it as turned off by hand, so its schedule doesn't switch it back on.
-            FocusDismissals.record(getApplication(), state.focusModes, state.activeFocus, null)
-            updateSettings(soon = false) { it.copy(activeFocus = null) }
-        }
-    }
-    fun setLeftPage(value: String) = updateSettings(soon = false) { it.copy(leftPage = value) }
-    fun setTodaySuggestions(value: Boolean) = updateSettings(soon = false) { it.copy(todaySuggestions = value) }
-    fun setTodayUnfolded(value: String) = updateSettings(soon = false) { it.copy(todayUnfolded = value) }
     fun setSystemWallpaper(value: Boolean) = updateSettings(soon = false) { it.copy(systemWallpaper = value) }
     fun setHomeInk(value: String) = updateSettings(soon = false) { it.copy(homeInk = value) }
     fun setRoundedCorners(value: Boolean) = updateSettings(soon = false) { it.copy(roundedCorners = value) }
@@ -1150,7 +1048,6 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
     fun setDockMagnify(value: Boolean) = updateSettings(soon = false) { it.copy(dockMagnify = value) }
     fun setAppPanels(value: Boolean) = updateSettings(soon = false) { it.copy(appPanels = value) }
     fun setHaptics(value: Boolean) = updateSettings(soon = false) { it.copy(haptics = value) }
-    fun setLockCover(value: Boolean) = updateSettings(soon = false) { it.copy(lockCover = value) }
     fun setTweakOption(tweakId: String, optionId: String, value: String) =
         updateSettings(soon = false) { it.copy(tweakOptions = TweakOptions.set(it.tweakOptions, tweakId, optionId, value)) }
     fun setFeatureScope(id: String, screen: FolioScreen, value: ScopeValue) =
@@ -1167,20 +1064,11 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
     fun setTriggerAction(trigger: FolioTrigger, action: FolioAction) = updateSettings(soon = false) {
         it.copy(triggerActions = if (action == FolioAction.NONE) it.triggerActions - trigger.name else it.triggerActions + (trigger.name to action.name))
     }
-    fun addTodayWidget(id: Int, size: TodaySize): Boolean {
-        if (statePayloadInvalid) return false
-        updateSettings(soon = false) { it.copy(todayWidgets = TodayWidgets.add(it.todayWidgets, TodayWidget(id, size))) }
-        return true
-    }
-    fun removeTodayWidget(id: Int) = updateSettings(soon = false) { it.copy(todayWidgets = TodayWidgets.remove(it.todayWidgets, id)) }
-    fun moveTodayWidget(id: Int, delta: Int) = updateSettings(soon = false) { it.copy(todayWidgets = TodayWidgets.move(it.todayWidgets, id, delta)) }
     fun removePlacement(source: DropTarget) = commitLayout(removePlacement(mutable.value.layout, source))
     private fun commitLayout(requested: HomeLayout): Boolean {
         if (statePayloadInvalid) return false
         // The dock is as big as what is in it (four at least), so a place left empty at its end closes.
         val next = requested.copy(dock = trimmedDock(requested.dock))
-        // A Focus hiding Home pages locks editing: Home shows a filtered copy, so its positions aren't the real ones.
-        if (FocusPages.lockingFocus(mutable.value) != null) return false
         val old = mutable.value
         if (old.layout == next) return false
         undoLayout = old.layout to next
@@ -1220,10 +1108,10 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
     }
     fun setLabels(value: Boolean) { if (statePayloadInvalid) return; undoLayout = null; undoImportSettings = null; mutable.update { it.copy(labels = value, canUndoEdit = false) }; persist() }
     /** Adds an empty Home page after the last one; returns its index. */
-    fun addPage(): Int { if (statePayloadInvalid || FocusPages.lockingFocus(state.value) != null) return -1; val next = state.value.homePages
+    fun addPage(): Int { if (statePayloadInvalid) return -1; val next = state.value.homePages
         undoLayout = null; mutable.update { it.copy(minPages = (next + 1).coerceAtMost(20), canUndoEdit = false) }; persist(); return next }
     /** Removes the last page when it has no apps or widgets. */
-    fun removeLastEmptyPage(): Boolean { if (statePayloadInvalid || FocusPages.lockingFocus(state.value) != null) return false; val s = state.value
+    fun removeLastEmptyPage(): Boolean { if (statePayloadInvalid) return false; val s = state.value
         if (s.homePages <= 1 || s.layout.contentPageCount >= s.homePages) return false
         undoLayout = null; mutable.update { it.copy(minPages = maxOf(1, it.homePages - 1), canUndoEdit = false) }; persist(); return true }
     fun setSpotlightSection(section: String, visible: Boolean) = updateSettings(soon = false) {
@@ -1233,9 +1121,6 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
     fun setLibraryCategories(value: Boolean) = updateSettings(soon = false) { it.copy(libraryCategories = value) }
     fun setLibraryWork(value: Boolean) = updateSettings(soon = false) { it.copy(libraryWork = value) }
     fun setFoldSnapshot(value: Boolean) = updateSettings(soon = false) { it.copy(foldSnapshot = value) }
-    fun setStandBy(value: Boolean) = updateSettings(soon = false) { it.copy(standBy = value) }
-    fun setStandByCharging(value: Boolean) = updateSettings(soon = false) { it.copy(standByCharging = value) }
-    fun setStandByTent(value: Boolean) = updateSettings(soon = false) { it.copy(standByTent = value) }
     fun setIconStyle(style: IconStyle, tint: Long) = updateSettings(soon = false) { it.copy(iconStyle = style, iconTint = tint) }
     fun setIconShape(shape: IconShape) = updateSettings(soon = false) { it.copy(iconShape = shape) }
     fun setIconPack(pack: String?) = updateSettings(soon = false) { it.copy(iconPack = pack) }
@@ -1348,8 +1233,7 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
         val slots = placements.map { it.slot }.toSet()
         val setAside = if (state.canUndoEdit) WidgetStacks.retained(stacksForUndo(), undoPlacements.map { it.slot }.toSet()) else emptySet()
         // Stacked widgets are retained exactly as long as their placement (or its undoable copy) exists.
-        return (placements.map { it.id }.filter { it >= 0 } + WidgetStacks.retained(state.widgetStacks, slots) + setAside +
-            TodayWidgets.retained(state.todayWidgets)).toSet()
+        return (placements.map { it.id }.filter { it >= 0 } + WidgetStacks.retained(state.widgetStacks, slots) + setAside).toSet()
     }
     val canPruneWidgetIds get() = !statePayloadInvalid
     fun setWidget(slot: Int, id: Int) {
@@ -1445,7 +1329,7 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
 
     private fun persist() {
         persistPending = false
-        if (readOnly || needsMigration || statePayloadInvalid) return
+        if (needsMigration || statePayloadInvalid) return
         traced("Folio.persist", ::writeState)
     }
 
@@ -1479,7 +1363,7 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
             .put("statusStyle", s.statusStyle.toJson())
             .put("foldEffect", s.foldEffect).put("foldSnapshot", s.foldSnapshot).put("foldIntensity", s.foldIntensity.toDouble()).put("duet", s.duet.toJson()).put("stayAwakeOnFold", s.stayAwakeOnFold)
             .put("panelBlur", s.panelBlur.toDouble())
-            .put("searchCustomUrl", s.searchCustomUrl).put("standBy", s.standBy).put("standByCharging", s.standByCharging).put("standByTent", s.standByTent).put("spotlightHidden", JSONArray(s.spotlightHidden.toList())).put("searchEngine", s.searchEngine)
+            .put("searchCustomUrl", s.searchCustomUrl).put("spotlightHidden", JSONArray(s.spotlightHidden.toList())).put("searchEngine", s.searchEngine)
             .put("libraryCategories", s.libraryCategories).put("libraryWork", s.libraryWork).put("iconStyle", s.iconStyle.name).put("iconTint", s.iconTint)
             .put("iconShape", s.iconShape.name).put("iconPack", s.iconPack ?: JSONObject.NULL).put("badgeStyle", s.badgeStyle.name).put("badgeColor", s.badgeColor.name).put("badgeLook", s.badgeLook.name).put("badgeSize", s.badgeSize.name).put("badgesWhenOpened", s.badgesWhenOpened)
             .put("badgesSeen", JSONObject().apply { s.badgesSeen.forEach { (pkg, count) -> put(pkg, count) } }).put("searchPill", s.searchPill).put("homeStrip", s.homeStrip.key).put("swipeDownHome", s.swipeDownHome).put("messagesApp", s.messagesApp ?: JSONObject.NULL)
@@ -1489,16 +1373,14 @@ class LauncherModel(application: Application, private val readOnly: Boolean) : A
             .put("folderColumns", s.folderColumns)
             .put("labelSize", s.labelSize.name).put("motionSpeed", s.motionSpeed.name).put("holdDelay", s.holdDelay.name).put("pageEffect", s.pageEffect.name)
             .put("lastPageEffect", s.lastPageEffect.name)
-            .put("focusModes", focusModesToJson(s.focusModes))
-            .put("activeFocus", s.activeFocus ?: "").put("leftPage", s.leftPage).put("todayUnfolded", s.todayUnfolded).put("todaySuggestions", s.todaySuggestions).put("systemWallpaper", s.systemWallpaper).put("homeInk", s.homeInk)
+            .put("systemWallpaper", s.systemWallpaper).put("homeInk", s.homeInk)
             .put("roundedCorners", s.roundedCorners).put("cornerRadius", s.cornerRadius.toDouble())
             .put("homeScrim", s.homeScrim).put("iconTintFromWallpaper", s.iconTintFromWallpaper)
-            .put("dockMagnify", s.dockMagnify).put("appPanels", s.appPanels).put("haptics", s.haptics).put("lockCover", s.lockCover)
+            .put("dockMagnify", s.dockMagnify).put("appPanels", s.appPanels).put("haptics", s.haptics)
             .put("featureScopes", JSONObject().apply { s.featureScopes.forEach { (id, m) -> put(id, JSONObject(m as Map<*, *>)) } })
             .put("tweakOptions", JSONObject().apply { s.tweakOptions.forEach { (id, m) -> put(id, JSONObject(m as Map<*, *>)) } })
             .put("pageScrub", s.pageScrub).put("reduceMotion", s.reduceMotion).put("wallpaperMotion", s.wallpaperMotion).put("liveIcons", s.liveIcons).put("liveIconLook", s.liveIconLook)
             .put("triggerActions", JSONObject().apply { s.triggerActions.forEach { (k, v) -> put(k, v) } })
-            .put("todayWidgets", JSONArray().apply { s.todayWidgets.forEach { put(JSONObject().put("id", it.id).put("size", it.size.name)) } })
             .put("folderColors", JSONObject().apply { s.folderColors.forEach { (id, c) -> put(id, c) } })
             .put("folderSizes", JSONObject().apply { s.folderSizes.forEach { (id, sz) -> put(id, JSONObject().put("w", sz.width.toDouble()).put("h", sz.height.toDouble())) } })
             .put("bigClockStyles", JSONObject().apply { s.bigClockStyles.forEach { (slot, st) ->
@@ -1724,9 +1606,6 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         duet = if (j.has("duet") || j.length() == 0) com.mccal.folio.duet.DuetOptions.fromJson(j.optJSONObject("duet")) else com.mccal.folio.duet.DuetOptions(style = com.mccal.folio.duet.DuetStyles.DUO.id),
         stayAwakeOnFold = j.optBoolean("stayAwakeOnFold", true),
         panelBlur = j.optDouble("panelBlur", 1.0).toFloat().coerceIn(0f, 1f),
-        standBy = j.optBoolean("standBy", true),
-        standByCharging = j.optBoolean("standByCharging", true),
-        standByTent = j.optBoolean("standByTent", false),
         spotlightHidden = j.optJSONArray("spotlightHidden")?.let { a -> (0 until a.length()).map(a::getString).toSet() } ?: emptySet(),
         searchEngine = j.optString("searchEngine", "GOOGLE").takeIf { it == CUSTOM_SEARCH || runCatching { WebSearchTarget.valueOf(it) }.isSuccess } ?: "GOOGLE",
         searchCustomUrl = j.optString("searchCustomUrl", "").take(500),
@@ -1761,17 +1640,12 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         pageEffect = PageEffect.of(j.optString("pageEffect")),
         // Before 0.6.7.2 this wasn't saved: the effect in use, else the cube.
         lastPageEffect = PageEffect.of(j.optString("lastPageEffect", j.optString("pageEffect"))).takeIf { it != PageEffect.NONE } ?: PageEffect.CUBE,
-        focusModes = focusModesFromJson(j.optJSONArray("focusModes")),
-        activeFocus = j.optString("activeFocus").takeIf { it.isNotEmpty() },
-        leftPage = j.optString("leftPage", "TODAY").takeIf { it in setOf("TODAY", "DISCOVER", "NONE") } ?: "TODAY",
-        todaySuggestions = j.optBoolean("todaySuggestions", true),
-        todayUnfolded = j.optString("todayUnfolded", "PAGE").takeIf { it in setOf("PAGE", "BESIDE", "OFF") } ?: "PAGE",
         systemWallpaper = j.optBoolean("systemWallpaper", false),
         homeInk = j.optString("homeInk", "AUTO").takeIf { it in setOf("AUTO", "LIGHT", "DARK") } ?: "AUTO",
         roundedCorners = j.optBoolean("roundedCorners", false), cornerRadius = j.optDouble("cornerRadius", 40.0).toFloat().coerceIn(16f, 72f),
         homeScrim = j.optBoolean("homeScrim", true),
         iconTintFromWallpaper = j.optBoolean("iconTintFromWallpaper", false),
-        dockMagnify = j.optBoolean("dockMagnify", false), appPanels = j.optBoolean("appPanels", false), haptics = j.optBoolean("haptics", true), lockCover = j.optBoolean("lockCover", true),
+        dockMagnify = j.optBoolean("dockMagnify", false), appPanels = j.optBoolean("appPanels", false), haptics = j.optBoolean("haptics", true),
         featureScopes = j.optJSONObject("featureScopes")?.let { o -> o.keys().asSequence().associateWith { id ->
             o.optJSONObject(id)?.let { inner -> inner.keys().asSequence().associateWith { inner.getString(it) } }.orEmpty()
         } } ?: emptyMap(),
@@ -1782,9 +1656,6 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         wallpaperMotion = j.optBoolean("wallpaperMotion", true), liveIcons = j.optBoolean("liveIcons", true),
         liveIconLook = j.optString("liveIconLook", "AUTO").takeIf { it in setOf("AUTO", "LIGHT", "DARK") } ?: "AUTO",
         triggerActions = j.optJSONObject("triggerActions")?.let { o -> o.keys().asSequence().associateWith { o.getString(it) } } ?: emptyMap(),
-        todayWidgets = j.optJSONArray("todayWidgets")?.let { a -> (0 until a.length()).mapNotNull { i ->
-            a.optJSONObject(i)?.let { o -> runCatching { TodayWidget(o.getInt("id"), TodaySize.valueOf(o.getString("size"))) }.getOrNull() }
-        } } ?: DEFAULT_TODAY_WIDGETS,
         folderColors = j.optJSONObject("folderColors")?.let { o -> o.keys().asSequence().associateWith { o.getLong(it) } } ?: emptyMap(),
         // Defensive against a hand-edited or older-build settings file, the same way pageStyles coerces iconScale.
         folderSizes = j.optJSONObject("folderSizes")?.let { o -> o.keys().asSequence().mapNotNull { id ->

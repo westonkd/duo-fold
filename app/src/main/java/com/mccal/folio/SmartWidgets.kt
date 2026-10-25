@@ -172,7 +172,7 @@ internal fun BigClockCard(onClick: () -> Unit, slot: Int = -1, home: Boolean = f
         LaunchedEffect(boxInWindow) { if (!boxInWindow.isEmpty) BigClockBounds.bySlot[slot] = boxInWindow }
         androidx.compose.runtime.DisposableEffect(slot) { onDispose { BigClockBounds.bySlot.remove(slot) } }
     }
-    BoxWithConstraints(Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.PANEL.dp)).widgetTap(onClick)
+    BoxWithConstraints(Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.PANEL.dp)).clickable(onClick = onClick)
         .onGloballyPositioned { boxInWindow = it.boundsInWindow() }
         .semantics(mergeDescendants = true) {}, contentAlignment = Alignment.Center) {
         val boxHeight = maxHeight.value

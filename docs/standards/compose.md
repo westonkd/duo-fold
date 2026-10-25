@@ -29,7 +29,7 @@ model functions          → persist, update state
 - **CMP-4 SHOULD** keep Android framework calls (`PackageManager`, `getSharedPreferences`, intents) out of reusable
   presentation composables; do them in the model, a controller, or an effect at the screen level.
 - **CMP-5 MUST** isolate vendor and version workarounds in one named place with a version guard and a fallback
-  (`DiscoverBounds.kt` is the model), never scattered through screens.
+  (`CameraArea.kt` is the model), never scattered through screens.
 
 ### State in composition
 
@@ -79,7 +79,7 @@ Good:
   `Dispatchers.IO`.
 - No `GlobalScope`, no `runBlocking`, no writes found inside composable bodies.
 - Pagers and most lists are keyed.
-- Vendor workarounds are guarded (`DiscoverBounds`, `FoldBridgeActivity`).
+- Vendor workarounds are guarded (`CameraArea`, `FoldBridgeActivity`).
 
 Not yet:
 

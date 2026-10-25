@@ -144,12 +144,10 @@ const val ANDROID_MEDIUM_WIDTH_DP = 600f
  * Folio's own fit rules beside Android's classes (ADP-3): each is the number a layout was measured against, named
  * so a change is made once. Compared after multiplying by `classScale` where the call site already does.
  */
-/** Wide enough for two Home panels side by side: the expanded Home, Discover's expanded dock. */
+/** Wide enough for two Home panels side by side: the expanded Home. */
 const val EXPANDED_HOME_MIN_WIDTH_DP = 650f
 /** Below this height the dock and status rail draw their compact form. */
 const val COMPACT_DOCK_MAX_HEIGHT_DP = 500f
-/** Today View puts its widgets in two columns from this width. */
-const val TODAY_TWO_COLUMN_MIN_WIDTH_DP = 560f
 
 /**
  * Folio's own height for the regular Home layout, not an Android size class (Android's medium height starts at
@@ -171,7 +169,7 @@ const val HOME_REGULAR_MIN_HEIGHT_DP = 560f
  */
 enum class LayoutScreen { COVER, INNER, INNER_UPRIGHT }
 
-/** The one rule for which layout a window of this size gets; Home, Discover and Settings all ask it. */
+/** The one rule for which layout a window of this size gets; Home and Settings both ask it. */
 fun layoutScreenFor(widthDp: Float, heightDp: Float, classScale: Float = 1f): LayoutScreen =
     if (widthDp * classScale >= EXPANDED_HOME_MIN_WIDTH_DP && heightDp * classScale >= HOME_REGULAR_MIN_HEIGHT_DP)
         (if (heightDp > widthDp) LayoutScreen.INNER_UPRIGHT else LayoutScreen.INNER) else LayoutScreen.COVER
@@ -352,7 +350,7 @@ fun homeGeometry(width: Float, height: Float, preset: LayoutPreset, labels: Bool
         16f + p.statusPosition * (lowest - 16f).coerceAtLeast(0f)
     }
     // [statusHeight] is the rail's full height (its location slot included) plus a 22dp margin, and the rail sits at
-    // [contentTop], so the dock starts 10dp under the status capsule whatever the capsule holds (Focus, Silent, Rings…).
+    // [contentTop], so the dock starts 10dp under the status capsule whatever the capsule holds (Silent, Rings…).
     // In very short windows the gap gives way first, never the capsule itself.
     val statusBottom = if (statusHeight > 0f) statusTop + statusHeight - 22f else 0f
     val belowStatus = if (statusHeight > 0f) maxOf(statusBottom, minOf(statusBottom + 10f, height - homeReserve - 76f)) else 0f

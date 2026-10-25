@@ -34,8 +34,7 @@ class ActionRegistryTest {
     }
 
     @Test fun `the original ids never change, because they are saved by name`() {
-        val saved = listOf("SPOTLIGHT", "NOTIFICATIONS", "CONTROL_CENTER", "LOCK", "SCREENSHOT", "TORCH", "DND_ON", "DND_OFF",
-            "FOCUS_SLEEP", "FOCUS_WORK", "FOCUS_PERSONAL", "FOCUS_OFF")
+        val saved = listOf("SPOTLIGHT", "NOTIFICATIONS", "CONTROL_CENTER", "LOCK", "SCREENSHOT", "TORCH", "DND_ON", "DND_OFF")
         saved.forEach { assertTrue("$it is gone from the registry", ActionRegistry.standard.spec(it) != null) }
     }
 
@@ -60,7 +59,7 @@ class ActionRegistryTest {
 
     @Test fun `the flashlight and the panels need nothing`() {
         val registry = ActionRegistry.standard
-        listOf(FolioAction.TORCH, FolioAction.SPOTLIGHT, FolioAction.CONTROL_CENTER, FolioAction.FOCUS_WORK).forEach {
+        listOf(FolioAction.TORCH, FolioAction.SPOTLIGHT, FolioAction.CONTROL_CENTER).forEach {
             assertEquals(ActionVerdict.Allowed, registry.verdict(ref(it), env(accessibility = false, policy = false)))
         }
     }

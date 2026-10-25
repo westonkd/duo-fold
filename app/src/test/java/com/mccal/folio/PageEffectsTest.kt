@@ -163,7 +163,7 @@ class PageEffectsTest {
         assertTrue("with Reduce Motion on it has to fall back to None", "else PageEffect.NONE" in screen)
         // A drop lands by coordinates, so nothing may transform a page while an icon or widget is being moved.
         assertTrue("moving an icon has to switch it off", "!drag.active && !resize.active" in screen)
-        assertTrue("the transform belongs on Home's pages", ".pageEffect(pageEffect, nativePager, physicalPage)" in screen)
+        assertTrue("the transform belongs on Home's pages", ".pageEffect(pageEffect, pager, page)" in screen)
 
         // Turning it off is not a hidden identity transform: with None there is no layer and no pager read at all.
         val effects = source("PageEffects.kt")
@@ -175,14 +175,12 @@ class PageEffectsTest {
         assertTrue("no alpha: it would cost an offscreen buffer per page", "alpha" !in effects.substringAfter("internal fun Modifier.pageEffect"))
     }
 
-    @Test fun `every page in the pager turns, including the two either side of Home`() {
+    @Test fun `every page in the pager turns, including the App Library`() {
         // A cube whose neighbour slides in flat is not a cube, and the swipe from the last Home page to the App
-        // Library is the commonest one there is. So all three branches of the pager's page lambda carry the effect.
+        // Library is the commonest one there is. So both branches of the pager's page lambda carry the effect.
         val screen = source("LauncherScreen.kt")
-        val calls = Regex("""\.pageEffect\(pageEffect, nativePager, physicalPage\)""").findAll(screen).count()
-        assertEquals("Discover, the App Library and Home should each turn", 3, calls)
-        assertTrue("the page on Home's left should turn",
-            ".fillMaxSize().pageEffect(pageEffect, nativePager, physicalPage))" in screen)
+        val calls = Regex("""\.pageEffect\(pageEffect, pager, page\)""").findAll(screen).count()
+        assertEquals("the App Library and Home should each turn", 2, calls)
         // Outside the library's own layer, so the page turns as a whole and the two stack rather than fight.
         assertTrue("the library's effect belongs outside its libraryBack layer",
             screen.substringAfter("onActions = { overlays.menu = it.id }, modifier = Modifier.fillMaxSize()")
@@ -190,7 +188,7 @@ class PageEffectsTest {
         // The layer wraps the pane, not the full-width Row: a cube pivoting on the Row would hinge on the window
         // edge whenever the grid is centred and narrower than the window.
         assertTrue("Home's effect should wrap the pane, not the Row",
-            "Box(Modifier.pageEffect(pageEffect, nativePager, physicalPage))" in screen)
+            "Box(Modifier.pageEffect(pageEffect, pager, page))" in screen)
         assertTrue("the Row should carry no layer of its own",
             """Row(Modifier.fillMaxSize().testTag("home-surface")""" in screen)
     }

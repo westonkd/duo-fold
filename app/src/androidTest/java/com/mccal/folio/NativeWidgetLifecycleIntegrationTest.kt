@@ -9,7 +9,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.*
 import org.junit.Test
 
-/** Real-window widget setup coverage. Discover remains attached throughout this test. */
+/** Real-window widget setup coverage. */
 class NativeWidgetLifecycleIntegrationTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val automation get() = instrumentation.uiAutomation
@@ -143,9 +143,8 @@ class NativeWidgetLifecycleIntegrationTest {
         await { find(query)?.isVisibleToUser == true }
     }
 
-    @Test fun mandatoryConfigurationReturnsToMainPersistsAndDiscoverStillWorks() {
+    @Test fun mandatoryConfigurationReturnsToMainAndPersists() {
         check(android.os.Build.HARDWARE in listOf("ranchu", "goldfish"))
-        LiveDiscover.attachNativeFeed = true
         val previousHome = shell("cmd role get-role-holders android.app.role.HOME").lineSequence().firstOrNull().orEmpty()
         val hadBindGrant = shell("dumpsys appwidget").lineSequence().any {
             it.contains("user=0 package=com.mccal.folio")
@@ -158,8 +157,8 @@ class NativeWidgetLifecycleIntegrationTest {
         var slot = -1
         var lastMain: MainActivity? = null
         try {
-            await { LiveDiscover.owner.get() != null }
-            var main = requireNotNull(LiveDiscover.owner.get())
+            await { FolioActions.home?.get() != null }
+            var main = requireNotNull(FolioActions.home?.get())
             lastMain = main
             var model = launcherModel(main)
             val widgetsField = MainActivity::class.java.getDeclaredField("widgets").apply { isAccessible = true }
@@ -228,7 +227,7 @@ class NativeWidgetLifecycleIntegrationTest {
 
             click("Cancel fixture configuration")
             await { automation.rootInActiveWindow?.packageName == FolioTestPackages.app }
-            main = requireNotNull(LiveDiscover.owner.get())
+            main = requireNotNull(FolioActions.home?.get())
             lastMain = main
             model = launcherModel(main)
             widgets = widgetsField.get(main) as WidgetController
@@ -256,17 +255,12 @@ class NativeWidgetLifecycleIntegrationTest {
             val activityDump = shell("dumpsys activity activities")
             assertFalse("Successful bind/configure results must not remain queued above MainActivity",
                 activityDump.contains("ResultInfo{who=null, request=701") || activityDump.contains("ResultInfo{who=null, request=700"))
-
-            click("Discover")
-            await(20_000) { LiveDiscover.progress >= .99f && LiveDiscover.message.value == null }
-            click("Back to home")
-            await { LiveDiscover.progress == 0f }
             assertEquals(committedId, model.placement(slot)?.id)
         } finally {
             val cleanupHome = previousHome.takeIf { it.isNotEmpty() && it != FolioTestPackages.app }
                 ?: "com.google.android.apps.nexuslauncher"
             try {
-                val cleanupMain = lastMain ?: LiveDiscover.owner.get()
+                val cleanupMain = lastMain ?: FolioActions.home?.get()
                 if (cleanupMain != null && before != null) instrumentation.runOnMainSync {
                     val model = ViewModelProvider(cleanupMain)[LauncherModel::class.java]
                     val widgets = MainActivity::class.java.getDeclaredField("widgets").apply { isAccessible = true }
@@ -279,8 +273,7 @@ class NativeWidgetLifecycleIntegrationTest {
                 shell("cmd role add-role-holder android.app.role.HOME $cleanupHome 0")
                 try {
                     instrumentation.runOnMainSync {
-                        LiveDiscover.owner.get()?.finish()
-                        LiveDiscover.host.get()?.finish()
+                        FolioActions.home?.get()?.finish()
                     }
                 } finally {
                     shell("appwidget ${if (hadBindGrant) "grantbind" else "revokebind"} --package com.mccal.folio --user 0")

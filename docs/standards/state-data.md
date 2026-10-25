@@ -1,6 +1,6 @@
 # State and data standard (`STA`)
 
-Folio has many kinds of state: installed apps, layout, widgets, appearance, Focus modes, tweaks, Market packages,
+Folio has many kinds of state: installed apps, layout, widgets, appearance, tweaks, Market packages,
 system status, and a lot of short-lived interaction state. The rule that holds them together is **one owner per piece
 of state**, with every change flowing through that owner.
 
@@ -17,7 +17,6 @@ Every new piece of state gets a row here (or in its feature's KDoc) before it's 
 | Widget bindings | Android (`AppWidgetHost`) + Folio's slot mapping | System + layout JSON | Reconnected on import, not copied |
 | Icon actions (a swipe up, swipe down or double tap per app) | `LauncherModel` | `launcher/state` JSON, key `iconActions`, only when some are set | Everything; exported by Layout Backup |
 | What is behind Home | `LauncherModel` (see Gap below: three owners today) | `launcher/state` JSON, mirrored to `launcher_background` prefs for the wallpaper service | Everything; the picked photo itself stays out of Layout Backup |
-| Focus modes and rules | `FocusController` | `focus_rules` prefs | Everything |
 | Suggestions cutoff (Clear Suggestions History) | `SuggestionsHistory` | `launcher` prefs, long `suggestionsClearedAt`, only after a clear; beside `state`, not in it, so no schema change and an older Folio ignores it | Everything; never moves back; not in Layout Backup |
 | Launch log and recent apps (feed Suggestions) | `RecentApps` | `folio` prefs, keys `launch_log` and `recent_apps`; emptied by Clear Suggestions History | Everything; not in Layout Backup |
 | Market packages | Market repository | `filesDir/market` + records in layout JSON | Backup keeps records, reapplies changes |
@@ -65,7 +64,7 @@ Every new piece of state gets a row here (or in its feature's KDoc) before it's 
 ### Identity
 
 - **STA-13 MUST** include the Android profile in an app's identity, and use the address helpers in `HomeEditing.kt`
-  for cells (negative indices are real addresses: the leading workspace and Discover).
+  for cells (negative indices are real addresses: the leading workspace).
 
 ## Where Folio is today
 

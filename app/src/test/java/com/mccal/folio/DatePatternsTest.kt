@@ -8,7 +8,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Dates come from patterns in strings.xml (StandBy, the Big Clock, Lock Cover, the Side Bar, Today View). A typo in one
+ * Dates come from patterns in strings.xml (the Big Clock, the Side Bar). A typo in one
  * would throw on the phone; here every pattern is read.
  */
 class DatePatternsTest {
@@ -27,6 +27,6 @@ class DatePatternsTest {
 
     @Test fun `English keeps the order it always had`() = check("values", Locale.US, mapOf(
         "eeee_mmmm_d" to "Friday, October 2", "mmmm_d" to "October 2", "mmm_d" to "Oct 2",
-        "eee_mmm_d" to "Fri Oct 2", "eee_mmm_d_2" to "Fri, Oct 2",
+        "eee_mmm_d_2" to "Fri, Oct 2",
     ))
 }

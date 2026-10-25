@@ -20,7 +20,6 @@ class BackupController(
     private val activity: ComponentActivity,
     private val model: LauncherModel,
     private val widgets: WidgetController,
-    private val onExternalResultChanged: (Boolean) -> Unit,
 ) {
     var preview by mutableStateOf<LayoutImportPreview?>(null)
         private set
@@ -61,15 +60,11 @@ class BackupController(
         operation = saved?.first
         val raw = saved?.second
         importRaw = raw.takeIf { operation == OP_PREVIEW }
-        if (raw != null || operation != null) onExternalResultChanged(true)
         if (operation == OP_PREVIEW && raw == null) clearTransaction()
         else if (raw != null) parsePreview(raw, persist = false)
         else if (saved?.third != null && operation == OP_IMPORT) readImport(Uri.parse(saved.third), generation)
         else if (saved?.third != null && operation == OP_EXPORT) writeExport(Uri.parse(saved.third), generation)
-        else if (operation != null) {
-            pickerPending = true
-            onExternalResultChanged(true)
-        } else onExternalResultChanged(false)
+        else if (operation != null) pickerPending = true
     }
 
     fun startExport(fileName: String = "folio-layout.json") {
@@ -176,7 +171,6 @@ class BackupController(
         val editor = store.edit().clear().putString(KEY_OPERATION, value)
         payload?.let { editor.putString(KEY_EXPORT, it) }
         editor.apply()
-        onExternalResultChanged(true)
     }
 
     private fun writeExport(uri: Uri, token: Int) {
@@ -227,7 +221,6 @@ class BackupController(
                 importRaw = raw
                 preview = it; pickerPending = false; operation = OP_PREVIEW
                 if (persist) store.edit().putString(KEY_OPERATION, OP_PREVIEW).putString(KEY_PREVIEW, raw).apply()
-                onExternalResultChanged(true)
             }.onFailure {
                 if (token != generation) return@onFailure
                 errorMessage = failureMessage(it, R.string.this_layout_backup_is_invalid)
@@ -265,7 +258,6 @@ class BackupController(
         operation = null; pickerPending = false; preview = null
         importRaw = null
         store.edit().clear().apply()
-        onExternalResultChanged(false)
         if (clearMessages) clearMessage()
     }
 

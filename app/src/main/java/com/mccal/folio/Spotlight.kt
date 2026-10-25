@@ -148,8 +148,8 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
     val imeVisible = WindowInsets.isImeVisible
     /** Focus the field and raise the keyboard, falling back to the window's IME controller. */
     suspend fun raiseKeyboard() {
-        // Android ignores keyboard requests from a window without focus (e.g. right after the side-key
-        // picker, a panel or a menu closes), so wait for it first.
+        // Android ignores keyboard requests from a window without focus (e.g. right after a panel
+        // or a menu closes), so wait for it first.
         snapshotFlow { windowInfo.isWindowFocused }.first { it }
         withFrameNanos { }
         // Up to about 1.5 s: a busy first frame (just after Home starts) can leave the field unattached for a while.

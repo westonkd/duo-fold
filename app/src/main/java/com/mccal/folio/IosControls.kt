@@ -172,7 +172,7 @@ internal enum class FolioHaptic(val type: HapticFeedbackType) {
     Open(HapticFeedbackType.ContextClick),
     /** Committed: dropped, sent, done. */
     Commit(HapticFeedbackType.Confirm),
-    /** Refused, or something removed: a full dock, a locked Focus, an app taken off Home. */
+    /** Refused, or something removed: a full dock, an app taken off Home. */
     Refuse(HapticFeedbackType.Reject),
     /** A gesture went past its threshold and did its thing. */
     GestureDone(HapticFeedbackType.GestureEnd),

@@ -83,8 +83,7 @@ Breaking a MUST is sometimes right: a vendor bug, a platform gap, an audited wor
 - If it shapes more than one file or is meant to last, write an ADR in [docs/adr](../adr/README.md).
 - List it in the standard's **Recorded exceptions** section.
 
-`CameraArea.kt`'s SM-F971 camera rectangle and `DiscoverBounds.kt`'s Window Extensions 8 to 10 guard are the model:
-narrow, versioned, and they fall back to normal behaviour.
+`CameraArea.kt`'s SM-F971 camera rectangle is the model: narrow, recorded, and it falls back to normal behaviour.
 
 ## Changing a standard
 

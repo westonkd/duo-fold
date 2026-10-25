@@ -179,8 +179,6 @@ fun StatusRail(
     iconSize: Dp = 40.dp,
     locationInUse: Boolean = false,
     style: StatusStyle = StatusStyle(),
-    /** The Focus that's on: its icon sits above the time, as iPhone shows it beside the clock. */
-    focus: FocusMode? = null,
     onClick: (() -> Unit)? = null,
 ) {
     // Text sits on the frosted capsule, not straight on the wallpaper, so pick its color from how light the capsule
@@ -206,7 +204,6 @@ fun StatusRail(
     val longDateFormatter = remember(longDate) { DateTimeFormatter.ofPattern(longDate) }
     val description = listOfNotNull(
         if (locationInUse) stringResource(R.string.location_in_use) else null,
-        focus?.let { stringResource(R.string.text_1_s_is_on, it.name) },
         if (status.silent && style.showSilent) stringResource(R.string.silent_mode) else null,
         "${now.format(longDateFormatter)}, ${now.format(timeFormatter)}",
         status.battery?.let { stringResource(if (status.charging) R.string.battery_1_d_percent_charging else R.string.battery_1_d_percent, it) }
@@ -252,9 +249,6 @@ fun StatusRail(
                 // Standard (4) and Compact (0) keep their old padding; the slider moves between and past them.
                 .padding(vertical = if (!style.background) 0.dp else if (compact) FolioSpace.SMALL.dp else (8f + style.spacing).coerceAtMost(12f).dp),
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(style.spacing.dp)) {
-                focus?.let { Icon(it.icon(), stringResource(R.string.focus_on_named, it.name), tint = androidx.compose.ui.graphics.Color(it.color).let { c ->
-                    if (LocalHomeInk.current.dark) c else androidx.compose.ui.graphics.lerp(c, androidx.compose.ui.graphics.Color.White, .35f) },
-                    modifier = Modifier.size(if (compact) 14.dp else 16.dp).testTag("status-focus")) }
                 if (status.silent && style.showSilent) Icon(Icons.Rounded.NotificationsOff, null,
                     tint = if (style.colorfulBattery) (if (onLight) SilentOnLight else Silent) else ink,
                     modifier = Modifier.size(if (compact) 14.dp else 16.dp).testTag("status-silent"))

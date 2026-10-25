@@ -54,7 +54,7 @@ internal fun FolderPanel(
     homeDestinations: List<Int>, dockVacancies: List<Int>, onDismiss: () -> Unit,
     onRename: (String) -> Unit, onLaunch: (AppEntry, android.graphics.Rect?) -> Unit,
     onMoveOut: (String, DropTarget) -> Unit,
-    color: Long? = null, onColor: (Long?) -> Unit = {}, onAddApps: (() -> Unit)? = null,
+    color: Long? = null, onColor: (Long?) -> Unit = {}, onAddApps: () -> Unit = {},
     size: FolderSize? = null, onSize: (FolderSize?) -> Unit = {},
     onReorder: (String, Int) -> Unit = { _, _ -> }, onSortAlphabetically: (() -> Unit)? = null,
     /**
@@ -237,11 +237,9 @@ internal fun FolderPanel(
                             folderMenu = false; onSortAlphabetically()
                         }
                     }
-                    if (onAddApps != null) {
-                        MenuDivider()
-                        MenuRow(stringResource(R.string.add_apps), icon = Icons.Rounded.AddCircle, tag = "folder-add-apps") {
-                            folderMenu = false; onAddApps()
-                        }
+                    MenuDivider()
+                    MenuRow(stringResource(R.string.add_apps), icon = Icons.Rounded.AddCircle, tag = "folder-add-apps") {
+                        folderMenu = false; onAddApps()
                     }
                 }
             }

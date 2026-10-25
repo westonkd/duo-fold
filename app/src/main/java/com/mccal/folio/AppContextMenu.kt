@@ -88,8 +88,6 @@ internal fun startQuickAction(context: android.content.Context, app: AppEntry, a
 @Composable
 internal fun AppContextMenu(
     app: AppEntry, onHome: Boolean, hidden: Boolean,
-    /** The Focus locking Home editing, if any: editing rows are replaced by a note. */
-    lockedBy: String? = null,
     onDismiss: () -> Unit, onMove: () -> Unit, onAddOrRemove: () -> Unit, onCreateFolder: () -> Unit, hasFolders: Boolean = false,
     onWidgets: (() -> Unit)?, onToggleHidden: () -> Unit, onInfo: () -> Unit, onRename: () -> Unit,
     /** This app's own icon look; null where an icon has none to change. */
@@ -161,7 +159,7 @@ internal fun AppContextMenu(
             val spaceBelow = screenH - (iconTop + iconSize * 1.1f + gap) - safeBottom
             val spaceAbove = iconTop - gap - safeTop
             // Folio's own rows: Edit Home Screen, Remove/Add, More, plus Clear Badge when the app has one.
-            val folioRows = 3 + if ((LocalBadgeCounts.current[app.packageName] ?: 0) > 0 && LocalIconLook.current.badges != BadgeStyle.OFF && lockedBy == null) 1 else 0
+            val folioRows = 3 + if ((LocalBadgeCounts.current[app.packageName] ?: 0) > 0 && LocalIconLook.current.badges != BadgeStyle.OFF) 1 else 0
             val estimatedH = with(density) { (49.dp * (actions.size + folioRows) + 8.dp).toPx() }
             // Prefer below (like iOS) when it fits; otherwise whichever side has more room, scrolling if needed.
             val below = estimatedH <= spaceBelow || spaceBelow >= spaceAbove
@@ -201,11 +199,6 @@ internal fun AppContextMenu(
                     if (i == shownActions.lastIndex) Box(Modifier.fillMaxWidth().height(8.dp).background(Color.Black.copy(alpha = .25f)))
                     else MenuDivider()
                 }
-                if (lockedBy != null) {
-                    Text(stringResource(R.string.home_editing_is_off_while_1_is_on, lockedBy), color = Color.White.copy(alpha = .55f), fontSize = FolioType.FOOTNOTE.sp,
-                        modifier = Modifier.padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.MEDIUM.dp))
-                    MenuDivider()
-                } else {
                 MenuRow(stringResource(R.string.edit_home_screen), Icons.Rounded.AppRegistration) { onMove() }
                 MenuDivider()
                 if ((LocalBadgeCounts.current[app.packageName] ?: 0) > 0 && LocalIconLook.current.badges != BadgeStyle.OFF) {
@@ -226,11 +219,10 @@ internal fun AppContextMenu(
                     MenuRow(stringResource(R.string.delete_app), Icons.Rounded.DeleteOutline, destructive = true, tag = "menu-delete-app") { it() }
                     MenuDivider()
                 }
-                }
                 // iOS keeps context menus short: the less common actions sit behind "More".
                 if (!more) MenuRow(stringResource(R.string.more), Icons.Rounded.MoreHoriz) { more = true }
                 else {
-                    if (lockedBy == null) MenuRow(if (hasFolders) stringResource(R.string.add_to_folder) else stringResource(R.string.create_folder), Icons.Rounded.CreateNewFolder) { onCreateFolder() }
+                    MenuRow(if (hasFolders) stringResource(R.string.add_to_folder) else stringResource(R.string.create_folder), Icons.Rounded.CreateNewFolder) { onCreateFolder() }
                     onWidgets?.let { MenuDivider(); MenuRow(stringResource(R.string.widgets), Icons.Rounded.Widgets) { it() } }
                     onStack?.let { MenuDivider(); MenuRow(stringResource(R.string.stack_apps), Icons.Rounded.Layers) { it() } }
                     MenuDivider()
