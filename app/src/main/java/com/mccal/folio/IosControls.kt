@@ -136,6 +136,7 @@ internal enum class FolioHaptic(val type: HapticFeedbackType) {
     Refuse(HapticFeedbackType.Reject),
     /** A gesture went past its threshold and did its thing. */
     GestureDone(HapticFeedbackType.GestureEnd),
+    Land(HapticFeedbackType.GestureThresholdActivate),
     ToggleOn(HapticFeedbackType.ToggleOn),
     ToggleOff(HapticFeedbackType.ToggleOff),
 }

@@ -36,8 +36,9 @@ next.
 ## What it is
 
 Folio replaces One UI's Home screen. On both screens it gives you iPhone Duo's layout: Home pages of apps and widgets,
-a Side Bar along the edge with the time, a battery Ring and the dock, an App Library, Spotlight, folders and Duet, the
-iPhone Duo fold animation. Android still owns the lock screen, recents and the notification shade.
+a Side Bar along the edge with the time, a battery Ring and the dock, a widgets page left of Home, an App Library,
+Spotlight and folders, and Home lands like a page with a small bounce when the phone opens flat or closes. Android
+still owns the lock screen, recents and the notification shade.
 
 ## Build
 
@@ -57,8 +58,6 @@ Then pick Folio Dev as the Home app in Settings › Apps › Default apps.
 
 MIT, see [LICENSE](LICENSE). Folio was created by [McCal](https://github.com/McCal-Codes) and started from
 [DuoLauncher](https://github.com/jakesgoodapps/DuoLauncher) by jakesgoodapps (MIT, commit `f1bc0f1`), whose Side Bar
-made the whole thing possible and whose notice is kept in `LICENSE`. Duet's shader includes MIT code from
-[Duo Fold Live](https://github.com/joeconsorti/duo-fold-live), [iphone-duo](https://github.com/chuspeeism/iphone-duo)
-and [hingewave](https://github.com/Ant-lib/hingewave); see `third_party/duet/PROVENANCE.md`. Dependency licences are
-in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Apple, iPhone, Google, Android, Samsung and Galaxy are trademarks
-of their owners; this project is not affiliated with them.
+made the whole thing possible and whose notice is kept in `LICENSE`. Dependency licences are in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Apple, iPhone, Google, Android, Samsung and Galaxy are trademarks of
+their owners; this project is not affiliated with them.

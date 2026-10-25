@@ -49,9 +49,6 @@
     <string name="date">Date</string>
     <string name="dock_handle_on_the_rail_edge">Dock handle on the side bar edge</string>
     <string name="uses_folios_accessibility_service_the_sa">Uses Folio’s accessibility service (the same one as shade gestures). Tap or drag the handle to open your dock. If the handle fights the back gesture, lower the right-edge back sensitivity.</string>
-    <string name="your_fold_timing">Your fold timing</string>
-    <string name="learned_from_your_last_folds_and_used_to">Learned from your last folds and used to pace the animation. Reset if someone else has been using the phone.</string>
-    <string name="reset_fold_timing">Reset fold timing</string>
     <string name="fold_animation">Fold animation</string>
     <string name="closing_from_home">Closing from Home</string>
     <string name="stay_awake_on_the_cover_screen">Stay awake on the cover screen</string>
@@ -113,6 +110,8 @@
     <string name="a_little_more_room">A little more room.</string>
     <string name="add_a_calendar_photos_or_another_widget">Add a calendar, photos, or another widget.</string>
     <string name="add_widget">Add widget</string>
+    <string name="widgets_page">Widgets</string>
+    <string name="add_widgets_here">Add Widgets</string>
     <string name="reconnect">Reconnect</string>
     <string name="your_widgets">Your widgets</string>
     <string name="tap_to_choose">Tap to choose</string>
@@ -347,7 +346,6 @@
     <string name="other">Other</string>
     <string name="banking_apps_note">Some banking apps refuse to open while any accessibility service is on, including Folio\'s gestures service. That is their check, not something Folio can change. Everything except the pull-downs and the dock and Big Buttons over other apps works without it, so you can turn it off in Android\'s Accessibility settings and keep using Folio.</string>
     <string name="app_is_unavailable">%1$s is unavailable.</string>
-    <string name="unfold_about_1_ms_fold_about_2_ms">Unfold: about %1$d ms · Fold: about %2$d ms</string>
     <string name="copy_diagnostics_puts_your_phone_and_scr">Copy Diagnostics puts your phone and screen settings, recent Folio events and Folio\'s own log on the clipboard, so you can paste it into the form. Check it before posting; nothing is sent until you submit.</string>
     <string name="copy_diagnostics">Copy Diagnostics</string>
     <string name="used_by_1">Used by: %1$s</string>
@@ -597,7 +595,8 @@
     <string name="tweak_harborline_detail">Dock icons swell under your finger as you slide along the dock.</string>
     <string name="credit_duo_fold_live">joeconsorti and contributors · MIT · Duet\'s fold projection and blur (code)</string>
     <string name="credit_hingewave">Ant-lib · MIT · Duet\'s shader started from its port (code)</string>
-    <string name="tweak_duet_detail">The fold animation follows your hinge as you open and close: frosted glass on the moving half, and your cover screen waiting on the inner one.</string>
+    <string name="page_landing">Page landing</string>
+    <string name="page_landing_detail">When the phone opens flat or closes, Home lands like the page of a book: a small bounce at the hinge and a soft tap.</string>
     <string name="also_set_as_phone_wallpaper">Also set as phone wallpaper</string>
     <string name="set_as_phone_wallpaper_note">Opens Android’s own preview, so the lock screen shows it too. That change can’t be undone from Folio, which is why it asks again there.</string>
     <string name="wallpaper_group_note">Folio draws this behind Home. The phone’s own wallpaper is what the lock screen shows.</string>

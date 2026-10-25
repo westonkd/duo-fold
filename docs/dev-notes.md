@@ -4,7 +4,9 @@ Optional. Each "- " line becomes a checkbox on Folio Dev's "New build" page (Set
 Leave the file out or empty and the page still shows what changed. Keep this list short and about the build in hand; replace
 it for each build.
 
-- Open Settings: the list has Home, Search, Gestures, Fold and General, and each opens one page with no pages under it
-- Long-press empty space on Home, then Wallpaper: Settings opens on Home
-- The Side Bar shows the time and the battery Ring, with no date or percentage under them
-- Settings › Fold: turn Duet off and on, then fold and unfold
+- On the cover, swipe right from Home 1: the widgets page shows an Add Widgets button; add one and it stays there
+- Try to drag an app onto the widgets page: it won't drop there
+- Open the phone flat: Home shows the widgets page on the left beside Home 1, and the left half bounces once as it lands
+- Close the phone: the cover bounces about its hinge edge as it lights, with a tap
+- Hold the phone half open, then open it flat: it lands again
+- Settings › Fold: turn Page Landing off; opening and closing only tap

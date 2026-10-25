@@ -62,20 +62,9 @@ internal class HingeTracker(capability: HingeCapability) {
         const val FLAT_EXIT_DEG = 165f
         const val CLOSED_ENTER_DEG = 5f
         const val CLOSED_EXIT_DEG = 12f
-        const val HALFWAY_DEG = 90f
-        private const val HALFWAY_BAND_DEG = 4f
         private const val STEP_TOLERANCE_DEG = 2f
         private const val CONTINUOUS_SAMPLES = 3
         private const val SMOOTHING_SECONDS = .07f
         private val STEPS = floatArrayOf(0f, 90f, 180f)
-
-        /**
-         * True once per pass through 90°: leaving one side for the middle band or the other side. Step sensors land
-         * exactly on 90°, so opening counts at 0→90 and closing at 180→90, never again on the next step.
-         */
-        fun crossedHalfway(previous: Float, current: Float): Boolean {
-            fun side(a: Float) = when { a < HALFWAY_DEG - HALFWAY_BAND_DEG -> -1; a > HALFWAY_DEG + HALFWAY_BAND_DEG -> 1; else -> 0 }
-            return side(previous) != 0 && side(previous) != side(current)
-        }
     }
 }
