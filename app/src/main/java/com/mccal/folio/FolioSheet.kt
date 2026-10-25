@@ -301,9 +301,9 @@ internal fun AlertDialog(onDismissRequest: () -> Unit, confirmButton: @Composabl
 internal fun FolioDialogWindow(dim: Float, blurRadiusDp: Int = 0) {
     val view = androidx.compose.ui.platform.LocalView.current
     val density = androidx.compose.ui.platform.LocalDensity.current
-    androidx.compose.runtime.LaunchedEffect(view) {
+    androidx.compose.runtime.DisposableEffect(view) {
         (view.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window?.let { w ->
-            w.setDimAmount(dim)
+            if (dim > 0f) w.setDimAmount(dim) else w.clearFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND)
             w.setWindowAnimations(0)
             if (blurRadiusDp > 0) {
                 w.addFlags(android.view.WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
@@ -314,5 +314,6 @@ internal fun FolioDialogWindow(dim: Float, blurRadiusDp: Int = 0) {
                 hide(androidx.core.view.WindowInsetsCompat.Type.statusBars())
             }
         }
+        onDispose { }
     }
 }

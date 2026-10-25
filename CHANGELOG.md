@@ -73,6 +73,8 @@ Folio shows the newest section on the phone after an update, and every version u
 
 ### Fixed
 - **Search fields lit like the rest of the glass:** a long field's light now runs evenly along its top edge, with a soft streak where it catches the light, instead of a round burst and a bright line along its bottom left.
+- **Holding an app in the App Library:** the lifted icon now sits exactly over the icon you're holding, not at the screen's edge, and the menu lines up with it the way iPhone's does. Home blurs in behind the menu instead of snapping, without a dark flash first, and no larger copy of the icon pops up under your finger. Menus on Home line up with their icon's edge too.
+- **App Library search results:** the highlight under a held app leaves room around the icon and follows its corners, and the "Search with" label, the Google, DuckDuckGo and ChatGPT buttons and the letter headings now use Home's text color instead of dark gray.
 - **Pages slide under the dock:** swiping between Home pages or into the App Library no longer shows them appearing from behind an invisible line beside the Side Bar, with a strip of wallpaper next to the dock. Pages now slide across the whole screen and pass under the dock, the time and the signal, and nothing peeks out beside the dock when Home is still.
 - **The Search button grows from its middle:** when the Search button comes back at the bottom of Home, it now grows out from its center with round ends the whole way, instead of looking cut off with straight sides.
 - **Folio's app icon comes back:** a phone that had picked the Soft or Olive app icon, both gone now, had no Folio icon in the App Library or other launchers. Folio turns its own icon back on when it starts.

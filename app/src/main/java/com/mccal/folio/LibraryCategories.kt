@@ -1,5 +1,7 @@
 package com.mccal.folio
 
+import androidx.compose.runtime.remember
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.combinedClickable
 import android.content.pm.ApplicationInfo
@@ -161,10 +163,11 @@ internal fun CategoryFolder(title: String, apps: List<AppEntry>, onDismiss: () -
                         verticalArrangement = Arrangement.spacedBy(FolioSpace.COMFY.dp)) {
                         items(apps.size, key = { apps[it].id }) { index ->
                             val app = apps[index]
-                            Column(Modifier.clip(RoundedCornerShape(FolioRadius.CARD.dp))
+                            val iconPlace = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
+                            Column(Modifier.recordsIconOnTouch(app.id, iconPlace).clip(RoundedCornerShape(FolioRadius.CARD.dp))
                                 .combinedClickable(onLongClick = { onActions(app) }) { onLaunch(app) }.padding(vertical = FolioSpace.TINY.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally) {
-                                AppIcon(app, null, Modifier.size(FOLDER_ICON_SIZE.dp), badge = true)
+                                AppIcon(app, null, Modifier.size(FOLDER_ICON_SIZE.dp).onGloballyPositioned { iconPlace[0] = it }, badge = true)
                                 Text(app.label, color = Color.White, fontSize = FolioType.CAPTION.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.padding(top = FolioSpace.TINY.dp, start = FolioSpace.HAIR.dp, end = FolioSpace.HAIR.dp))
                                 // A clone sits beside its original with the same name, as in the A to Z list.

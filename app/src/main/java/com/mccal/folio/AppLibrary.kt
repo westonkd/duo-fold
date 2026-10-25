@@ -2,6 +2,9 @@
 
 package com.mccal.folio
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -51,6 +54,7 @@ internal fun AppLibrary(
     val appOptionsLabel = stringResource(R.string.app_options)
     val glass = !editing
     val ink = if (glass) LocalHomeInk.current.primary else MaterialTheme.colorScheme.onSurface
+    val letterChip = libraryLetterChip(LocalWallpaperTone.current.primary, LocalHomeInk.current.dark)
     val pinned = remember(state.homeSlots, state.leadingSlots) {
         (state.homeSlots.asSequence() + state.leadingSlots.asSequence()).filterNotNull().toSet()
     }
@@ -155,7 +159,7 @@ internal fun AppLibrary(
                 }
                 if (!editing && query.isBlank()) item("downloading") { DownloadingApps(ink) }
                 if (!editing && query.isNotBlank()) item("web-search") {
-                    WebSearchRow(query, state.searchEngine) { openWebSearch(context, it, query) }
+                    WebSearchRow(query, state.searchEngine, ink) { openWebSearch(context, it, query) }
                 }
                 if (browsing && categorized.isNotEmpty()) {
                     // Tiles stay iPhone-sized: more columns on the wide inner screen instead of giant tiles.
@@ -172,10 +176,10 @@ internal fun AppLibrary(
                 // While the tiles are still being worked out, show nothing rather than the whole A to Z list for a moment.
                 if (!browsing) groups.forEach { (letter, entries) ->
                     stickyHeader(key = "heading-$letter") {
-                        Row(Modifier.fillMaxWidth().padding(top = FolioSpace.SMALL.dp, bottom = FolioSpace.SNUG.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(Modifier.fillMaxWidth().padding(start = LIBRARY_ROW_INSET.dp, top = FolioSpace.SMALL.dp, bottom = FolioSpace.SNUG.dp), verticalAlignment = Alignment.CenterVertically) {
                             // An opaque small chip prevents text from showing through the sticky letter.
                             Box(Modifier.size(width = 32.dp, height = 28.dp).background(
-                                if (glass) Color(0xFFB7CBD3)
+                                if (glass) letterChip
                                 else MaterialTheme.colorScheme.surfaceContainer,
                                 RoundedCornerShape(FolioRadius.CONTROL.dp)), contentAlignment = Alignment.Center) {
                                 Text(letter, color = ink, fontWeight = FontWeight.SemiBold, fontSize = FolioType.GROUP_LABEL.sp)
@@ -196,11 +200,11 @@ internal fun AppLibrary(
                                 onLaunchFrom(app, launchBounds)
                             }
                         }
-                        Row(Modifier.fillMaxWidth().heightIn(min = 60.dp).then(dragModifier).clip(RoundedCornerShape(FolioRadius.CARD.dp)).testTag("library-app-${app.id}")
+                        Row(Modifier.fillMaxWidth().heightIn(min = 60.dp).recordsIconOnTouch(app.id, iconPlace).then(dragModifier).clip(libraryRowShape).testTag("library-app-${app.id}")
                             .then(if (drag == null) Modifier.combinedClickable(onClick = click, onLongClick = { onActions(app) })
-                                else Modifier.clickable(onClick = click).semantics { onLongClick(appOptionsLabel) { onActions(app); true } })
-                            .padding(vertical = FolioSpace.SNUG.dp), verticalAlignment = Alignment.CenterVertically) {
-                            AppIcon(app, null, Modifier.size(40.dp)
+                                else Modifier.clickable(onClick = click).semantics { onLongClick(appOptionsLabel) { IconBounds.record(app.id, iconPlace[0]); onActions(app); true } })
+                            .padding(vertical = FolioSpace.SNUG.dp, horizontal = LIBRARY_ROW_INSET.dp), verticalAlignment = Alignment.CenterVertically) {
+                            AppIcon(app, null, Modifier.size(LIBRARY_ROW_ICON.dp)
                                 .onGloballyPositioned { iconPlace[0] = it })
                             Row(Modifier.weight(1f).padding(start = FolioSpace.MEDIUM.dp), verticalAlignment = Alignment.CenterVertically) {
                                 NewAppDot(app.packageName, 7.dp)
@@ -226,10 +230,28 @@ internal fun AppLibrary(
     }
 }
 
+internal fun Modifier.recordsIconOnTouch(id: String, icon: Array<androidx.compose.ui.layout.LayoutCoordinates?>): Modifier =
+    pointerInput(id) {
+        awaitEachGesture {
+            awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+            IconBounds.record(id, icon[0])
+        }
+    }
+
+private const val LIBRARY_ROW_INSET = FolioSpace.COMPACT
+private const val LIBRARY_ROW_ICON = 40f
+private val libraryRowShape = RoundedCornerShape(concentricRadius(LIBRARY_ROW_ICON * ICON_CORNER_FRACTION, LIBRARY_ROW_INSET.toFloat()).dp)
+
+internal fun libraryLetterChip(wallpaper: Int?, inkIsDark: Boolean): Color {
+    val tone = wallpaper?.let { Color(it).copy(alpha = 1f) } ?: Color(0xFF8E8E93)
+    return if (inkIsDark) androidx.compose.ui.graphics.lerp(tone, Color.White, .72f)
+        else androidx.compose.ui.graphics.lerp(tone, Color.Black, .45f)
+}
+
 @Composable
-private fun WebSearchRow(query: String, engine: String, onSearch: (WebSearchTarget) -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(bottom = FolioSpace.SMALL.dp)) {
-        Text(stringResource(R.string.search_1_with, query.trim()), fontSize = FolioType.GROUP_LABEL.sp, color = Ink.copy(alpha = .75f),
+private fun WebSearchRow(query: String, engine: String, ink: Color, onSearch: (WebSearchTarget) -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(start = LIBRARY_ROW_INSET.dp, bottom = FolioSpace.SMALL.dp)) {
+        Text(stringResource(R.string.search_1_with, query.trim()), fontSize = FolioType.GROUP_LABEL.sp, color = ink.copy(alpha = .75f),
             modifier = Modifier.padding(bottom = FolioSpace.SNUG.dp))
         Row(Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
@@ -237,6 +259,8 @@ private fun WebSearchRow(query: String, engine: String, onSearch: (WebSearchTarg
                 AssistChip(onClick = { onSearch(target) }, label = { Text(target.label) },
                     leadingIcon = { Icon(if (target.ai) Icons.Rounded.AutoAwesome else Icons.Rounded.Public,
                         null, Modifier.size(16.dp)) },
+                    colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(labelColor = ink, leadingIconContentColor = ink),
+                    border = androidx.compose.material3.AssistChipDefaults.assistChipBorder(true, borderColor = ink.copy(alpha = .3f)),
                     modifier = Modifier.testTag("web-search-${target.name.lowercase()}"))
             }
         }

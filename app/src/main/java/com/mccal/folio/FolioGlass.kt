@@ -202,6 +202,19 @@ internal fun androidx.compose.ui.Modifier.menuGlass(shape: androidx.compose.ui.g
 internal fun androidx.compose.ui.Modifier.toolbarGlass(shape: androidx.compose.ui.graphics.Shape): androidx.compose.ui.Modifier =
     liquidGlass(shape, TOOLBAR_FROST, GlassRole.FLOATING)
 
+internal const val BACKDROP_BLUR_STEPS = 6
+
+internal fun backdropBlurStep(progress: Float): Int = kotlin.math.round(progress.coerceIn(0f, 1f) * BACKDROP_BLUR_STEPS).toInt()
+
+internal class BackdropBlurSteps(private val steps: List<androidx.compose.ui.graphics.RenderEffect>) {
+    fun at(progress: Float): androidx.compose.ui.graphics.RenderEffect? = backdropBlurStep(progress).takeIf { it > 0 }?.let { steps[it - 1] }
+}
+
+internal fun backdropBlurSteps(maxPx: Float) = BackdropBlurSteps(List(BACKDROP_BLUR_STEPS) { i ->
+    val radius = maxPx * (i + 1) / BACKDROP_BLUR_STEPS
+    androidx.compose.ui.graphics.BlurEffect(radius, radius, androidx.compose.ui.graphics.TileMode.Clamp)
+})
+
 internal const val LIBRARY_BLUR_DP = 40
 internal const val LIBRARY_BLUR_STEPS = 10
 private const val BLUR_LAYER_ALPHA = .001f

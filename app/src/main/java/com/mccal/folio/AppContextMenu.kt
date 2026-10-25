@@ -1,5 +1,6 @@
 package com.mccal.folio
 
+import androidx.compose.ui.layout.positionInWindow
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
 import android.graphics.Bitmap
@@ -35,7 +36,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -56,6 +55,12 @@ internal object IconBounds {
     private val bounds = HashMap<String, Rect>()
     fun update(id: String, rect: Rect) { if (!rect.isEmpty) bounds[id] = Rect(rect) }
     fun of(id: String): Rect? = bounds[id]
+    fun record(id: String, coordinates: androidx.compose.ui.layout.LayoutCoordinates?) {
+        val placed = coordinates?.takeIf { it.isAttached } ?: return
+        val corner = placed.positionInWindow()
+        update(id, Rect(corner.x.roundToInt(), corner.y.roundToInt(),
+            (corner.x + placed.size.width).roundToInt(), (corner.y + placed.size.height).roundToInt()))
+    }
 }
 
 internal data class QuickAction(val label: String, val icon: Bitmap?, val info: ShortcutInfo)
@@ -121,26 +126,18 @@ internal fun AppContextMenu(
     }
     RegisterOpenWindow(LauncherSheets)
 
+    val anchor = remember(app.id) { IconBounds.of(app.id)?.let(::Rect) }
     val actions by produceState(emptyList<QuickAction>(), app.id) { if (!app.isShortcut) value = withContext(Dispatchers.IO) { loadQuickActions(context, app) } }
 
     Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        val view = LocalView.current
-        LaunchedEffect(view) {
-            (view.parent as? DialogWindowProvider)?.window?.let { w ->
-                w.setDimAmount(0f)
-                androidx.core.view.WindowCompat.getInsetsController(w, w.decorView).apply {
-                    systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                    hide(androidx.core.view.WindowInsetsCompat.Type.statusBars())
-                }
-            }
-        }
+        FolioDialogWindow(dim = 0f)
         var origin by remember { mutableStateOf(Offset.Zero) }
         BoxWithConstraints(Modifier.fillMaxSize().onGloballyPositioned { origin = it.positionOnScreen() }
             .graphicsLayer { alpha = appear.value.coerceIn(0f, 1f) }.background(Color.Black.copy(alpha = .28f))
             .clickable(remember { MutableInteractionSource() }, null, onClick = dismiss)) {
             val screenW = with(density) { maxWidth.toPx() }
             val screenH = with(density) { maxHeight.toPx() }
-            val icon = IconBounds.of(app.id) ?: Rect((screenW / 2 - 80).toInt(), (screenH / 3).toInt(), (screenW / 2 + 80).toInt(), (screenH / 3 + 160).toInt())
+            val icon = anchor ?: Rect((screenW / 2 - 80).toInt(), (screenH / 3).toInt(), (screenW / 2 + 80).toInt(), (screenH / 3 + 160).toInt())
             val iconLeft = icon.left - origin.x
             val iconTop = icon.top - origin.y
             val iconSize = icon.width().toFloat()
@@ -167,7 +164,8 @@ internal fun AppContextMenu(
             val rowPx = with(density) { 49.dp.toPx() }
             // Opening More swaps the app's quick actions for Folio's extra rows, so the menu doesn't need to scroll.
             val shownActions = if (more) emptyList() else actions.take((((if (below) spaceBelow else spaceAbove) - with(density) { 8.dp.toPx() }) / rowPx - folioRows).toInt().coerceAtLeast(0))
-            val menuLeft = (iconLeft + iconSize / 2 - menuW / 2).coerceIn(gap, screenW - menuW - gap)
+            val leading = iconLeft + iconSize / 2 < screenW / 2
+            val menuLeft = (if (leading) iconLeft else iconLeft + iconSize - menuW).coerceIn(gap, screenW - menuW - gap)
             val origX = ((iconLeft + iconSize / 2 - menuLeft) / menuW).coerceIn(0f, 1f)
             // Positioned from the measured menu height: the dialog can be shorter than the screen (navigation bar),
             // so aligning to its bottom edge made the menu overlap the lifted icon.

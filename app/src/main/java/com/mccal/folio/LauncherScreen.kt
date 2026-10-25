@@ -1383,7 +1383,7 @@ fun LauncherScreen(
                 if (pager.currentPage > lowestDragPage) DragEdgeTab(-1, edge < 0, Modifier.align(Alignment.CenterStart).testTag("drag-edge-left"))
                 if (pager.currentPage < homePages) DragEdgeTab(1, edge > 0, Modifier.align(Alignment.CenterEnd).testTag("drag-edge-right"))
             }
-            appsById[drag.source?.appId]?.takeUnless { drag.landing.lifted }?.let { app ->
+            appsById[drag.source?.appId]?.takeUnless { drag.landing.lifted || !drag.moved }?.let { app ->
                 val size = 66.dp
                 val px = with(LocalDensity.current) { size.toPx() }
                 AppIcon(app, stringResource(R.string.moving_named, app.label), Modifier
