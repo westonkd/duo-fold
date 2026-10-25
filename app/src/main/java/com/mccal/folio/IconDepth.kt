@@ -167,16 +167,16 @@ private class IconLightingNode(private var shape: Shape, private var light: Icon
         val outline = cut.outline
         val frame = LitFrame(size, toward)
         light.wash?.let { drawOutline(outline, it, blendMode = BlendMode.Multiply) }
-        drawOutline(outline, lights.sheen.along(frame.lit, frame.angle, frame.span * .5f).brush)
-        drawOutline(outline, lights.shade.along(frame.lit + (frame.dark - frame.lit) * .6f, frame.angle, frame.span * .4f).brush)
-        if (light.glint > 0f) drawOutline(outline, lights.glint.around(frame.inward(.14f), size.minDimension * .34f).brush)
+        drawOutline(outline, lights.sheen.along(frame, frame.lit, frame.span * .5f).brush)
+        drawOutline(outline, lights.shade.along(frame, frame.lit + (frame.dark - frame.lit) * .6f, frame.span * .4f).brush)
+        if (light.glint > 0f) drawOutline(outline, lights.glint.around(frame, frame.inward(.14f), frame.side * .34f).brush)
         if (light.edge.alpha > 0f) drawOutline(outline, light.edge, style = Stroke(cut.rimWidth * .8f))
         val nudge = cut.rimWidth / 2f
         translate(nudge, nudge) {
             val stroke = Stroke(cut.rimWidth)
             val lit = frame.lit - Offset(nudge, nudge)
-            drawOutline(cut.rimOutline, lights.rim.along(lit, frame.angle, frame.span).brush, style = stroke)
-            drawOutline(cut.rimOutline, lights.rimSpot.around(lit, size.minDimension * SceneLight.SPOT_REACH).brush, style = stroke)
+            drawOutline(cut.rimOutline, lights.rim.along(frame, lit, frame.span).brush, style = stroke)
+            drawOutline(cut.rimOutline, lights.rimSpot.around(frame, lit, frame.side * SceneLight.SPOT_REACH).brush, style = stroke)
         }
     }
 }

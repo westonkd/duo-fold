@@ -48,4 +48,23 @@ class SceneLightTest {
         val far = SceneLight.litEdge(Size(100f, 100f), SceneLight.toward(Size(100f, 100f), Offset(-2000f, 40f)))
         assertEquals(0f, far.x, .001f)
     }
+
+    @Test fun `a long capsule is lit along its whole top edge and dark along its bottom`() {
+        val capsule = Size(800f, 100f)
+        val frame = LitFrame(capsule, SceneLight.toward(capsule, Offset(150f, -60f)))
+        val radians = Math.toRadians(frame.angle.toDouble())
+        fun shadeAt(p: Offset): Double = ((p.x - frame.lit.x) / frame.stretch.x * kotlin.math.cos(radians) +
+            (p.y - frame.lit.y) / frame.stretch.y * kotlin.math.sin(radians)) / frame.span
+        val top = (0..8).map { shadeAt(Offset(it * 100f, 0f)) }
+        val bottom = (0..8).map { shadeAt(Offset(it * 100f, capsule.height)) }
+        assertEquals(0f, frame.lit.y, .001f)
+        assertTrue(bottom.minOrNull()!! > top.maxOrNull()!!)
+    }
+
+    @Test fun `round highlights stretch along a long edge, but less than the edge does`() {
+        val frame = LitFrame(Size(800f, 100f), SceneLight.UNPLACED)
+        assertTrue(frame.oval.x > 1f && frame.oval.x < frame.stretch.x)
+        assertEquals(1f, frame.oval.y, .001f)
+        assertEquals(1f, LitFrame(Size(300f, 300f), SceneLight.UNPLACED).oval.x, .001f)
+    }
 }

@@ -18,6 +18,7 @@ import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.hypot
 import kotlin.math.min
+import kotlin.math.sqrt
 
 internal object SceneLight {
     const val ACROSS = .3f
@@ -31,7 +32,11 @@ internal object SceneLight {
         return Offset(window.width * across, -window.height * ABOVE)
     }
 
-    fun toward(size: Size, light: Offset): Offset = unit(light - size.center)
+    fun toward(size: Size, light: Offset): Offset {
+        val side = minOf(size.width, size.height).coerceAtLeast(1f)
+        val reach = light - size.center
+        return unit(Offset(reach.x * side / size.width.coerceAtLeast(1f), reach.y * side / size.height.coerceAtLeast(1f)))
+    }
 
     fun litEdge(size: Size, toward: Offset): Offset {
         val half = size.center
@@ -50,11 +55,16 @@ internal object SceneLight {
 }
 
 internal class LitFrame(size: Size, toward: Offset) {
+    val side = minOf(size.width, size.height).coerceAtLeast(1f)
+    val stretch = Offset(size.width / side, size.height / side)
+    val oval = Offset(sqrt(stretch.x), sqrt(stretch.y))
+    private val squareLit = SceneLight.litEdge(Size(side, side), toward)
+    private val squareDark = Offset(side - squareLit.x, side - squareLit.y)
     private val middle = Offset(size.width / 2f, size.height / 2f)
-    val lit = SceneLight.litEdge(size, toward)
+    val lit = Offset(squareLit.x * stretch.x, squareLit.y * stretch.y)
     val dark = Offset(size.width - lit.x, size.height - lit.y)
-    val span = (dark - lit).getDistance()
-    val angle = Math.toDegrees(atan2((dark - lit).y, (dark - lit).x).toDouble()).toFloat()
+    val span = (squareDark - squareLit).getDistance()
+    val angle = Math.toDegrees(atan2((squareDark - squareLit).y, (squareDark - squareLit).x).toDouble()).toFloat()
 
     fun inward(share: Float): Offset = lit + (middle - lit) * share
 }
@@ -63,15 +73,16 @@ internal class PlacedGradient private constructor(private val shader: android.gr
     private val matrix = android.graphics.Matrix()
     val brush = ShaderBrush(shader)
 
-    fun along(from: Offset, degrees: Float, length: Float): PlacedGradient = apply {
+    fun along(frame: LitFrame, from: Offset, length: Float): PlacedGradient = apply {
         matrix.setScale(length.coerceAtLeast(1f), length.coerceAtLeast(1f))
-        matrix.postRotate(degrees)
-        matrix.postTranslate(from.x, from.y)
+        matrix.postRotate(frame.angle)
+        matrix.postTranslate(from.x / frame.stretch.x, from.y / frame.stretch.y)
+        matrix.postScale(frame.stretch.x, frame.stretch.y)
         shader.setLocalMatrix(matrix)
     }
 
-    fun around(center: Offset, radius: Float): PlacedGradient = apply {
-        matrix.setScale(radius.coerceAtLeast(1f), radius.coerceAtLeast(1f))
+    fun around(frame: LitFrame, center: Offset, radius: Float): PlacedGradient = apply {
+        matrix.setScale((radius * frame.oval.x).coerceAtLeast(1f), (radius * frame.oval.y).coerceAtLeast(1f))
         matrix.postTranslate(center.x, center.y)
         shader.setLocalMatrix(matrix)
     }

@@ -364,18 +364,18 @@ private class LiquidGlassNode(private var shape: androidx.compose.ui.graphics.Sh
         }
         drawOutline(outline, cut.body)
         if (spec.light > 0f) {
-            drawOutline(outline, lights.light.along(frame.lit, frame.angle, frame.span * .55f).brush)
-            drawOutline(outline, lights.bloom.around(frame.inward(.04f), maxOf(size.width, size.height) * .6f).brush)
+            drawOutline(outline, lights.light.along(frame, frame.lit, frame.span * .55f).brush)
+            drawOutline(outline, lights.bloom.around(frame, frame.inward(.04f), frame.side * .6f).brush)
         }
         drawOutline(outline, GlassGrain.brush, alpha = spec.grain)
-        if (spec.glint > 0f) drawOutline(outline, lights.glint.around(frame.inward(.1f), minOf(size.width, size.height) * .36f).brush)
+        if (spec.glint > 0f) drawOutline(outline, lights.glint.around(frame, frame.inward(.1f), frame.side * .36f).brush)
         if (spec.edge.alpha > 0f) drawOutline(outline, spec.edge, style = androidx.compose.ui.graphics.drawscope.Stroke(edgeWidth))
         val nudge = rimWidth / 2f + edgeWidth / 2f
         translate(nudge, nudge) {
             val stroke = androidx.compose.ui.graphics.drawscope.Stroke(rimWidth)
             val lit = frame.lit - androidx.compose.ui.geometry.Offset(nudge, nudge)
-            drawOutline(cut.rimOutline, lights.rim.along(lit, frame.angle, frame.span).brush, style = stroke)
-            drawOutline(cut.rimOutline, lights.rimSpot.around(lit, minOf(size.width, size.height) * SceneLight.SPOT_REACH).brush, style = stroke)
+            drawOutline(cut.rimOutline, lights.rim.along(frame, lit, frame.span).brush, style = stroke)
+            drawOutline(cut.rimOutline, lights.rimSpot.around(frame, lit, frame.side * SceneLight.SPOT_REACH).brush, style = stroke)
         }
         drawContent()
     }
