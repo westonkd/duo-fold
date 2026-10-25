@@ -119,9 +119,7 @@ class MainActivity : ComponentActivity() {
             val overlayShowing = spotlightVisible.value
             androidx.compose.runtime.LaunchedEffect(overlayShowing) { if (overlayShowing) OverlayBack.swipe.snapTo(0f) }
             val backdropBlurPx = with(androidx.compose.ui.platform.LocalDensity.current) { 32.dp.toPx() }
-            val backdropBlur = androidx.compose.runtime.remember(backdropBlurPx) {
-                androidx.compose.ui.graphics.BlurEffect(backdropBlurPx, backdropBlurPx, androidx.compose.ui.graphics.TileMode.Clamp)
-            }
+            val backdropBlurs = androidx.compose.runtime.remember(backdropBlurPx) { backdropBlurSteps(backdropBlurPx) }
             DuoTheme { val notificationItems = NotificationListener.notifications.collectAsStateWithLifecycle().value
             // Progress ticks for every install session on the phone. Kept as a State that nothing here reads, so a tick
             // reaches only the icons that are installing (see LocalInstallProgress) instead of recomposing all of Home.
@@ -189,10 +187,7 @@ class MainActivity : ComponentActivity() {
                 androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()
                     .graphicsLayer {
                     val p = overlayProgress
-                    // Fixed radius while any overlay is showing: a constant blur is cached by the RenderThread,
-                    // whereas animating the radius re-blurred the whole Home every frame (~14ms of GPU per
-                    // frame). The overlay's scrim fades in over it, which hides the switch.
-                    renderEffect = if (p > .02f && backdropBlurPx >= 2f && !LauncherPages.isOpen(this@MainActivity)) backdropBlur else null
+                    renderEffect = if (backdropBlurPx >= 2f && !LauncherPages.isOpen(this@MainActivity)) backdropBlurs.at(p) else null
                 }) {
                 LauncherScreen(state, model, widgets, homeRequests.intValue, homeFromFront = homeFromFront.value,
                     onLaunch = { launchApp(it) }, onMakeDefault = ::makeDefault, onAppInfo = ::appInfo,

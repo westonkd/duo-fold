@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.node.invalidateDraw
 
 /**
  * One glass language for every Folio overlay (Spotlight,
@@ -201,6 +202,19 @@ internal fun androidx.compose.ui.Modifier.menuGlass(shape: androidx.compose.ui.g
 internal fun androidx.compose.ui.Modifier.toolbarGlass(shape: androidx.compose.ui.graphics.Shape): androidx.compose.ui.Modifier =
     liquidGlass(shape, TOOLBAR_FROST, GlassRole.FLOATING)
 
+internal const val BACKDROP_BLUR_STEPS = 6
+
+internal fun backdropBlurStep(progress: Float): Int = kotlin.math.round(progress.coerceIn(0f, 1f) * BACKDROP_BLUR_STEPS).toInt()
+
+internal class BackdropBlurSteps(private val steps: List<androidx.compose.ui.graphics.RenderEffect>) {
+    fun at(progress: Float): androidx.compose.ui.graphics.RenderEffect? = backdropBlurStep(progress).takeIf { it > 0 }?.let { steps[it - 1] }
+}
+
+internal fun backdropBlurSteps(maxPx: Float) = BackdropBlurSteps(List(BACKDROP_BLUR_STEPS) { i ->
+    val radius = maxPx * (i + 1) / BACKDROP_BLUR_STEPS
+    androidx.compose.ui.graphics.BlurEffect(radius, radius, androidx.compose.ui.graphics.TileMode.Clamp)
+})
+
 internal const val LIBRARY_BLUR_DP = 40
 internal const val LIBRARY_BLUR_STEPS = 10
 private const val BLUR_LAYER_ALPHA = .001f
@@ -262,7 +276,8 @@ internal object LiquidGlass {
     const val RIM_FAINT = .34f
     const val LIFT = .28f
     const val EDGE = .16f
-    const val GLINT = .34f
+    const val GLINT = .4f
+    const val RIM_SPOT = 1f
 }
 
 internal fun liquidGlassSpec(base: Color, frost: Float, role: GlassRole, primary: Int? = null, secondary: Int? = null): GlassSpec {
@@ -302,46 +317,82 @@ internal fun androidx.compose.ui.Modifier.liquidGlass(shape: androidx.compose.ui
 }
 
 internal fun androidx.compose.ui.Modifier.drawLiquidGlass(shape: androidx.compose.ui.graphics.Shape, spec: GlassSpec): androidx.compose.ui.Modifier =
-    drawWithCache {
-        val outline = shape.createOutline(size, layoutDirection, this)
-        val rimWidth = 1.2.dp.toPx()
-        val rimInset = rimWidth + .8.dp.toPx()
-        val rimOutline = shape.createOutline(androidx.compose.ui.geometry.Size(size.width - rimInset, size.height - rimInset), layoutDirection, this)
-        val body = androidx.compose.ui.graphics.Brush.linearGradient(listOf(spec.bodyStart, spec.bodyEnd),
-            androidx.compose.ui.geometry.Offset.Zero, androidx.compose.ui.geometry.Offset(size.width, size.height))
-        val light = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.White.copy(alpha = spec.light), Color.Transparent),
-            startY = 0f, endY = size.height * .55f)
-        val bloom = androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color.White.copy(alpha = spec.light * .6f), Color.Transparent),
-            center = androidx.compose.ui.geometry.Offset(size.width * .18f, 0f), radius = maxOf(size.width, size.height) * .6f)
-        val rim = androidx.compose.ui.graphics.Brush.linearGradient(
-            0f to spec.rimLead, .35f to spec.rimSide, .65f to spec.rimSide, 1f to spec.rimTrail,
-            start = androidx.compose.ui.geometry.Offset.Zero, end = androidx.compose.ui.geometry.Offset(size.width, size.height))
-        val glint = androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color.White.copy(alpha = spec.glint), Color.Transparent),
-            center = androidx.compose.ui.geometry.Offset(size.width * .12f, size.height * .04f), radius = minOf(size.width, size.height) * .45f)
-        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(rimWidth)
-        val edgeWidth = .8.dp.toPx()
-        val edge = androidx.compose.ui.graphics.drawscope.Stroke(edgeWidth)
-        val shadow = if (spec.lift > 0f) liftShadow(outline, spec.lift, 18.dp.toPx(), 6.dp.toPx()) else null
-        onDrawBehind {
-            shadow?.let { (path, paint) ->
-                drawContext.canvas.nativeCanvas.let { canvas ->
-                    canvas.save()
-                    canvas.clipOutPath(path)
-                    canvas.drawPath(path, paint)
-                    canvas.restore()
-                }
-            }
-            drawOutline(outline, body)
-            if (spec.light > 0f) {
-                drawOutline(outline, light)
-                drawOutline(outline, bloom)
-            }
-            drawOutline(outline, GlassGrain.brush, alpha = spec.grain)
-            if (spec.glint > 0f) drawOutline(outline, glint)
-            if (spec.edge.alpha > 0f) drawOutline(outline, spec.edge, style = edge)
-            translate(rimWidth / 2f + edgeWidth / 2f, rimWidth / 2f + edgeWidth / 2f) { drawOutline(rimOutline, rim, style = stroke) }
-        }
+    this then LiquidGlassElement(shape, spec)
+
+private data class LiquidGlassElement(val shape: androidx.compose.ui.graphics.Shape, val spec: GlassSpec) :
+    androidx.compose.ui.node.ModifierNodeElement<LiquidGlassNode>() {
+    override fun create() = LiquidGlassNode(shape, spec)
+    override fun update(node: LiquidGlassNode) = node.restyle(shape, spec)
+}
+
+private class LiquidGlassNode(private var shape: androidx.compose.ui.graphics.Shape, private var spec: GlassSpec) : SceneLitNode() {
+    private class Cut(val size: androidx.compose.ui.geometry.Size, val outline: androidx.compose.ui.graphics.Outline,
+        val rimOutline: androidx.compose.ui.graphics.Outline, val body: androidx.compose.ui.graphics.Brush,
+        val shadow: Pair<android.graphics.Path, android.graphics.Paint>?)
+
+    private class Lights(spec: GlassSpec) {
+        val light = PlacedGradient.linear(0f to Color.White.copy(alpha = spec.light), 1f to Color.Transparent)
+        val bloom = PlacedGradient.radial(Color.White.copy(alpha = spec.light * .6f))
+        val glint = PlacedGradient.radial(Color.White.copy(alpha = spec.glint))
+        val rim = PlacedGradient.linear(0f to spec.rimLead, .28f to spec.rimSide, .72f to spec.rimSide, 1f to spec.rimTrail)
+        val rimSpot = PlacedGradient.spot(spec.rimLead.copy(alpha = spec.rimLead.alpha * LiquidGlass.RIM_SPOT))
     }
+
+    private var cut: Cut? = null
+    private var lights = Lights(spec)
+
+    fun restyle(shape: androidx.compose.ui.graphics.Shape, spec: GlassSpec) {
+        if (shape == this.shape && spec == this.spec) return
+        if (spec != this.spec) lights = Lights(spec)
+        this.shape = shape
+        this.spec = spec
+        cut = null
+        invalidateDraw()
+    }
+
+    private fun androidx.compose.ui.graphics.drawscope.DrawScope.cutFor(size: androidx.compose.ui.geometry.Size): Cut =
+        cut?.takeIf { it.size == size } ?: run {
+            val rimInset = 1.2.dp.toPx() + .8.dp.toPx()
+            Cut(size, shape.createOutline(size, layoutDirection, this),
+                shape.createOutline(androidx.compose.ui.geometry.Size(size.width - rimInset, size.height - rimInset), layoutDirection, this),
+                androidx.compose.ui.graphics.Brush.linearGradient(listOf(spec.bodyStart, spec.bodyEnd),
+                    androidx.compose.ui.geometry.Offset.Zero, androidx.compose.ui.geometry.Offset(size.width, size.height)),
+                if (spec.lift > 0f) liftShadow(shape.createOutline(size, layoutDirection, this), spec.lift, 18.dp.toPx(), 6.dp.toPx()) else null,
+            ).also { cut = it }
+        }
+
+    override fun androidx.compose.ui.graphics.drawscope.ContentDrawScope.draw() {
+        val cut = cutFor(size)
+        val outline = cut.outline
+        val frame = LitFrame(size, toward)
+        val rimWidth = 1.2.dp.toPx()
+        val edgeWidth = .8.dp.toPx()
+        cut.shadow?.let { (path, paint) ->
+            drawContext.canvas.nativeCanvas.let { canvas ->
+                canvas.save()
+                canvas.clipOutPath(path)
+                canvas.drawPath(path, paint)
+                canvas.restore()
+            }
+        }
+        drawOutline(outline, cut.body)
+        if (spec.light > 0f) {
+            drawOutline(outline, lights.light.along(frame, frame.lit, frame.span * .55f).brush)
+            drawOutline(outline, lights.bloom.around(frame, frame.inward(.04f), frame.side * .6f).brush)
+        }
+        drawOutline(outline, GlassGrain.brush, alpha = spec.grain)
+        if (spec.glint > 0f) drawOutline(outline, lights.glint.around(frame, frame.inward(.1f), frame.side * .36f).brush)
+        if (spec.edge.alpha > 0f) drawOutline(outline, spec.edge, style = androidx.compose.ui.graphics.drawscope.Stroke(edgeWidth))
+        val nudge = rimWidth / 2f + edgeWidth / 2f
+        translate(nudge, nudge) {
+            val stroke = androidx.compose.ui.graphics.drawscope.Stroke(rimWidth)
+            val lit = frame.lit - androidx.compose.ui.geometry.Offset(nudge, nudge)
+            drawOutline(cut.rimOutline, lights.rim.along(frame, lit, frame.span).brush, style = stroke)
+            drawOutline(cut.rimOutline, lights.rimSpot.around(frame, lit, frame.side * SceneLight.SPOT_REACH).brush, style = stroke)
+        }
+        drawContent()
+    }
+}
 
 private fun liftShadow(outline: androidx.compose.ui.graphics.Outline, lift: Float, blur: Float, drop: Float): Pair<android.graphics.Path, android.graphics.Paint> {
     val path = androidx.compose.ui.graphics.Path().apply { addOutline(outline) }.asAndroidPath()

@@ -196,12 +196,19 @@ internal fun WidgetSlot(id: Int, slot: Int, controller: WidgetController, modifi
         if (info == null) fallback()
         else {
             key(id) {
-                AndroidView(factory = { context -> controller.host.createView(context, id, info) },
-                    modifier = Modifier.fillMaxSize())
+                var fillsBox by remember { mutableStateOf(false) }
+                AndroidView(factory = { context ->
+                    controller.host.createView(context, id, info).also { view ->
+                        (view as? ZeroPaddingWidgetHostView)?.onFillsBoxChanged = { fillsBox = it }
+                    }
+                }, modifier = Modifier.fillMaxSize())
+                if (fillsBox) Box(Modifier.matchParentSize().iconLighting(RoundedCornerShape(FolioRadius.WIDGET.dp), ProviderWidgetLighting))
             }
         }
     }
 }
+
+private val ProviderWidgetLighting = widgetLighting()
 
 internal fun widgetLabel(context: android.content.Context, id: Int, controller: WidgetController) = when (id) {
     CLOCK_WIDGET -> context.getString(R.string.clock)
