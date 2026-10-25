@@ -11,7 +11,7 @@ Two tools answer "what does Folio cost?". They measure different things, so use 
 
 ## 1. The Performance log (in the app)
 
-Settings, Advanced, Diagnostics, **Performance log** card. It is off until you tap **Start recording**.
+Settings, General, **Performance log** card. It is off until you tap **Start recording**.
 
 While it runs it reads, about every 5 seconds:
 

@@ -4,7 +4,7 @@ Optional. Each "- " line becomes a checkbox on Folio Dev's "New build" page (Set
 Leave the file out or empty and the page still shows what changed. Keep this list short and about the build in hand; replace
 it for each build.
 
-- Settings > Search & App Library: switch Bottom of Home between Search bar, Page dots and Nothing; Home should not shift
-- Settings > Icons & Side Bar > Status: turn on Stronger rings on the cover and the inner screen
-- Put a widget at the top of a page: the rows below it are evenly spaced and the dock lines up
-- Edit Home with the dock on the Side Bar: drag the handle under the dock
+- Open Settings: the list has Home, Search, Gestures, Fold and General, and each opens one page with no pages under it
+- Long-press empty space on Home, then Wallpaper: Settings opens on Home
+- The Side Bar shows the time and the battery Ring, with no date or percentage under them
+- Settings › Fold: turn Duet off and on, then fold and unfold

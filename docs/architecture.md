@@ -16,9 +16,10 @@ All paths below are relative to `app/src/main/java/com/mccal/folio/`.
 | Editing and folders | `HomeEditing.kt`, `HomeDrag.kt`, `FolderEditing.kt`, `FolderPanel.kt` | Placement rules, drag previews, insertion, folders and cancellation |
 | Native widgets | `WidgetController.kt`, `WidgetPicker.kt`, `WidgetSizing.kt`, `ZeroPaddingWidgetHost.kt`, `WidgetVerticalGestures.kt` | Provider catalog, binding/configuration, geometry and native touch arbitration |
 | Google search | `GoogleSearch.kt` | The Google app's search intent |
-| Customization | `CustomizationSheet.kt`, `LauncherActionSheet.kt` | Long-press actions, settings subpages and sheet navigation |
-| Photos and status | `LauncherBackground.kt`, `DeviceStatus.kt`, `StatusRail.kt` | Private photo staging, live status and its presentation |
+| Settings | `CustomizationSheet.kt`, `LauncherActionSheet.kt` | Long-press actions and Settings: a list of five flat pages (Home, Search, Gestures, Fold, General), with the list beside the page on the inner screen |
+| Photos and status | `LauncherBackground.kt`, `DeviceStatus.kt`, `StatusRail.kt` | Private photo staging, live status and the Side Bar's time and battery Ring |
 | Backup and shade access | `LayoutBackup.kt`, `BackupController.kt`, `SystemShadeController.kt` | Portable layout import/export and optional system-panel actions |
+| Fold animation | `FoldTransition.kt`, `HingeTracker.kt`, `duet/DuetShader.kt` | Duet: the fold timeline and its one shader, iPhone Duo's look or Reduce Motion's shade |
 
 ## Layout and identity
 
@@ -28,7 +29,7 @@ Each ordinary Home page has a four-column, six-row grid. Apps occupy cells; widg
 
 Unfolded navigation uses overlapping pairs: leading workspace + Home 1, Home 1 + Home 2, and so on. The leading workspace has separate `leadingSlots` and durable widget page `-1`; it disappears from the cover view without deleting its contents. The pager has no page to the left of Home: pager page 0 is Home 1 (on the inner screen, the leading workspace + Home 1 pair). Use the address helpers in `HomeEditing.kt` rather than treating negative cell indices as missing values.
 
-Saved layouts use explicit JSON fields with migration backups. Layout export is a portable description, not a copy of Android's widget capabilities: an import must reconnect widgets, and cross-installation work profiles may require manual correction. Photo files are outside the layout backup; Market packages are inside it, as records and the changes they made, never as the snapshots of what they replaced - those describe the phone the backup came from, so a restore applies each package's recorded changes again over the layout it has just put back.
+Saved layouts use explicit JSON fields with migration backups. Layout export is a portable description, not a copy of Android's widget capabilities: an import must reconnect widgets, and cross-installation work profiles may require manual correction. Photo files are outside the layout backup. A backup or save that still carries packages or settings from removed features restores without them.
 
 ## Native widgets and gestures
 
@@ -46,6 +47,6 @@ A selected photo is decoded into private staging before **Apply** replaces the c
 
 Pure placement, gesture-decision, sizing, profile and status rules have JVM tests under `app/src/test/`. Native widget/provider behavior, real sheet Back handling and Android results require emulator integration checks under `app/src/androidTest/`.
 
-Start with a focused regression that reproduces the behavior, then run the relevant build/unit/lint checks described in [Contributing](../CONTRIBUTING.md). Integration fixtures need a disposable emulator with their expected apps/providers. Record real binding tuples before testing and preserve them during cleanup; preferences alone are not a complete widget backup. Cover/inner dimension overrides test layout behavior, not physical hinge timing or real-device performance.
+Start with a focused regression that reproduces the behavior, then run `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleFast`. Integration fixtures need a disposable emulator with their expected apps/providers. Record real binding tuples before testing and preserve them during cleanup; preferences alone are not a complete widget backup. Cover/inner dimension overrides test layout behavior, not physical hinge timing or real-device performance.
 
-Debug probes and instrumentation fixtures are separate source sets. The release build uses R8/resource shrinking and excludes debug activities. Signed releases are built with `scripts/release-signed.sh`; see the README's tested devices before expanding compatibility claims.
+Debug probes and instrumentation fixtures are separate source sets. The `fast` build (Folio Dev) uses R8/resource shrinking like a release, excludes debug activities and is what runs on the phone.
