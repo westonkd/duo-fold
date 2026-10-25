@@ -16,8 +16,23 @@ internal class ZeroPaddingWidgetHost(context: Context, hostId: Int) : AppWidgetH
         ZeroPaddingWidgetHostView(context)
 }
 
-private class ZeroPaddingWidgetHostView(context: Context) : AppWidgetHostView(context) {
+internal class ZeroPaddingWidgetHostView(context: Context) : AppWidgetHostView(context) {
     private var providerOwnsVerticalGesture = false
+    var fillsBox = false
+        private set
+    var onFillsBoxChanged: ((Boolean) -> Unit)? = null
+        set(value) {
+            field = value
+            value?.invoke(fillsBox)
+        }
+    private val measureFill = Runnable {
+        if (!isAttachedToWindow || width <= 0 || height <= 0) return@Runnable
+        val fills = renderFillsBox()
+        if (fills != fillsBox) {
+            fillsBox = fills
+            onFillsBoxChanged?.invoke(fills)
+        }
+    }
     private val publishCurrentSize = Runnable {
         if (!isAttachedToWindow || appWidgetId < 0 || width <= 0 || height <= 0) return@Runnable
         val density = resources.displayMetrics.density
@@ -43,7 +58,18 @@ private class ZeroPaddingWidgetHostView(context: Context) : AppWidgetHostView(co
         scheduleSizePublication()
     }
 
+    override fun updateAppWidget(remoteViews: android.widget.RemoteViews?) {
+        super.updateAppWidget(remoteViews)
+        scheduleFillCheck()
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        scheduleFillCheck()
+    }
+
     override fun onDetachedFromWindow() {
+        removeCallbacks(measureFill)
         if (providerOwnsVerticalGesture) parent?.requestDisallowInterceptTouchEvent(false)
         providerOwnsVerticalGesture = false
         removeCallbacks(publishCurrentSize)
@@ -71,11 +97,34 @@ private class ZeroPaddingWidgetHostView(context: Context) : AppWidgetHostView(co
         return super.dispatchTouchEvent(event)
     }
 
+    private fun scheduleFillCheck() {
+        removeCallbacks(measureFill)
+        postDelayed(measureFill, FILL_CHECK_DELAY_MS)
+    }
+
+    private fun renderFillsBox(): Boolean = runCatching {
+        val scale = FILL_SAMPLE_PX / maxOf(width, height).toFloat()
+        val sampleWidth = maxOf(1, (width * scale).toInt())
+        val sampleHeight = maxOf(1, (height * scale).toInt())
+        val sample = android.graphics.Bitmap.createBitmap(sampleWidth, sampleHeight, android.graphics.Bitmap.Config.ARGB_8888)
+        try {
+            val canvas = android.graphics.Canvas(sample)
+            canvas.scale(scale, scale)
+            draw(canvas)
+            fillsBox(sampleWidth, sampleHeight) { x, y -> android.graphics.Color.alpha(sample.getPixel(x, y)) }
+        } finally {
+            sample.recycle()
+        }
+    }.getOrDefault(false)
+
     private fun scheduleSizePublication() {
         removeCallbacks(publishCurrentSize)
         post(publishCurrentSize)
     }
 }
+
+private const val FILL_CHECK_DELAY_MS = 250L
+private const val FILL_SAMPLE_PX = 96f
 
 internal fun exactWidgetSizeOptions(widthDp: Float, heightDp: Float) = Bundle().apply {
     val width = widthDp.coerceAtLeast(1f)

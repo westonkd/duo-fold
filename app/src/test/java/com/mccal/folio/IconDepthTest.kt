@@ -64,7 +64,19 @@ class IconDepthTest {
         assertFalse(fillsEdges(4, 4) { _, _ -> 255 })
     }
 
-    @Test fun `the rim is lit from the top left`() {
+    @Test fun `a widget gets the rim only when it fills its box`() {
+        fun roundedRect(radius: Int) = { x: Int, y: Int ->
+            val cx = x.coerceIn(radius, 96 - radius); val cy = y.coerceIn(radius, 64 - radius)
+            if ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= radius * radius) 255 else 0
+        }
+        val circle = { x: Int, y: Int -> if ((x - 48) * (x - 48) + (y - 48) * (y - 48) <= 47 * 47) 255 else 0 }
+        assertTrue(fillsBox(96, 64, roundedRect(12)))
+        assertFalse(fillsBox(96, 96, circle))
+        assertFalse(fillsBox(96, 64) { _, _ -> 40 })
+        assertFalse(fillsBox(4, 4) { _, _ -> 255 })
+    }
+
+    @Test fun `the rim is brightest on the side facing the light`() {
         assertEquals(IconLight.RIM_LEAD, iconLighting(null).rimLead.alpha, 1f / 255f)
         assertTrue(iconLighting(null).rimLead.alpha > iconLighting(null).rimTrail.alpha)
     }
