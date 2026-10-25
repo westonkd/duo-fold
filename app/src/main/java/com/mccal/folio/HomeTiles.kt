@@ -210,7 +210,7 @@ internal fun DockAppColumn(
                         else androidx.compose.animation.core.snap(), label = "dock insertion $id") // english-only
                 val visible = previewIndex >= 0 && renderIndex != hiddenIndex
                 val opacity by animateFloatAsState(
-                    if (!visible) 0f else if (dimDragged && id == draggedId) .28f else 1f,
+                    if (!visible) 0f else if (dimDragged && id == draggedId) .28f else 1f, androidx.compose.animation.core.tween(FolioMotion.FADE_MS),
                     label = "dock insertion visibility $id", // english-only
                 )
                 Box(Modifier.offset { animatedOffset }.then(if (horizontal) Modifier.fillMaxHeight().width(rowHeight.dp) else Modifier.fillMaxWidth().height(rowHeight.dp)).graphicsLayer { alpha = opacity * drag.landing.cellAlpha(id) }

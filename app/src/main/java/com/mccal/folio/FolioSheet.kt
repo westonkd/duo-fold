@@ -183,7 +183,7 @@ private fun FullScreenPage(onDismissRequest: () -> Unit, content: @Composable Co
             Box(Modifier.fillMaxSize()) {
                 // Predictive back: the page eases right and shrinks a little with the swipe, like Android's own screens.
                 val back = androidx.compose.animation.core.animateFloatAsState(SheetBackProgress.floatValue,
-                    FolioMotion.spring(1f to 1400f), label = "sheet back").value
+                    FolioMotion.spring(FolioMotion.Follow), label = "sheet back").value
                 androidx.compose.material3.Surface(Modifier.fillMaxSize().graphicsLayer {
                     translationX = size.width * slide.value + size.width * .08f * back
                     alpha = pageFade.value

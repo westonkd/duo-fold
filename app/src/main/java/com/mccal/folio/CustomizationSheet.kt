@@ -1,5 +1,6 @@
 package com.mccal.folio
 
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.platform.LocalDensity
@@ -148,8 +149,8 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     val split = settingsSplits(maxWidth.value, maxHeight.value, androidx.compose.ui.platform.LocalConfiguration.current.classScale, keyboardDp)
     // In the split view the list is always on screen, so the page beside it is Home until another is picked.
     val shown = if (split && page == CustomizationPage.OVERVIEW) CustomizationPage.HOME else page
-    val pageContent: @Composable ColumnScope.() -> Unit = {
-            when (shown) {
+    val pageContent: @Composable ColumnScope.(CustomizationPage) -> Unit = { target ->
+            when (target) {
                 CustomizationPage.OVERVIEW -> {
                     overviewActions()
                     overviewRows(null, false)
@@ -362,9 +363,16 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     }
     if (!split) Column(Modifier.fillMaxSize().padding(horizontal = FolioSpace.LARGE.dp)) {
         SettingsNavBar(settingsBackLabel(page, columns = 1)?.let { stringResource(it) }, onBack, onClose)
-        SettingsLargeTitle(stringResource(page.title))
-        Column(Modifier.weight(1f).edgeFade(bodyScroll).verticalScroll(bodyScroll).padding(bottom = FolioSpace.XL.dp),
-            verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) { pageContent() }
+        val pushReduced = LocalReduceMotion.current
+        androidx.compose.animation.AnimatedContent(page, Modifier.weight(1f), label = "settings page",
+            transitionSpec = { settingsPush(targetState.ordinal > initialState.ordinal, pushReduced) }) { target ->
+            val scroll = if (target == page) bodyScroll else remember { androidx.compose.foundation.ScrollState(bodyScroll.value) }
+            Column(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black)) {
+                SettingsLargeTitle(stringResource(target.title))
+                Column(Modifier.weight(1f).edgeFade(scroll).verticalScroll(scroll).padding(bottom = FolioSpace.XL.dp),
+                    verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) { pageContent(target) }
+            }
+        }
     } else {
         // Half folded with the fold running down the screen, the divider goes on the fold, so no row sits on the
         // crease (iPhone Duo: controls move away from the fold). Flat, it's a share of the width.
@@ -401,23 +409,33 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                 // page gets a way back, named for where it goes, not only the sidebar button, which doesn't read as one.
                 SettingsNavBar(settingsBackLabel(page, columns)?.let { stringResource(it) }, onBack, onClose,
                     leading = if (tiled) null else ({ SidebarButton { sidebarOpen = !sidebarOpen } }))
-                SettingsLargeTitle(stringResource(shown.title))
-                Column(Modifier.weight(1f).edgeFade(bodyScroll).verticalScroll(bodyScroll).padding(bottom = FolioSpace.XL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Column(Modifier.widthIn(max = 720.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) {
-                        pageContent()
+                val pushReduced = LocalReduceMotion.current || tiled
+                androidx.compose.animation.AnimatedContent(shown, Modifier.weight(1f), label = "settings page",
+                    transitionSpec = { settingsPush(targetState.ordinal > initialState.ordinal, pushReduced) }) { target ->
+                    val scroll = if (target == shown) bodyScroll else remember { androidx.compose.foundation.ScrollState(bodyScroll.value) }
+                    Column(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black)) {
+                        SettingsLargeTitle(stringResource(target.title))
+                        Column(Modifier.weight(1f).edgeFade(scroll).verticalScroll(scroll).padding(bottom = FolioSpace.XL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Column(Modifier.widthIn(max = 720.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(FolioSpace.COMPACT.dp)) {
+                                pageContent(target)
+                            }
+                        }
                     }
                 }
             }
         }
         if (!tiled) {
             val reduceMotion = LocalReduceMotion.current
-            androidx.compose.animation.AnimatedVisibility(sidebarOpen, enter = androidx.compose.animation.fadeIn(), exit = androidx.compose.animation.fadeOut()) {
+            androidx.compose.animation.AnimatedVisibility(sidebarOpen, enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(FolioMotion.FADE_MS)),
+                exit = androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(FolioMotion.FADE_MS))) {
                 Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = .4f))
                     .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) { sidebarOpen = false })
             }
             androidx.compose.animation.AnimatedVisibility(sidebarOpen,
-                enter = if (reduceMotion) androidx.compose.animation.fadeIn() else androidx.compose.animation.slideInHorizontally { -it },
-                exit = if (reduceMotion) androidx.compose.animation.fadeOut() else androidx.compose.animation.slideOutHorizontally { -it }) {
+                enter = if (reduceMotion) androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(FolioMotion.FADE_MS))
+                    else androidx.compose.animation.slideInHorizontally(FolioMotion.spring(FolioMotion.Sheet, androidx.compose.ui.unit.IntOffset.VisibilityThreshold)) { -it },
+                exit = if (reduceMotion) androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(FolioMotion.FADE_MS))
+                    else androidx.compose.animation.slideOutHorizontally(FolioMotion.spring(FolioMotion.Firm, androidx.compose.ui.unit.IntOffset.VisibilityThreshold)) { -it }) {
                 Box(Modifier.fillMaxHeight().background(FolioColors.SecondaryBackground)) { sidebar() }
             }
         }
@@ -1025,4 +1043,14 @@ internal fun layoutSnapshotsShown(layoutHistory: Boolean, layoutDamaged: Boolean
             imeAction = androidx.compose.ui.text.input.ImeAction.Done),
         decorationBox = { inner -> Box { if (text.isEmpty()) Text("https://example.com/search?q=%s", color = androidx.compose.ui.graphics.Color.White.copy(alpha = .35f), fontSize = FolioType.SUBHEAD.sp); inner() } })
     CardNote(stringResource(when { text.isBlank() -> R.string.custom_search_blank; valid -> R.string.custom_search_note; else -> R.string.custom_search_invalid }))
+}
+
+private fun settingsPush(forward: Boolean, reduced: Boolean): androidx.compose.animation.ContentTransform {
+    val fadeIn = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(FolioMotion.FADE_MS))
+    val fadeOut = androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(FolioMotion.FADE_MS))
+    if (reduced) return androidx.compose.animation.ContentTransform(fadeIn, fadeOut)
+    val slide = FolioMotion.spring(FolioMotion.Sheet, androidx.compose.ui.unit.IntOffset.VisibilityThreshold)
+    val enter = androidx.compose.animation.slideInHorizontally(slide) { if (forward) it else -it / 3 }
+    val exit = androidx.compose.animation.slideOutHorizontally(slide) { if (forward) -it / 3 else it } + fadeOut
+    return androidx.compose.animation.ContentTransform(enter, exit, targetContentZIndex = if (forward) 1f else -1f)
 }

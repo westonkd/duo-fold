@@ -2,6 +2,7 @@
 
 package com.mccal.folio
 
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.ui.res.stringResource
 import android.appwidget.AppWidgetProviderInfo
 import android.os.UserManager
@@ -241,7 +242,7 @@ fun LauncherScreen(
     val pageGestures = remember(pager) { PageGestureLimits(pager) }
     SideEffect { pageGestures.editing = drag.active || widgetSession != null || resize.active }
     val pageFling = androidx.compose.foundation.pager.PagerDefaults.flingBehavior(pager, pagerSnapDistance = pageGestures,
-        snapAnimationSpec = FolioMotion.spring(1f to androidx.compose.animation.core.Spring.StiffnessMediumLow * 1.2f))
+        snapAnimationSpec = FolioMotion.spring(FolioMotion.Page))
     val scope = rememberCoroutineScope()
     var previousHomePages by remember { mutableIntStateOf(homePages) }
     var previousEditRevision by remember { mutableIntStateOf(state.editRevision) }
@@ -276,7 +277,7 @@ fun LauncherScreen(
         drag.clear(); widgetSession = null; resize.stop(); sheet = ""; picker.packageName = null
         picker.exactTarget = false; widgetPlacementMessage = null; overlays.closeAll(); homeEdit.stop()
         focus.clearFocus(); keyboard?.hide()
-        pager.animateScrollToPage(page)
+        pager.glideToPage(page)
     } }
     // Given half of a split screen, show a Home page (one cover-sized page beside the app) rather than where Folio was left.
     val splitScreen = androidx.compose.ui.platform.LocalConfiguration.current.let { launcherActivity.isInMultiWindowMode }
@@ -301,7 +302,7 @@ fun LauncherScreen(
     // trying again can't mend, so there it brings back the choices above.
     val onProblem = { if (model.layoutDamaged) problemDismissed = false else model.refresh() }
     LaunchedEffect(searchRequests) { if (searchRequests > 0) { drag.clear(); widgetSession = null; resize.stop(); sheet = ""; picker.packageName = null; picker.exactTarget = false; overlays.menu = null
-        if (!state.googleSearch || !onGoogleSearch(null)) pager.animateScrollToPage(homePages)
+        if (!state.googleSearch || !onGoogleSearch(null)) pager.glideToPage(homePages)
     } }
     val widgetPickerBack = {
         if (widgetSession != null) {
@@ -317,15 +318,15 @@ fun LauncherScreen(
     val libraryBackActive = sheet.isEmpty() && !launcherActivity.spotlightVisible.value &&
         pager.currentPage == visibleHomePages && !resize.active && !drag.active && overlays.menu == null && !homeEdit.active
     PredictiveBack(enabled = libraryBackActive, onProgress = { libraryBack = it }, onCancel = { libraryBack = 0f },
-        onBack = { focus.clearFocus(); scope.launch { pager.animateScrollToPage(0); libraryBack = 0f } })
+        onBack = { focus.clearFocus(); scope.launch { pager.glideToPage(0); libraryBack = 0f } })
     BackHandler(enabled = sheet.isEmpty() && !launcherActivity.spotlightVisible.value && !libraryBackActive) { if (resize.active) resize.stop() else if (drag.active) {
         val destination = if (drag.source?.target is DropTarget.Library) homePages else drag.originPage.coerceAtMost(homePages - 1)
         drag.clear(); scope.launch { pager.scrollToPage(destination) }
     } else if (overlays.menu != null) overlays.menu = null else if (homeEdit.active) homeEdit.stop()
         // Previewing (Folio isn't the Home app yet): Back on the first page leaves, like any other app.
         else if (!isDefaultHome && pager.currentPage == 0) launcherActivity.moveTaskToBack(true)
-        else { focus.clearFocus(); scope.launch { pager.animateScrollToPage(0) } } }
-    val openLibrary = { scope.launch { pager.animateScrollToPage(homePages) }; Unit }
+        else { focus.clearFocus(); scope.launch { pager.glideToPage(0) } } }
+    val openLibrary = { scope.launch { pager.glideToPage(homePages) }; Unit }
     val dragWindowPage = if (expandedWorkspace && (drag.active || widgetSession != null)) pager.settledPage else pager.currentPage
     val eligibleDragPages = remember(expandedWorkspace, dragWindowPage, visibleHomePages) {
         if (expandedWorkspace && dragWindowPage in 0 until visibleHomePages) {
@@ -362,7 +363,7 @@ fun LauncherScreen(
     LaunchedEffect(blockedDock) {
         if (!blockedDock) return@LaunchedEffect
         haptic.perform(FolioHaptic.Refuse)
-        if (!dockReduceMotion) listOf(-8f, 8f, -5f, 5f, 0f).forEach { dockShake.animateTo(it, tween(55)) }
+        if (!dockReduceMotion) { dockShake.snapTo(0f); dockShake.animateTo(0f, FolioMotion.spring(FolioMotion.Shake), FolioMotion.SHAKE_VELOCITY) }
     }
     val widgetRawTarget = widgetSession?.let { session -> drag.regions.values.firstOrNull {
         it.target is DropTarget.Home && it.page in eligibleDragPages && it.bounds.contains(session.pointer)
@@ -458,7 +459,7 @@ fun LauncherScreen(
             // animation and would cancel the turn before the inner grid is visible.
             // Once the hold commits a turn, finish its animation while the finger moves
             // into the incoming page. Leaving the edge cancels only the next hold timer.
-            scope.launch { pager.animateScrollToPage(next) }.join()
+            scope.launch { pager.glideToPage(next) }.join()
         }
     }
     fun finishDrag(cancelled: Boolean) {
@@ -524,10 +525,21 @@ fun LauncherScreen(
         }
     }
 
+    val homeReturn = remember { Animatable(1f) }
+    LaunchedEffect(HomeReturn.plays) {
+        if (HomeReturn.plays == 0 || dockReduceMotion) return@LaunchedEffect
+        homeReturn.snapTo(0f)
+        homeReturn.animateTo(1f, FolioMotion.spring(FolioMotion.Settle))
+    }
     Box(Modifier.fillMaxSize().graphicsLayer {
         // The 0.6.9 motion pass (MO5): Home steps back a little while a folder is open; not under Reduce Motion.
         if (!dockReduceMotion && FolderOpening.id != null) {
             val s = FolderOpening.homeScale(FolderOpening.progress); scaleX = s; scaleY = s
+        }
+        if (homeReturn.value < 1f) {
+            val s = HomeReturn.scale(homeReturn.value)
+            scaleX *= s; scaleY *= s
+            transformOrigin = HomeReturn.transformOrigin(drag.landing.rootInWindow, size)
         }
     }.testTag("launcher-root").onGloballyPositioned { drag.landing.rootInWindow = it.boundsInWindow().topLeft }.homeDragInput(drag,
         enabled = sheet.isEmpty() && overlays.menu == null && !resize.active && pager.currentPage >= 0,
@@ -896,8 +908,8 @@ fun LauncherScreen(
                                 }
                             }
                         }.description(R.string.page_scrubber),
-                        transitionSpec = { (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(180)) togetherWith
-                            androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(120)))
+                        transitionSpec = { (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(FolioMotion.FADE_MS)) togetherWith
+                            androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(FolioMotion.FADE_MS)))
                             .using(androidx.compose.animation.SizeTransform(clip = false)) },
                         contentAlignment = Alignment.Center) { view ->
                         if (view == StripView.PILL) HomeSearchPill { if (!state.googleSearch || !onGoogleSearch(null)) launcherActivity.openSpotlight() }
@@ -931,7 +943,7 @@ fun LauncherScreen(
                                 repeat(visibleHomePages) { index ->
                                     val dotLabel = if (index == homePages) stringResource(R.string.new_home_page) else stringResource(R.string.home_page, index + 1)
                                     Box(Modifier.width(28.dp).fillMaxHeight()
-                                        .clickable(role = Role.Button, onClickLabel = dotLabel) { scope.launch { pager.animateScrollToPage(index) } }
+                                        .clickable(role = Role.Button, onClickLabel = dotLabel) { scope.launch { pager.glideToPage(index) } }
                                         .semantics { contentDescription = dotLabel }.testTag("home-page-dot-$index"))
                                 }
                             }
@@ -950,8 +962,10 @@ fun LauncherScreen(
                     state.leftHanded -> Alignment.TopEnd
                     else -> Alignment.TopStart
                 }).width(pagerWidth),
-                enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { if (geometry.expanded) it / 2 else -it / 2 },
-                exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { if (geometry.expanded) it / 2 else -it / 2 }) {
+                enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(FolioMotion.FADE_MS)) +
+                    androidx.compose.animation.slideInVertically(FolioMotion.spring(FolioMotion.Settle, IntOffset.VisibilityThreshold)) { if (geometry.expanded) it / 2 else -it / 2 },
+                exit = androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(FolioMotion.FADE_MS)) +
+                    androidx.compose.animation.slideOutVertically(FolioMotion.spring(FolioMotion.Firm, IntOffset.VisibilityThreshold)) { if (geometry.expanded) it / 2 else -it / 2 }) {
                 Row(Modifier.fillMaxWidth().padding(start = FolioSpace.COMFY.dp, end = FolioSpace.COMFY.dp,
                     top = if (geometry.expanded) 0.dp else FolioSpace.HAIR.dp).testTag("jiggle-bar"),
                     horizontalArrangement = if (geometry.expanded) Arrangement.spacedBy(FolioSpace.SMALL.dp, Alignment.End) else Arrangement.Start,
@@ -1241,14 +1255,14 @@ fun LauncherScreen(
                                 val local = homeCellLocal(session.targetIndex ?: 0)
                                 val page = targetPage - 1
                                 widgetSession = session.copy(targetIndex = homeCellIndex(page, local))
-                                scope.launch { pager.animateScrollToPage(page.coerceAtLeast(0)) }
+                                scope.launch { pager.glideToPage(page.coerceAtLeast(0)) }
                             }) { Icon(Icons.Rounded.ChevronLeft, stringResource(R.string.previous_home_page)) }
                             Text("${session.span.width} × ${session.span.height}", color = Ink)
                             if (!session.dragging && session.candidate == null) IconButton(enabled = targetPage < homePages, onClick = {
                                 val local = homeCellLocal(session.targetIndex ?: 0)
                                 val page = (targetPage + 1).coerceAtMost(homePages)
                                 widgetSession = session.copy(targetIndex = homeCellIndex(page, local))
-                                scope.launch { pager.animateScrollToPage(page.coerceAtLeast(0)) }
+                                scope.launch { pager.glideToPage(page.coerceAtLeast(0)) }
                             }) { Icon(Icons.Rounded.ChevronRight, stringResource(R.string.next_home_page)) }
                             if (!session.dragging) TextButton(enabled = widgetDraft != null, onClick = {
                                 widgetDraft?.let { draft ->
@@ -1538,13 +1552,13 @@ fun LauncherScreen(
                     sheet = "widgets"
                 }, onWallpaper = { sheet = "settings:wallpaper" },
                 onCustomize = { sheet = "settings" },
-                onAddPage = { val page = model.addPage(); if (page >= 0) scope.launch { pager.animateScrollToPage(page) } },
+                onAddPage = { val page = model.addPage(); if (page >= 0) scope.launch { pager.glideToPage(page) } },
                 onRemovePage = if (homeCellPage(index) == homePages - 1 && homePages > 1 && state.layout.contentPageCount < homePages) {{
-                    if (model.removeLastEmptyPage()) scope.launch { pager.animateScrollToPage(homePages - 2) }
+                    if (model.removeLastEmptyPage()) scope.launch { pager.glideToPage(homePages - 2) }
                 }} else null)
         }
         revealFolderPage?.let { page ->
-            LaunchedEffect(page, homePages) { if (page < homePages) { pager.animateScrollToPage(page); revealFolderPage = null } }
+            LaunchedEffect(page, homePages) { if (page < homePages) { pager.glideToPage(page); revealFolderPage = null } }
         }
         overlays.newFolder?.let { firstId ->
             val first = appsById[firstId]
@@ -1716,3 +1730,6 @@ internal fun DamagedLayoutDialog(newerFolio: Boolean, onRestore: () -> Unit, onN
             if (!newerFolio) TextButton(onClick = onStartFresh) { Text(stringResource(R.string.start_fresh), color = FolioColors.Red) }
         } })
 }
+
+private suspend fun androidx.compose.foundation.pager.PagerState.glideToPage(page: Int) =
+    animateScrollToPage(page, animationSpec = FolioMotion.spring(FolioMotion.Page))

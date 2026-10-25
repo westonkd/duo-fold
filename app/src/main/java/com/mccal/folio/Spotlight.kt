@@ -119,6 +119,8 @@ internal fun SpotlightOverlay(visible: Boolean, progress: () -> Float, state: La
     // keyboard focus from the visible one, so it was removed.)
     var composed by remember { mutableStateOf(false) }
     if (visible) composed = true
+    val openHaptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    LaunchedEffect(visible) { if (visible) openHaptic.perform(FolioHaptic.GestureDone) }
     LaunchedEffect(visible) {
         if (!visible) { snapshotFlow { progress() }.first { it <= .001f }; composed = false }
     }

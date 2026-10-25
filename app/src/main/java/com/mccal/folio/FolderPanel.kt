@@ -97,7 +97,8 @@ internal fun FolderPanel(
         drag.activeSourceScope = folder.id
         onDispose { if (drag.activeSourceScope == folder.id) drag.activeSourceScope = null }
     }
-    LaunchedEffect(folder.id) { appear.animateTo(1f, FolioMotion.spring(FolioMotion.Appear)) }
+    val openHaptic = LocalHapticFeedback.current
+    LaunchedEffect(folder.id) { openHaptic.perform(FolioHaptic.Open); appear.animateTo(1f, FolioMotion.spring(FolioMotion.Appear)) }
     // Home reads how far this folder has opened: its tile hands over to the panel, and Home steps back (FolderOpening).
     DisposableEffect(folder.id) {
         FolderOpening.id = folder.id

@@ -234,6 +234,19 @@ internal object FolioMotion {
     val Menu = .78f to 650f
     /** A settle that starts with the finger's speed (a flick, a drop): visibly passes the line and eases back. Never for a tap. */
     val Bounce = .7f to 480f
+    /** Moving between Home pages: a swipe's settle and every jump to a page (a dot, the App Library, Back, Add Page). */
+    val Page = 1f to 480f
+    /** Following a finger through predictive back: stiff, so it keeps up. */
+    val Follow = 1f to 1400f
+    /** A refusal: the dock shaking its head. Deliberately underdamped, and started with a push ([SHAKE_VELOCITY]). */
+    val Shake = .22f to 900f
+    const val SHAKE_VELOCITY = 260f
+
+    /** Apple's way of naming a spring: how long it feels, and how much it overshoots (0 none, .15 brisk, .3 bouncy). */
+    fun apple(duration: Float, bounce: Float): Pair<Float, Float> {
+        val omega = 2f * kotlin.math.PI.toFloat() / duration
+        return (1f - bounce) to omega * omega
+    }
 
     fun <T> spring(pair: Pair<Float, Float>, visibilityThreshold: T? = null) =
         androidx.compose.animation.core.spring(dampingRatio = pair.first, stiffness = pair.second, visibilityThreshold = visibilityThreshold)

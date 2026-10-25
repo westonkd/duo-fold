@@ -391,7 +391,7 @@ private fun ButtonBar(onAction: (Int) -> Unit, onLift: (Float, Boolean) -> Unit)
             .alpha(alpha)
             .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress(
-                    onDragStart = { touched = System.currentTimeMillis(); haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress) },
+                    onDragStart = { touched = System.currentTimeMillis(); haptic.perform(FolioHaptic.PickedUp) },
                     onDragEnd = { onLift(0f, true) },
                     onDragCancel = { onLift(0f, true) },
                     onDrag = { change, drag -> change.consume(); onLift(drag.y, false) })
@@ -406,7 +406,7 @@ private fun ButtonBar(onAction: (Int) -> Unit, onLift: (Float, Boolean) -> Unit)
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(BUTTON_BAR_HEIGHT_DP.dp / 2))
                     .clickable(onClickLabel = label) {
                         touched = System.currentTimeMillis()
-                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.ContextClick)
+                        haptic.perform(FolioHaptic.Open)
                         onAction(action)
                     }, contentAlignment = androidx.compose.ui.Alignment.Center) {
                     androidx.compose.material3.Icon(icon, label, tint = ink, modifier = androidx.compose.ui.Modifier.size((BUTTON_BAR_HEIGHT_DP * .46f).dp)

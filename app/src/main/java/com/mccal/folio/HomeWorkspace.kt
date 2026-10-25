@@ -2,6 +2,7 @@
 
 package com.mccal.folio
 
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.ui.res.stringResource
 import android.appwidget.AppWidgetProviderInfo
 import android.os.UserManager
@@ -319,7 +320,8 @@ internal fun HomePagePane(
         // Only as much room as the Edit bar actually needs above this page's first row; pushing the whole grid down by a
         // fixed amount cut off the bottom row's labels on screens that already had space at the top.
         // Unfolded, the bar sits in the space above the widget row, so the grid doesn't move at all (like iPad).
-        val editRoom by animateDpAsState(if (roomWanted && !geometry.expanded) (JIGGLE_BAR_BOTTOM - geometry.contentTop.dp).coerceAtLeast(0.dp) else 0.dp, label = "jiggle room")
+        val editRoom by animateDpAsState(if (roomWanted && !geometry.expanded) (JIGGLE_BAR_BOTTOM - geometry.contentTop.dp).coerceAtLeast(0.dp) else 0.dp,
+            FolioMotion.spring(FolioMotion.Settle, androidx.compose.ui.unit.Dp.VisibilityThreshold), label = "jiggle room")
         Column(Modifier.offset(x = 16.dp).width(geometry.gridWidth.dp).fillMaxHeight()
             .verticalScroll(homeScroll).padding(top = geometry.contentTop.dp + editRoom, bottom = FolioSpace.SMALL.dp)) {
             SharedHomeGrid(page, state.homeSlots, state.leadingSlots, previewSlots, previewLeadingSlots, previewWidgetPlacements,
@@ -429,7 +431,7 @@ internal fun SharedHomeGrid(
     val fold = hinge?.let { h -> with(density) {
         foldDisplacement(cells, renderedRows, gridTopDp, h.startPx.toDp().value, h.endPx.toDp().value, widgetRows)
     } }
-    val foldShift by animateFloatAsState(fold?.second ?: 0f, FolioMotion.spring(.85f to 380f), label = "fold shift")
+    val foldShift by animateFloatAsState(fold?.second ?: 0f, FolioMotion.spring(FolioMotion.Sheet), label = "fold shift")
     val foldRow = fold?.first ?: Int.MAX_VALUE
     fun rowTop(row: Int) = cells.y(row) + if (row >= foldRow) foldShift else 0f
     CompositionLocalProvider(LocalHomeIconSize provides geometry.iconSize) {
@@ -487,7 +489,7 @@ internal fun SharedHomeGrid(
                 )
                 val visible = previewIndex != null && previewIndex in pageRange && renderIndex != hiddenIndex
                 val opacity by animateFloatAsState(
-                    if (dimDragged && id == draggedId) .28f else 1f,
+                    if (dimDragged && id == draggedId) .28f else 1f, androidx.compose.animation.core.tween(FolioMotion.FADE_MS),
                     label = "home insertion visibility $id", // english-only
                 )
                 val plateOn = drag.mergePreview == id

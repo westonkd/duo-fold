@@ -345,7 +345,7 @@ internal fun SmartStack(cards: List<Int>, slot: Int, controller: WidgetControlle
             val card = cards[page]
             WidgetSlot(card, slot, controller, Modifier.fillMaxSize(), onAdd) { BuiltinWidgetCard(card, slot, opensApp = true, onAdd = onAdd) }
         }
-        val dotsAlpha by animateFloatAsState(if (dotsVisible) 1f else 0f, label = "stack dots")
+        val dotsAlpha by animateFloatAsState(if (dotsVisible) 1f else 0f, androidx.compose.animation.core.tween(FolioMotion.FADE_MS), label = "stack dots")
         Column(Modifier.align(Alignment.CenterEnd).padding(end = 5.dp).alpha(dotsAlpha)
             .background(Color.Black.copy(alpha = .28f), RoundedCornerShape(50)).padding(horizontal = 3.dp, vertical = 5.dp),
             verticalArrangement = Arrangement.spacedBy(FolioSpace.TINY.dp)) {

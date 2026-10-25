@@ -45,11 +45,11 @@ import androidx.compose.ui.unit.sp
 @Composable
 internal fun IosSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     val haptic = LocalHapticFeedback.current
-    val track by animateColorAsState(if (checked) FolioColors.GreenLight else FolioColors.TrackOff, label = "switch track")
+    val track by animateColorAsState(if (checked) FolioColors.GreenLight else FolioColors.TrackOff, androidx.compose.animation.core.tween(FolioMotion.FADE_MS), label = "switch track")
     val offset by animateDpAsState(if (checked) 20.dp else 0.dp, FolioMotion.spring(FolioMotion.calm(FolioMotion.Control, LocalReduceMotion.current)), label = "switch thumb")
     Box(modifier.minimumInteractiveComponentSize()
         .toggleable(checked, enabled = enabled, role = Role.Switch, onValueChange = {
-            haptic.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff); onCheckedChange(it)
+            haptic.perform(if (it) FolioHaptic.ToggleOn else FolioHaptic.ToggleOff); onCheckedChange(it)
         }), contentAlignment = Alignment.Center) {
         Box(Modifier.size(51.dp, 31.dp).clip(CircleShape).background(track).padding(FolioSpace.HAIR.dp)) {
             Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(offset.roundToPx(), 0) }.size(27.dp).shadow(2.dp, CircleShape).background(Color.White, CircleShape))
@@ -60,7 +60,7 @@ internal fun IosSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, mod
 /** iOS-style choice pill (a drop-in for the settings' FilterChips): white when selected, frosted when not. */
 @Composable
 internal fun IosChip(selected: Boolean, onClick: () -> Unit, label: @Composable () -> Unit, modifier: Modifier = Modifier) {
-    val background by animateColorAsState(if (selected) Color.White else Color.White.copy(alpha = .1f), label = "chip")
+    val background by animateColorAsState(if (selected) Color.White else Color.White.copy(alpha = .1f), androidx.compose.animation.core.tween(FolioMotion.FADE_MS), label = "chip")
     Box(modifier.heightIn(min = 36.dp).clip(CircleShape).background(background)
         .selectable(selected, role = Role.RadioButton, onClick = onClick).padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.SMALL.dp),
         contentAlignment = Alignment.Center) {
