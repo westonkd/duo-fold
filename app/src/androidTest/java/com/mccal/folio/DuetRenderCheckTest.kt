@@ -15,7 +15,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.mccal.folio.duet.DuetShader
-import com.mccal.folio.duet.DuetStyles
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -49,7 +48,7 @@ class DuetRenderCheckTest {
         for (y in h / 2..h step 40) c.drawLine(0f, y.toFloat(), w.toFloat(), y.toFloat(), p)
     }
 
-    private fun render(style: com.mccal.folio.duet.DuetStyle, m: Float): Bitmap {
+    private fun render(reduceMotion: Boolean, m: Float): Bitmap {
         val reader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 1,
             HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE or HardwareBuffer.USAGE_GPU_COLOR_OUTPUT)
         val renderer = HardwareRenderer()
@@ -60,7 +59,7 @@ class DuetRenderCheckTest {
                 beginRecording().drawBitmap(card(), 0f, 0f, null); endRecording()
                 setRenderEffect(DuetShader().effect(w.toFloat(), h.toFloat(), m, cover = false,
                     geometry = FoldGeometry(horizontal = false, hingePx = w / 2f, movingAfterHinge = false),
-                    style = style, cornerPx = 16f).asAndroidRenderEffect())
+                    reduceMotion = reduceMotion, cornerPx = 16f).asAndroidRenderEffect())
             }
             val root = RenderNode("root").apply {
                 setPosition(0, 0, w, h)
@@ -89,7 +88,7 @@ class DuetRenderCheckTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val app = instrumentation.targetContext
         val out = File(app.filesDir, "duet-golden").apply { mkdirs() }
-        val drawn = render(DuetStyles.IPHONE, m = .6f)
+        val drawn = render(reduceMotion = false, m = .6f)
         val name = "iphone.png"
         val golden = runCatching { instrumentation.context.assets.open("duet-golden/$name").use(BitmapFactory::decodeStream) }.getOrNull()
         if (golden == null) {
@@ -103,6 +102,6 @@ class DuetRenderCheckTest {
             fail("iphone differs from its reference by ${"%.2f".format(d)}/255")
         }
         // Reduce Motion has to look different, or the shade-only look has silently stopped doing anything.
-        assertTrue("Reduce Motion looks the same", difference(drawn, render(DuetStyles.reducedMotion(DuetStyles.IPHONE), .6f)) > .5)
+        assertTrue("Reduce Motion looks the same", difference(drawn, render(reduceMotion = true, .6f)) > .5)
     }
 }

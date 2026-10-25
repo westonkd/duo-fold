@@ -75,12 +75,12 @@ class DesignTokensTest {
         assertEquals(FolioColors.SurfaceCard.copy(alpha = .82f), FolioGlass.card)
         assertEquals(FolioColors.SurfaceCard, FolioSheetColors.surfaceContainer)
         assertEquals(FolioColors.OutlineVariant, FolioSheetColors.outlineVariant)
-        assertEquals(listOf(48, 52), listOf(FolioRow.ACTION, FolioRow.NAV))
+        assertEquals(48, FolioRow.ACTION)
         assertEquals(
             listOf(2, 4, 6, 8, 10, 12, 14, 16, 20, 24),
             listOf(FolioSpace.HAIR, FolioSpace.TINY, FolioSpace.SNUG, FolioSpace.SMALL, FolioSpace.COMPACT, FolioSpace.MEDIUM, FolioSpace.COMFY, FolioSpace.LARGE, FolioSpace.XL, FolioSpace.XXL),
         )
         // Every row a finger touches clears Android's 48dp minimum (A11Y-1).
-        assertTrue(FolioRow.ACTION >= 48 && FolioRow.NAV >= 48)
+        assertTrue(FolioRow.ACTION >= 48)
     }
 }

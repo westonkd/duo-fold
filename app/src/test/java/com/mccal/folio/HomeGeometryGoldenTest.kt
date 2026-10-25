@@ -31,8 +31,6 @@ class HomeGeometryGoldenTest {
             (if (maxOf(d.width, d.height) >= 800f) listOf(Window("${d.name} split half", maxOf(d.width, d.height) / 2f, minOf(d.width, d.height))) else emptyList())
     }
 
-    private val presets = listOf("defaults" to LayoutPreset())
-
     private fun f(x: Float) = x.toBits().toString(16)
 
     private fun digest(g: HomeGeometry): String {
@@ -48,13 +46,12 @@ class HomeGeometryGoldenTest {
         for (w in windows) {
             val scale = uiScale(w.width, w.height)
             val width = w.width / scale; val height = w.height / scale
-            for (placement in DockPlacement.entries) for ((presetName, preset) in presets) for (labels in listOf(true, false)) {
-                val p = preset.copy(dockPlacement = placement)
-                val base = homeGeometry(width, height, p, labels, statusHeight = 160f)
-                val fit = homeGeometry(width, height, p, labels, statusHeight = 160f, appRows = base.fitAppRows, fillSpace = true)
+            for (placement in DockPlacement.entries) for (labels in listOf(true, false)) {
+                val base = homeGeometry(width, height, placement, labels, statusHeight = 160f)
+                val fit = homeGeometry(width, height, placement, labels, statusHeight = 160f, appRows = base.fitAppRows, fillSpace = true)
                 val text = digest(base) + "#" + digest(fit)
                 val hash = MessageDigest.getInstance("SHA-256").digest(text.toByteArray()).take(6).joinToString("") { "%02x".format(it) }
-                add("${w.name} | $placement | $presetName | labels=$labels | $hash")
+                add("${w.name} | $placement | defaults | labels=$labels | $hash")
             }
         }
     }
@@ -72,7 +69,7 @@ class HomeGeometryGoldenTest {
     }
 
     @Test fun `the sweep covers every window and option`() {
-        assertEquals(windows.size * DockPlacement.entries.size * presets.size * 2, cases().size)
+        assertEquals(windows.size * DockPlacement.entries.size * 2, cases().size)
         assertTrue(windows.any { it.name.contains("split half") } && windows.any { it.name.contains("rotated") })
     }
 }

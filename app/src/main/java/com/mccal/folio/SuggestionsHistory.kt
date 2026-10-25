@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Settings › Search & App Library › Clear Suggestions History.
+ * Settings › Search › Clear Suggestions History.
  *
  * Folio only reads Android's usage stats (PACKAGE_USAGE_STATS) and cannot delete them, so "clear" works by a cutoff:
  * the time of the last clear, saved as a plain long in the `launcher` prefs beside the state (no schema change, an

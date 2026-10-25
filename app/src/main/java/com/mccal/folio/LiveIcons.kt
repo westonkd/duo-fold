@@ -312,7 +312,7 @@ internal object BadgeClears {
 }
 
 /**
- * Clear Badges When Opened (Settings › App Icons): an app's badge goes quiet the moment you open the app, instead of
+ * Clear Badges When Opened (Settings › Home › App Icons): an app's badge goes quiet the moment you open the app, instead of
  * waiting for the app itself to clear it. Opening an app remembers the count that was showing as seen, and the badge
  * stays away while the app is still showing that many notifications or fewer. A new notification takes the count past
  * the seen one, so the badge comes straight back.

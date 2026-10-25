@@ -30,11 +30,10 @@ class GeometryExportTest {
             val w = rw / scale; val h = rh / scale
             // sim: the status as it is, or 24 dp taller with a second SIM's signal (a proposal).
             for (dock in DockPlacement.entries) for (sim in listOf(1, 2)) {
-                val preset = LayoutPreset(dockPlacement = dock)
                 val statusHeight = if (sim == 2) 184f else 160f
                 // Lay out with as many app rows as fit, like Home does.
-                val fit = homeGeometry(w, h, preset, true, statusHeight = statusHeight).fitAppRows
-                val g = homeGeometry(w, h, preset, true, statusHeight = statusHeight, appRows = fit)
+                val fit = homeGeometry(w, h, dock, true, statusHeight = statusHeight).fitAppRows
+                val g = homeGeometry(w, h, dock, true, statusHeight = statusHeight, appRows = fit)
                 val widgets = listOf(0 to 2)
                 val cells = HomeCellLayout.forPage(g, widgets)
                 val icons = (0 until 4 * g.appRows).joinToString(",") { i -> val row = 2 + i / 4; "[${cells.x(i % 4, row)},${cells.y(row)}]" }

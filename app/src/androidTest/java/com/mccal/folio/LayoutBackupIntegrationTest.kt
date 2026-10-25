@@ -46,7 +46,7 @@ class LayoutBackupIntegrationTest {
         val reexport = encodeLayoutBackup(LauncherState(homeSlots = foreign.layout.slots,
             dock = foreign.layout.dock, folders = foreign.layout.folders,
             widgetPlacements = foreign.layout.widgetPlacements, widgetRestores = foreign.layout.widgetRestores,
-            compact = foreign.compact, expanded = foreign.expanded, labels = foreign.labels,
+            coverDock = foreign.coverDock, innerDock = foreign.innerDock, labels = foreign.labels,
             googleSearch = foreign.googleSearch, verticalStatus = foreign.verticalStatus, loading = false),
             emptyList(), "destination-scope")
         assertEquals("origin-scope", JSONObject(reexport).getJSONArray("widgets").getJSONObject(0).getString("sourceScope"))
@@ -59,7 +59,7 @@ class LayoutBackupIntegrationTest {
         val oldWidgetIds = before.widgetPlacements.map { it.id }.filter { it >= 0 }.toSet()
         val preview = LayoutImportPreview(before.layout.copy(widgetPlacements = emptyList(), widgetRestores = emptyList()),
             emptyList(), emptyList(), before.homeSlots.filterNotNull().size, before.folders.size, 0,
-            before.compact, before.expanded, labels = !before.labels, googleSearch = !before.googleSearch,
+            before.coverDock, before.innerDock, labels = !before.labels, googleSearch = !before.googleSearch,
             verticalStatus = !before.verticalStatus)
         try {
             compose.runOnIdle { assertTrue(model().applyImportedLayout(preview)) }

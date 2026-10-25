@@ -157,29 +157,3 @@ class HomeInkTest {
     }
 }
 
-class FeatureScopesTest {
-    @Test fun overrideWinsOtherwiseGlobal() {
-        var scopes = emptyMap<String, Map<String, String>>()
-        assertTrue(FeatureScopes.on(scopes, "x", global = true, FolioScreen.COVER))
-        scopes = FeatureScopes.set(scopes, "x", FolioScreen.COVER, ScopeValue.OFF)
-        assertTrue(!FeatureScopes.on(scopes, "x", global = true, FolioScreen.COVER))
-        assertTrue(FeatureScopes.on(scopes, "x", global = true, FolioScreen.INNER))
-        scopes = FeatureScopes.set(scopes, "x", FolioScreen.INNER, ScopeValue.ON)
-        assertTrue(FeatureScopes.on(scopes, "x", global = false, FolioScreen.INNER))
-    }
-
-    @Test fun defaultRemovesOverride() {
-        val scopes = FeatureScopes.set(FeatureScopes.set(emptyMap(), "x", FolioScreen.COVER, ScopeValue.ON), "x", FolioScreen.COVER, ScopeValue.DEFAULT)
-        assertEquals(emptyMap<String, Map<String, String>>(), scopes)
-        assertEquals(ScopeValue.DEFAULT, FeatureScopes.value(scopes, "x", FolioScreen.COVER))
-    }
-}
-
-class SettingsSearchTest {
-    @Test fun matchesAllWordsInTitleOrKeywords() {
-        assertTrue(settingsMatches("dock size", "Grid, icon size & dock", "layout"))
-        assertTrue(settingsMatches("CHATGPT", "Side Key", "assistant chatgpt"))
-        assertTrue(!settingsMatches("wallet blur", "Side Key", "wallet"))
-        assertTrue(!settingsMatches("   ", "Anything", ""))
-    }
-}

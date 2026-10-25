@@ -77,9 +77,7 @@ fun StatusRail(
     val now = displayNow(rememberMinuteTick().value)
     val format = if (android.text.format.DateFormat.is24HourFormat(LocalContext.current)) "HH:mm" else "h:mm"
     val timeFormatter = remember(format) { DateTimeFormatter.ofPattern(format) }
-    // Each language's own order for the date (strings.xml), for the rail and for what TalkBack reads.
-    val shortDate = stringResource(R.string.mmm_d)
-    val dateFormatter = remember(shortDate) { DateTimeFormatter.ofPattern(shortDate) }
+    // Each language's own order for the date (strings.xml), for what TalkBack reads.
     val longDate = stringResource(R.string.eeee_mmmm_d)
     val longDateFormatter = remember(longDate) { DateTimeFormatter.ofPattern(longDate) }
     val description = listOfNotNull(
@@ -108,15 +106,12 @@ fun StatusRail(
         val availableWidth = (maxWidth - 16.dp).coerceAtLeast(28.dp)
         val visualSize = minOf(iconSize * .9f, availableWidth, if (compact) 34.dp else 44.dp)
         val timeSize = minOf(17f, availableWidth.value / (2.5f * fontScale)).sp
-        val detailSize = minOf(11f, availableWidth.value / (3.3f * fontScale)).sp
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(STATUS_SPACING.dp)) {
             if (status.silent) Icon(Icons.Rounded.NotificationsOff, null,
                 tint = if (onLight) SilentOnLight else Silent,
                 modifier = Modifier.size(if (compact) 14.dp else 16.dp).testTag("status-silent"))
             Text(now.format(timeFormatter), color = ink, fontSize = timeSize, fontWeight = FontWeight.SemiBold, style = LocalTextStyle.current.copy(shadow = textShadow),
                 maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
-            if (!compact) Text(now.format(dateFormatter), color = ink.copy(alpha = if (onLight) .85f else .8f), fontSize = detailSize, style = LocalTextStyle.current.copy(shadow = textShadow),
-                fontWeight = FontWeight.Medium, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
             Box(Modifier.padding(top = FolioSpace.HAIR.dp).size(visualSize), contentAlignment = Alignment.Center) {
                 // Inside the battery ring, like iPhone's status bar: Wi-Fi when joined; otherwise cellular bars,
                 // an airplane in Airplane Mode, or a slowly sweeping fan while there's no connection at all.
@@ -153,10 +148,6 @@ fun StatusRail(
                 if (status.airplane && !status.wifiConnected)
                     Icon(Icons.Rounded.AirplanemodeActive, null, tint = ink, modifier = Modifier.size(visualSize * .42f))
             }
-            if (!compact) Text(if (status.airplane) stringResource(R.string.status_airplane) else status.battery?.let { "$it%" } ?: "—",
-                color = if (status.charging) charging else ink,
-                fontSize = detailSize, fontWeight = FontWeight.Medium, style = LocalTextStyle.current.copy(shadow = textShadow),
-                maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
         }
     }
 }

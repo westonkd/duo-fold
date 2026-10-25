@@ -107,8 +107,9 @@ data class LauncherState(
     val widgetPlacements: List<WidgetPlacement> = DEFAULT_WIDGET_PLACEMENTS,
     val widgetRestores: List<WidgetRestore> = emptyList(),
     val googleSearch: Boolean = true,
-    val compact: LayoutPreset = LayoutPreset(),
-    val expanded: LayoutPreset = LayoutPreset(),
+    /** Where the dock goes on the cover screen and on the inner one. */
+    val coverDock: DockPlacement = DockPlacement.AUTOMATIC,
+    val innerDock: DockPlacement = DockPlacement.AUTOMATIC,
     val labels: Boolean = true,
     val verticalStatus: Boolean = true,
     /**
@@ -154,7 +155,7 @@ data class LauncherState(
     val stackRotate: Boolean = true,
     /** iOS "Newly Downloaded Apps": false = App Library only (Android's way), true = also add to Home. */
     val addNewAppsToHome: Boolean = false,
-    /** Beta: save Home before big changes so they can be restored (Settings › Backup › Layout History). */
+    /** Beta: save Home before big changes so they can be restored (Settings › General › Layout History). */
     val layoutHistory: Boolean = false,
     /** Beta: a dot under dock apps used in the last hour (needs Usage Access). */
     val dockRecentDots: Boolean = false,
@@ -162,7 +163,7 @@ data class LauncherState(
     val systemWallpaper: Boolean = false,
     /** Text drawn on the wallpaper: "AUTO" follows the wallpaper, "LIGHT" white, "DARK" dark. */
     val homeInk: String = "AUTO",
-    /** Settings › Accessibility › Reduce Motion: fades instead of slides and pops, no wiggle. Android's Remove animations turns it on too. */
+    /** Settings › Gestures › Reduce Motion: fades instead of slides and pops, no wiggle. Android's Remove animations turns it on too. */
     val reduceMotion: Boolean = false,
     /**
      * iOS's legibility gradient: darken the top and bottom of the background so white text reads over a pale
@@ -176,8 +177,6 @@ data class LauncherState(
     /** Activator-style trigger → action (names of [FolioTrigger] → [FolioAction]). */
     val triggerActions: Map<String, String> = emptyMap(),
     val haptics: Boolean = true,
-    /** Per-screen overrides for tweaks: feature id → screen → "ON"/"OFF" (absent = follow the main switch). */
-    val featureScopes: Map<String, Map<String, String>> = emptyMap(),
     /** Drag along the Search pill or page dots to scrub pages. */
     val pageScrub: Boolean = true,
     /** Android wallpaper shifts slightly as pages change. */
@@ -228,20 +227,20 @@ internal fun LauncherState.trackedAppIds(): List<String> =
  * guess; with nothing remembered, off goes back to the automatic dock and the Side Bar.
  */
 internal fun LauncherState.withFullWidthHome(screen: LayoutScreen, on: Boolean): LauncherState {
-    val now = presetFor(screen)
+    val now = dockFor(screen)
     val key = screen.name
     return if (on) {
         val remembered = fullWidthRestore.toMutableMap()
         // Even a dock that was already at the bottom: the entry is also what marks this screen as in Full-Width Home.
-        remembered[key] = now.dockPlacement.name
+        remembered[key] = now.name
         if ("status" !in remembered) remembered["status"] = verticalStatus.toString()
-        withPreset(screen, now.copy(dockPlacement = DockPlacement.BOTTOM)).copy(verticalStatus = false, fullWidthRestore = remembered)
+        withDock(screen, DockPlacement.BOTTOM).copy(verticalStatus = false, fullWidthRestore = remembered)
     } else {
         val before = DockPlacement.parse(fullWidthRestore[key] ?: DockPlacement.AUTOMATIC.name)
         val rest = fullWidthRestore - key
         // The Side Bar comes back once no screen is still in Full-Width Home by way of a remembered placement.
         val bringBack = rest.keys.none { it != "status" }
-        withPreset(screen, now.copy(dockPlacement = before)).copy(
+        withDock(screen, before).copy(
             verticalStatus = if (bringBack) fullWidthRestore["status"]?.toBooleanStrictOrNull() ?: true else verticalStatus,
             fullWidthRestore = if (bringBack) emptyMap() else rest)
     }
@@ -273,11 +272,11 @@ internal fun LauncherState.withHomeFit(screen: LayoutScreen, rows: Int): Launche
     LayoutScreen.INNER_UPRIGHT -> copy(homeFitUpright = rows)
 }
 
-internal fun LauncherState.withPreset(screen: LayoutScreen, preset: LayoutPreset): LauncherState =
-    if (screen == LayoutScreen.COVER) copy(compact = preset) else copy(expanded = preset)
+internal fun LauncherState.withDock(screen: LayoutScreen, placement: DockPlacement): LauncherState =
+    if (screen == LayoutScreen.COVER) copy(coverDock = placement) else copy(innerDock = placement)
 
-/** The saved layout [screen] uses: the upright inner screen shares the inner one. */
-fun LauncherState.presetFor(screen: LayoutScreen): LayoutPreset = if (screen == LayoutScreen.COVER) compact else expanded
+/** The dock placement [screen] uses: the upright inner screen shares the inner one. */
+fun LauncherState.dockFor(screen: LayoutScreen): DockPlacement = if (screen == LayoutScreen.COVER) coverDock else innerDock
 
 /** Every app id Home shows without opening an app: its pages, the dock, and the apps in its folders and icon stacks. */
 internal fun LauncherState.homeAppIds(): Set<String> =
@@ -322,7 +321,7 @@ internal fun v9BackupNeeded(sourceSchema: Int, writtenSchema: Int, hasBackup: Bo
 class LauncherModel(application: Application) : AndroidViewModel(application) {
     private data class RefreshedApps(val entries: List<AppEntry>, val profiles: List<AppProfile>,
         val authoritativeProfiles: Set<Long>, val removedProfiles: Set<Long>)
-    private data class UndoImportSettings(val compact: LayoutPreset, val expanded: LayoutPreset, val labels: Boolean,
+    private data class UndoImportSettings(val coverDock: DockPlacement, val innerDock: DockPlacement, val labels: Boolean,
         val googleSearch: Boolean, val verticalStatus: Boolean)
     private val prefs = application.getSharedPreferences("launcher", 0)
     private val launcherApps = application.getSystemService(LauncherApps::class.java)
@@ -824,7 +823,7 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
         // Before this phone's apps are listed, a backup reads every app as missing; leaving the damaged state then would save an empty Home.
         if (recovering && !appsListed) return false
         val old = mutable.value
-        if (!recovering && old.layout == preview.layout && old.compact == preview.compact && old.expanded == preview.expanded &&
+        if (!recovering && old.layout == preview.layout && old.coverDock == preview.coverDock && old.innerDock == preview.innerDock &&
             old.labels == preview.labels && old.googleSearch == preview.googleSearch && old.verticalStatus == preview.verticalStatus &&
             old.appNames + preview.appNames == old.appNames &&
             old.iconActions + preview.iconActions == old.iconActions) return false
@@ -837,13 +836,13 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
         undoLayout = (old.layout to restored).takeUnless { recovering }
         // A stack on a number the restored layout still uses can't stay on Home, but Undo brings it back whole.
         setAsideStacks = (restored to old.widgetStacks.filterKeys { it in restoredSlots }).takeUnless { recovering }
-        undoImportSettings = UndoImportSettings(old.compact, old.expanded, old.labels, old.googleSearch, old.verticalStatus).takeUnless { recovering }
+        undoImportSettings = UndoImportSettings(old.coverDock, old.innerDock, old.labels, old.googleSearch, old.verticalStatus).takeUnless { recovering }
         // A restored name replaces the one on this phone; names this backup says nothing about are left alone.
         val names = old.appNames + preview.appNames
         mutable.value = old.copy(appNames = names, iconActions = old.iconActions + preview.iconActions, apps = old.apps.withAppNames(names),
             homeSlots = restored.slots, leadingSlots = restored.leadingSlots, dock = trimmedDock(restored.dock),
             widgetPlacements = restored.widgetPlacements, folders = restored.folders,
-            widgetRestores = restored.widgetRestores, compact = preview.compact, expanded = preview.expanded,
+            widgetRestores = restored.widgetRestores, coverDock = preview.coverDock, innerDock = preview.innerDock,
             // Kept for Undo, except on a number a restored widget still uses (only an old overflow widget keeps its number).
             widgetStacks = WidgetStacks.prune(old.widgetStacks, old.widgetPlacements.map { it.slot }.toSet() - restoredSlots),
             labels = preview.labels, googleSearch = preview.googleSearch, verticalStatus = preview.verticalStatus,
@@ -959,12 +958,6 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
     fun setDockMagnify(value: Boolean) = updateSettings(soon = false) { it.copy(dockMagnify = value) }
     fun setAppPanels(value: Boolean) = updateSettings(soon = false) { it.copy(appPanels = value) }
     fun setHaptics(value: Boolean) = updateSettings(soon = false) { it.copy(haptics = value) }
-    fun setFeatureScope(id: String, screen: FolioScreen, value: ScopeValue) =
-        updateSettings(soon = false) { it.copy(featureScopes = FeatureScopes.set(it.featureScopes, id, screen, value)) }
-    internal fun resetTweak(feature: TweakFeature) {
-        feature.set(this, feature.default)
-        updateSettings(soon = false) { it.copy(featureScopes = it.featureScopes - feature.id) }
-    }
     fun setPageScrub(value: Boolean) = updateSettings(soon = false) { it.copy(pageScrub = value) }
     fun setReduceMotion(value: Boolean) = updateSettings(soon = false) { it.copy(reduceMotion = value) }
     fun setWallpaperMotion(value: Boolean) = updateSettings(soon = false) { it.copy(wallpaperMotion = value) }
@@ -1001,8 +994,8 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
             leadingSlots = before.leadingSlots.map { it?.takeIf(installed::contains) },
             dock = trimmedDock(before.dock.map { it?.takeIf(installed::contains) }), widgetPlacements = before.widgetPlacements, folders = before.folders,
             widgetStacks = WidgetStacks.prune(old.widgetStacks + stacksForUndo(), before.widgetPlacements.map { it.slot }.toSet()),
-            widgetRestores = before.widgetRestores, compact = settings?.compact ?: old.compact,
-            expanded = settings?.expanded ?: old.expanded, labels = settings?.labels ?: old.labels,
+            widgetRestores = before.widgetRestores, coverDock = settings?.coverDock ?: old.coverDock,
+            innerDock = settings?.innerDock ?: old.innerDock, labels = settings?.labels ?: old.labels,
             googleSearch = settings?.googleSearch ?: old.googleSearch, verticalStatus = settings?.verticalStatus ?: old.verticalStatus,
             canUndoEdit = false,
             editRevision = old.editRevision + 1)
@@ -1076,10 +1069,10 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
     fun setLeftHanded(value: Boolean) = updateSettings(soon = false) { it.copy(leftHanded = value) }
     fun setVerticalStatus(value: Boolean) { if (statePayloadInvalid) return; undoLayout = null; undoImportSettings = null; mutable.update { it.copy(verticalStatus = value, canUndoEdit = false) }; persist() }
     fun setGoogleSearch(value: Boolean) { if (statePayloadInvalid) return; undoLayout = null; undoImportSettings = null; mutable.update { it.copy(googleSearch = value, canUndoEdit = false) }; persist() }
-    fun setPreset(screen: LayoutScreen, value: LayoutPreset) {
+    fun setDockPlacement(screen: LayoutScreen, value: DockPlacement) {
         if (statePayloadInvalid) return
         undoLayout = null; undoImportSettings = null
-        mutable.update { it.withPreset(screen, value).copy(canUndoEdit = false) }
+        mutable.update { it.withDock(screen, value).copy(canUndoEdit = false) }
         persist()
     }
 
@@ -1200,7 +1193,7 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
 
     private fun writeState() {
         val s = mutable.value
-        fun preset(p: LayoutPreset) = JSONObject().put("dockPlacement", p.dockPlacement.name)
+        fun preset(p: DockPlacement) = JSONObject().put("dockPlacement", p.name)
         val widgets = JSONArray().also { array -> s.widgetPlacements.forEach { w -> array.put(JSONObject()
             .put("slot", w.slot).put("id", w.id).put("page", w.page).put("column", w.column).put("row", w.row)
             .put("spanX", w.spanX).put("spanY", w.spanY)
@@ -1233,7 +1226,6 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
             .put("systemWallpaper", s.systemWallpaper).put("homeInk", s.homeInk)
             .put("homeScrim", s.homeScrim)
             .put("dockMagnify", s.dockMagnify).put("appPanels", s.appPanels).put("haptics", s.haptics)
-            .put("featureScopes", JSONObject().apply { s.featureScopes.forEach { (id, m) -> put(id, JSONObject(m as Map<*, *>)) } })
             .put("pageScrub", s.pageScrub).put("reduceMotion", s.reduceMotion).put("wallpaperMotion", s.wallpaperMotion).put("liveIcons", s.liveIcons)
             .put("triggerActions", JSONObject().apply { s.triggerActions.forEach { (k, v) -> put(k, v) } })
             .put("folderColors", JSONObject().apply { s.folderColors.forEach { (id, c) -> put(id, c) } })
@@ -1244,7 +1236,7 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
             .also { o -> if (s.iconActions.isNotEmpty()) o.put("iconActions", iconActionsToJson(s.iconActions)) }
             .put(SettingKeys.DOCK_EVERYWHERE, s.dockEverywhere)
             .put(SettingKeys.BUTTON_BAR, s.buttonBar)
-            .put("compact", preset(s.compact)).put("expanded", preset(s.expanded))
+            .put("compact", preset(s.coverDock)).put("expanded", preset(s.innerDock))
             .put("homeFitCompact", s.homeFitCompact).put("homeFitExpanded", s.homeFitExpanded).put("homeFitUpright", s.homeFitUpright)
         val editor = prefs.edit()
         if (legacyRaw != null && sourceSchema == 2 && !prefs.contains("state_v2_backup"))
@@ -1309,7 +1301,7 @@ private fun launcherIcon(drawable: Drawable): Bitmap {
  */
 internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState {
     val j = JSONObject(raw)
-    fun preset(key: String) = LayoutPreset(DockPlacement.parse(j.optJSONObject(key)?.optString("dockPlacement")))
+    fun preset(key: String) = DockPlacement.parse(j.optJSONObject(key)?.optString("dockPlacement"))
     val order = j.optJSONArray(if (j.optInt("schema", 1) >= 2) "pinned" else "order") ?: JSONArray()
     val cells = j.optJSONArray("homeSlots").takeIf { j.optInt("schema", 1) >= 4 } ?: order
     val schema = j.optInt("schema", 1)
@@ -1426,8 +1418,8 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         dock = loadedDock,
         widgetPlacements = placements, folders = folders, widgetRestores = restores,
         googleSearch = j.optBoolean("googleSearch", true),
-        labels = j.optBoolean("labels", true), compact = preset("compact"),
-        expanded = preset("expanded"), fullWidthRestore = j.optJSONObject("fullWidthRestore")?.let { o -> o.keys().asSequence().associateWith { o.optString(it) }.filterValues(String::isNotBlank) }.orEmpty(),
+        labels = j.optBoolean("labels", true), coverDock = preset("compact"),
+        innerDock = preset("expanded"), fullWidthRestore = j.optJSONObject("fullWidthRestore")?.let { o -> o.keys().asSequence().associateWith { o.optString(it) }.filterValues(String::isNotBlank) }.orEmpty(),
         verticalStatus = j.optBoolean("verticalStatus", true),
         leftHanded = j.optBoolean("leftHanded", false),
         hiddenApps = j.optJSONArray("hiddenApps")?.let { a -> (0 until a.length()).map(a::getString).toSet() } ?: emptySet(),
@@ -1458,9 +1450,6 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         homeInk = j.optString("homeInk", "AUTO").takeIf { it in setOf("AUTO", "LIGHT", "DARK") } ?: "AUTO",
         homeScrim = j.optBoolean("homeScrim", true),
         dockMagnify = j.optBoolean("dockMagnify", false), appPanels = j.optBoolean("appPanels", false), haptics = j.optBoolean("haptics", true),
-        featureScopes = j.optJSONObject("featureScopes")?.let { o -> o.keys().asSequence().associateWith { id ->
-            o.optJSONObject(id)?.let { inner -> inner.keys().asSequence().associateWith { inner.getString(it) } }.orEmpty()
-        } } ?: emptyMap(),
         pageScrub = j.optBoolean("pageScrub", true), reduceMotion = j.optBoolean("reduceMotion", false),
         wallpaperMotion = j.optBoolean("wallpaperMotion", true), liveIcons = j.optBoolean("liveIcons", true),
         triggerActions = j.optJSONObject("triggerActions")?.let { o -> o.keys().asSequence().associateWith { o.getString(it) } } ?: emptyMap(),

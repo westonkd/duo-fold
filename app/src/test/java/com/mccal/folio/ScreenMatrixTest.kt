@@ -134,7 +134,7 @@ class ScreenMatrixTest {
             val scale = uiScale(s.width, s.height)
             val w = s.width / scale; val h = s.height / scale
             val status = if (fitsRegularHomeLayout(w, h)) 180f else 0f
-            val g = homeGeometry(w, h, LayoutPreset(), labels, statusHeight = status)
+            val g = homeGeometry(w, h, DockPlacement.AUTOMATIC, labels, statusHeight = status)
             val tag = "${s.name} (${w.toInt()}×${h.toInt()})"
             assertTrue("$tag rows ${g.rowHeight}", g.rowHeight >= 48f)
             assertTrue("$tag dock rows", g.dockRowHeight >= 48f)

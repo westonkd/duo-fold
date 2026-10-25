@@ -12,7 +12,7 @@ import org.junit.Test
  */
 class FullWidthHomeCenterTest {
     // The cover screen with the dock at the bottom and no Side Bar: Full-width Home.
-    private fun fullWidth() = homeGeometry(475f, 751f, LayoutPreset(dockPlacement = DockPlacement.BOTTOM), true, statusRail = false)
+    private fun fullWidth() = homeGeometry(475f, 751f, DockPlacement.BOTTOM, true, statusRail = false)
 
     @Test fun `the setup really is Full-width Home`() {
         val g = fullWidth()
@@ -22,7 +22,7 @@ class FullWidthHomeCenterTest {
     }
 
     @Test fun `a page beside the Side Bar keeps its columns where they were`() {
-        val g = homeGeometry(475f, 751f, LayoutPreset(dockPlacement = DockPlacement.SIDE), true)
+        val g = homeGeometry(475f, 751f, DockPlacement.SIDE, true)
         assertEquals(0f, g.columnsInset, 0f)
     }
 

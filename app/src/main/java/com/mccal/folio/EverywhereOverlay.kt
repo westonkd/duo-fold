@@ -89,7 +89,7 @@ internal class EverywhereOverlay(private val service: AccessibilityService) {
     private val dockOpen = MutableStateFlow(false)
 
     private data class Settings(val dockEverywhere: Boolean, val leftHanded: Boolean, val dock: List<String>,
-        /** Buttons in Every App (Settings › Accessibility › Big Buttons). */
+        /** Buttons in Every App (Settings › Gestures › Big Buttons). */
         val buttons: Boolean = false)
     private val settings = MutableStateFlow(readSettings())
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->

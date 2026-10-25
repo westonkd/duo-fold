@@ -36,7 +36,6 @@ import kotlin.math.exp
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.repeatOnLifecycle
 import com.mccal.folio.duet.DuetShader
-import com.mccal.folio.duet.DuetStyles
 
 /**
  * iPhone Duo–style fold effect, as dynamic as a Galaxy Z Fold allows.
@@ -54,8 +53,6 @@ import com.mccal.folio.duet.DuetStyles
 @Composable
 fun FoldTransitionHost(enabled: Boolean = true, stayAwake: Boolean = true, haptics: Boolean = true, reduceMotion: Boolean = false,
     content: @Composable () -> Unit) {
-    // Reduce Motion: a plain shade, no frost, tilt, shrink or picture moving (DYN-11: motion becomes a fade).
-    val style = if (reduceMotion) DuetStyles.reducedMotion(DuetStyles.IPHONE) else DuetStyles.IPHONE
     // Which screen we're on, by size in both dimensions, so rotating the cover to landscape never looks like an unfold.
     val expanded = LocalConfiguration.current.fitsRegularHomeLayout()
     val view = LocalView.current
@@ -66,7 +63,7 @@ fun FoldTransitionHost(enabled: Boolean = true, stayAwake: Boolean = true, hapti
     val rotation = view.display?.rotation ?: android.view.Surface.ROTATION_0
     val shader = remember { if (Build.VERSION.SDK_INT >= 33) DuetShader() else null }
     val fold = remember { FoldTimeline(context) }
-    fold.unfoldStart = style.startAt
+    fold.unfoldStart = IPHONE_DUO_UNFOLD_START
     // The screen's own corner radius, so a tilted pane and the slightly shrunk open screen have the panel's corners.
     // Read when a fold starts rather than at first composition: the window's insets (and so its rounded corners) can
     // arrive after the first frame, and a 0 kept from then would square off the panel's corners until the next switch.
@@ -160,7 +157,7 @@ fun FoldTransitionHost(enabled: Boolean = true, stayAwake: Boolean = true, hapti
     Box(Modifier.fillMaxSize().onSizeChanged { hostSize = it }.then(
         if (shader != null) Modifier.graphicsLayer {
             renderEffect = if (enabled && m > 0f && Build.VERSION.SDK_INT >= 33) shader.effect(size.width, size.height, m.coerceIn(0f, 1.5f),
-                cover = !fold.expanded, geometry = foldGeometry(rotation, hinge, size.width, size.height), style = style,
+                cover = !fold.expanded, geometry = foldGeometry(rotation, hinge, size.width, size.height), reduceMotion = reduceMotion,
                 cornerPx = cornerPx) else null
             // The open screen settles up to full size as it clears, and eases back down as it folds.
             val settle = when {
@@ -175,9 +172,9 @@ fun FoldTransitionHost(enabled: Boolean = true, stayAwake: Boolean = true, hapti
         } else Modifier.drawWithContent {
             drawContent()
             if (enabled && m > 0f) {
-                if (fold.expanded) drawRect(Brush.horizontalGradient(0f to Color.Black.copy(alpha = (m * style.darkening).coerceIn(0f, 1f)),
+                if (fold.expanded) drawRect(Brush.horizontalGradient(0f to Color.Black.copy(alpha = m.coerceIn(0f, 1f)),
                     .5f to Color.Transparent, startX = 0f, endX = size.width))
-                else drawRect(Color.Black.copy(alpha = (.5f * m * style.darkening).coerceIn(0f, 1f)))
+                else drawRect(Color.Black.copy(alpha = (.5f * m).coerceIn(0f, 1f)))
             }
         })) {
         Box(Modifier.fillMaxSize()) {
@@ -274,7 +271,7 @@ internal class FoldTimeline(private val context: Context) : SensorEventListener 
     var onHalfway: (() -> Unit)? = null
     /** Folding from the open screen right now. */
     val closing get() = closeStartAt >= 0 && expanded
-    /** How frosted the open screen is when it lights: the style's own start (iPhone Duo starts where the real hinge is). */
+    /** How frosted the open screen is when it lights (iPhone Duo starts where the real hinge is). */
     var unfoldStart = START_M_ON_UNFOLD
     /** Which way the hinge last went: true once it starts opening or lands on the open screen, false once it folds. */
     var opening = true
@@ -494,6 +491,11 @@ private fun easeInOutSine(t: Float): Float = (-(kotlin.math.cos(Math.PI * t) - 1
 @RequiresApi(33)
 /** Inner panel lights around 120–135° on Z Fold: the cover half is still ~50° from flat. */
 private const val START_M_ON_UNFOLD = 1f
+/**
+ * How frosted the open screen is when its panel lights. Apple's frost follows the hinge; the Fold8 lights its inner
+ * panel at about 125 degrees, where Apple's would be about 61%, so iPhone Duo starts there.
+ */
+internal const val IPHONE_DUO_UNFOLD_START = .61f
 /** Unfold fade length (the iPhone Duo reveal reads as ~half a second). */
 private const val UNFOLD_FADE_MS = 520f
 /** Strongest whole-screen dim while folding. */

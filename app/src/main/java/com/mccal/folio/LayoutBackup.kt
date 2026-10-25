@@ -27,8 +27,8 @@ data class LayoutImportPreview(
     val appCount: Int,
     val folderCount: Int,
     val widgetCount: Int,
-    val compact: LayoutPreset,
-    val expanded: LayoutPreset,
+    val coverDock: DockPlacement,
+    val innerDock: DockPlacement,
     val labels: Boolean,
     val googleSearch: Boolean,
     val verticalStatus: Boolean,
@@ -81,12 +81,12 @@ fun encodeLayoutBackup(
         }
         array.put(item)
     } }
-    fun preset(value: LayoutPreset) = JSONObject().put("dockPlacement", value.dockPlacement.name)
+    fun preset(value: DockPlacement) = JSONObject().put("dockPlacement", value.name)
     val root = JSONObject().put("version", LAYOUT_BACKUP_VERSION).put("sourceScope", sourceScope).put("apps", apps)
         .put("homeSlots", JSONArray(state.homeSlots)).put("leadingSlots", JSONArray(state.leadingSlots))
         .put("dock", JSONArray(state.dock)).put("folders", folders).put("widgets", widgets)
         .put("labels", state.labels).put("googleSearch", state.googleSearch).put("verticalStatus", state.verticalStatus)
-        .put("compact", preset(state.compact)).put("expanded", preset(state.expanded))
+        .put("compact", preset(state.coverDock)).put("expanded", preset(state.innerDock))
     // The names people typed themselves (since 0.6.5): they exist nowhere else on the phone.
     root.put("appNames", JSONObject().apply { state.appNames.forEach { (id, name) -> put(id, name) } })
     if (state.iconActions.isNotEmpty()) root.put("iconActions", iconActionsToJson(state.iconActions))
@@ -239,8 +239,8 @@ fun decodeLayoutBackup(raw: String, currentApps: List<AppEntry>, currentProfiles
             widgetRestores = layout.widgetRestores + listOfNotNull(restore))
     }
     // Added in 0.6.5: older backups don't have it.
-    fun preset(key: String) = LayoutPreset(DockPlacement.parse(root.getJSONObject(key).optString("dockPlacement")))
-    val compact = preset("compact"); val expanded = preset("expanded")
+    fun preset(key: String) = DockPlacement.parse(root.getJSONObject(key).optString("dockPlacement"))
+    val coverDock = preset("compact"); val innerDock = preset("expanded")
     val labels = root.strictBoolean("labels"); val googleSearch = root.strictBoolean("googleSearch")
     val verticalStatus = root.strictBoolean("verticalStatus")
     // Written since 0.6.5; a backup made before that simply has none, and the names already on the phone stay.
@@ -251,7 +251,7 @@ fun decodeLayoutBackup(raw: String, currentApps: List<AppEntry>, currentProfiles
         appCount = (slots + leadingSlots).count { it != null && !isReservedFolderId(it) } +
             dock.count { it != null } + folders.sumOf { it.appIds.size },
         folderCount = folders.size, widgetCount = layout.widgetPlacements.size,
-        compact = compact, expanded = expanded, labels = labels, googleSearch = googleSearch, verticalStatus = verticalStatus,
+        coverDock = coverDock, innerDock = innerDock, labels = labels, googleSearch = googleSearch, verticalStatus = verticalStatus,
         appNames = appNames,
         iconActions = iconActionsFromJson(root.optJSONObject("iconActions")))
 }

@@ -54,7 +54,7 @@ class RestoredWidgetSlotsTest {
         val model = home()
         val defaults = LauncherState()
         assertTrue(model.applyImportedLayout(LayoutImportPreview(backup, emptyList(), emptyList(), appCount = 0, folderCount = 0,
-            widgetCount = 2, compact = defaults.compact, expanded = defaults.expanded, labels = true, googleSearch = true, verticalStatus = true)))
+            widgetCount = 2, coverDock = defaults.coverDock, innerDock = defaults.innerDock, labels = true, googleSearch = true, verticalStatus = true)))
 
         val state = model.state.value
         val restoredWeather = state.widgetPlacements.single { it.id == NEEDS_BINDING_WIDGET }
@@ -74,7 +74,7 @@ class RestoredWidgetSlotsTest {
         val defaults = LauncherState()
         assertTrue(model.applyImportedLayout(LayoutImportPreview(HomeLayout(List(HOME_CELLS) { null }, listOf(null, null, null, null),
             widgetPlacements = listOf(overflow)), emptyList(), emptyList(), appCount = 0, folderCount = 0, widgetCount = 1,
-            compact = defaults.compact, expanded = defaults.expanded, labels = true, googleSearch = true, verticalStatus = true)))
+            coverDock = defaults.coverDock, innerDock = defaults.innerDock, labels = true, googleSearch = true, verticalStatus = true)))
 
         assertEquals("the old stack isn't on the restored widget", listOf(CLOCK_WIDGET), model.stackCards(5))
         assertTrue("its widgets stay bound while Undo can bring them back", model.retainedWidgetIds.containsAll(setOf(51, 52)))

@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter
 
 /**
  * Local crash reports, no analytics: the last few crashes are written to Folio's private storage and nothing
- * leaves the phone unless you share a report yourself (Settings › Help › Crash Reports).
+ * leaves the phone unless you share a report yourself (Settings › General › Crash Reports).
  */
 internal object CrashLog {
     private const val DIR = "crashes"

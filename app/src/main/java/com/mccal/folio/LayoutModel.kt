@@ -14,11 +14,6 @@ const val HOME_ICON_SIZE = 66f
 const val HOME_ROW_GAP = 8f
 const val DOCK_WIDTH = 68f
 
-data class LayoutPreset(
-    /** Home Screen & Dock › Dock: per screen. */
-    val dockPlacement: DockPlacement = DockPlacement.AUTOMATIC,
-)
-
 enum class DockPlacement {
     /** Side Bar, or a bar along the bottom when a regular-size screen is upright (iPhone Duo). */
     AUTOMATIC,
@@ -151,7 +146,7 @@ fun railControlsReserve(count: Int, homeIconSize: Float): Float {
 const val MIN_DOCK_SLOTS = 4
 const val MAX_DOCK_SLOTS = 6
 
-fun homeGeometry(width: Float, height: Float, preset: LayoutPreset, labels: Boolean, statusHeight: Float = 0f, labelHeight: Float = 20f, inLibrary: Boolean = false, homeBottomSpace: Float = 44f,
+fun homeGeometry(width: Float, height: Float, dockPlacement: DockPlacement, labels: Boolean, statusHeight: Float = 0f, labelHeight: Float = 20f, inLibrary: Boolean = false, homeBottomSpace: Float = 44f,
     /** How many round controls (search, back to Home) sit at the bottom of the rail on the page shown now: 0, 1 or 2. */
     railControls: Int = 1,
     /** The same on the Home pages. They anchor the dock, so swiping to a page with one more control moves it only to fit. */
@@ -178,7 +173,7 @@ fun homeGeometry(width: Float, height: Float, preset: LayoutPreset, labels: Bool
     val regular = fitsRegularHomeLayout(width, height, classScale)
     val tallRegular = regular && height > width
     // Landscape phone screens keep the Side Bar dock: a bottom bar would take too much of a short screen.
-    val horizontalDock = when (preset.dockPlacement) {
+    val horizontalDock = when (dockPlacement) {
         DockPlacement.AUTOMATIC -> tallRegular
         DockPlacement.SIDE -> false
         // Short windows (split screen, pop-up windows) keep the Side Bar too, so the page still fits above the bar.

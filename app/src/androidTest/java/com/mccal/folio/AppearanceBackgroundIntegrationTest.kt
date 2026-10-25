@@ -34,11 +34,11 @@ class AppearanceBackgroundIntegrationTest {
     private fun settings() {
         if (compose.onAllNodesWithTag("background-choose")
                 .fetchSemanticsNodes(atLeastOneRootRequired = false).isEmpty()) {
-            if (compose.onAllNodesWithTag("customization-wallpaper")
+            if (compose.onAllNodesWithTag("customization-home")
                     .fetchSemanticsNodes(atLeastOneRootRequired = false).isEmpty()) {
                 compose.openHomeCustomization()
             }
-            compose.onNodeWithTag("customization-wallpaper").performScrollTo().performClick()
+            compose.onNodeWithTag("customization-home").performScrollTo().performClick()
         }
         compose.onNodeWithTag("background-choose").assertExists()
     }

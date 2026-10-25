@@ -190,7 +190,6 @@ internal object FolioTouch {
 /** Row heights, in dp: iOS's list metrics, and never below the 48dp touch target (A11Y-1). */
 internal object FolioRow {
     const val ACTION = 48
-    const val NAV = 52
 }
 
 /**

@@ -17,7 +17,7 @@ class AutomaticRowsTest {
 
     /** The same call Home makes: the search pill's space, and Folio as the Home app. */
     private fun fit(size: Pair<Float, Float>, labelHeight: Float): Int =
-        homeGeometry(size.first, size.second, LayoutPreset(), labels = true, statusHeight = 0f, labelHeight = labelHeight,
+        homeGeometry(size.first, size.second, DockPlacement.AUTOMATIC, labels = true, statusHeight = 0f, labelHeight = labelHeight,
             inLibrary = false, homeBottomSpace = 44f, railControls = 0, classScale = 1f,
             appRows = BASE_APP_ROWS, foldAtCenter = false, fillSpace = true).fitAppRows
 

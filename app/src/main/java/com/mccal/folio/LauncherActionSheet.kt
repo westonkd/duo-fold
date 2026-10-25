@@ -107,7 +107,7 @@ internal fun HomeEditMenu(anchor: androidx.compose.ui.unit.IntRect?, onDismiss: 
             fun act(action: () -> Unit) = { onDismiss(); action() }
             Box(Modifier.testTag("empty-space-widgets")) { MenuRow(stringResource(R.string.add_widget_2), Icons.Rounded.Widgets, onClick = act(onWidgets)) }
             MenuDivider()
-            Box(Modifier.testTag("empty-space-wallpaper")) { MenuRow(stringResource(R.string.wallpaper_appearance_2), Icons.Rounded.Wallpaper, onClick = act(onWallpaper)) }
+            Box(Modifier.testTag("empty-space-wallpaper")) { MenuRow(stringResource(R.string.wallpaper), Icons.Rounded.Wallpaper, onClick = act(onWallpaper)) }
             // A thicker gap between groups, like iOS menus.
             Box(Modifier.fillMaxWidth().height(8.dp).background(Color.Black.copy(alpha = .25f)))
             onAddPage?.let { Box(Modifier.testTag("empty-space-add-page")) { MenuRow(stringResource(R.string.add_page), Icons.Rounded.AddToPhotos, onClick = act(it)) }; MenuDivider() }

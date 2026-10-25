@@ -37,7 +37,7 @@ class LayoutLoadTest {
         assertEquals(GRID_ROWS, overflow.row)
         assertEquals(0, state.widgetPlacements.first { it.slot == 0 }.row)
         // The old size settings are read past; the dock placement starts at today's default.
-        assertEquals(LayoutPreset(), state.compact)
+        assertEquals(DockPlacement.AUTOMATIC, state.coverDock)
     }
 
     @Test fun `an upgraded layout saved again loads the same`() {
@@ -69,7 +69,7 @@ class LayoutLoadTest {
         assertTrue(state.homeSlots.all { it == null })
         assertNull(state.error)
         // Only Duet: the fold animation was built in and on before it became a tweak.
-        assertEquals(listOf(DUET_ID), TweakFeatures.filter { it.get(state) }.map { it.id })
+        assertEquals(listOf(true, false, false), listOf(state.foldEffect, state.appPanels, state.dockMagnify))
     }
 }
 

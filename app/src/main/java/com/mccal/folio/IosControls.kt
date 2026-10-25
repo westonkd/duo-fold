@@ -108,19 +108,8 @@ internal fun IosSearchField(query: String, onQuery: (String) -> Unit, placeholde
 internal fun IosActionRow(text: String, tag: String? = null, destructive: Boolean = false, enabled: Boolean = true, onClick: () -> Unit) {
     val color = if (destructive) FolioColors.RedOnDark else LocalAccent.current.ink
     androidx.compose.material3.Text(text, color = if (enabled) color else Color.White.copy(alpha = .3f), fontSize = FolioType.BODY.sp,
-        modifier = Modifier.fillMaxWidth().heightIn(min = FolioRow.ACTION.dp).settingsFocus(text).clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+        modifier = Modifier.fillMaxWidth().heightIn(min = FolioRow.ACTION.dp).clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = FolioSpace.LARGE.dp, vertical = 13.dp).then(if (tag != null) Modifier.testTag(tag) else Modifier))
-}
-
-/** A row that opens another page, like iOS Settings: label, current value and a chevron. */
-@Composable
-internal fun IosNavRow(text: String, value: String?, onClick: () -> Unit, tag: String? = null) {
-    Row(Modifier.fillMaxWidth().heightIn(min = FolioRow.NAV.dp).settingsFocus(text).clickable(role = Role.Button, onClick = onClick)
-        .then(if (tag != null) Modifier.testTag(tag) else Modifier), verticalAlignment = Alignment.CenterVertically) {
-        androidx.compose.material3.Text(text, color = Color.White, fontSize = FolioType.BODY.sp, modifier = Modifier.weight(1f))
-        value?.let { androidx.compose.material3.Text(it, color = Color.White.copy(alpha = .55f), fontSize = FolioType.BODY.sp) }
-        androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.ChevronRight, null, tint = Color.White.copy(alpha = .3f), modifier = Modifier.mirroredForRtl())
-    }
 }
 
 /** Used when haptic feedback is turned off in settings. */
@@ -154,7 +143,7 @@ internal object NoHaptics : androidx.compose.ui.hapticfeedback.HapticFeedback {
 }
 
 /**
- * iOS-style Reduce Motion: Folio's own switch (Settings › Accessibility) or Android's "Remove animations" (animator
+ * iOS-style Reduce Motion: Folio's own switch (Settings › Gestures) or Android's "Remove animations" (animator
  * duration scale 0). No wiggling, no sliding pages, no fold blur; surfaces fade in where they land ([rememberReducedFade])
  * and switches stop without overshoot ([FolioMotion.calm]). With Remove animations Compose also ends every animation at
  * once, so the fades show as cuts there, as Android asks. Read once per composition of the provider.
@@ -171,14 +160,13 @@ internal fun reduceMotionEnabled(context: android.content.Context): Boolean =
  */
 @Composable
 internal fun <T> IosMenuRow(title: String, options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit,
-    modifier: Modifier = Modifier, tag: String? = null, enabled: Boolean = true) {
+    modifier: Modifier = Modifier, tag: String? = null) {
     var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
     val current = options.firstOrNull { it.first == selected }?.second ?: ""
-    Row(modifier.fillMaxWidth().heightIn(min = FolioRow.ACTION.dp).settingsFocus(title).clip(RoundedCornerShape(FolioRadius.CONTROL.dp))
-        .clickable(enabled = enabled, role = Role.Button, onClickLabel = stringResource(R.string.choose_1_s, title)) { open = true }
-        .then(if (tag != null) Modifier.testTag(tag) else Modifier)
-        .androidxAlpha(if (enabled) 1f else .4f), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier.fillMaxWidth().heightIn(min = FolioRow.ACTION.dp).clip(RoundedCornerShape(FolioRadius.CONTROL.dp))
+        .clickable(role = Role.Button, onClickLabel = stringResource(R.string.choose_1_s, title)) { open = true }
+        .then(if (tag != null) Modifier.testTag(tag) else Modifier), verticalAlignment = Alignment.CenterVertically) {
         androidx.compose.material3.Text(title, color = Color.White, fontSize = FolioType.BODY.sp, modifier = Modifier.weight(1f))
         Box {
             Row(verticalAlignment = Alignment.CenterVertically) {

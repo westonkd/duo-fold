@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FoldDisplacementTest {
-    private val g = homeGeometry(704f, 930f, LayoutPreset(), true)
+    private val g = homeGeometry(704f, 930f, DockPlacement.AUTOMATIC, true)
 
     @Test fun `rows in the fold move below it and widgets are never split`() {
         val cells = HomeCellLayout.forPage(g, listOf(0 to 2))
@@ -21,7 +21,7 @@ class FoldDisplacementTest {
         assertEquals(0, foldDisplacement(cells, GRID_ROWS, gridTop, widgetHinge, widgetHinge + 30f, listOf(0 to 2))!!.first)
         // Hinge below the page, or a two-column page: nothing moves.
         assertNull(foldDisplacement(cells, GRID_ROWS, gridTop, gridTop + 2000f, gridTop + 2030f, listOf(0 to 2)))
-        val wide = homeGeometry(751f, 459f, LayoutPreset(), true)
+        val wide = homeGeometry(751f, 459f, DockPlacement.AUTOMATIC, true)
         assertNull(foldDisplacement(HomeCellLayout.forPage(wide, emptyList()), GRID_ROWS, 0f, 100f, 130f, emptyList()))
     }
 }

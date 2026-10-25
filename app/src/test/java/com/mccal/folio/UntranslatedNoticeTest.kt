@@ -21,7 +21,7 @@ class UntranslatedNoticeTest {
      */
     @Test fun `no screen text is written in English in the code`() {
         val sentence = Regex("""(?<![A-Za-z])Text\(\s*"[^"$]*[A-Za-z]{2}[^"]*"""")
-        val named = setOf("CustomizationSheet.kt")  // "Folio <version>", a name and a number
+        val named = setOf("CustomizationSheet.kt")  // the custom search address placeholder, a URL
         val bad = sources.filter { it.name !in named && sentence.containsMatchIn(it.readText()) }.map { it.name }
         assertTrue("Screen text in $bad is an English literal; use stringResource so it can be translated.", bad.isEmpty())
     }

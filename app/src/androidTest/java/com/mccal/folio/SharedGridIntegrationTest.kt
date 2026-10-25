@@ -390,16 +390,16 @@ class SharedGridIntegrationTest {
             assertEquals(retainedProvider, controller.manager.getAppWidgetInfo(retainedId)?.provider)
 
             val migratedLayout = migrated.state.value.layout
-            val migratedCompact = migrated.state.value.compact
-            val migratedExpanded = migrated.state.value.expanded
+            val migratedCompact = migrated.state.value.coverDock
+            val migratedExpanded = migrated.state.value.innerDock
             compose.runOnIdle { store?.clear(); store = null }
             reloadStore = ViewModelStore()
             lateinit var reloaded: LauncherModel
             compose.runOnIdle { reloaded = ViewModelProvider(reloadStore!!, factory)["schema8-leading-reload", LauncherModel::class.java] }
             compose.waitUntil(15_000) { !reloaded.state.value.loading }
             assertEquals(migratedLayout, reloaded.state.value.layout)
-            assertEquals(migratedCompact, reloaded.state.value.compact)
-            assertEquals(migratedExpanded, reloaded.state.value.expanded)
+            assertEquals(migratedCompact, reloaded.state.value.coverDock)
+            assertEquals(migratedExpanded, reloaded.state.value.innerDock)
             assertEquals(retainedProvider, controller.manager.getAppWidgetInfo(retainedId)?.provider)
         } finally {
             compose.runOnIdle { store?.clear(); reloadStore?.clear() }

@@ -30,14 +30,14 @@ class CustomizationNavigationIntegrationTest {
 
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
         compose.waitUntil(5_000) {
-            compose.onAllNodesWithTag("customization-wallpaper").fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
+            compose.onAllNodesWithTag("customization-general").fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
         }
-        compose.onNodeWithTag("customization-wallpaper").assertIsDisplayed()
+        compose.onNodeWithTag("customization-general").assertIsDisplayed()
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
         compose.waitUntil(5_000) {
             compose.onAllNodesWithTag("search").fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
         }
-        compose.onNodeWithTag("customization-wallpaper").assertDoesNotExist()
+        compose.onNodeWithTag("customization-general").assertDoesNotExist()
     }
 
     @Test fun emptySpaceWallpaperOpensPhotoControlsWithoutChangingLayoutOrBindings() {
@@ -71,26 +71,6 @@ class CustomizationNavigationIntegrationTest {
         compose.waitForIdle()
         compose.onNodeWithText("Move on Home").assertIsDisplayed()
         compose.onNodeWithContentDescription("Close app options").performClick()
-        assertEquals(before, model().state.value.layout)
-    }
-
-    @Test fun helpIsReachableFromGeneralAndBackReturnsToGeneral() {
-        ready()
-        val before = model().state.value.layout
-        compose.openHomeCustomization()
-        // Help lives under General since the Settings list was shortened.
-        compose.onNodeWithTag("customization-general").performScrollTo().performClick()
-        compose.onNodeWithTag("customization-help").performScrollTo().performClick()
-        compose.onNodeWithText("Edit Home").assertIsDisplayed()
-        compose.onNodeWithTag("help-home-settings").assertExists()
-        compose.onNodeWithTag("help-add-widget").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithTag("help-shade-setup").performScrollTo().assertIsDisplayed()
-
-        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
-        compose.waitUntil(5_000) {
-            compose.onAllNodesWithTag("customization-help")
-                .fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
-        }
         assertEquals(before, model().state.value.layout)
     }
 }

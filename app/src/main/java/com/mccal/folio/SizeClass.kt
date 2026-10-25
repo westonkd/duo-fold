@@ -24,27 +24,14 @@ internal fun Configuration.fitsRegularHomeLayout(): Boolean = fitsRegularHomeLay
  * How many columns Settings shows at once.
  *
  * 1 is the phone: one page at a time, and above 600 dp the list opens over it from the sidebar button. 2 is iPad
- * Settings: the list beside the page, in either orientation, once there's room for two readable columns. A page
- * opened *from* a page (a tweak from the Tweaks list) then pushes inside the page column with a back label, as iPad
- * Settings does. 3 keeps the list you came from beside it, and only on a window of [THREE_PANES_DP] or more (DeX,
- * an external display, a large tablet): on the Fold8's inner screen (932 dp) three columns left each one too narrow.
- *
- * [nested] is true when the open page came from a list on another page. [onFold] is true when the phone is half
- * folded with the fold down the screen: the divider belongs on the crease then, and a third column would put one of
- * them across it.
+ * Settings: the list beside the page, in either orientation, once there's room for two readable columns.
  */
 internal fun settingsColumns(
     widthDp: Float,
     heightDp: Float,
     classScale: Float = 1f,
-    nested: Boolean = false,
-    onFold: Boolean = false,
     keyboardDp: Float = 0f,
-): Int = when {
-    !fitsRegularHomeLayout(widthDp, sizeClassHeightDp(heightDp, keyboardDp), classScale) || widthDp < 700f -> 1
-    nested && !onFold && widthDp >= THREE_PANES_DP -> 3
-    else -> 2
-}
+): Int = if (!fitsRegularHomeLayout(widthDp, sizeClassHeightDp(heightDp, keyboardDp), classScale) || widthDp < 700f) 1 else 2
 
 /**
  * The height a size class is judged by while the keyboard is up. A keyboard covers a window; it doesn't make it a
@@ -75,9 +62,3 @@ internal fun keyboardDpOverSheet(): Float = with(LocalDensity.current) {
  */
 internal fun settingsSplits(widthDp: Float, heightDp: Float, classScale: Float = 1f, keyboardDp: Float = 0f): Boolean =
     fitsRegularHomeLayout(widthDp, sizeClassHeightDp(heightDp, keyboardDp), classScale)
-
-/**
- * The narrowest window that shows three panes at once: a sidebar, a list and the page opened from it. Material's
- * "large" width class. Below it, what you open replaces the list, with Back to return, so the page gets the room.
- */
-internal const val THREE_PANES_DP = 1200f

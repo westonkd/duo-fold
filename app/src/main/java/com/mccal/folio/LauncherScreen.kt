@@ -283,14 +283,13 @@ fun LauncherScreen(
     LaunchedEffect(splitScreen) { splitViewHomePage(splitScreen, pager.currentPage, homePages, lastHomePage)?.let { pager.scrollToPage(it) } }
     LaunchedEffect(settingsRequests) { if (settingsRequests > 0) {
         drag.clear(); widgetSession = null; resize.stop(); overlays.menu = null; homeEdit.stop()
-        SettingsLink.page?.also { customizationPage = it; SettingsLink.page = null }
         sheet = "settings"
     } }
     // Saved layout damaged, or apps failed to load: say so instead of quietly showing an empty Home.
     var problemDismissed by rememberSaveable(state.error) { mutableStateOf(false) }
     state.error?.takeIf { !problemDismissed && sheet.isEmpty() }?.let {
         if (model.layoutDamaged) DamagedLayoutDialog(newerFolio = model.layoutFromNewerFolio,
-            onRestore = { SettingsLink.page = CustomizationPage.BACKUP; customizationPage = CustomizationPage.BACKUP; sheet = "settings" },
+            onRestore = { customizationPage = CustomizationPage.GENERAL; sheet = "settings" },
             onNotNow = { problemDismissed = true }, onStartFresh = { model.resetDamagedLayout() })
         else AlertDialog(onDismissRequest = { problemDismissed = true },
             title = { Text(stringResource(R.string.apps_couldn_t_be_loaded)) },
@@ -549,7 +548,6 @@ fun LauncherScreen(
         onFinish = { cancelled -> finishDrag(cancelled) }, immediate = homeEdit.active)
         .twoFingerSwipeDown(FolioAction.entries.firstOrNull { it.name == state.triggerActions[FolioTrigger.TWO_FINGER_DOWN.name] }
             ?.takeIf { it != FolioAction.NONE && sheet.isEmpty() && !homeEdit.active }) { FolioActions.run(launcherActivity, it) }) { ProvideJiggle(homeEdit) {
-        val panelWide = androidx.compose.ui.platform.LocalConfiguration.current.fitsRegularHomeLayout()
         val tone = LocalWallpaperTone.current
         val homeInk = homeInkFor(state.homeInk, tone.prefersDarkText)
         val basePalette = LocalDuoPalette.current
@@ -574,9 +572,8 @@ fun LauncherScreen(
             LocalIconStack provides remember(homeEdit.active, haptic) {
                 if (homeEdit.active) null else { app: AppEntry -> haptic.perform(FolioHaptic.Open); overlays.stackFan = app.id }
             },
-            LocalAppPanel provides remember(state.appPanels, state.featureScopes, homeEdit.active, haptic, panelWide) {
-                val panelsOn = FeatureScopes.on(state.featureScopes, "appPanels", state.appPanels, screenFor(panelWide))
-                if (panelsOn && !homeEdit.active) { app: AppEntry -> haptic.perform(FolioHaptic.Open); overlays.panel = app.id } else null
+            LocalAppPanel provides remember(state.appPanels, homeEdit.active, haptic) {
+                if (state.appPanels && !homeEdit.active) { app: AppEntry -> haptic.perform(FolioHaptic.Open); overlays.panel = app.id } else null
             }) {
         // Folio's background unless Android's wallpaper is really behind the window: a see-through window with
         // nothing behind it shows every earlier frame (#12, #35), so the worst case is a plain surface, never a
@@ -602,7 +599,7 @@ fun LauncherScreen(
             val classScale = androidx.compose.ui.platform.LocalConfiguration.current.classScale
             val wide = maxWidth.value * classScale >= EXPANDED_HOME_MIN_WIDTH_DP && maxHeight.value * classScale >= HOME_REGULAR_MIN_HEIGHT_DP
             val layoutScreen = layoutScreenFor(maxWidth.value, maxHeight.value, classScale)
-            val preset = state.presetFor(layoutScreen)
+            val dockPlacement = state.dockFor(layoutScreen)
             val density = LocalDensity.current
             val inLibrary = pager.currentPage == visibleHomePages
             var statusHeight by remember { mutableFloatStateOf(0f) }
@@ -611,7 +608,7 @@ fun LauncherScreen(
             val dockOpenPlace = drag.active && drag.source?.appId != null && drag.source?.target !is DropTarget.Dock &&
                 state.dock.size < MAX_DOCK_SLOTS && state.dock.none { it == null }
             val shownDock = if (dockOpenPlace) state.dock + null else state.dock
-            val geometry = homeGeometry(maxWidth.value, maxHeight.value, preset, state.labels, dockSlots = shownDock.size, statusRail = state.verticalStatus,
+            val geometry = homeGeometry(maxWidth.value, maxHeight.value, dockPlacement, state.labels, dockSlots = shownDock.size, statusRail = state.verticalStatus,
                 statusHeight = if (state.verticalStatus) statusHeight + 22f else 0f,
                 labelHeight = with(density) { HOME_LABEL_LINE_SP.sp.toDp().value } + 6f, inLibrary = inLibrary,
                 homeBottomSpace = if (isDefaultHome) 44f else 88f,
@@ -717,7 +714,7 @@ fun LauncherScreen(
                             Offset(rootOnScreen[0].toFloat(), rootOnScreen[1].toFloat())
                         // Sliding along the dock magnifies it (Harbor), so it never opens Spotlight.
                         !(region?.target is DropTarget.Dock && (dockScroll.value > 0 ||
-                            FeatureScopes.on(state.featureScopes, "dockMagnify", state.dockMagnify, screenFor(wide)))) &&
+                            state.dockMagnify)) &&
                             !((region?.target as? DropTarget.Widget)?.index?.let { state.widgetStacks[it]?.isNotEmpty() } == true) &&
                             // A swipe down on a stacked icon opens its stack, not Spotlight.
                             region?.appId?.let { it in state.iconStacks } != true &&
@@ -852,7 +849,7 @@ fun LauncherScreen(
                     DockAppColumn(shownDock, previewLayout.dock, appsById, dockPitchShown,
                         dockIconSize(geometry.iconSize), drag, insertionTarget,
                         onLaunch = onLaunchFrom, onChoose = { dockSlot = it; sheet = "dock" },
-                        magnify = FeatureScopes.on(state.featureScopes, "dockMagnify", state.dockMagnify, screenFor(wide)) &&
+                        magnify = state.dockMagnify &&
                             !LocalReduceMotion.current, leftHanded = state.leftHanded, horizontal = geometry.horizontalDock)
                 }
             }
@@ -977,7 +974,7 @@ fun LauncherScreen(
                 }
             }
             if (sheet.isNotEmpty() && sheet != "widgets") OwnMethod {
-                val activeCustomizationPage = if (sheet == "settings:wallpaper") CustomizationPage.WALLPAPER else customizationPage
+                val activeCustomizationPage = if (sheet == "settings:wallpaper") CustomizationPage.HOME else customizationPage
                 ModalBottomSheet(onDismissRequest = {
                     sheet = ""; picker.packageName = null; picker.exactTarget = false
                 }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),

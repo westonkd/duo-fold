@@ -6,6 +6,7 @@ class DuoApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         CrashLog.install(this)
+        restoreLauncherEntry(this)
     }
 
     /**

@@ -1,5 +1,8 @@
 package com.mccal.folio
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.pm.PackageManager
 import androidx.compose.ui.graphics.asImageBitmap
 
 /** Folio's Kotlin package: class names stay the same in the Folio Dev build, whose app ID ends in ".dev". */
@@ -7,6 +10,23 @@ internal const val FOLIO_CLASSES = "com.mccal.folio"
 
 /** Folio's app entry's class name (an activity-alias of MainActivity), so Folio can recognize its own app entry. */
 internal const val FOLIO_SETTINGS_ALIAS = "FolioSettingsApp"
+
+/**
+ * Whether Folio's app entry was left switched off. Choosing the Soft or Olive app icon, which are gone now, turned the
+ * default entry off and theirs on, so a phone that had one has no Folio icon until the default is turned back on.
+ */
+internal fun launcherEntryNeedsReset(state: Int) =
+    state != PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && state != PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+
+/** Puts Folio's app entry back to what the manifest says, if an old app icon choice switched it off. */
+internal fun restoreLauncherEntry(context: Context) {
+    runCatching {
+        val entry = ComponentName(context, "$FOLIO_CLASSES.$FOLIO_SETTINGS_ALIAS")
+        val pm = context.packageManager
+        if (launcherEntryNeedsReset(pm.getComponentEnabledSetting(entry)))
+            pm.setComponentEnabledSetting(entry, PackageManager.COMPONENT_ENABLED_STATE_DEFAULT, PackageManager.DONT_KILL_APP)
+    }
+}
 
 /**
  * Folio's app icon as Folio draws it in its own screens: the real artwork (never Folio Dev's launcher tint) as an iOS

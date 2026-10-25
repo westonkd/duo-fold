@@ -14,10 +14,10 @@ class LayoutScreenTest {
     } + listOf(649f to 700f, 650f to 559f, 650f to 560f, 700f to 700f, 704f to 932f, 932f to 704f)
 
     @Test fun `every window gets the layout it always did`() {
-        val state = LauncherState(compact = LayoutPreset(DockPlacement.SIDE), expanded = LayoutPreset(DockPlacement.BOTTOM))
+        val state = LauncherState(coverDock = DockPlacement.SIDE, innerDock = DockPlacement.BOTTOM)
         for ((w, h) in sizes) for (scale in listOf(1f, 1.2f)) {
-            val before = if (w * scale >= EXPANDED_HOME_MIN_WIDTH_DP && h * scale >= HOME_REGULAR_MIN_HEIGHT_DP) state.expanded else state.compact
-            assertEquals("$w x $h at $scale", before, state.presetFor(layoutScreenFor(w, h, scale)))
+            val before = if (w * scale >= EXPANDED_HOME_MIN_WIDTH_DP && h * scale >= HOME_REGULAR_MIN_HEIGHT_DP) state.innerDock else state.coverDock
+            assertEquals("$w x $h at $scale", before, state.dockFor(layoutScreenFor(w, h, scale)))
         }
     }
 
@@ -30,17 +30,17 @@ class LayoutScreenTest {
     }
 
     @Test fun `the upright inner screen shares the inner layout, and changing it changes the inner one`() {
-        val state = LauncherState().withPreset(LayoutScreen.INNER_UPRIGHT, LayoutPreset(DockPlacement.SIDE))
-        assertEquals(LayoutPreset(DockPlacement.SIDE), state.expanded)
-        assertEquals(state.expanded, state.presetFor(LayoutScreen.INNER_UPRIGHT))
-        assertEquals(LayoutPreset(), state.compact)
+        val state = LauncherState().withDock(LayoutScreen.INNER_UPRIGHT, DockPlacement.SIDE)
+        assertEquals(DockPlacement.SIDE, state.innerDock)
+        assertEquals(state.innerDock, state.dockFor(LayoutScreen.INNER_UPRIGHT))
+        assertEquals(DockPlacement.AUTOMATIC, state.coverDock)
     }
 
     @Test fun `an old separate upright layout is read past`() {
         val saved = JSONObject().put("expanded", JSONObject().put("iconSize", 60.0).put("dockPlacement", "SIDE"))
             .put("portrait", JSONObject().put("iconSize", 44.0).put("dockPlacement", "BOTTOM"))
         val state = decodeLauncherState(saved.toString(), legacyRaw = null)
-        assertEquals(LayoutPreset(DockPlacement.SIDE), state.expanded)
-        assertEquals(state.expanded, state.presetFor(LayoutScreen.INNER_UPRIGHT))
+        assertEquals(DockPlacement.SIDE, state.innerDock)
+        assertEquals(state.innerDock, state.dockFor(LayoutScreen.INNER_UPRIGHT))
     }
 }

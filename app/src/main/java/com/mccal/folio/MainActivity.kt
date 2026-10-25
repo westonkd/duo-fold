@@ -183,8 +183,7 @@ class MainActivity : ComponentActivity() {
                 LocalAppIconStyles provides state.appIconStyles,
                 LocalIconsAreDark provides iconsAreDark,
                 LocalRecentPackages provides recentPackages,
-                LocalBadgeCounts provides badgeCounts, LocalInstallProgress provides installProgress, LocalNewApps provides newApps, LocalFolderColors provides state.folderColors) { FoldTransitionHost(FeatureScopes.on(state.featureScopes, DUET_ID, state.foldEffect,
-                    screenFor(androidx.compose.ui.platform.LocalConfiguration.current.fitsRegularHomeLayout())), state.stayAwakeOnFold,
+                LocalBadgeCounts provides badgeCounts, LocalInstallProgress provides installProgress, LocalNewApps provides newApps, LocalFolderColors provides state.folderColors) { FoldTransitionHost(state.foldEffect, state.stayAwakeOnFold,
                     state.haptics, reduceMotion = reduceMotion) {
                 // The launcher blurs behind every overlay with the same spring the overlay uses.
                 androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()

@@ -20,7 +20,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Back in Settings goes up a page wherever Settings is open, and closes the sheet only from the top page.
+ * Back in Settings goes to the list wherever Settings is open, and closes the sheet only from the list.
  *
  * Built like the real one: a dialog whose own Back closes it, with Settings inside it answering first.
  */
@@ -41,7 +41,7 @@ class SettingsBackTest {
                 dispatcher = (view.parent as DialogWindowProvider).window.decorView
                     .findViewTreeOnBackPressedDispatcherOwner()!!.onBackPressedDispatcher
                 ModalDialogBackHandler { closed = true }
-                SettingsPageBack(page) { page = page.parent }
+                SettingsPageBack(page) { page = CustomizationPage.OVERVIEW }
             }
         }
         compose.waitForIdle()
@@ -52,11 +52,8 @@ class SettingsBackTest {
         compose.waitForIdle()
     }
 
-    @Test fun `Back goes up one page at a time, then closes the sheet`() {
-        sheet(CustomizationPage.BACKUP)
-        back()
-        assertEquals(CustomizationPage.GENERAL, page)
-        assertFalse(closed)
+    @Test fun `Back goes to the list, then closes the sheet`() {
+        sheet(CustomizationPage.GENERAL)
         back()
         assertEquals(CustomizationPage.OVERVIEW, page)
         assertFalse(closed)

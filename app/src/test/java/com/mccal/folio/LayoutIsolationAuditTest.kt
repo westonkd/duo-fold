@@ -18,8 +18,8 @@ class LayoutIsolationAuditTest {
         val windows = listOf("Fold8 inner" to (932f to 704f), "Fold8 inner upright" to (704f to 932f), "Fold8 cover" to (475f to 751f), "Fold8 cover landscape" to (751f to 475f))
         val rows = mutableListOf<String>()
         for ((name, size) in windows) for (status in listOf(0f, 160f, 300f)) {
-            val with = homeGeometry(size.first, size.second, LayoutPreset(), true, statusHeight = status, railControls = 1)
-            val without = homeGeometry(size.first, size.second, LayoutPreset(), true, statusHeight = status, railControls = 0)
+            val with = homeGeometry(size.first, size.second, DockPlacement.AUTOMATIC, true, statusHeight = status, railControls = 1)
+            val without = homeGeometry(size.first, size.second, DockPlacement.AUTOMATIC, true, statusHeight = status, railControls = 0)
             rows += "%-22s status %3.0f  dock with search: top %5.1f height %5.1f row %4.1f   without: top %5.1f height %5.1f row %4.1f".format(
                 name, status, with.dockTop, with.dockHeight, with.dockRowHeight, without.dockTop, without.dockHeight, without.dockRowHeight)
             assertTrue("$name: the controls never make the dock taller", with.dockHeight <= without.dockHeight + .01f)
@@ -38,8 +38,8 @@ class LayoutIsolationAuditTest {
     }
 
     @Test fun `Discover's extra control moves the dock only when it has to`() {
-        val home = homeGeometry(704f, 932f, LayoutPreset(), true, railControls = 1, homeRailControls = 1)
-        val discover = homeGeometry(704f, 932f, LayoutPreset(), true, railControls = 2, homeRailControls = 1)
+        val home = homeGeometry(704f, 932f, DockPlacement.AUTOMATIC, true, railControls = 1, homeRailControls = 1)
+        val discover = homeGeometry(704f, 932f, DockPlacement.AUTOMATIC, true, railControls = 2, homeRailControls = 1)
         assertEquals("a tall window has room for both, so the dock stays put", home.dockTop, discover.dockTop, .01f)
     }
 }

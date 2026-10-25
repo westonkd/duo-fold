@@ -26,6 +26,6 @@ class DatePatternsTest {
     }
 
     @Test fun `English keeps the order it always had`() = check("values", Locale.US, mapOf(
-        "eeee_mmmm_d" to "Friday, October 2", "mmmm_d" to "October 2", "mmm_d" to "Oct 2",
+        "eeee_mmmm_d" to "Friday, October 2", "mmmm_d" to "October 2",
     ))
 }
