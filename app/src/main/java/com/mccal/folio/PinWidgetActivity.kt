@@ -88,7 +88,7 @@ class PinWidgetActivity : ComponentActivity() {
                     }
                 }
             }) {
-                icon?.let { Image(it.asImageBitmap(), null, Modifier.size(72.dp).clip(RoundedCornerShape(18.dp))) }
+                icon?.let { Image(it.asImageBitmap(), null, Modifier.size(72.dp).clip(IconContinuousShape)) }
                 Text(label, color = Color.White, fontSize = FolioType.TITLE3.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
                 if (app.isNotEmpty()) Text(app, color = FolioColors.SecondaryLabel, fontSize = FolioType.SUBHEAD.sp)
             }

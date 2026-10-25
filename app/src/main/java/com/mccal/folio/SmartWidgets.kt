@@ -1,5 +1,6 @@
 package com.mccal.folio
 
+import androidx.compose.foundation.shape.CircleShape
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -89,7 +90,7 @@ internal fun UpNextCard(onClick: () -> Unit) {
             events.isNotEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(FolioSpace.SNUG.dp)) {
                 events.take(2).forEach { e ->
                     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.CONTROL.dp)).clickable { UpNext.openEvent(context, e) }, verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.width(3.dp).height(30.dp).clip(RoundedCornerShape(2.dp)).background(e.color?.let { Color(it) } ?: LocalAccent.current.fill))
+                        Box(Modifier.width(3.dp).height(30.dp).clip(CircleShape).background(e.color?.let { Color(it) } ?: LocalAccent.current.fill))
                         Spacer(Modifier.width(6.dp))
                         Column {
                             Text(e.title, color = ink.primary, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
