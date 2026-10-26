@@ -52,9 +52,22 @@ internal object CrashLog {
             appendLine(environment(context))
             appendLine("Thread: $threadName")
             appendLine()
-            appendLine(error.stackTraceToString())
+            append(traceWithoutMessages(error))
+            appendLine()
             Diagnostics.trailText().takeIf { it.isNotBlank() }?.let { appendLine("Before it:"); append(it) }
         }
+
+    internal fun traceWithoutMessages(error: Throwable): String = buildString {
+        val seen = mutableSetOf<Throwable>()
+        var current: Throwable? = error
+        var label = ""
+        while (current != null && seen.add(current)) {
+            appendLine(label + current.javaClass.name)
+            current.stackTrace.forEach { appendLine("\tat $it") }
+            label = "Caused by: "
+            current = current.cause
+        }
+    }
 
     private fun write(context: Context, thread: Thread, error: Throwable) = save(context, "crash", report(context, thread.name, error))
 

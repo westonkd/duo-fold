@@ -1,7 +1,7 @@
 # Folio privacy policy
 
-Effective 25 October 2026. This policy covers the Folio Home screen app published on Google Play as
-`com.westonkd.folio`, and builds of it made from this repository.
+Effective 26 October 2026. This policy covers the Folio Home screen app published on Google Play as
+`com.westonkd.folio` by Weston Dransfield, and builds of it made from this repository.
 
 ## The short version
 
@@ -22,14 +22,15 @@ Folio is a Home screen, so it reads what a Home screen needs. None of it leaves 
 | Contacts (optional) | Finding people when you search | Only after you allow it, and only while you search |
 | Calendar (optional) | The Up Next widget | Only after you allow it and add that widget |
 | App usage (optional, "Usage access") | Suggesting the apps you use most, and dots beside dock apps you used in the last hour | Only after you allow it |
-| Accessibility service (optional, "Folio gestures & overlays") | Opening Android's notifications and Quick Settings from Home gestures, the system actions you give a gesture or button (Home, Back, Recents, lock screen, screenshot, power menu, split screen, play/pause), and the dock handle, dock and Big Buttons over other apps if you turn them on | Only after you turn it on in Android's Accessibility settings. It cannot read what's on your screen or what you type, it doesn't observe what you do in other apps, and it collects no data |
+| Accessibility service (optional, "Folio gestures & overlays") | Opening Android's notifications and Quick Settings from Home gestures, the system actions you give a gesture or button (Home, Back, Recents, close notifications, Android's app drawer, lock screen, screenshot, power menu, split screen, play/pause), and the dock handle, dock and Big Buttons over other apps if you turn them on | Only after you turn it on in Android's Accessibility settings. It cannot read what's on your screen or what you type, it doesn't observe what you do in other apps, and it collects no data |
 | Do Not Disturb access (optional) | Gesture and button actions that change Do Not Disturb | Only after you allow it |
 | Biometrics | Unlocking the list of hidden apps | When you open it. Folio only receives "unlocked" or "not unlocked" from Android |
 
-Folio also remembers, in its private storage: your layout and settings, the apps you've launched recently (for
-Search suggestions), what your phone's hinge sensor can report, and a few local problem reports (crashes, freezes,
-the app being closed by Android) with your phone model, screen size and Folio's last few internal events. An event
-can name an app you opened from Folio; problem reports never contain notification content, messages or contacts.
+Folio also remembers, in its private storage: your layout and settings, copies of any pictures you choose for an app
+icon or a background, the apps you've launched recently (for Search suggestions), what your phone's hinge sensor can
+report, and a few local problem reports (crashes, freezes, the app being closed by Android) with your phone model,
+screen size and Folio's last few internal events. An event can name an app you opened from Folio or an app that asked
+to add a widget to Home; problem reports never contain notification content, messages or contacts.
 
 ## When something does leave your phone
 
@@ -37,7 +38,7 @@ Only when you do it yourself:
 
 - **Searching the web.** If you search the web from Folio, your search text goes to the search engine you picked, in
   your browser or that engine's app. Their privacy policy applies.
-- **Sharing a report.** Settings › General can share a problem report or diagnostics (device details, Folio's recent
+- **Sharing a report.** Settings › General › About › Diagnostics can share a problem report or diagnostics (device details, Folio's recent
   events and its own log lines) through Android's share sheet. You choose where it goes and can read it first.
 - **Saving a layout backup.** Settings can save your layout to a file you choose, or to Download/Folio. It can reveal
   which apps you have installed and your folder names. It goes nowhere unless you send it somewhere.

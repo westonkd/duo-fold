@@ -2,6 +2,7 @@ package com.mccal.folio
 
 import android.content.Context
 import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -48,18 +49,24 @@ internal fun FolioPromptHost() {
 internal object PermissionDisclosure {
     fun notificationAccess(context: Context) =
         confirm(context, "notification-access", R.string.notification_access_disclosure_title, R.string.notification_access_disclosure) {
-            NotificationListener.accessSettingsIntent(context)
+            listOf(NotificationListener.accessSettingsIntent(context), Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }
 
     fun usageAccess(context: Context) =
         confirm(context, "usage-access", R.string.usage_access_disclosure_title, R.string.usage_access_disclosure) {
-            Suggestions.usageAccessIntent(context)
+            listOf(Suggestions.usageAccessIntent(context), Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }
 
-    private fun confirm(context: Context, tag: String, title: Int, message: Int, settings: () -> Intent) {
+    private fun confirm(context: Context, tag: String, title: Int, message: Int, settings: () -> List<Intent>) {
         FolioPrompts.show(FolioPrompt(tag, context.getString(title), context.getString(message),
             confirm = context.getString(R.string.agree), dismiss = context.getString(R.string.not_now),
-            onConfirm = { runCatching { context.startActivity(settings().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }))
+            onConfirm = { openFirstAvailable(context, settings()) }))
+    }
+
+    private fun openFirstAvailable(context: Context, intents: List<Intent>) {
+        intents.any { intent ->
+            runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
+        }
     }
 }
 

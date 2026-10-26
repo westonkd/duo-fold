@@ -5,7 +5,7 @@ Folio is in development), and this file follows [Keep a Changelog](https://keepa
 `versionCode` is derived from the version name ((MAJOR × 10000 + MINOR × 100 + PATCH) × 10 + HOTFIX), so every release sorts correctly and a fix on top of one has nine numbers of its own.
 Folio shows the newest section on the phone after an update, and every version under Settings › What's New › Version History.
 
-## [1.0.0] - Unreleased
+## [1.0.0] - 2026-10-26
 
 ### Added
 - **Folio on Google Play:** a calm, two-panel Home screen with a Side Bar, a widgets page, the App Library, search and folders, on the cover screen and unfolded, and Home landing like a page when the phone opens or shuts.
@@ -21,6 +21,8 @@ Folio shows the newest section on the phone after an update, and every version u
 ### Fixed
 - **Wide tablets:** on a screen wider than about 1200dp, the edge of the App Library no longer shows beside the dock while you're on Home.
 - **Widgets with large text:** with Android's font size turned up past 130%, Folio's Clock, Date and other widgets keep their text at 130% so the time fits instead of being cut off.
+- **Permission requests on every phone:** where a phone has no settings page for Folio's own notification or usage access, Agree opens the general list instead of doing nothing.
+- **Less in problem reports:** a crash report keeps where Folio failed but no longer the error's own text, which could name a file or a contact, and the Up Next calendar is only read when a stack holds that widget.
 
 ## Before Google Play
 

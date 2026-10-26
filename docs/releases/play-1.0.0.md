@@ -21,6 +21,8 @@ and on your machine.
   two weeks after the closed test starts. An organization account skips it.
 - [ ] **Identity verification** in Play Console must be finished before the app can be published.
 - [ ] **Merge** the Play pull requests in order, then the version bump.
+  The privacy policy URL is a 404 until `PRIVACY.md` is on `main`, and Play checks it when you save App content,
+  so merge before filling in section 3.
 
 ## 2. Upload key and the bundle
 
@@ -72,7 +74,7 @@ Sensitive permissions and APIs › Accessibility API:
 
 - **Core functionality:** "Folio is a Home screen. Its optional gestures service lets a swipe down on Home open
   Android's notification shade or Quick Settings, runs system actions the user assigns to gestures and on-screen
-  buttons (Home, Back, Recents, lock screen, screenshot, power menu, split screen, play/pause) through
+  buttons (Home, Back, Recents, close notifications, Android's app drawer, lock screen, screenshot, power menu, split screen, play/pause) through
   performGlobalAction, and shows the user's dock and navigation buttons over other apps as accessibility overlays when
   the user turns those on. It subscribes to no accessibility events, cannot retrieve window content
   (canRetrieveWindowContent=false), and collects or shares no data."

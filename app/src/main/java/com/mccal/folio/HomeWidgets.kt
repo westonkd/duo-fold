@@ -335,7 +335,7 @@ internal fun SmartStack(cards: List<Int>, slot: Int, controller: WidgetControlle
             SmartRotateClock.record(slot, android.os.SystemClock.elapsedRealtime())
             val relevance = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 val apps = Suggestions.packageRelevance(context, homeApps.apps)
-                val soon = UpNext.events(context, limit = 1).firstOrNull()?.let { !it.allDay && it.begin - System.currentTimeMillis() in 0..60 * 60_000L } == true
+                val soon = UP_NEXT_WIDGET in cards && UpNext.events(context, limit = 1).firstOrNull()?.let { !it.allDay && it.begin - System.currentTimeMillis() in 0..60 * 60_000L } == true
                 cards.map { id -> when {
                     id == UP_NEXT_WIDGET -> if (soon) 5.0 else 0.0
                     id >= 0 -> controller.manager.getAppWidgetInfo(id)?.provider?.packageName?.let { apps[it] } ?: 0.0
