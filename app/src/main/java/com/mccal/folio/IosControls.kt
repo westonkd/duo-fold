@@ -286,22 +286,24 @@ internal fun FolioButton(
 
 /** iOS segmented control: one rounded track with a sliding thumb behind the chosen option. Use for two or three short choices. */
 @Composable
-internal fun <T> IosSegmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier, tag: String? = null) {
+internal fun <T> IosSegmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier, tag: String? = null,
+    light: Boolean = false) {
     val haptic = LocalHapticFeedback.current
     val index = options.indexOfFirst { it.first == selected }.coerceAtLeast(0)
     androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth().height(32.dp).clip(CircleShape)
-        .background(Color.White.copy(alpha = .12f)).padding(FolioSpace.HAIR.dp).then(if (tag != null) Modifier.testTag(tag) else Modifier)) {
+        .background(if (light) FolioColors.LightFill else Color.White.copy(alpha = .12f)).padding(FolioSpace.HAIR.dp)
+        .then(if (tag != null) Modifier.testTag(tag) else Modifier)) {
         val segment = maxWidth / options.size
         val x by animateDpAsState(segment * index, FolioMotion.spring(FolioMotion.calm(FolioMotion.Control, LocalReduceMotion.current)), label = "segment")
         Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(x.roundToPx(), 0) }.width(segment).fillMaxHeight()
-            .shadow(2.dp, CircleShape).clip(CircleShape).background(FolioColors.SegmentThumb))
+            .shadow(2.dp, CircleShape).clip(CircleShape).background(if (light) Color.White else FolioColors.SegmentThumb))
         Row(Modifier.fillMaxSize()) {
             options.forEach { (value, label) ->
                 Box(Modifier.weight(1f).fillMaxHeight().clip(CircleShape)
                     .selectable(value == selected, role = Role.RadioButton) {
                         if (value != selected) { haptic.perform(FolioHaptic.Step); onSelect(value) }
-                    }, contentAlignment = Alignment.Center) {
-                    androidx.compose.material3.Text(label, color = Color.White, fontSize = FolioType.FOOTNOTE.sp, maxLines = 1,
+                    }.then(if (tag != null) Modifier.testTag("$tag-$label") else Modifier), contentAlignment = Alignment.Center) {
+                    androidx.compose.material3.Text(label, color = if (light) FolioColors.LightLabel else Color.White, fontSize = FolioType.FOOTNOTE.sp, maxLines = 1,
                         fontWeight = if (value == selected) FontWeight.SemiBold else FontWeight.Medium)
                 }
             }

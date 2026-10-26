@@ -442,10 +442,10 @@ internal fun WidgetActions(
                         label = { Text(label) }, modifier = Modifier.weight(1f).testTag("widget-size-${w}x$h-${placement.slot}"))
                 }
             }
-            MenuDivider()
-            MenuRow(stringResource(R.string.resize_on_home), Icons.Rounded.OpenInFull) { if (feasible) onStartResize(width, height) }
-            MenuDivider()
-            MenuRow(if (customSize) stringResource(R.string.hide_custom_size) else stringResource(R.string.custom_size), Icons.Rounded.Tune) { customSize = !customSize }
+            SheetDivider()
+            MenuRow(stringResource(R.string.resize_on_home), Icons.Rounded.OpenInFull, onDark = true) { if (feasible) onStartResize(width, height) }
+            SheetDivider()
+            MenuRow(if (customSize) stringResource(R.string.hide_custom_size) else stringResource(R.string.custom_size), Icons.Rounded.Tune, onDark = true) { customSize = !customSize }
             if (customSize) Column(Modifier.padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.SMALL.dp), verticalArrangement = Arrangement.spacedBy(FolioSpace.TINY.dp)) {
                 if (!feasible) Text(stringResource(R.string.move_this_widget_into_the_six_row_grid_b), color = FolioColors.Red, fontSize = FolioType.FOOTNOTE.sp)
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -472,11 +472,11 @@ internal fun WidgetActions(
 
         SheetGroupLabel(stringResource(R.string.widget))
         SheetGroup {
-            if (canConfigure) { MenuRow(stringResource(R.string.edit_widget), Icons.Rounded.Settings) { onConfigure() }; MenuDivider() }
-            if (onPlace != null) { MenuRow(stringResource(R.string.place_freely), Icons.Rounded.OpenWith) { onPlace() }; MenuDivider() }
-            MenuRow(stringResource(R.string.replace_widget), Icons.Rounded.FindReplace) { onReplace() }
+            if (canConfigure) { MenuRow(stringResource(R.string.edit_widget), Icons.Rounded.Settings, onDark = true) { onConfigure() }; SheetDivider() }
+            if (onPlace != null) { MenuRow(stringResource(R.string.place_freely), Icons.Rounded.OpenWith, onDark = true) { onPlace() }; SheetDivider() }
+            MenuRow(stringResource(R.string.replace_widget), Icons.Rounded.FindReplace, onDark = true) { onReplace() }
             if (homePages > 1) {
-                MenuDivider()
+                SheetDivider()
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(FolioSpace.MEDIUM.dp), horizontalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
                     repeat(homePages) { page ->
                         IosChip(selected = placement.page == page, onClick = { onMoveToPage(page) },
@@ -488,10 +488,10 @@ internal fun WidgetActions(
 
         SheetGroupLabel(stringResource(R.string.smart_stack))
         SheetGroup {
-            MenuRow(if (stackCards.size > 1) stringResource(R.string.add_widget_to_stack) else stringResource(R.string.make_a_stack), Icons.Rounded.Layers) { onAddToStack() }
+            MenuRow(if (stackCards.size > 1) stringResource(R.string.add_widget_to_stack) else stringResource(R.string.make_a_stack), Icons.Rounded.Layers, onDark = true) { onAddToStack() }
             if (stackCards.size > 1) {
                 stackCards.forEachIndexed { index, card ->
-                    MenuDivider()
+                    SheetDivider()
                     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = FolioSpace.LARGE.dp), verticalAlignment = Alignment.CenterVertically) {
                         val cardName = stackLabel(card) ?: stringResource(R.string.widget)
                         Text("${index + 1}. $cardName", Modifier.weight(1f), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -501,7 +501,7 @@ internal fun WidgetActions(
                         }
                     }
                 }
-                MenuDivider()
+                SheetDivider()
                 Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(start = FolioSpace.LARGE.dp, end = FolioSpace.SMALL.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(stringResource(R.string.smart_rotate), color = Color.White)
@@ -515,7 +515,7 @@ internal fun WidgetActions(
             modifier = Modifier.padding(start = FolioSpace.TINY.dp))
 
         SheetGroup(Modifier.padding(top = FolioSpace.SMALL.dp)) {
-            MenuRow(if (stackCards.size > 1) stringResource(R.string.remove_stack) else stringResource(R.string.remove_widget_2), Icons.Rounded.RemoveCircleOutline, destructive = true) { onRemove() }
+            MenuRow(if (stackCards.size > 1) stringResource(R.string.remove_stack) else stringResource(R.string.remove_widget_2), Icons.Rounded.RemoveCircleOutline, destructive = true, onDark = true) { onRemove() }
         }
         Spacer(Modifier.height(16.dp))
     }

@@ -49,6 +49,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
+internal const val PLACEMENT_TOOLBAR_BOTTOM_DP = 120
+
 /** Pixels from the top of the grid to a row line: the two top rows are half height, the rest are [appPitch] tall. */
 internal fun placeRowToPx(row: Float, topPitch: Float, appPitch: Float) =
     if (row <= 2f) row * topPitch else 2f * topPitch + (row - 2f) * appPitch
@@ -109,7 +111,7 @@ internal fun WidgetPlaceOverlay(
         // Clear of the dock and its search pill, so none of the buttons sit on top of something else you could tap.
         FlowRow(Modifier.align(if (bottom) Alignment.BottomCenter else Alignment.TopCenter)
             .padding(start = FolioSpace.MEDIUM.dp, end = FolioSpace.MEDIUM.dp, top = FolioSpace.MEDIUM.dp,
-                bottom = if (bottom) 120.dp else FolioSpace.MEDIUM.dp)
+                bottom = if (bottom) PLACEMENT_TOOLBAR_BOTTOM_DP.dp else FolioSpace.MEDIUM.dp)
             .toolbarGlass(RoundedCornerShape(FolioRadius.FLOATING.dp)),
             horizontalArrangement = Arrangement.Center, verticalArrangement = Arrangement.Center, itemVerticalAlignment = Alignment.CenterVertically) {
             listOf(Triple(R.string.move_left, Icons.Rounded.ArrowBack, -1f to 0f), Triple(R.string.move_up, Icons.Rounded.ArrowUpward, 0f to -1f),
