@@ -163,4 +163,20 @@ class WidgetSizingTest {
         assertEquals(WidgetContentSize(310f, 102f), mixed.contentSize(0, 2, 4, 2))
         assertEquals(WidgetContentSize(150f, 132f), mixed.contentSize(0, 1, 2, 2))
     }
+
+    @Test fun placementOffersThePresetsTheWidgetAllowsPlusItsOwnSize() {
+        val gmail = WidgetSpanConstraints(WidgetSpan(3, 3), WidgetSpan(2, 2), WidgetSpan(4, 4), true, true)
+        assertEquals(listOf(WidgetSpan(2, 2), WidgetSpan(4, 2), WidgetSpan(3, 3), WidgetSpan(4, 4)),
+            placementSizeOptions(WidgetSpan(3, 3), gmail))
+    }
+
+    @Test fun aFixedSizeWidgetOffersOnlyItsOwnSize() {
+        val fixed = WidgetSpanConstraints(WidgetSpan(4, 1), WidgetSpan(4, 1), WidgetSpan(4, 1), false, false)
+        assertEquals(listOf(WidgetSpan(4, 1)), placementSizeOptions(WidgetSpan(4, 1), fixed))
+    }
+
+    @Test fun aBuiltinWithoutLimitsOffersEveryPresetThatFitsThePage() {
+        assertEquals(WIDGET_SIZE_PRESETS, placementSizeOptions(WidgetSpan(2, 2), null))
+        assertEquals(listOf(WidgetSpan(2, 2)), placementSizeOptions(WidgetSpan(2, 2), null, columns = 2))
+    }
 }

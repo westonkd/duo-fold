@@ -126,3 +126,12 @@ fun builtinWidgetConstraints(id: Int): WidgetSpanConstraints? = when (id) {
         canResizeHorizontally = true, canResizeVertically = true)
     else -> null
 }
+
+val WIDGET_SIZE_PRESETS = listOf(WidgetSpan(2, 2), WidgetSpan(4, 2), WidgetSpan(4, 4))
+
+fun placementSizeOptions(current: WidgetSpan, constraints: WidgetSpanConstraints?, columns: Int = GRID_COLUMNS): List<WidgetSpan> {
+    fun allowed(span: WidgetSpan) = span.width <= columns && (constraints == null ||
+        span.width in constraints.minimum.width..constraints.maximum.width &&
+        span.height in constraints.minimum.height..constraints.maximum.height)
+    return (WIDGET_SIZE_PRESETS.filter(::allowed) + current).distinct().sortedWith(compareBy({ it.width * it.height }, { it.width }))
+}

@@ -254,8 +254,12 @@ internal fun AppContextMenu(
 
 @Composable
 internal fun MenuRow(label: String, icon: ImageVector? = null, bitmap: Bitmap? = null, destructive: Boolean = false,
-    tag: String? = null, onClick: () -> Unit) {
-    val tint = if (destructive) FolioColors.RedLight else FolioColors.LightLabel
+    tag: String? = null, onDark: Boolean = false, onClick: () -> Unit) {
+    val tint = when {
+        destructive -> if (onDark) FolioColors.RedOnDark else FolioColors.RedLight
+        onDark -> Color.White
+        else -> FolioColors.LightLabel
+    }
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClick = onClick)
         .then(if (tag != null) Modifier.testTag(tag) else Modifier).padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.MEDIUM.dp),
         verticalAlignment = Alignment.CenterVertically) {
