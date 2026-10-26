@@ -1,6 +1,7 @@
 package com.mccal.folio
 
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.boundsInWindow
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
 import android.graphics.Bitmap
@@ -53,8 +54,24 @@ import kotlin.math.roundToInt
 /** Last on-screen bounds of each app icon, so a long-press menu can lift the icon in place. */
 internal object IconBounds {
     private val bounds = HashMap<String, Rect>()
-    fun update(id: String, rect: Rect) { if (!rect.isEmpty) bounds[id] = Rect(rect) }
-    fun of(id: String): Rect? = bounds[id]
+    private val placements = HashMap<String, java.lang.ref.WeakReference<androidx.compose.ui.layout.LayoutCoordinates>>()
+    fun update(id: String, rect: Rect) { placements.remove(id); store(id, rect) }
+    fun follow(id: String, coordinates: androidx.compose.ui.layout.LayoutCoordinates) {
+        if (placements[id]?.get() !== coordinates) placements[id] = java.lang.ref.WeakReference(coordinates)
+        if (id !in bounds) measure(id, coordinates)
+    }
+    fun of(id: String): Rect? {
+        placements[id]?.get()?.let { measure(id, it) }
+        return bounds[id]
+    }
+    fun windowBounds(coordinates: androidx.compose.ui.layout.LayoutCoordinates?, into: Rect): Rect {
+        coordinates?.takeIf { it.isAttached }?.let { into.set(it.boundsInWindow().toAndroidBounds()) }
+        return into
+    }
+    private fun measure(id: String, coordinates: androidx.compose.ui.layout.LayoutCoordinates) {
+        if (coordinates.isAttached) store(id, coordinates.boundsInWindow().toAndroidBounds())
+    }
+    private fun store(id: String, rect: Rect) { if (!rect.isEmpty) bounds[id] = Rect(rect) }
     fun record(id: String, coordinates: androidx.compose.ui.layout.LayoutCoordinates?) {
         val placed = coordinates?.takeIf { it.isAttached } ?: return
         val corner = placed.positionInWindow()

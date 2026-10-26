@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.positionInRoot
 
 /** Incremented to focus the All apps search field (e.g. after a middle swipe-down on Home). */
 internal val librarySearchFocusRequests = mutableIntStateOf(0)
@@ -148,7 +149,14 @@ internal fun AppLibrary(
                 })
             var libraryWidth by remember { mutableStateOf(360.dp) }
             val density = androidx.compose.ui.platform.LocalDensity.current
-            LazyColumn(Modifier.weight(1f).edgeFade(listState).onSizeChanged { libraryWidth = with(density) { it.width.toDp() } }.testTag("all-apps-list"), state = listState,
+            val installs by Installs.active.collectAsStateWithLifecycle()
+            val downloads = remember(installs) { installs.values.filter { it.newApp }.distinctBy { it.packageName } }
+            val listTop = remember { floatArrayOf(0f) }
+            val pageLight = LocalLightDrift.current
+            val listLight = remember(pageLight) { LightDrift { at -> pageLight.at(at) + androidx.compose.ui.geometry.Offset(0f, listTop[0] - at.y) } }
+            CompositionLocalProvider(LocalLightDrift provides listLight) {
+            LazyColumn(Modifier.weight(1f).edgeFade(listState).onSizeChanged { libraryWidth = with(density) { it.width.toDp() } }
+                .onGloballyPositioned { listTop[0] = it.positionInRoot().y }.testTag("all-apps-list"), state = listState,
                 contentPadding = PaddingValues(bottom = 12.dp)) {
                 if (showWork && selectedProfile?.available == false) item("work-paused") {
                     Column(Modifier.fillMaxWidth().padding(vertical = FolioSpace.XL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -157,7 +165,7 @@ internal fun AppLibrary(
                             Modifier.padding(top = FolioSpace.COMPACT.dp), tag = "turn-on-work")
                     }
                 }
-                if (!editing && query.isBlank()) item("downloading") { DownloadingApps(ink) }
+                if (!editing && query.isBlank() && downloads.isNotEmpty()) item("downloading") { DownloadingApps(ink, downloads) }
                 if (!editing && query.isNotBlank()) item("web-search") {
                     WebSearchRow(query, state.searchEngine, ink) { openWebSearch(context, it, query) }
                 }
@@ -225,6 +233,7 @@ internal fun AppLibrary(
                         }
                     }
                 }
+            }
             }
         }
     }

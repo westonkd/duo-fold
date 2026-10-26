@@ -21,7 +21,9 @@ internal data class DragRegion(val target: DropTarget, val bounds: Rect, val app
 
 @Stable
 internal class HomeDragState {
-    val regions = mutableStateMapOf<DropTarget, DragRegion>()
+    private val placed = HashMap<DropTarget, DragRegion>()
+    private var placedVersion by mutableIntStateOf(0)
+    val regions: Map<DropTarget, DragRegion> get() { placedVersion; return placed }
     private val regionOwners = mutableMapOf<DropTarget, Any>()
     var source by mutableStateOf<DragRegion?>(null)
     var pointer by mutableStateOf(Offset.Zero)
@@ -73,13 +75,14 @@ internal class HomeDragState {
 
     fun register(owner: Any, region: DragRegion) {
         regionOwners[region.target] = owner
-        regions[region.target] = region
+        if (placed.put(region.target, region) != region) placedVersion++
     }
 
     fun update(owner: Any, target: DropTarget, appId: String?, page: Int?, widgetId: Int?, folderId: String?, scope: String?) {
-        regions[target]?.takeIf { regionOwners[target] === owner }?.let {
+        placed[target]?.takeIf { regionOwners[target] === owner }?.let {
             if (it.appId != appId || it.widgetId != widgetId || it.page != page || it.folderId != folderId || it.scope != scope) {
-                regions[target] = it.copy(appId = appId, widgetId = widgetId, page = page, folderId = folderId, scope = scope)
+                placed[target] = it.copy(appId = appId, widgetId = widgetId, page = page, folderId = folderId, scope = scope)
+                placedVersion++
             }
         }
     }
@@ -87,7 +90,7 @@ internal class HomeDragState {
     fun unregister(owner: Any, target: DropTarget) {
         if (regionOwners[target] === owner) {
             regionOwners.remove(target)
-            regions.remove(target)
+            if (placed.remove(target) != null) placedVersion++
         }
     }
 }

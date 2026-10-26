@@ -59,6 +59,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.layout.positionInWindow
@@ -262,7 +263,6 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
         contentDescription = folderLabel
     }, horizontalAlignment = Alignment.CenterHorizontally) {
         val tint = LocalFolderColors.current[folder.id]?.let { Color(it) }
-        val bounds = remember { android.graphics.Rect() }
         // An app held over this folder says so before you let go: the folder lifts a little, and the drop is what adds it.
         val hovered = drag.moved && drag.source?.appId?.let { !isFolderId(it) } == true &&
             drag.destination(drag.pointer, setOf(page))?.target == DropTarget.Folder(folder.id)
@@ -270,7 +270,7 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
         // The tile hands over to the open folder's panel (FolderOpening).
         Box(Modifier.size(size.dp).graphicsLayer { scaleX = lift; scaleY = lift
                 alpha = FolderOpening.tileAlpha(folder.id, FolderOpening.id, FolderOpening.progress) }
-            .onGloballyPositioned { bounds.set(it.boundsInWindow().toAndroidBounds()); IconBounds.update(folder.id, bounds) }
+            .onPlaced { IconBounds.follow(folder.id, it) }
             .jiggle(folder.id).pressFeedback(pressed || opening, lifted, size * ICON_CORNER_FRACTION)) {
             // Like iOS: a folder's badge is the total of its apps' badges (each app counted once).
             val look = LocalIconLook.current
@@ -311,12 +311,13 @@ internal fun AppTile(app: AppEntry, size: Float, labels: Boolean, modifier: Modi
     // No size animation: after folding, the cover's icons must appear at their own size on the first frame.
     val iconSize = size.dp
     val bounds = remember { android.graphics.Rect() }
+    val iconPlace = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
     val openPanel = LocalAppPanel.current
     // Icon Actions: an icon with saved actions gets swipes, a double tap and TalkBack actions for them; any other runs
     // exactly the code it always did (see rememberIconGestures).
     val stack = if (app.id in LocalStackedApps.current) LocalIconStack.current else null
     // A tap holds the icon dipped while the app starts (press feedback), whichever path the tap takes.
-    val tap = { if (onRemove == null) launching = true; onClick(bounds) }
+    val tap = { if (onRemove == null) launching = true; onClick(IconBounds.windowBounds(iconPlace[0], bounds)) }
     val gestures = rememberIconGestures(app, interaction, null, openPanel, stack, tap,
         plain = Modifier.iconSwipes(openPanel?.let { { it(app) } }, stack?.let { { it(app) } })
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = tap))
@@ -329,7 +330,7 @@ internal fun AppTile(app: AppEntry, size: Float, labels: Boolean, modifier: Modi
         }.padding(horizontal = FolioSpace.HAIR.dp),
         horizontalAlignment = Alignment.CenterHorizontally) {
         // Bounds are read outside the wiggle layer so jiggling doesn't report a new position every frame.
-        Box(Modifier.size(iconSize).onGloballyPositioned { bounds.set(it.boundsInWindow().toAndroidBounds()); IconBounds.update(app.id, bounds) }
+        Box(Modifier.size(iconSize).onPlaced { iconPlace[0] = it; IconBounds.follow(app.id, it) }
             .jiggle(app.id)) {
             // The folder plate grows behind the icon and the icon shrinks into it; under Reduce Motion the plate only fades in.
             val still = LocalReduceMotion.current

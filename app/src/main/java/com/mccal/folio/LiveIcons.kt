@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -153,7 +154,10 @@ internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modif
     val fills = remember(source) { runCatching { fillsEdges(source.width, source.height) { x, y -> android.graphics.Color.alpha(source.getPixel(x, y)) } }.getOrDefault(false) }
     val shaped = picture != null || liveKind != null || fills
     Box(modifier.semantics { contentDescription?.let { this.contentDescription = it } }) {
-        val fill = Modifier.fillMaxSize().then(if (shaped) Modifier.iconRestingShadow() else Modifier).clip(IconContinuousShape)
+        val fill = Modifier.fillMaxSize().then(if (shaped) Modifier.iconRestingShadow() else Modifier).graphicsLayer {
+            clip = true; shape = IconContinuousShape
+            compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
+        }
         when {
             picture != null -> { val shown = remember(picture) { picture!!.asImageBitmap() }; Image(shown, null, fill.lit()) }
             liveKind == LiveIcons.Kind.CALENDAR -> CalendarIcon(fill.lit(), palette)

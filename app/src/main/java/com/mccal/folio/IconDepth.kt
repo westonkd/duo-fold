@@ -77,6 +77,7 @@ internal object IconLight {
     const val EDGE_ALPHA = 200
     const val RIM_WIDTH = .014f
     const val SHADOW_DP = 3f
+    const val SHADOW_CORNER_SPREAD = 1.2f
     const val SHADOW_AMBIENT = .18f
     const val SHADOW_SPOT = .32f
     const val RIM_SPOT = .9f
@@ -86,7 +87,10 @@ internal object IconLight {
     const val WIDGET_FILL_ALPHA = 96
 }
 
-internal fun Modifier.iconRestingShadow(): Modifier = shadow(IconLight.SHADOW_DP.dp, IconContinuousShape, clip = false,
+internal val IconShadowCaster = androidx.compose.foundation.shape.RoundedCornerShape(
+    androidx.compose.foundation.shape.CornerSize(ICON_CORNER_FRACTION * IconLight.SHADOW_CORNER_SPREAD * 100f))
+
+internal fun Modifier.iconRestingShadow(): Modifier = shadow(IconLight.SHADOW_DP.dp, IconShadowCaster, clip = false,
     ambientColor = Color.Black.copy(alpha = IconLight.SHADOW_AMBIENT), spotColor = Color.Black.copy(alpha = IconLight.SHADOW_SPOT))
 
 @Immutable
@@ -125,14 +129,14 @@ internal fun fillsEdges(width: Int, height: Int, alphaAt: (Int, Int) -> Int): Bo
         .all { (x, y) -> alphaAt(x, y) >= IconLight.EDGE_ALPHA }
 }
 
-internal fun Modifier.iconLighting(shape: Shape, light: IconLighting): Modifier = this then IconLightingElement(shape, light)
+internal fun Modifier.iconLighting(shape: Shape, light: IconLighting, live: Boolean = false): Modifier = this then IconLightingElement(shape, light, live)
 
-private data class IconLightingElement(val shape: Shape, val light: IconLighting) : ModifierNodeElement<IconLightingNode>() {
-    override fun create() = IconLightingNode(shape, light)
-    override fun update(node: IconLightingNode) = node.restyle(shape, light)
+private data class IconLightingElement(val shape: Shape, val light: IconLighting, val live: Boolean) : ModifierNodeElement<IconLightingNode>() {
+    override fun create() = IconLightingNode(shape, light, live)
+    override fun update(node: IconLightingNode) = node.restyle(shape, light, live)
 }
 
-private class IconLightingNode(private var shape: Shape, private var light: IconLighting) : SceneLitNode() {
+private class IconLightingNode(private var shape: Shape, private var light: IconLighting, override var live: Boolean) : SceneLitNode() {
     private class Cut(val size: Size, val outline: Outline, val rimOutline: Outline, val rimWidth: Float)
 
     private class Lights(light: IconLighting) {
@@ -146,7 +150,8 @@ private class IconLightingNode(private var shape: Shape, private var light: Icon
     private var cut: Cut? = null
     private var lights = Lights(light)
 
-    fun restyle(shape: Shape, light: IconLighting) {
+    fun restyle(shape: Shape, light: IconLighting, live: Boolean) {
+        this.live = live
         if (shape == this.shape && light == this.light) return
         if (light != this.light) lights = Lights(light)
         this.shape = shape

@@ -8,7 +8,10 @@ import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.findRootCoordinates
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
 import androidx.compose.ui.node.DrawModifierNode
+import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.node.GlobalPositionAwareModifierNode
 import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.node.requireLayoutDirection
@@ -52,6 +55,17 @@ internal object SceneLight {
     }
 
     private val Size.center get() = Offset(width / 2f, height / 2f)
+}
+
+internal fun interface LightDrift {
+    fun at(window: Offset): Offset
+}
+
+internal val LocalLightDrift = compositionLocalOf { LightDrift { Offset.Zero } }
+
+internal fun pagerLightDrift(position: () -> Float, page: Int, pageStride: () -> Float, rtl: Boolean) = LightDrift {
+    val shift = (position() - page) * pageStride()
+    Offset(if (rtl) -shift else shift, 0f)
 }
 
 internal class LitFrame(size: Size, toward: Offset) {
@@ -101,14 +115,17 @@ internal class PlacedGradient private constructor(private val shader: android.gr
     }
 }
 
-internal abstract class SceneLitNode : Modifier.Node(), GlobalPositionAwareModifierNode, DrawModifierNode {
+internal abstract class SceneLitNode : Modifier.Node(), GlobalPositionAwareModifierNode, DrawModifierNode,
+    CompositionLocalConsumerModifierNode {
     protected var toward = SceneLight.UNPLACED
         private set
+    protected abstract val live: Boolean
 
     override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
         if (!coordinates.isAttached) return
         val root = coordinates.findRootCoordinates()
-        val light = coordinates.localPositionOf(root, SceneLight.source(root.size.toSize(), requireLayoutDirection()))
+        val drift = if (live) Offset.Zero else currentValueOf(LocalLightDrift).at(root.localPositionOf(coordinates, Offset.Zero))
+        val light = coordinates.localPositionOf(root, SceneLight.source(root.size.toSize(), requireLayoutDirection()) - drift)
         val next = SceneLight.toward(coordinates.size.toSize(), light)
         if ((next - toward).getDistance() > SceneLight.SETTLE) {
             toward = next

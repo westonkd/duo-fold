@@ -99,7 +99,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 internal fun GlassCard(modifier: Modifier = Modifier, onClick: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val cardShape = RoundedCornerShape(FolioRadius.WIDGET.dp)
-    Surface(modifier.fillMaxSize().clip(cardShape).liquidGlass(cardShape, LIQUID_FROST, GlassRole.PANEL).clickable(onClick = onClick),
+    Surface(modifier.fillMaxSize().clip(cardShape).liquidGlass(cardShape, LIQUID_FROST, GlassRole.PANEL, live = true).clickable(onClick = onClick),
         color = Color.Transparent, shape = cardShape) {
         // Like iOS widgets, the whole card scales with its size, so a smaller card shrinks the text instead of clipping it.
         BoxWithConstraints {
@@ -198,11 +198,11 @@ internal fun WidgetSlot(id: Int, slot: Int, controller: WidgetController, modifi
             key(id) {
                 var fillsBox by remember { mutableStateOf(false) }
                 AndroidView(factory = { context ->
-                    controller.host.createView(context, id, info).also { view ->
+                    controller.hostView(context, id, info).also { view ->
                         (view as? ZeroPaddingWidgetHostView)?.onFillsBoxChanged = { fillsBox = it }
                     }
                 }, modifier = Modifier.fillMaxSize())
-                if (fillsBox) Box(Modifier.matchParentSize().iconLighting(RoundedCornerShape(FolioRadius.WIDGET.dp), ProviderWidgetLighting))
+                if (fillsBox) Box(Modifier.matchParentSize().iconLighting(RoundedCornerShape(FolioRadius.WIDGET.dp), ProviderWidgetLighting, live = true))
             }
         }
     }
@@ -278,7 +278,7 @@ internal fun BuiltinWidgetCard(id: Int, slot: Int, opensApp: Boolean = false, on
             Text(stringResource(R.string.your_widgets), color = Color.White, fontSize = FolioType.SUBHEAD.sp, maxLines = 1)
             Text(stringResource(R.string.tap_to_choose), color = Color.White.copy(alpha = .8f), fontSize = FolioType.GROUP_LABEL.sp)
         }
-        else -> Surface(Modifier.fillMaxSize().liquidGlass(RoundedCornerShape(FolioRadius.WIDGET.dp), LIBRARY_TILE_FROST, GlassRole.TILE).clickable(onClick = onAdd),
+        else -> Surface(Modifier.fillMaxSize().liquidGlass(RoundedCornerShape(FolioRadius.WIDGET.dp), LIBRARY_TILE_FROST, GlassRole.TILE, live = true).clickable(onClick = onAdd),
             color = Color.Transparent, shape = RoundedCornerShape(FolioRadius.WIDGET.dp)) {
             Column(Modifier.padding(FolioSpace.MEDIUM.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(Icons.Rounded.Add, null, tint = Color.White)
