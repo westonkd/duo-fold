@@ -203,6 +203,7 @@ internal fun androidx.compose.ui.Modifier.toolbarGlass(shape: androidx.compose.u
     liquidGlass(shape, TOOLBAR_FROST, GlassRole.FLOATING)
 
 internal const val BACKDROP_BLUR_STEPS = 6
+internal const val HOME_BACKDROP_BLUR_DP = 72
 
 internal fun backdropBlurStep(progress: Float): Int = kotlin.math.round(progress.coerceIn(0f, 1f) * BACKDROP_BLUR_STEPS).toInt()
 

@@ -118,7 +118,7 @@ class MainActivity : ComponentActivity() {
             // A back swipe that closed Spotlight keeps its preview until the close ends; the next one starts clean (MO7).
             val overlayShowing = spotlightVisible.value
             androidx.compose.runtime.LaunchedEffect(overlayShowing) { if (overlayShowing) OverlayBack.swipe.snapTo(0f) }
-            val backdropBlurPx = with(androidx.compose.ui.platform.LocalDensity.current) { 32.dp.toPx() }
+            val backdropBlurPx = with(androidx.compose.ui.platform.LocalDensity.current) { HOME_BACKDROP_BLUR_DP.dp.toPx() }
             val backdropBlurs = androidx.compose.runtime.remember(backdropBlurPx) { backdropBlurSteps(backdropBlurPx) }
             DuoTheme { val notificationItems = NotificationListener.notifications.collectAsStateWithLifecycle().value
             // Progress ticks for every install session on the phone. Kept as a State that nothing here reads, so a tick
