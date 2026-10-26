@@ -6,7 +6,8 @@ it for each build.
 
 - On the cover, swipe right from Home 1: the widgets page shows an Add Widgets button; add one and it stays there
 - Try to drag an app onto the widgets page: it won't drop there
-- Open the phone flat: Home shows the widgets page on the left beside Home 1, and the left half bounces once as it lands
-- Close the phone: the cover bounces about its hinge edge as it lights, with a tap
+- Open the phone flat: the left half springs up off the hinge with a light tick and settles slowly, no second bounce
+- Close the phone: a click and thud as the hinge shuts, then the cover drops shut, faster at the end, with no bounce
 - Hold the phone half open, then open it flat: it lands again
+- Fold it while another app is open, then go Home on the cover: no fall plays
 - Settings › Fold: turn Page Landing off; opening and closing only tap
