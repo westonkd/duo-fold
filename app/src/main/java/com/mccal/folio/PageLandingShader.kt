@@ -9,15 +9,15 @@ import androidx.compose.ui.graphics.asComposeRenderEffect
 internal class PageLandingShader {
     private val shader = RuntimeShader(SOURCE)
 
-    fun effect(width: Float, height: Float, lift: Float, page: LandingPage): androidx.compose.ui.graphics.RenderEffect {
-        val radians = Math.toRadians((PageLanding.PEAK_DEGREES * lift).toDouble()).toFloat()
+    fun effect(width: Float, height: Float, pose: PagePose, page: LandingPage): androidx.compose.ui.graphics.RenderEffect {
+        val radians = Math.toRadians((PageLanding.PEAK_DEGREES * pose.lift).toDouble()).toFloat()
         shader.setFloatUniform("size", width, height)
         shader.setFloatUniform("axis", if (page.horizontal) 1f else 0f)
         shader.setFloatUniform("hingePos", page.hingePx)
         shader.setFloatUniform("side", if (page.movingAfterHinge) 1f else -1f)
         shader.setFloatUniform("tilt", radians)
         shader.setFloatUniform("eye", maxOf(width, height) * EYE_DISTANCE)
-        shader.setFloatUniform("crease", lift * CREASE_SHADE)
+        shader.setFloatUniform("crease", pose.shade * CREASE_SHADE)
         shader.setFloatUniform("creaseWidth", (if (page.horizontal) height else width) * CREASE_REACH)
         return RenderEffect.createRuntimeShaderEffect(shader, "content").asComposeRenderEffect()
     }

@@ -25,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -55,15 +54,26 @@ fun FoldTransitionHost(enabled: Boolean = true, stayAwake: Boolean = true, hapti
     DisposableEffect(view) { onDispose { animating(false) } }
 
     val feel by rememberUpdatedState(enabled && haptics)
-    val haptic = LocalHapticFeedback.current
+    val draws = enabled && !reduceMotion && shader != null
+    val bodily = remember { FoldFeel(context) }
     var landing by remember { mutableStateOf<Landing?>(null) }
     var landedAt by remember { mutableLongStateOf(-1L) }
     var lift by remember { mutableFloatStateOf(0f) }
-    fold.onLanded = { kind ->
-        if (feel) haptic.perform(FolioHaptic.Land)
-        landing = kind; landedAt = SystemClock.uptimeMillis(); lift = 0f
+    var shade by remember { mutableFloatStateOf(0f) }
+    var braced by remember { mutableStateOf(false) }
+    fun show(pose: PagePose) { lift = pose.lift; shade = pose.shade }
+    fun land(kind: Landing, now: Long) {
+        braced = false
+        if (kind == Landing.OPENED) { if (feel) bodily.open() }
+        else if (!fold.shutFelt) { fold.feltShut(); if (feel) bodily.shut() }
+        if (kind == Landing.CLOSED && landing == Landing.CLOSED) return
+        landing = kind
+        landedAt = if (kind == Landing.CLOSED) now - PageLanding.SHUT_FALL_MS.toLong() else now
+        show(PageLanding.pose(kind, (now - landedAt).toFloat()))
         fold.wake.trySend(Unit)
     }
+    fold.onLanded = { kind -> land(kind, SystemClock.uptimeMillis()) }
+    fold.onShut = { if (feel) bodily.shut() }
 
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle) {
@@ -80,17 +90,19 @@ fun FoldTransitionHost(enabled: Boolean = true, stayAwake: Boolean = true, hapti
 
     if (expanded != fold.expanded) {
         fold.expanded = expanded
-        landing = null; lift = 0f
-        fold.onDisplaySwitched(SystemClock.uptimeMillis())
+        val now = SystemClock.uptimeMillis()
+        braced = !expanded && draws && fold.closing
+        landing = if (braced) Landing.CLOSED else null; landedAt = now
+        show(if (braced) PageLanding.pose(Landing.CLOSED, 0f) else PagePose.FLAT)
+        fold.onDisplaySwitched(now)
     }
 
     LaunchedEffect(lifecycle) { lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
         var litFrames = 0
         var measuring = false
-        var secondTapFor = -1L
         try {
             while (true) {
-                if (!fold.waitingForPanel && landing == null) {
+                if (!fold.waitingForPanel && landing == null && !braced) {
                     if (measuring) { PerfLog.end(PerfScenario.FOLD); measuring = false }
                     animating(false)
                     withTimeoutOrNull(IDLE_WAIT_MS) { fold.wake.receive() }
@@ -102,53 +114,96 @@ fun FoldTransitionHost(enabled: Boolean = true, stayAwake: Boolean = true, hapti
                     val now = SystemClock.uptimeMillis()
                     if (fold.waitingForPanel) {
                         litFrames = if (view.display?.state == Display.STATE_ON) litFrames + 1 else 0
-                        if (litFrames >= 2 || now - fold.switchedAt > LIT_TIMEOUT_MS) { litFrames = 0; fold.onPanelLit() }
+                        if (litFrames >= 2 || now - fold.switchedAt > LIT_TIMEOUT_MS) { litFrames = 0; fold.onPanelLit(assumeShut = braced) }
                     }
-                    if (landing != null) {
+                    val kind = landing
+                    if (kind != null) {
                         val since = (now - landedAt).toFloat()
-                        if (secondTapFor != landedAt && since >= PageLanding.FIRST_BOUNCE_MS) {
-                            secondTapFor = landedAt
-                            if (feel) haptic.perform(FolioHaptic.Step)
-                        }
-                        if (since >= PageLanding.DURATION_MS) { landing = null; lift = 0f } else lift = PageLanding.lift(since)
+                        if (since >= PageLanding.duration(kind)) { landing = null; show(PagePose.FLAT) } else show(PageLanding.pose(kind, since))
                     }
                 }
             }
         } finally { if (measuring) PerfLog.end(PerfScenario.FOLD) }
     } }
 
-    val draws = enabled && !reduceMotion && shader != null
     Box(Modifier.fillMaxSize().then(if (draws) Modifier.graphicsLayer {
         val kind = landing
-        val amount = lift
-        renderEffect = if (kind != null && amount > 0f && Build.VERSION.SDK_INT >= 33)
-            shader!!.effect(size.width, size.height, amount, landingPage(kind, rotation, hinge, size.width, size.height)) else null
+        val pose = PagePose(lift, shade)
+        renderEffect = if (kind != null && pose != PagePose.FLAT && Build.VERSION.SDK_INT >= 33)
+            shader!!.effect(size.width, size.height, pose, landingPage(kind, rotation, hinge, size.width, size.height)) else null
     } else Modifier)) { content() }
 }
 
 internal enum class Landing { OPENED, CLOSED }
 
-internal object PageLanding {
-    const val PEAK_DEGREES = 7f
-    const val FIRST_BOUNCE_MS = 230f
-    const val RESTITUTION = .42f
-    private const val LAST_HEIGHT = .01f
+internal class FoldFeel(context: Context) {
+    private val vibrator = context.getSystemService(android.os.VibratorManager::class.java)?.defaultVibrator
+    private val shut = composed(android.os.VibrationEffect.Composition.PRIMITIVE_CLICK to 1f, android.os.VibrationEffect.Composition.PRIMITIVE_THUD to .8f)
+        ?: android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_HEAVY_CLICK)
+    private val open = composed(android.os.VibrationEffect.Composition.PRIMITIVE_TICK to .6f)
+        ?: android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_TICK)
 
-    val DURATION_MS: Float = run {
-        var total = 0f; var span = FIRST_BOUNCE_MS; var height = 1f
-        while (height >= LAST_HEIGHT) { total += span; span *= RESTITUTION; height *= RESTITUTION * RESTITUTION }
-        total
+    fun shut() = play(shut)
+    fun open() = play(open)
+
+    private fun composed(vararg parts: Pair<Int, Float>): android.os.VibrationEffect? {
+        val v = vibrator ?: return null
+        if (!v.areAllPrimitivesSupported(*parts.map { it.first }.toIntArray())) return null
+        return android.os.VibrationEffect.startComposition().apply { parts.forEach { (id, scale) -> addPrimitive(id, scale) } }.compose()
     }
 
-    fun lift(ms: Float): Float {
-        if (ms <= 0f) return 0f
-        var start = 0f; var span = FIRST_BOUNCE_MS; var height = 1f
-        while (ms >= start + span) {
-            start += span; span *= RESTITUTION; height *= RESTITUTION * RESTITUTION
-            if (height < LAST_HEIGHT) return 0f
+    private fun play(effect: android.os.VibrationEffect) {
+        val v = vibrator?.takeIf { it.hasVibrator() } ?: return
+        if (Build.VERSION.SDK_INT >= 33) v.vibrate(effect, android.os.VibrationAttributes.createForUsage(android.os.VibrationAttributes.USAGE_PHYSICAL_EMULATION))
+        else v.vibrate(effect)
+    }
+}
+
+internal data class PagePose(val lift: Float, val shade: Float) {
+    companion object { val FLAT = PagePose(0f, 0f) }
+}
+
+internal object PageLanding {
+    const val PEAK_DEGREES = 7f
+    const val SHUT_FALL_MS = 140f
+    const val SHUT_RELEASE_MS = 100f
+    const val OPEN_PEAK = .7f
+    const val OPEN_RISE_MS = 120f
+    const val OPEN_SETTLE_MS = 300f
+    const val OPEN_LIGHT_MS = 360f
+
+    fun duration(kind: Landing) = when (kind) {
+        Landing.CLOSED -> SHUT_FALL_MS + SHUT_RELEASE_MS
+        Landing.OPENED -> OPEN_RISE_MS + maxOf(OPEN_SETTLE_MS, OPEN_LIGHT_MS)
+    }
+
+    fun pose(kind: Landing, ms: Float): PagePose {
+        if (ms >= duration(kind)) return PagePose.FLAT
+        val t = ms.coerceAtLeast(0f)
+        return if (kind == Landing.CLOSED) shut(t) else open(t)
+    }
+
+    private fun shut(ms: Float): PagePose {
+        if (ms < SHUT_FALL_MS) {
+            val s = ms / SHUT_FALL_MS
+            return PagePose(1f - s * s, s)
         }
-        val s = (ms - start) / span
-        return height * 4f * s * (1f - s)
+        val r = 1f - (ms - SHUT_FALL_MS) / SHUT_RELEASE_MS
+        return PagePose(0f, r * r)
+    }
+
+    private fun open(ms: Float): PagePose {
+        if (ms < OPEN_RISE_MS) {
+            val up = kotlin.math.sin(ms / OPEN_RISE_MS * kotlin.math.PI.toFloat() / 2f)
+            return PagePose(OPEN_PEAK * up, up)
+        }
+        val since = ms - OPEN_RISE_MS
+        return PagePose(OPEN_PEAK * (1f - smooth(since / OPEN_SETTLE_MS)), 1f - smooth(since / OPEN_LIGHT_MS))
+    }
+
+    private fun smooth(x: Float): Float {
+        val t = x.coerceIn(0f, 1f)
+        return t * t * (3f - 2f * t)
     }
 }
 
@@ -180,23 +235,29 @@ internal class FoldWatcher(context: Context) : SensorEventListener {
 
     private val tracker = HingeTracker(if (hinge == null) HingeCapability.POSTURE_ONLY
         else if (prefs.getString(HINGE_CAPABILITY_KEY, null) == HingeCapability.CONTINUOUS.name) HingeCapability.CONTINUOUS else HingeCapability.STEPPED)
-    private var closing = false
+    var closing = false; private set
     private var peak = 0f
     private var trough = 0f
+    private var shutAssumed = false
+    var shutFelt = false; private set
+    var onShut: (() -> Unit)? = null
+
+    fun feltShut() { shutFelt = true }
 
     fun start() { hinge?.let { sensors?.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) } }
 
     fun stop() { sensors?.unregisterListener(this) }
 
     fun onDisplaySwitched(now: Long) {
-        switchedAt = now; waitingForPanel = true; closing = false
+        switchedAt = now; waitingForPanel = true; closing = false; shutAssumed = false
         wake.trySend(Unit)
     }
 
-    fun onPanelLit() {
+    fun onPanelLit(assumeShut: Boolean = false) {
         waitingForPanel = false
         val settled = tracker.raw == null || (if (expanded) tracker.flat else tracker.closed)
-        if (settled) onLanded?.invoke(if (expanded) Landing.OPENED else Landing.CLOSED)
+        shutAssumed = !expanded && assumeShut && !settled
+        if (settled || shutAssumed) onLanded?.invoke(if (expanded) Landing.OPENED else Landing.CLOSED)
     }
 
     override fun onSensorChanged(event: SensorEvent) {
@@ -213,6 +274,8 @@ internal class FoldWatcher(context: Context) : SensorEventListener {
         if (tracker.feed(value, timestampNs)) prefs.edit().putString(HINGE_CAPABILITY_KEY, tracker.capability.name).apply()
         if (previous == null) { peak = value; return }
         if (previous == value) return
+        if (!tracker.closed) shutFelt = false
+        else if (!wasClosed && !shutFelt && (closing || !expanded)) { shutFelt = true; onShut?.invoke() }
         if (expanded) {
             when {
                 tracker.flat && !wasFlat -> {
@@ -226,7 +289,9 @@ internal class FoldWatcher(context: Context) : SensorEventListener {
                 closing && value - trough >= REOPEN_DEG -> { closing = false; peak = value; FoldBridgeActivity.cancel() }
             }
             if (closing) trough = minOf(trough, value) else peak = maxOf(peak, value)
-        } else if (tracker.closed && !wasClosed && !waitingForPanel) onLanded?.invoke(Landing.CLOSED)
+        } else if (tracker.closed && !wasClosed && !waitingForPanel) {
+            if (shutAssumed) shutAssumed = false else onLanded?.invoke(Landing.CLOSED)
+        } else if (!tracker.closed) shutAssumed = false
     }
 
     private fun startClosing(value: Float) {
