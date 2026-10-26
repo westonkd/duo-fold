@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.rounded.Cancel
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -80,19 +82,34 @@ internal fun IosChip(selected: Boolean, onClick: () -> Unit, label: @Composable 
 @Composable
 internal fun IosSearchField(query: String, onQuery: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier,
     fieldModifier: Modifier = Modifier, ink: Color = if (LocalLightSheet.current) FolioColors.LightLabel else Color.White, glass: Boolean = false, darkGlass: Boolean = false,
-    minHeight: androidx.compose.ui.unit.Dp = 40.dp, onSearch: (() -> Unit)? = null) {
+    minHeight: androidx.compose.ui.unit.Dp = if (glass) GLASS_SEARCH_HEIGHT.dp else 40.dp, onSearch: (() -> Unit)? = null) {
     // 40 dp at the normal text size, taller only when larger text needs it (A11Y-12). The row is as tall as its
     // content (IntrinsicSize.Min), so the clear button's fillMaxHeight fills the field, not the space around it.
     val fieldShape = CircleShape
+    val hintInk = ink.copy(alpha = if (glass) GLASS_SEARCH_HINT else .55f)
+    val interaction = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val centered by androidx.compose.animation.core.animateFloatAsState(if (glass && query.isEmpty() && !focused) 1f else 0f,
+        FolioMotion.spring(FolioMotion.calm(FolioMotion.Quick, LocalReduceMotion.current)), label = "search rest")
+    var fieldWidth by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    var hintWidth by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val rtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
+    val restShift = with(density) {
+        val group = (SEARCH_ICON_SIZE + SEARCH_ICON_GAP).dp.toPx() + hintWidth
+        ((fieldWidth - group) / 2f - FolioSpace.COMPACT.dp.toPx()).coerceAtLeast(0f) * if (rtl) -1f else 1f
+    }
+    val slide = Modifier.graphicsLayer { translationX = restShift * centered }
     Row(modifier.fillMaxWidth().clip(fieldShape).then(when {
             darkGlass -> Modifier.liquidGlass(fieldShape, SEARCH_DARK_FROST, GlassRole.SEARCH, FolioColors.SearchGlass)
-            glass -> Modifier.liquidGlass(fieldShape, LIBRARY_FIELD_FROST, GlassRole.SEARCH)
+            glass -> Modifier.liquidGlass(fieldShape, LIBRARY_TILE_FROST, GlassRole.SEARCH)
             LocalLightSheet.current -> Modifier.background(FolioColors.LightFill)
             else -> Modifier.background(ink.copy(alpha = SEARCH_FIELD_FROST))
         })
+        .onSizeChanged { fieldWidth = it.width }
         .heightIn(min = minHeight).height(IntrinsicSize.Min).padding(start = FolioSpace.COMPACT.dp, end = FolioSpace.HAIR.dp), verticalAlignment = Alignment.CenterVertically) {
-        androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Search, null, tint = ink.copy(alpha = .55f), modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(8.dp))
+        androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Search, null, tint = hintInk, modifier = slide.size(SEARCH_ICON_SIZE.dp))
+        Spacer(Modifier.width(SEARCH_ICON_GAP.dp))
         Box(Modifier.weight(1f)) {
             // The placeholder is drawn inside the field, so TalkBack takes it as the field's name. Beside the field it
             // lay under it, and Compose leaves a covered node out of what TalkBack sees: a nameless "Edit box".
@@ -100,9 +117,11 @@ internal fun IosSearchField(query: String, onQuery: (String) -> Unit, placeholde
                 textStyle = TextStyle(color = ink, fontSize = FolioType.BODY.sp), cursorBrush = androidx.compose.ui.graphics.SolidColor(ink),
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
                 keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { onSearch?.invoke() }),
+                interactionSource = interaction,
                 decorationBox = { field ->
                     Box {
-                        if (query.isEmpty()) androidx.compose.material3.Text(placeholder, color = ink.copy(alpha = .55f), fontSize = FolioType.BODY.sp, maxLines = 1)
+                        if (query.isEmpty()) androidx.compose.material3.Text(placeholder, color = hintInk, fontSize = FolioType.BODY.sp, maxLines = 1,
+                            modifier = slide.onSizeChanged { hintWidth = it.width })
                         field()
                     }
                 })
@@ -110,10 +129,15 @@ internal fun IosSearchField(query: String, onQuery: (String) -> Unit, placeholde
         // The row's height comes from its text, so this only widens the target: nothing drawn moves (A11Y-1).
         if (query.isNotEmpty()) Box(Modifier.width(FolioTouch.MIN.dp).fillMaxHeight().clip(androidx.compose.foundation.shape.CircleShape).clickable { onQuery("") },
             contentAlignment = Alignment.Center) {
-            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Cancel, stringResource(R.string.clear_search), tint = ink.copy(alpha = .5f), modifier = Modifier.size(20.dp))
+            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Cancel, stringResource(R.string.clear_search), tint = ink.copy(alpha = .5f), modifier = Modifier.size(SEARCH_ICON_SIZE.dp))
         }
     }
 }
+
+private const val SEARCH_ICON_SIZE = 20
+private const val SEARCH_ICON_GAP = 8
+private const val GLASS_SEARCH_HEIGHT = 48
+private const val GLASS_SEARCH_HINT = .88f
 
 /** iOS blue (or red) text action row inside a grouped list. */
 @Composable

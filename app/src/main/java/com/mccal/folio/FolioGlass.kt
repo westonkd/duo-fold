@@ -188,7 +188,6 @@ internal const val LIQUID_FROST = .30f
 internal const val SEARCH_FIELD_FROST = .12f
 internal const val LIQUID_OVERLAY_FROST = .72f
 internal const val LIBRARY_TILE_FROST = .22f
-internal const val LIBRARY_FIELD_FROST = .2f
 internal const val MENU_FROST = .84f
 internal const val FOLDER_FROST = .24f
 internal const val TOOLBAR_FROST = .9f
@@ -278,7 +277,8 @@ internal object LiquidGlass {
     const val GRAIN = .045f
     const val RIM_BRIGHT = .82f
     const val RIM_SIDE = .12f
-    const val RIM_FAINT = .34f
+    const val RIM_TRAIL = .62f
+    const val TRAIL_REACH = .8f
     const val LIFT = .28f
     const val EDGE = .16f
     const val GLINT = .4f
@@ -290,10 +290,10 @@ internal fun liquidGlassSpec(base: Color, frost: Float, role: GlassRole, primary
     val start = tintedGlass(base, primary, LiquidGlass.TONE_MIX).copy(alpha = alpha)
     val end = tintedGlass(base, secondary ?: primary, LiquidGlass.TONE_MIX).copy(alpha = alpha * LiquidGlass.END_FROST)
     val bright = Color.White.copy(alpha = LiquidGlass.RIM_BRIGHT * role.rim)
-    val faint = Color.White.copy(alpha = LiquidGlass.RIM_FAINT * role.rim)
+    val trail = Color.White.copy(alpha = LiquidGlass.RIM_TRAIL * role.rim)
     val side = Color.White.copy(alpha = LiquidGlass.RIM_SIDE)
     return GlassSpec(start, end, LiquidGlass.LIGHT * role.light, LiquidGlass.GRAIN,
-        if (role.inset) faint else bright, side, if (role.inset) bright else faint, LiquidGlass.LIFT * role.lift,
+        if (role.inset) trail else bright, side, if (role.inset) bright else trail, LiquidGlass.LIFT * role.lift,
         Color.Black.copy(alpha = LiquidGlass.EDGE * role.rim), if (role.inset) 0f else LiquidGlass.GLINT * role.light * role.glint)
 }
 
@@ -342,6 +342,7 @@ private class LiquidGlassNode(private var shape: androidx.compose.ui.graphics.Sh
         val glint = PlacedGradient.radial(Color.White.copy(alpha = spec.glint))
         val rim = PlacedGradient.linear(0f to spec.rimLead, .28f to spec.rimSide, .72f to spec.rimSide, 1f to spec.rimTrail)
         val rimSpot = PlacedGradient.spot(spec.rimLead.copy(alpha = spec.rimLead.alpha * LiquidGlass.RIM_SPOT))
+        val rimTrailSpot = PlacedGradient.spot(spec.rimTrail.copy(alpha = spec.rimTrail.alpha * LiquidGlass.RIM_SPOT))
     }
 
     private var cut: Cut? = null
@@ -394,8 +395,10 @@ private class LiquidGlassNode(private var shape: androidx.compose.ui.graphics.Sh
         translate(nudge, nudge) {
             val stroke = androidx.compose.ui.graphics.drawscope.Stroke(rimWidth)
             val lit = frame.lit - androidx.compose.ui.geometry.Offset(nudge, nudge)
+            val dark = frame.dark - androidx.compose.ui.geometry.Offset(nudge, nudge)
             drawOutline(cut.rimOutline, lights.rim.along(frame, lit, frame.span).brush, style = stroke)
             drawOutline(cut.rimOutline, lights.rimSpot.around(frame, lit, frame.side * SceneLight.SPOT_REACH).brush, style = stroke)
+            drawOutline(cut.rimOutline, lights.rimTrailSpot.around(frame, dark, frame.side * SceneLight.SPOT_REACH * LiquidGlass.TRAIL_REACH).brush, style = stroke)
         }
         drawContent()
     }
