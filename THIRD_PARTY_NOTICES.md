@@ -15,7 +15,7 @@ Folio is derived from [Duo Launcher](https://github.com/jakesgoodapps/DuoLaunche
 
 The Gradle dependency graph records the resolved artifact versions. Test and build tools are not application features; their upstream distributions provide their respective notices.
 
-The default wallpaper and launcher icon are generated locally from project drawing code/resources. Installed application icons and widget content belong to their respective providers. Google search runs in the installed Google application; that application and its content are not redistributed here.
+The two built-in backgrounds are public-domain woodblock prints by Utagawa Hiroshige: "Night View of Saruwaka-machi" (1856, Library of Congress) and "Naruto Whirlpools" (1855, National Library of New Zealand). The Dune live wallpaper and the launcher icon are drawn by Folio's own code and resources. Installed application icons and widget content belong to their respective providers. Google search runs in the installed Google application; that application and its content are not redistributed here.
 
 Private design-study images, copied reference files, device captures, and probe research are excluded from the public source package. Apple, Google, Android, Samsung, and other referenced names are trademarks of their respective owners; this project is unaffiliated with those companies.
 
