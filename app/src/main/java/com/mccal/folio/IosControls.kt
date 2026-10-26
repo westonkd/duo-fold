@@ -78,8 +78,8 @@ internal fun IosSearchField(query: String, onQuery: (String) -> Unit, placeholde
     // content (IntrinsicSize.Min), so the clear button's fillMaxHeight fills the field, not the space around it.
     val fieldShape = CircleShape
     Row(modifier.fillMaxWidth().clip(fieldShape).then(when {
-            darkGlass -> Modifier.liquidGlass(fieldShape, SEARCH_DARK_FROST, GlassRole.CAPSULE, FolioColors.SearchGlass)
-            glass -> Modifier.liquidGlass(fieldShape, LIBRARY_FIELD_FROST, GlassRole.CAPSULE)
+            darkGlass -> Modifier.liquidGlass(fieldShape, SEARCH_DARK_FROST, GlassRole.SEARCH, FolioColors.SearchGlass)
+            glass -> Modifier.liquidGlass(fieldShape, LIBRARY_FIELD_FROST, GlassRole.SEARCH)
             else -> Modifier.background(ink.copy(alpha = SEARCH_FIELD_FROST))
         })
         .heightIn(min = minHeight).height(IntrinsicSize.Min).padding(start = FolioSpace.COMPACT.dp, end = FolioSpace.HAIR.dp), verticalAlignment = Alignment.CenterVertically) {

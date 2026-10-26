@@ -72,7 +72,7 @@ internal object IconLight {
     const val SHEEN = .2f
     const val SHADE = .14f
     const val WASH = .1f
-    const val GLINT = .3f
+    const val GLINT = .2f
     const val EDGE = .14f
     const val EDGE_ALPHA = 200
     const val RIM_WIDTH = .014f
