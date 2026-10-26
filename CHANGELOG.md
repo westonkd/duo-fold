@@ -15,6 +15,10 @@ Folio shows the newest section on the phone after an update, and every version u
 ### Changed
 - **Search, by name:** the search panel is called Search everywhere in Folio, including its Quick Settings tile and the Swipe Down on Home menu.
 
+### Fixed
+- **Wide tablets:** on a screen wider than about 1200dp, the edge of the App Library no longer shows beside the dock while you're on Home.
+- **Widgets with large text:** with Android's font size turned up past 130%, Folio's Clock, Date and other widgets keep their text at 130% so the time fits instead of being cut off.
+
 ## Before Google Play
 
 Folio's history before it was published on Google Play: McCal's releases, and this fork's own builds that were never
