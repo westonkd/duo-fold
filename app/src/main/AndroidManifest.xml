@@ -53,7 +53,7 @@
         </service>
         <activity android:name=".FoldBridgeActivity" android:exported="false"
             android:theme="@style/Theme.Folio.FoldBridge"
-            android:taskAffinity="com.mccal.folio.foldbridge" android:excludeFromRecents="true"
+            android:taskAffinity="${applicationId}.foldbridge" android:excludeFromRecents="true"
             android:noHistory="true" android:resizeableActivity="true"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|density" />
         <service android:name=".NotificationListener" android:label="@string/label_notification_listener"
@@ -96,7 +96,7 @@
         </activity-alias>
         <!-- "Add to Home Screen" for widgets an app asks to pin (only delivered to the default Home app). -->
         <activity android:name=".PinWidgetActivity" android:exported="true" android:excludeFromRecents="true"
-            android:theme="@style/Theme.Folio.FoldBridge" android:taskAffinity="com.mccal.folio.pin" android:noHistory="true">
+            android:theme="@style/Theme.Folio.FoldBridge" android:taskAffinity="${applicationId}.pin" android:noHistory="true">
             <intent-filter>
                 <action android:name="android.content.pm.action.CONFIRM_PIN_APPWIDGET" />
                 <action android:name="android.content.pm.action.CONFIRM_PIN_SHORTCUT" />

@@ -36,6 +36,8 @@ val releaseStoreFile = releaseSigningValues["FOLIO_RELEASE_STORE_FILE"]?.let { c
     }
 }
 
+val devApplicationId = "com.mccal.folio.dev"
+
 val folioVersion = "0.6.9-beta.5"
 
 // Bundle the changelog so Folio can show What's New after an update.
@@ -109,6 +111,10 @@ androidComponents {
         if (variant.buildType == "nonMinifiedRelease" || variant.buildType == "benchmarkRelease") {
             variant.applicationId.set("com.mccal.folio.profile")
         }
+        if (variant.buildType == "debug" || variant.buildType == "fast") {
+            variant.applicationId.set(devApplicationId)
+        }
+        variant.resValues.put(variant.makeResValueKey("string", "folio_package"), com.android.build.api.variant.ResValue(variant.applicationId.get()))
     }
 }
 
@@ -116,7 +122,7 @@ android {
     namespace = "com.mccal.folio"
     compileSdk = 37
     defaultConfig {
-        applicationId = "com.mccal.folio"
+        applicationId = "com.westonkd.folio"
         minSdk = 31
         targetSdk = 36
         // Semantic version; see CHANGELOG.md and docs/adr/0007-release-trains.md.
@@ -162,14 +168,12 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += "release"
             // Its own app ("Folio Dev") so test builds install next to the signed release instead of over it.
-            applicationIdSuffix = ".dev"
             manifestPlaceholders["appLabel"] = "Folio Dev"
         }
         // Same app id as "fast", so one build installs over the other and Folio Dev keeps its layout and settings.
         // Only the name differs, because that is the one place you can tell them apart on the phone, and it matters:
         // a debug build is far slower, so frame numbers taken on one mean nothing next to numbers from the other.
         getByName("debug") {
-            applicationIdSuffix = ".dev"
             manifestPlaceholders["appLabel"] = "Folio Debug"
         }
     }
@@ -182,7 +186,7 @@ android {
             assets.srcDir(layout.buildDirectory.dir("generated/changelog").get().asFile)
         }
     }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; resValues = true }
     // Robolectric needs the app's resources and manifest in unit tests.
     testOptions.unitTests.isIncludeAndroidResources = true
     // Android 13's per-app language picker: AGP builds locales_config.xml from the values-* folders a translation adds.
