@@ -1,8 +1,8 @@
 # Folio
 
-An iPhone Duo Home screen for the Galaxy Z Fold8. This is my personal fork of
-[McCal-Codes/folio](https://github.com/McCal-Codes/folio). It is made for one phone and one person, and it is not
-published anywhere.
+A calm, two-panel Home screen for Android foldables, made first for the Galaxy Z Fold8 and published on Google Play
+as **Folio: Home for Foldables** (`com.westonkd.folio`). It is a fork of
+[McCal-Codes/folio](https://github.com/McCal-Codes/folio), maintained separately.
 
 ## Thank you, McCal
 
@@ -28,7 +28,9 @@ well instead of doing everything.
    made to feel finished is a candidate for removal.
 4. **Android does what Android is good at.** The lock screen, recents, notifications and Quick Settings are One UI's.
    Folio doesn't draw its own Dynamic Island, Control Center or Notification Center.
-5. **Private and offline.** No Market, codes, update checks, accounts or network use.
+5. **Private and offline.** No Market, codes, update checks, accounts or network use. Folio declares no internet
+   permission; [PRIVACY.md](PRIVACY.md) is the privacy policy and [PERMISSIONS.md](PERMISSIONS.md) lists every
+   permission and what uses it.
 
 [docs/ios27-alignment.md](docs/ios27-alignment.md) lists where Folio still falls short of iOS 27 and what to work on
 next.
@@ -46,13 +48,18 @@ Needs JDK 17 (`mise` pins it here; run `eval "$(mise env -s bash)"` first).
 
     ./gradlew :app:assembleFast
 
-## Install
-
-With the phone connected over USB or wireless debugging:
+That is Folio Dev (`com.mccal.folio.dev`): optimized like a release but signed with the local debug key, so it
+installs beside the Play build. With the phone connected over USB or wireless debugging:
 
     adb install --user 0 -r app/build/outputs/apk/fast/app-fast.apk
 
 Then pick Folio Dev as the Home app in Settings › Apps › Default apps.
+
+## Release
+
+Play releases are built with `tools/build-play-bundle.sh` from a clean `main`. The store listing lives in
+`fastlane/metadata/android/en-US/`, and [docs/releases/play-1.0.0.md](docs/releases/play-1.0.0.md) is the runbook:
+signing, Play Console's forms, and the testing tracks.
 
 ## Licence and credits
 

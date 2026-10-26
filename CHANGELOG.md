@@ -5,7 +5,26 @@ Folio is in development), and this file follows [Keep a Changelog](https://keepa
 `versionCode` is derived from the version name ((MAJOR × 10000 + MINOR × 100 + PATCH) × 10 + HOTFIX), so every release sorts correctly and a fix on top of one has nine numbers of its own.
 Folio shows the newest section on the phone after an update, and every version under Settings › What's New › Version History.
 
-## [0.6.9] - Unreleased
+## [1.0.0] - Unreleased
+
+### Added
+- **Folio on Google Play:** Folio is published on Google Play as its own app. Home pages of apps and widgets, a Side Bar with the time, a battery ring and the dock, a widgets page, the App Library, search and folders, on the cover screen and unfolded, with Home landing like a page when the phone opens or shuts.
+- **Clear asks before Android's settings:** before Folio sends you to turn on its gestures service, notification access or usage access, it says exactly what it uses that access for and what it never does, and you tap Agree to go on.
+- **Privacy policy and licenses:** Settings › General › Privacy & Permissions links to Folio's privacy policy, and Credits names McCal, who created Folio, and opens the licenses Folio ships with.
+
+### Changed
+- **Search, by name:** the search panel is called Search everywhere in Folio, including its Quick Settings tile and the Swipe Down on Home menu.
+
+### Fixed
+- **Wide tablets:** on a screen wider than about 1200dp, the edge of the App Library no longer shows beside the dock while you're on Home.
+- **Widgets with large text:** with Android's font size turned up past 130%, Folio's Clock, Date and other widgets keep their text at 130% so the time fits instead of being cut off.
+
+## Before Google Play
+
+Folio's history before it was published on Google Play: McCal's releases, and this fork's own builds that were never
+released. The app shows only the sections above this one.
+
+## [0.6.9] - Not released
 
 ### Added
 - **A widgets page left of Home:** on the cover, swipe right from Home 1 for a page that holds only widgets. Open the phone and it is on the left half beside Home 1, like iPhone Duo. An empty one shows an Add Widgets button; widgets move, resize and stack there like on Home, but apps and folders stay on the Home pages. The page dots and the bottom dock step aside while it is showing.

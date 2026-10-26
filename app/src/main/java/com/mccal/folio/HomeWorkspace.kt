@@ -163,12 +163,19 @@ internal fun ExpandedWorkspace(
     fun beyondDockColumn(x: Float): Float =
         if (dockColumnLeads) -dockColumnWidth * ((leadingX - x) / stride).coerceIn(0f, 1f)
         else dockColumnWidth * ((x - initialHomeOrigin) / stride).coerceIn(0f, 1f)
-    fun shownX(x: Float, position: Float, clearDockColumn: Boolean): Float {
+    fun libraryClearance(shown: Float): Float =
+        maxOf(beyondDockColumn(shown), dockColumnWidth * (shown / viewportWidth).coerceIn(0f, 1f))
+    fun shownX(x: Float, position: Float, clearDockColumn: Boolean, library: Boolean = false): Float {
         val shown = x - motion.offset(position)
-        return pagerStart + shown + if (clearDockColumn) beyondDockColumn(shown) else 0f
+        val clearance = when {
+            !clearDockColumn -> 0f
+            library -> libraryClearance(shown)
+            else -> beyondDockColumn(shown)
+        }
+        return pagerStart + shown + clearance
     }
-    fun Modifier.place(x: Float, clearDockColumn: Boolean = true): Modifier = offset {
-        IntOffset(shownX(x, pager.currentPage + pager.currentPageOffsetFraction, clearDockColumn).roundToInt(), 0)
+    fun Modifier.place(x: Float, clearDockColumn: Boolean = true, library: Boolean = false): Modifier = offset {
+        IntOffset(shownX(x, pager.currentPage + pager.currentPageOffsetFraction, clearDockColumn, library).roundToInt(), 0)
     }
     val rtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
     fun restingLight(x: Float, restPage: Int, clearDockColumn: Boolean = true) = LightDrift {
@@ -231,7 +238,7 @@ internal fun ExpandedWorkspace(
 
         if (showLibrary) {
             key("library-pane") {
-                Box(Modifier.place((visibleHomePages - 1) * stride + viewportWidth, clearDockColumn = !dockColumnLeads)
+                Box(Modifier.place((visibleHomePages - 1) * stride + viewportWidth, clearDockColumn = !dockColumnLeads, library = true)
                     .width(with(density) { viewportWidth.toDp() }).fillMaxHeight()) {
                     CompositionLocalProvider(LocalLightDrift provides restingLight((visibleHomePages - 1) * stride + viewportWidth, visibleHomePages, !dockColumnLeads)) {
                     AppLibrary(state, libraryQuery, onLibraryQuery, onLaunch, onPinned,

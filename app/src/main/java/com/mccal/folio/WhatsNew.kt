@@ -85,8 +85,12 @@ internal object WhatsNew {
         return releases
     }
 
+    const val HISTORY_HEADING = "\n## Before Google Play"
+
+    fun published(markdown: String): String = markdown.substringBefore(HISTORY_HEADING)
+
     fun notes(context: Context): List<ReleaseNotes> =
-        runCatching { context.assets.open("CHANGELOG.md").bufferedReader().use { parse(it.readText()) } }.getOrDefault(emptyList())
+        runCatching { context.assets.open("CHANGELOG.md").bufferedReader().use { parse(published(it.readText())) } }.getOrDefault(emptyList())
 
     fun currentVersion(context: Context): String =
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: ""

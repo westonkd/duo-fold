@@ -96,6 +96,8 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+internal const val WIDGET_MAX_FONT_SCALE = 1.3f
+
 @Composable
 internal fun GlassCard(modifier: Modifier = Modifier, onClick: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val cardShape = RoundedCornerShape(FolioRadius.WIDGET.dp)
@@ -105,7 +107,7 @@ internal fun GlassCard(modifier: Modifier = Modifier, onClick: () -> Unit, conte
         BoxWithConstraints {
             val scale = (minOf(maxWidth, maxHeight) / 150.dp).coerceIn(.6f, 1f)
             val density = LocalDensity.current
-            CompositionLocalProvider(LocalDensity provides androidx.compose.ui.unit.Density(density.density * scale, density.fontScale)) {
+            CompositionLocalProvider(LocalDensity provides androidx.compose.ui.unit.Density(density.density * scale, density.fontScale.coerceAtMost(WIDGET_MAX_FONT_SCALE))) {
                 Column(Modifier.fillMaxSize().padding(FolioSpace.LARGE.dp), verticalArrangement = Arrangement.SpaceBetween, content = content)
             }
         }
