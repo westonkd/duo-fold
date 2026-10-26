@@ -5,7 +5,22 @@ Folio is in development), and this file follows [Keep a Changelog](https://keepa
 `versionCode` is derived from the version name ((MAJOR × 10000 + MINOR × 100 + PATCH) × 10 + HOTFIX), so every release sorts correctly and a fix on top of one has nine numbers of its own.
 Folio shows the newest section on the phone after an update, and every version under Settings › What's New › Version History.
 
-## [0.6.9] - Unreleased
+## [1.0.0] - Unreleased
+
+### Added
+- **Folio on Google Play:** Folio is published on Google Play as its own app. Home pages of apps and widgets, a Side Bar with the time, a battery ring and the dock, a widgets page, the App Library, search and folders, on the cover screen and unfolded, with Home landing like a page when the phone opens or shuts.
+- **Clear asks before Android's settings:** before Folio sends you to turn on its gestures service, notification access or usage access, it says exactly what it uses that access for and what it never does, and you tap Agree to go on.
+- **Privacy policy and licenses:** Settings › General › Privacy & Permissions links to Folio's privacy policy, and Credits names McCal, who created Folio, and opens the licenses Folio ships with.
+
+### Changed
+- **Search, by name:** the search panel is called Search everywhere in Folio, including its Quick Settings tile and the Swipe Down on Home menu.
+
+## Before Google Play
+
+Folio's history before it was published on Google Play: McCal's releases, and this fork's own builds that were never
+released. The app shows only the sections above this one.
+
+## [0.6.9] - Not released
 
 ### Added
 - **A widgets page left of Home:** on the cover, swipe right from Home 1 for a page that holds only widgets. Open the phone and it is on the left half beside Home 1, like iPhone Duo. An empty one shows an Add Widgets button; widgets move, resize and stack there like on Home, but apps and folders stay on the Home pages. The page dots and the bottom dock step aside while it is showing.
@@ -47,7 +62,6 @@ Folio shows the newest section on the phone after an update, and every version u
 - **Add to Home from Spotlight:** search for an app and its Top Hit has a + button that puts it on Home, the same way Add to Home in an app's menu does, and tells you with a notice. Spotlight stays open, so you can add more, and the row then says On Home. An app that is already on Home says so, and an app inside a folder says which folder holds it, instead of showing a button that would do nothing.
 
 ### Changed
-- **Clear asks before Android's settings:** before Folio sends you to turn on its gestures service, notification access or usage access, it now says exactly what it uses that access for and what it never does, and you tap Agree to go on. Settings › General › Privacy & Permissions also links to Folio's privacy policy.
 - **Heavier blur behind folders, menus and sheets:** Home now blurs more than twice as much behind anything opened over it (72 dp instead of 32), like iOS, so the widgets and icons behind an open folder become soft color instead of shapes showing through the folder's glass. An open App Library category blurs the library behind it just as much.
 - **Adding a widget, clearer:** the widget gallery is light and opaque like iOS's, with white cards, and runs behind the navigation bar instead of stopping at a dark strip. While you place a widget the toolbar offers Small, Medium and Large (and the widget's own size when it is something else), finding room for the new size, on another page if it has to; swipe to change page. Place is in bold beside Cancel.
 - **Softer glint on icons and search fields:** the round glow near the top of app icons and the bright streak along the App Library and Spotlight search fields are gentler, so they read as light on glass rather than a shiny spot. The dock, the Search button and the rest of Home's glass keep theirs.

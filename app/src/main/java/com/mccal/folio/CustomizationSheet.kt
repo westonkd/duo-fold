@@ -630,11 +630,13 @@ private fun riskLabel(risk: OperationRisk) = when (risk) {
 /** What Folio is built from: the code it includes and the licences that ask to be named. */
 @Composable private fun CreditsCard() {
     val credits = listOf(
+        stringResource(R.string.folio) to stringResource(R.string.credit_folio_mccal),
         stringResource(R.string.duolauncher) to "jakesgoodapps (github.com/jakesgoodapps/DuoLauncher) · MIT · Folio’s starting codebase", // english-only
         "Duo Fold Live" to stringResource(R.string.credit_duo_fold_live), // english-only
-        "iphone-duo" to "chuspeeism · MIT · Duet’s blur and darkening model, by way of Duo Fold Live", // english-only
+        "iphone-duo" to "chuspeeism · MIT · ideas for the fold animation, by way of Duo Fold Live", // english-only
         "hingewave" to stringResource(R.string.credit_hingewave), // english-only
     )
+    val context = androidx.compose.ui.platform.LocalContext.current
     SettingsCard(stringResource(R.string.credits)) {
         credits.forEach { (name, detail) ->
             Column(Modifier.fillMaxWidth().padding(vertical = FolioSpace.SNUG.dp)) {
@@ -642,7 +644,21 @@ private fun riskLabel(risk: OperationRisk) = when (risk) {
                 CardNote(detail)
             }
         }
+        CardAction(stringResource(R.string.licenses), Modifier.testTag("licenses"), onClick = { showLicenses(context) })
     }
+}
+
+private val LICENSE_FILES = listOf("THIRD-PARTY-NOTICES.txt", "MIT-DuoLauncher.txt", "Apache-2.0.txt")
+
+private fun showLicenses(context: android.content.Context) {
+    val text = LICENSE_FILES.mapNotNull { name ->
+        runCatching { context.assets.open("licenses/$name").bufferedReader().use { it.readText().trim() } }.getOrNull()
+    }.joinToString("\n\n\n")
+    android.app.AlertDialog.Builder(context)
+        .setTitle(R.string.licenses)
+        .setMessage(text)
+        .setPositiveButton(R.string.done, null)
+        .show()
 }
 
 /** The Home page the Settings previews draw: set from the page Home is on, so a widget placed on page 2 shows up. */
