@@ -75,10 +75,10 @@ class DeviceStatusMonitor(private val context: Context) : DefaultLifecycleObserv
     }
 
     override fun onStart(owner: LifecycleOwner) {
-        context.registerReceiver(receiver, IntentFilter().apply {
+        androidx.core.content.ContextCompat.registerReceiver(context, receiver, IntentFilter().apply {
             addAction(Intent.ACTION_BATTERY_CHANGED); addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED)
             addAction(WifiManager.RSSI_CHANGED_ACTION); addAction(android.media.AudioManager.RINGER_MODE_CHANGED_ACTION)
-        })
+        }, androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
         receiverRegistered = true
         networkRegistered = runCatching { connection.registerDefaultNetworkCallback(networkCallback); true }.getOrDefault(false)
         phoneRegistered = runCatching { phone.registerTelephonyCallback(context.mainExecutor, phoneCallback); true }.getOrDefault(false)

@@ -15,9 +15,10 @@ Folio has no account, no ads and no analytics, and it doesn't ask Android for in
 
 <b>Optional permissions, explained before you grant them</b>
 • Notification access: badges on app icons and what's playing. Notification content is never saved or sent.
-• Folio gestures (an accessibility service): opens Android's notifications and Quick Settings from Home gestures, runs the system actions you give a gesture or button (Home, Back, Recents, lock screen, screenshot, power menu, split screen, play/pause), and shows the dock and Big Buttons over other apps if you turn them on. It can't read your screen or what you type, and it collects no data.
+• Folio gestures (an accessibility service): opens Android's notifications and Quick Settings from Home gestures, runs the system actions you give a gesture or button (Home, Back, Recents, close notifications, Android's app drawer, lock screen, screenshot, power menu, split screen, play/pause), and shows the dock and Big Buttons over other apps if you turn them on. It can't read your screen or what you type, and it collects no data.
 • Usage access: better app suggestions and dots beside recently used dock apps.
 • Contacts and calendar: contact search and the Up Next widget.
+• Do Not Disturb access: gesture and button actions that turn Do Not Disturb on or off.
 Folio works without any of them.
 
 <b>Open source</b>
