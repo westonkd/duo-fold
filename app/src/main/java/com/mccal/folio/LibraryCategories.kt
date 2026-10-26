@@ -133,7 +133,8 @@ internal fun CategoryCard(title: String, apps: List<AppEntry>, modifier: Modifie
 internal fun CategoryFolder(title: String, apps: List<AppEntry>, onDismiss: () -> Unit, onLaunch: (AppEntry) -> Unit, onActions: (AppEntry) -> Unit) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        FolioDialogWindow(dim = 0f, blurRadiusDp = HOME_BACKDROP_BLUR_DP)
+        FolioDialogWindow(dim = 0f)
+        RegisterOpenWindow(LauncherSheets)
         val appear = rememberEntrance(FolioMotion.Menu, scenario = PerfScenario.MENU)
         val fade = rememberReducedFade()
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = appear.value * fade.value }.background(Color.Black.copy(alpha = .45f)).clickable(androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null, onClick = onDismiss)

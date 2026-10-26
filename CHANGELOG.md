@@ -75,6 +75,7 @@ Folio shows the newest section on the phone after an update, and every version u
 - **Settings search, Tweaks and the old Settings pages:** Settings is now five flat pages, Home, Search, Gestures, Fold and General, and has no search field. The Tweaks pages and their per-screen Use On choices are gone: Cabinet and Harborline are plain switches on Home and Duet is a switch on Fold, each for both screens. Help, Language and the idea-only credits are gone too; General keeps What's New, Backup, Layout History, Privacy & Permissions, Diagnostics and the credits the licences ask for. The Side Bar status shows only the time and the Ring, without the date and battery percentage, and the Home long-press menu's Wallpaper & Appearance is now Wallpaper, which opens Home's settings.
 
 ### Fixed
+- **App Library categories blur on Samsung phones:** One UI has no window blur, so an open category left the App Library and the dock sharp under it. It now blurs them the way a folder on Home does.
 - **Place and Cancel could be covered:** when a new widget went into the top rows, its preview drew over the placement toolbar and Place could not be tapped. The toolbar now stays on top and moves to the bottom when the widget is near the top.
 - **Widget menu text was unreadable:** Resize on Home, Custom Size, Replace Widget and Make a Stack were dark gray on the dark menu and looked turned off. They are white again.
 - **Search over Done:** unfolded, the round Search button sat on top of the Done button while editing Home. It now hides while you edit.
