@@ -5,6 +5,13 @@ Folio is in development), and this file follows [Keep a Changelog](https://keepa
 `versionCode` is derived from the version name ((MAJOR × 10000 + MINOR × 100 + PATCH) × 10 + HOTFIX), so every release sorts correctly and a fix on top of one has nine numbers of its own.
 Folio shows the newest section on the phone after an update, and every version under Settings › What's New › Version History.
 
+## [1.0.1] - Unreleased
+
+### Changed
+- **Brighter glass edges:** glass in Folio now catches the light on two opposite corners, like the iPhone's, so the App Library, folders, the dock and menus stand out more clearly from the wallpaper.
+- **App Library search:** the search field is taller and clearer, and its magnifier and "App Library" sit in the middle until you tap it.
+- **Settings sidebar:** unfolded, the Settings list sits right on the background, and the open page is marked with a soft grey capsule instead of a teal highlight. On the cover screen, the lines between rows start at the row's name.
+
 ## [1.0.0] - 2026-10-26
 
 ### Added

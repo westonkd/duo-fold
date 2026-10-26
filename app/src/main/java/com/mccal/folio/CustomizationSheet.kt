@@ -137,16 +137,20 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     val overviewRows: @Composable ColumnScope.(selected: CustomizationPage?, sidebar: Boolean) -> Unit = { selected, sidebar ->
                     // Only the sidebar has an open page to mark; on the phone the rows are just places to go.
                     val pick = { row: CustomizationPage -> if (sidebar) selected == row else null }
-                    SheetGroup {
+                    val list: @Composable (@Composable ColumnScope.() -> Unit) -> Unit = { rows ->
+                        if (sidebar) Column(content = rows) else SheetGroup(content = rows)
+                    }
+                    val between: @Composable () -> Unit = { if (!sidebar) TweakDivider() }
+                    list {
                         TweakRow(Icons.Rounded.GridView, FolioColors.Value.Blue, stringResource(R.string.home), "customization-home",
                             if (backgrounds.previewPending) stringResource(R.string.photo_ready) else null, selected = pick(CustomizationPage.HOME), chevron = !sidebar) { onPage(CustomizationPage.HOME) }
-                        SheetDivider()
+                        between()
                         TweakRow(Icons.Rounded.Search, FolioColors.Value.Gray, stringResource(R.string.search), "customization-search", selected = pick(CustomizationPage.SEARCH), chevron = !sidebar) { onPage(CustomizationPage.SEARCH) }
-                        SheetDivider()
+                        between()
                         TweakRow(Icons.Rounded.Gesture, FolioColors.Value.Teal, stringResource(R.string.gestures), "customization-gestures", selected = pick(CustomizationPage.GESTURES), chevron = !sidebar) { onPage(CustomizationPage.GESTURES) }
-                        SheetDivider()
+                        between()
                         TweakRow(Icons.Rounded.Devices, FolioColors.Value.Pink, stringResource(R.string.fold), "customization-fold", selected = pick(CustomizationPage.FOLD), chevron = !sidebar) { onPage(CustomizationPage.FOLD) }
-                        SheetDivider()
+                        between()
                         TweakRow(Icons.Rounded.Settings, FolioColors.Value.Gray, stringResource(R.string.general), "customization-general", selected = pick(CustomizationPage.GENERAL), chevron = !sidebar) { onPage(CustomizationPage.GENERAL) }
                     }
     }
@@ -492,7 +496,10 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
 @Composable private fun SettingsLargeTitle(title: String) = Text(title, color = FolioColors.LightLabel, fontSize = FolioType.LARGE_TITLE.sp,
     fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = FolioSpace.TINY.dp, bottom = FolioSpace.SMALL.dp))
 
-private const val SELECTED_ROW_INSET = 5
+private const val TWEAK_ICON = 30
+private const val TWEAK_ICON_GAP = 12
+
+@Composable private fun TweakDivider() = Box(Modifier.padding(start = (FolioSpace.COMFY + TWEAK_ICON + TWEAK_ICON_GAP).dp)) { SheetDivider() }
 
 /** iOS Settings row: colored rounded icon square, title, optional value, chevron. */
 /**
@@ -502,25 +509,23 @@ private const val SELECTED_ROW_INSET = 5
  */
 @Composable internal fun TweakRow(icon: ImageVector, color: Long, title: String, tag: String, value: String? = null,
     selected: Boolean? = null, chevron: Boolean = true, onClick: () -> Unit) {
-    val open = selected == true
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
-        .then(if (open) Modifier.padding(SELECTED_ROW_INSET.dp).clip(RoundedCornerShape((FolioRadius.GROUPED_CARD - SELECTED_ROW_INSET).dp)).background(LocalAccent.current.fill) else Modifier)
-        // The inset is taken back from the content padding, so the icon and title don't shift when selected.
-        .clickable(onClick = onClick).padding(horizontal = if (open) (FolioSpace.COMFY - SELECTED_ROW_INSET).dp else FolioSpace.COMFY.dp, vertical = if (open) (FolioSpace.SMALL - SELECTED_ROW_INSET).dp else FolioSpace.SMALL.dp).testTag(tag)
+        .then(if (selected != null) Modifier.clip(CircleShape).background(if (selected) FolioColors.LightSelectedFill else androidx.compose.ui.graphics.Color.Transparent) else Modifier)
+        .clickable(onClick = onClick).padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.SMALL.dp).testTag(tag)
         .then(if (selected != null) Modifier.semantics { this.selected = selected; role = androidx.compose.ui.semantics.Role.Tab } else Modifier),
         verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(30.dp).clip(IconContinuousShape).background(androidx.compose.ui.graphics.Color(color)), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(TWEAK_ICON.dp).clip(IconContinuousShape).background(androidx.compose.ui.graphics.Color(color)), contentAlignment = Alignment.Center) {
             Icon(icon, null, tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(19.dp))
         }
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(TWEAK_ICON_GAP.dp))
         // A long title wraps to two lines rather than being cut off — iOS does the same in a narrow window or at a
         // large text size — and the value drops under it when there isn't room beside it.
         val config = androidx.compose.ui.platform.LocalConfiguration.current
         val tight = config.screenWidthDp < 360 || config.fontScale >= 1.3f
-        val valueColor = if (open) androidx.compose.ui.graphics.Color.White.copy(alpha = .85f) else FolioColors.LightSecondaryLabel
+        val valueColor = FolioColors.LightSecondaryLabel
         Column(Modifier.weight(1f)) {
             Text(
-                title, color = if (open) androidx.compose.ui.graphics.Color.White else FolioColors.LightLabel, fontSize = FolioType.BODY.sp,
+                title, color = FolioColors.LightLabel, fontSize = FolioType.BODY.sp,
                 maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
             if (tight) value?.let { Text(it, color = valueColor, fontSize = FolioType.SUBHEAD.sp, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }

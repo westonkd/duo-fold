@@ -109,6 +109,7 @@ internal object FolioColors {
     /** The wider gap between groups of rows in a light menu. */
     val LightGroupGap = Color(0x143C3C43)
     val LightFill = Color(0x1F767680)
+    val LightSelectedFill = Color(0x33787880)
     val LightTertiaryLabel = Color(0x4D3C3C43)
     val LightCard = Color.White
     val LightTrackOff = Color(0xFFE9E9EB)
