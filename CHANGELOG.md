@@ -8,11 +8,14 @@ Folio shows the newest section on the phone after an update, and every version u
 ## [1.0.0] - Unreleased
 
 ### Added
-- **Folio on Google Play:** Folio is published on Google Play as its own app. Home pages of apps and widgets, a Side Bar with the time, a battery ring and the dock, a widgets page, the App Library, search and folders, on the cover screen and unfolded, with Home landing like a page when the phone opens or shuts.
-- **Clear asks before Android's settings:** before Folio sends you to turn on its gestures service, notification access or usage access, it says exactly what it uses that access for and what it never does, and you tap Agree to go on.
-- **Privacy policy and licenses:** Settings › General › Privacy & Permissions links to Folio's privacy policy, and Credits names McCal, who created Folio, and opens the licenses Folio ships with.
+- **Folio on Google Play:** a calm, two-panel Home screen with a Side Bar, a widgets page, the App Library, search and folders, on the cover screen and unfolded, and Home landing like a page when the phone opens or shuts.
+- **Clear permission requests:** before Folio opens Android's settings for its gestures service, notification access or usage access, it says what that access is for and what it never does, and you choose Agree or Not Now.
+- **Privacy policy and licenses:** Settings › General › About links to the privacy policy, and Credits & Licenses names McCal, who created Folio, and shows the licenses Folio ships with.
 
 ### Changed
+- **Settings in light:** Settings, What's New, alerts and every sheet now use the same light look as the rest of Folio, with notes under each group instead of inside it, one accent color for actions, and row names written the same way everywhere.
+- **Alerts with capsule buttons:** Folio's alerts, including the permission requests, show their choices as rounded buttons side by side, with the one you probably want in bold.
+- **Diagnostics in one place:** crash reports, the performance log and recent activity moved from General to General › About › Diagnostics.
 - **Search, by name:** the search panel is called Search everywhere in Folio, including its Quick Settings tile and the Swipe Down on Home menu.
 
 ### Fixed

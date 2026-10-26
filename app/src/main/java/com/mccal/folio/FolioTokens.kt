@@ -109,6 +109,11 @@ internal object FolioColors {
     /** The wider gap between groups of rows in a light menu. */
     val LightGroupGap = Color(0x143C3C43)
     val LightFill = Color(0x1F767680)
+    val LightTertiaryLabel = Color(0x4D3C3C43)
+    val LightCard = Color.White
+    val LightTrackOff = Color(0xFFE9E9EB)
+    val GreenText = Color(0xFF248A3D)
+    val OrangeText = Color(0xFFC93400)
 }
 
 /**
@@ -120,6 +125,7 @@ internal data class FolioAccent(val fill: Color, val ink: Color)
 internal object FolioAccents {
     /** Folio's app icon, which ships in teal (#173D43 to #2E5E66), and the soft icon's mint for text. */
     val Teal = FolioAccent(fill = Color(0xFF2A6A70), ink = Color(0xFF6DB7B4))
+    val TealOnLight = FolioAccent(fill = Color(0xFF2A6A70), ink = Color(0xFF1E7B80))
 }
 
 /** The accent in force. */

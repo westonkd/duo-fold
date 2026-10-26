@@ -145,7 +145,7 @@ class WeatherWidgetIntegrationTest {
     private fun addFromSettings(model: LauncherModel, provider: android.appwidget.AppWidgetProviderInfo,
         expectedIndex: Int): WidgetPlacement {
         val slot = model.nextWidgetSlot()
-        openNativeHomeCustomization(automation) { click("Customize Folio") }; click("Home Screen & Dock"); clickAfterScrolling("Add widget to this page")
+        openNativeHomeCustomization(automation) { click("Customize Folio") }; click("Home Screen & Dock"); clickAfterScrolling("Add Widget to This Page")
         val pm = instrumentation.targetContext.packageManager
         typeSearch(pm.getApplicationLabel(pm.getApplicationInfo(provider.provider.packageName, 0)).toString())
         val label = provider.loadLabel(pm).toString()

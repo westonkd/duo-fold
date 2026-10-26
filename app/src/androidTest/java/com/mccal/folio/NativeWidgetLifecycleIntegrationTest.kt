@@ -180,7 +180,7 @@ class NativeWidgetLifecycleIntegrationTest {
             tap("Home page 2")
             shell("appwidget revokebind --package com.mccal.folio --user 0")
             openNativeHomeCustomization(automation) { click("Customize Folio") }; click("Home Screen & Dock")
-            clickAfterScrolling("Add widget to this page")
+            clickAfterScrolling("Add Widget to This Page")
             typeWidgetSearch(provider.loadLabel(main.packageManager).toString())
             click(provider.loadLabel(main.packageManager).toString())
             await { find("Ready to place")?.isVisibleToUser == true }
@@ -196,7 +196,7 @@ class NativeWidgetLifecycleIntegrationTest {
                 bindCanceledId in widgets.host.appWidgetIds)
 
             openNativeHomeCustomization(automation) { click("Customize Folio") }; click("Home Screen & Dock")
-            clickAfterScrolling("Add widget to this page")
+            clickAfterScrolling("Add Widget to This Page")
             typeWidgetSearch(provider.loadLabel(main.packageManager).toString())
             click(provider.loadLabel(main.packageManager).toString())
             await { find("Ready to place")?.isVisibleToUser == true }
@@ -236,7 +236,7 @@ class NativeWidgetLifecycleIntegrationTest {
             assertFalse(canceledId in widgets.host.appWidgetIds)
 
             openNativeHomeCustomization(automation) { click("Customize Folio") }; click("Home Screen & Dock")
-            clickAfterScrolling("Add widget to this page")
+            clickAfterScrolling("Add Widget to This Page")
             typeWidgetSearch(provider.loadLabel(main.packageManager).toString())
             click(provider.loadLabel(main.packageManager).toString())
             await { find("Ready to place")?.isVisibleToUser == true }

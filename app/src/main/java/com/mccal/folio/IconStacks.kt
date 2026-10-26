@@ -161,8 +161,8 @@ internal fun IconStackEditor(anchor: AppEntry, apps: List<AppEntry>, chosen: Lis
             AppIcon(anchor, null, Modifier.size(36.dp))
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.stack_1, anchor.label), color = Color.White, fontSize = FolioType.TITLE3.sp, fontWeight = FontWeight.Bold)
-                Text(stringResource(R.string.swipe_down_on_1_to_open_these_2_of_3, anchor.label, chosen.size, IconStacks.MAX), color = FolioColors.SecondaryLabel, fontSize = FolioType.FOOTNOTE.sp)
+                Text(stringResource(R.string.stack_1, anchor.label), color = FolioColors.LightLabel, fontSize = FolioType.TITLE3.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.swipe_down_on_1_to_open_these_2_of_3, anchor.label, chosen.size, IconStacks.MAX), color = FolioColors.LightSecondaryLabel, fontSize = FolioType.FOOTNOTE.sp)
             }
             Text(stringResource(R.string.done), color = LocalAccent.current.ink, fontSize = FolioType.BODY.sp, fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.clip(CircleShape).clickable(onClick = onDone).padding(FolioSpace.SMALL.dp))

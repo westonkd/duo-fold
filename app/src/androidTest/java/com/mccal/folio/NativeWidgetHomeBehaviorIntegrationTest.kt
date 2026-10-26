@@ -143,7 +143,7 @@ class NativeWidgetHomeBehaviorIntegrationTest {
             }
             tap("Home page 2")
             openNativeHomeCustomization(automation) { click("Customize Folio") }; click("Home Screen & Dock")
-            clickAfterScrolling("Add widget to this page")
+            clickAfterScrolling("Add Widget to This Page")
             val label = provider.loadLabel(main.packageManager).toString()
             search(label); await { find(label)?.isVisibleToUser == true }; click(label)
             await { find("Ready to place")?.isVisibleToUser == true }; click("Place")

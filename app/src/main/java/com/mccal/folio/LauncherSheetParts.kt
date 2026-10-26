@@ -79,6 +79,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -107,7 +108,7 @@ internal fun AppPicker(apps: List<AppEntry>, dockSlot: Int?, onSelect: (AppEntry
     var query by rememberSaveable { mutableStateOf("") }
     val filtered = remember(apps, query) { apps.filter { appMatches(it, query.trim()) } }
     Column(Modifier.fillMaxWidth().fillMaxHeight(.88f).padding(horizontal = FolioSpace.XL.dp).imePadding()) {
-        Text(if (dockSlot == null) stringResource(R.string.your_apps) else stringResource(R.string.dock_position_1_d, dockSlot + 1), color = Color.White, fontSize = FolioType.TITLE.sp, fontWeight = FontWeight.Bold)
+        Text(if (dockSlot == null) stringResource(R.string.your_apps) else stringResource(R.string.dock_position_1_d, dockSlot + 1), fontSize = FolioType.TITLE.sp, fontWeight = FontWeight.Bold)
         IosSearchField(query, { query = it }, stringResource(R.string.search_apps), Modifier.padding(vertical = FolioSpace.MEDIUM.dp), fieldModifier = Modifier.testTag("search-field"))
         if (dockSlot != null) SheetGroup(Modifier.padding(bottom = FolioSpace.SMALL.dp)) { IosActionRow(stringResource(R.string.leave_this_position_empty), destructive = true, onClick = onClear) }
         if (blockedHint != null) Text(blockedHint, color = MaterialTheme.colorScheme.error,
@@ -138,17 +139,19 @@ internal fun AppPicker(apps: List<AppEntry>, dockSlot: Int?, onSelect: (AppEntry
 }
 
 
-/** iOS grouped-list section header inside Folio's dark sheets. */
+/** iOS grouped-list section header inside Folio's sheets. */
 @Composable
 internal fun SheetGroupLabel(text: String) {
-    Text(text.uppercase(), color = FolioColors.SecondaryLabel, fontSize = FolioType.GROUP_LABEL.sp, fontWeight = FontWeight.SemiBold,
-        letterSpacing = .4.sp, modifier = Modifier.padding(start = FolioSpace.LARGE.dp, top = FolioSpace.COMPACT.dp))
+    Text(text.uppercase(), color = if (LocalLightSheet.current) FolioColors.LightSecondaryLabel else FolioColors.SecondaryLabel,
+        fontSize = FolioType.GROUP_LABEL.sp, fontWeight = FontWeight.SemiBold, letterSpacing = .4.sp,
+        modifier = Modifier.padding(start = FolioSpace.LARGE.dp, top = FolioSpace.COMPACT.dp).semantics { heading() })
 }
 
-/** iOS inset grouped list: rounded dark card holding rows separated by thin dividers. */
+/** iOS inset grouped list: a rounded card holding rows separated by thin dividers. */
 @Composable
 internal fun SheetGroup(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)).background(FolioColors.SheetSurface), content = content)
+    Column(modifier.fillMaxWidth().clip(RoundedCornerShape(FolioRadius.GROUPED_CARD.dp))
+        .background(if (LocalLightSheet.current) FolioColors.LightCard else FolioColors.SheetSurface), content = content)
 }
 
 /** Side-rail placement; the rail sits on the right unless the left-handed layout is on. */

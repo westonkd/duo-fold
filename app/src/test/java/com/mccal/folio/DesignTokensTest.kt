@@ -72,8 +72,9 @@ class DesignTokensTest {
         assertEquals(listOf(12, 26, 30, 28, 38, 34), listOf(FolioRadius.ROW, FolioRadius.FLOATING, FolioRadius.RAIL, FolioRadius.WIDGET, FolioRadius.FOLDER, FolioRadius.ALERT))
         // The sheet scheme's colors are named once, and the glass card is the surface card at 82%.
         assertEquals(FolioColors.SurfaceCard.copy(alpha = .82f), FolioGlass.card)
-        assertEquals(FolioColors.SurfaceCard, FolioSheetColors.surfaceContainer)
-        assertEquals(FolioColors.OutlineVariant, FolioSheetColors.outlineVariant)
+        assertEquals(FolioColors.LightCard, FolioSheetColors.surfaceContainer)
+        assertEquals(FolioColors.LightBackground, FolioSheetColors.surface)
+        assertEquals(FolioColors.LightSeparator, FolioSheetColors.outlineVariant)
         assertEquals(48, FolioRow.ACTION)
         assertEquals(
             listOf(2, 4, 6, 8, 10, 12, 14, 16, 20, 24),
