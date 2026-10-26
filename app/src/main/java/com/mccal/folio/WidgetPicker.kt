@@ -44,6 +44,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.layout.boundsInRoot
@@ -187,7 +188,7 @@ internal fun WidgetProviderPreview(entry: WidgetCatalogEntry, span: WidgetSpan, 
     val preview by produceState<CatalogPreview?>(null, entry.provider, span, context.resources.displayMetrics.densityDpi) {
         value = loadWidgetPreview(context, entry.provider, span)
     }
-    Box(modifier.background(Color.White.copy(alpha = .1f)), contentAlignment = Alignment.Center) {
+    Box(modifier.background(FolioColors.LightBackground), contentAlignment = Alignment.Center) {
         when (val value = preview) {
             is CatalogPreview.Remote -> AndroidView(factory = { previewContext ->
                 object : android.widget.FrameLayout(previewContext) {
@@ -203,10 +204,10 @@ internal fun WidgetProviderPreview(entry: WidgetCatalogEntry, span: WidgetSpan, 
             is CatalogPreview.Picture -> Image(value.bitmap.asImageBitmap(), null, Modifier.fillMaxSize().padding(FolioSpace.SMALL.dp),
                 contentScale = ContentScale.Fit)
             CatalogPreview.Missing -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(entry.providerLabel, style = MaterialTheme.typography.bodySmall, color = Color.White)
-                Text("${span.width} × ${span.height}", style = MaterialTheme.typography.labelSmall, color = FolioColors.SecondaryLabel)
+                Text(entry.providerLabel, style = MaterialTheme.typography.bodySmall, color = FolioColors.LightLabel)
+                Text("${span.width} × ${span.height}", style = MaterialTheme.typography.labelSmall, color = FolioColors.LightSecondaryLabel)
             }
-            null -> CircularProgressIndicator(Modifier.size(26.dp), strokeWidth = 3.dp, color = Color.White)
+            null -> CircularProgressIndicator(Modifier.size(26.dp), strokeWidth = 3.dp, color = FolioColors.LightSecondaryLabel)
         }
     }
 }
@@ -265,24 +266,24 @@ internal fun VisualWidgetPicker(
     // Folio's own widgets are searchable like any app's, and shown with the Folio chip or while browsing.
     val builtins = if ((selectedApp == null || selectedApp == FOLIO_WIDGETS) && selectedProfile.isPersonal)
         allBuiltins.filter { matchesWidgetSearch(words, it.second, folioLabel) } else emptyList()
-    // iOS widget gallery: dark glass, large title, search capsule, grid of preview cards grouped by app.
-    val ink = Color.White
-    val secondary = FolioColors.SecondaryLabel
-    Surface(Modifier.fillMaxSize().alpha(if (hiddenForDrag) 0f else 1f)
+    val ink = FolioColors.LightLabel
+    val secondary = FolioColors.LightSecondaryLabel
+    val navigationBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    Surface(Modifier.extendBelow(navigationBarHeight).fillMaxSize().alpha(if (hiddenForDrag) 0f else 1f)
         .then(if (hiddenForDrag) Modifier.clearAndSetSemantics { }.focusProperties { canFocus = false } else Modifier)
         .testTag("visual-widget-picker"),
-        color = Color(0xFF111114).copy(alpha = .97f), contentColor = ink) {
-        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.folioSafeTop).navigationBarsPadding().padding(horizontal = 18.dp)) {
+        color = FolioColors.LightBackground, contentColor = ink) {
+        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.folioSafeTop).padding(horizontal = 18.dp)) {
             Row(Modifier.fillMaxWidth().padding(top = FolioSpace.SNUG.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.widgets), color = ink, fontSize = FolioType.LARGE_TITLE.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Box(Modifier.size(FolioTouch.MIN.dp).clickable(onClickLabel = stringResource(R.string.close), onClick = onBack),
                     contentAlignment = Alignment.Center) {
-                    Box(Modifier.size(36.dp).clip(CircleShape).background(Color.White.copy(alpha = .14f)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.Close, stringResource(R.string.close), tint = ink, modifier = Modifier.size(20.dp))
+                    Box(Modifier.size(36.dp).clip(CircleShape).background(FolioColors.LightFill), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Rounded.Close, stringResource(R.string.close), tint = secondary, modifier = Modifier.size(20.dp))
                     }
                 }
             }
-            Row(Modifier.fillMaxWidth().padding(vertical = FolioSpace.MEDIUM.dp).clip(CircleShape).background(Color.White.copy(alpha = .12f))
+            Row(Modifier.fillMaxWidth().padding(vertical = FolioSpace.MEDIUM.dp).clip(CircleShape).background(FolioColors.LightFill)
                 .padding(horizontal = FolioSpace.MEDIUM.dp, vertical = FolioSpace.COMPACT.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Search, null, tint = secondary, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
@@ -301,8 +302,8 @@ internal fun VisualWidgetPicker(
                 horizontalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
                 profiles.forEach { profile ->
                     val selected = profile.userSerial == selectedProfile.userSerial
-                    Text(profile.label, color = if (selected) Color.Black else ink, fontSize = FolioType.COMPACT.sp, fontWeight = FontWeight.Medium,
-                        modifier = Modifier.clip(CircleShape).background(if (selected) Color.White else Color.White.copy(alpha = .14f))
+                    Text(profile.label, color = if (selected) Color.White else ink, fontSize = FolioType.COMPACT.sp, fontWeight = FontWeight.Medium,
+                        modifier = Modifier.clip(CircleShape).background(if (selected) ink else FolioColors.LightFill)
                             .clickable { onSelectProfile(profile) }.padding(horizontal = FolioSpace.COMFY.dp, vertical = FolioSpace.SMALL.dp))
                 }
             }
@@ -320,7 +321,7 @@ internal fun VisualWidgetPicker(
             val columns = maxOf(((maxWidth + FolioSpace.COMFY.dp) / (168.dp + FolioSpace.COMFY.dp)).toInt(), 1)
             LazyVerticalGrid(GridCells.Adaptive(168.dp), Modifier.fillMaxSize().edgeFade(catalogState).testTag("widget-catalog-list"), state = catalogState,
                 horizontalArrangement = Arrangement.spacedBy(FolioSpace.COMFY.dp), verticalArrangement = Arrangement.spacedBy(FolioSpace.COMFY.dp),
-                contentPadding = PaddingValues(bottom = 24.dp)) {
+                contentPadding = PaddingValues(bottom = 24.dp + navigationBarHeight)) {
                 fun showAll(app: String, count: Int) = item("more-$app", span = { GridItemSpan(maxLineSpan) }) {
                     Text(pluralStringResource(R.plurals.show_all_widgets, count, count), color = LocalAccent.current.fill,
                         fontSize = FolioType.BODY.sp, modifier = Modifier.heightIn(min = FolioTouch.MIN.dp).wrapContentHeight()
@@ -343,7 +344,7 @@ internal fun VisualWidgetPicker(
                         GalleryCard(label, stringResource(R.string.folio), stringResource(if (id == BIG_CLOCK_WIDGET) R.string.wide else R.string.small), Modifier.testTag("widget-builtin-$id")
                             .clickable { focusManager.clearFocus(); keyboard?.hide(); onBuiltin(id) }) {
                             Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(FolioRadius.WIDGET.dp))
-                                .background(Color.White.copy(alpha = .1f)), contentAlignment = Alignment.Center) {
+                                .background(FolioColors.LightBackground), contentAlignment = Alignment.Center) {
                                 Icon(icon, null, tint = ink, modifier = Modifier.size(44.dp))
                             }
                         }
@@ -392,18 +393,24 @@ internal fun VisualWidgetPicker(
     }
 }
 
+private fun Modifier.extendBelow(extra: androidx.compose.ui.unit.Dp) = layout { measurable, constraints ->
+    val extraPx = if (constraints.hasBoundedHeight) extra.roundToPx() else 0
+    val placeable = measurable.measure(constraints.copy(minHeight = constraints.minHeight + extraPx, maxHeight = constraints.maxHeight + extraPx))
+    layout(placeable.width, placeable.height - extraPx) { placeable.place(0, 0) }
+}
+
 /** One widget in the gallery: preview on top, name and app underneath (iOS style). */
 @Composable
 private fun GalleryCard(title: String, subtitle: String, detail: String, modifier: Modifier, dimmed: Boolean = false,
     preview: @Composable () -> Unit) {
-    Column(modifier.alpha(if (dimmed) .45f else 1f).clip(RoundedCornerShape(FolioRadius.PANEL.dp)).background(Color.White.copy(alpha = .06f)).padding(FolioSpace.COMPACT.dp)) {
+    Column(modifier.alpha(if (dimmed) .45f else 1f).clip(RoundedCornerShape(FolioRadius.PANEL.dp)).background(Color.White).padding(FolioSpace.COMPACT.dp)) {
         preview()
-        Text(title, color = Color.White, fontSize = FolioType.SUBHEAD.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
+        Text(title, color = FolioColors.LightLabel, fontSize = FolioType.SUBHEAD.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.padding(top = FolioSpace.COMPACT.dp, start = FolioSpace.HAIR.dp))
-        Text(subtitle, color = FolioColors.SecondaryLabel, fontSize = FolioType.FOOTNOTE.sp, maxLines = 1,
+        Text(subtitle, color = FolioColors.LightSecondaryLabel, fontSize = FolioType.FOOTNOTE.sp, maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.padding(start = FolioSpace.HAIR.dp))
         // Secondary, not fainter: at .45 on the picker's near-black the size line read about 4.3:1, under AA.
-        Text(detail, color = FolioColors.SecondaryLabel, fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1, modifier = Modifier.padding(start = FolioSpace.HAIR.dp, bottom = FolioSpace.HAIR.dp))
+        Text(detail, color = FolioColors.LightSecondaryLabel, fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1, modifier = Modifier.padding(start = FolioSpace.HAIR.dp, bottom = FolioSpace.HAIR.dp))
     }
 }
 
@@ -422,15 +429,15 @@ private fun WidgetAppRow(apps: List<Pair<String, Bitmap?>>, selected: String?, l
             val on = key == selected
             val label = labelOf(key)
             Column(Modifier.width(72.dp).clip(RoundedCornerShape(FolioRadius.PANEL.dp))
-                .background(if (on) Color.White.copy(alpha = .16f) else Color.Transparent)
+                .background(if (on) FolioColors.LightFill else Color.Transparent)
                 .selectable(on, onClick = { onSelect(key) }, role = androidx.compose.ui.semantics.Role.Tab)
                 .padding(vertical = FolioSpace.SMALL.dp).testTag("widget-app-${if (key == FOLIO_WIDGETS) "folio" else key}"),
                 horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(Modifier.size(44.dp).clip(IconContinuousShape).background(Color.White.copy(alpha = .1f)), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(44.dp).clip(IconContinuousShape).background(FolioColors.LightFill), contentAlignment = Alignment.Center) {
                     icon?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize()) }
-                        ?: Icon(Icons.Rounded.Widgets, null, tint = Color.White, modifier = Modifier.size(24.dp))
+                        ?: Icon(Icons.Rounded.Widgets, null, tint = FolioColors.LightLabel, modifier = Modifier.size(24.dp))
                 }
-                Text(label, color = if (on) Color.White else FolioColors.SecondaryLabel, fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1,
+                Text(label, color = if (on) FolioColors.LightLabel else FolioColors.LightSecondaryLabel, fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.padding(top = FolioSpace.HAIR.dp, start = 2.dp, end = 2.dp))
             }
         }

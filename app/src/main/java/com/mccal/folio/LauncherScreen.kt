@@ -81,6 +81,8 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -1010,7 +1012,7 @@ fun LauncherScreen(
                     JigglePill(stringResource(R.string.done), emphasized = true) { haptic.perform(FolioHaptic.Commit); homeEdit.stop() }
                 }
             }
-            if (!inLibrary && !drag.active) Column(Modifier.align(railBottom(state.leftHanded)).railEdge(state.leftHanded, 12.dp).padding(bottom = FolioSpace.SNUG.dp)
+            if (!inLibrary && !drag.active && !homeEdit.active) Column(Modifier.align(railBottom(state.leftHanded)).railEdge(state.leftHanded, 12.dp).padding(bottom = FolioSpace.SNUG.dp)
                 .width(DOCK_WIDTH.dp), horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
                 val controlSize = dockIconSize(geometry.iconSize).dp
@@ -1261,8 +1263,32 @@ fun LauncherScreen(
                     val visualIndex = candidateIndex ?: widgetRawTarget?.index ?: session.targetIndex
                     val specialAnchor = session.candidate?.let { drag.regions[DropTarget.Widget(session.slot)]?.bounds }
                     val anchor = specialAnchor ?: visualIndex?.let { drag.regions[DropTarget.Home(it)]?.bounds }
+                    val targetPage = homeCellPage(session.targetIndex ?: 0)
+                    fun moveToPage(page: Int) {
+                        val current = widgetSession ?: return
+                        if (page !in -1..homePages) return
+                        val local = homeCellLocal(current.targetIndex ?: 0)
+                        val free = (listOf(local) + (0 until HOME_CELLS)).map { homeCellIndex(page, it) }
+                            .firstOrNull { draftAt(it, current.span, current.slot) != null }
+                        widgetSession = current.copy(pointer = Offset.Zero, targetIndex = free ?: homeCellIndex(page, local))
+                        scope.launch { pager.glideToPage(page) }
+                    }
+                    fun resizeTo(span: WidgetSpan) {
+                        val current = widgetSession ?: return
+                        val page = homeCellPage(current.targetIndex ?: 0)
+                        val pages = listOf(page) + (-1..homePages).filter { it != page }
+                        val free = (listOfNotNull(current.targetIndex).asSequence() + pages.asSequence().flatMap { p ->
+                            (0 until HOME_CELLS).asSequence().map { homeCellIndex(p, it) }
+                        }).firstOrNull { draftAt(it, span, current.slot) != null }
+                        widgetSession = current.copy(span = span, pointer = Offset.Zero, targetIndex = free ?: current.targetIndex)
+                        free?.let(::homeCellPage)?.takeIf { it != page }?.let { scope.launch { pager.glideToPage(it) } }
+                    }
+                    val pageStep = if (androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl) -1 else 1
+                    val previousPageLabel = stringResource(R.string.previous_home_page)
+                    val nextPageLabel = stringResource(R.string.next_home_page)
+                    val choosingCell = !session.dragging && session.candidate == null
                     Box(Modifier.fillMaxSize().testTag("widget-placement-mode")
-                        .then(if (!session.dragging && session.candidate == null) Modifier.pointerInput(session.slot, session.span) {
+                        .then(if (choosingCell) Modifier.pointerInput(session.slot, session.span) {
                             detectTapGestures { local ->
                                 val point = local + drag.rootOrigin
                                 val cell = drag.regions.values.firstOrNull {
@@ -1270,41 +1296,16 @@ fun LauncherScreen(
                                 }?.target as? DropTarget.Home
                                 cell?.let { widgetSession = session.copy(pointer = point, targetIndex = it.index) }
                             }
+                        }.pointerInput(session.slot, targetPage) {
+                            var travel = 0f
+                            detectHorizontalDragGestures(onDragStart = { travel = 0f }, onDragEnd = {
+                                if (kotlin.math.abs(travel) > FolioTouch.MIN.dp.toPx()) moveToPage(targetPage + if (travel < 0) pageStep else -pageStep)
+                            }) { change, amount -> change.consume(); travel += amount }
+                        }.semantics {
+                            customActions = listOf(
+                                CustomAccessibilityAction(previousPageLabel) { moveToPage(targetPage - 1); true },
+                                CustomAccessibilityAction(nextPageLabel) { moveToPage(targetPage + 1); true })
                         } else Modifier)) {
-                        Row(Modifier.align(Alignment.TopCenter).windowInsetsPadding(WindowInsets.folioSafeTop).padding(top = FolioSpace.SMALL.dp)
-                            .toolbarGlass(CircleShape)
-                            .testTag("widget-placement-toolbar"), verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(onClick = widgetPickerBack) { Text(stringResource(R.string.back_to_widgets)) }
-                            if (session.candidate != null) Text(stringResource(R.string.replace_here), color = Ink,
-                                modifier = Modifier.testTag("widget-replacement-locked"))
-                            val targetPage = homeCellPage(session.targetIndex ?: 0)
-                            if (!session.dragging && session.candidate == null) IconButton(
-                                enabled = targetPage > -1, onClick = {
-                                val local = homeCellLocal(session.targetIndex ?: 0)
-                                val page = targetPage - 1
-                                widgetSession = session.copy(targetIndex = homeCellIndex(page, local))
-                                scope.launch { pager.glideToPage(page) }
-                            }) { Icon(Icons.Rounded.ChevronLeft, stringResource(R.string.previous_home_page)) }
-                            Text("${session.span.width} × ${session.span.height}", color = Ink)
-                            if (!session.dragging && session.candidate == null) IconButton(enabled = targetPage < homePages, onClick = {
-                                val local = homeCellLocal(session.targetIndex ?: 0)
-                                val page = (targetPage + 1).coerceAtMost(homePages)
-                                widgetSession = session.copy(targetIndex = homeCellIndex(page, local))
-                                scope.launch { pager.glideToPage(page) }
-                            }) { Icon(Icons.Rounded.ChevronRight, stringResource(R.string.next_home_page)) }
-                            if (!session.dragging) TextButton(enabled = widgetDraft != null, onClick = {
-                                widgetDraft?.let { draft ->
-                                    val contentSize = specialAnchor?.let { bounds -> with(placementDensity) {
-                                        WidgetContentSize(bounds.width.toDp().value, bounds.height.toDp().value)
-                                    } }
-                                    session.provider?.let { widgets.add(draft, it, pickerSizing, contentSize) }
-                                        ?: session.builtinId?.let { widgets.setBuiltin(draft.copy(id = it)) }
-                                    widgetSession = null; sheet = ""; picker.packageName = null
-                                }
-                            }, modifier = Modifier.testTag("widget-placement-apply")) { Text(stringResource(R.string.place)) }
-                            TextButton(onClick = { leaveTemporaryWidgetPage(); widgetSession = null; sheet = ""; picker.packageName = null },
-                                modifier = Modifier.testTag("widget-placement-cancel")) { Text(stringResource(R.string.cancel)) }
-                        }
                         if (anchor != null) {
                             val density = LocalDensity.current
                             val cellWidthPx = with(density) { geometry.cellWidth.dp.toPx() }
@@ -1360,6 +1361,40 @@ fun LauncherScreen(
                                         contentAlignment = Alignment.Center) { Text(stringResource(R.string.no_room_here), color = Color.White) }
                                 }
                             }
+                        }
+                        val toolbarAtBottom = !session.dragging && anchor != null &&
+                            anchor.top < androidx.compose.ui.platform.LocalWindowInfo.current.containerSize.height / 2f
+                        val sizeConstraints = remember(session.provider, session.builtinId, pickerSizing) {
+                            session.provider?.let { widgets.sizing(it, pickerSizing) } ?: session.builtinId?.let { builtinWidgetConstraints(it) }
+                        }
+                        val sizeOptions = if (session.provider != null && sizeConstraints == null) listOf(session.span)
+                            else placementSizeOptions(session.span, sizeConstraints)
+                        val presetNames = listOf(stringResource(R.string.small), stringResource(R.string.medium), stringResource(R.string.large))
+                        fun sizeName(span: WidgetSpan) = WIDGET_SIZE_PRESETS.indexOf(span).takeIf { it >= 0 }?.let { presetNames[it] }
+                            ?: "${span.width} × ${span.height}"
+                        Row(Modifier.align(if (toolbarAtBottom) Alignment.BottomCenter else Alignment.TopCenter)
+                            .then(if (toolbarAtBottom) Modifier.padding(bottom = PLACEMENT_TOOLBAR_BOTTOM_DP.dp)
+                                else Modifier.windowInsetsPadding(WindowInsets.folioSafeTop).padding(top = FolioSpace.SMALL.dp))
+                            .toolbarGlass(CircleShape).padding(horizontal = FolioSpace.SNUG.dp)
+                            .testTag("widget-placement-toolbar"), verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(onClick = widgetPickerBack) { Text(stringResource(R.string.back_to_widgets)) }
+                            if (session.candidate != null) Text(stringResource(R.string.replace_here), color = Ink,
+                                modifier = Modifier.testTag("widget-replacement-locked"))
+                            else if (choosingCell && sizeOptions.size > 1) IosSegmented(sizeOptions.map { it to sizeName(it) }, session.span, ::resizeTo,
+                                Modifier.width((sizeOptions.size * 76).dp).padding(horizontal = FolioSpace.SMALL.dp), tag = "widget-placement-size", light = true)
+                            else Text(sizeName(session.span), color = Ink, modifier = Modifier.padding(horizontal = FolioSpace.SMALL.dp))
+                            TextButton(onClick = { leaveTemporaryWidgetPage(); widgetSession = null; sheet = ""; picker.packageName = null },
+                                modifier = Modifier.testTag("widget-placement-cancel")) { Text(stringResource(R.string.cancel)) }
+                            if (!session.dragging) TextButton(enabled = widgetDraft != null, onClick = {
+                                widgetDraft?.let { draft ->
+                                    val contentSize = specialAnchor?.let { bounds -> with(placementDensity) {
+                                        WidgetContentSize(bounds.width.toDp().value, bounds.height.toDp().value)
+                                    } }
+                                    session.provider?.let { widgets.add(draft, it, pickerSizing, contentSize) }
+                                        ?: session.builtinId?.let { widgets.setBuiltin(draft.copy(id = it)) }
+                                    widgetSession = null; sheet = ""; picker.packageName = null
+                                }
+                            }, modifier = Modifier.testTag("widget-placement-apply")) { Text(stringResource(R.string.place), fontWeight = FontWeight.SemiBold) }
                         }
                     }
                 }
