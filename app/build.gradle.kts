@@ -38,7 +38,7 @@ val releaseStoreFile = releaseSigningValues["FOLIO_RELEASE_STORE_FILE"]?.let { c
 
 val devApplicationId = "com.mccal.folio.dev"
 
-val folioVersion = "0.6.9-beta.5"
+val folioVersion = "1.0.0"
 
 // Bundle the changelog so Folio can show What's New after an update.
 abstract class PublishedChangelogTask : DefaultTask() {
