@@ -492,6 +492,8 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
 @Composable private fun SettingsLargeTitle(title: String) = Text(title, color = FolioColors.LightLabel, fontSize = FolioType.LARGE_TITLE.sp,
     fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = FolioSpace.TINY.dp, bottom = FolioSpace.SMALL.dp))
 
+private const val SELECTED_ROW_INSET = 5
+
 /** iOS Settings row: colored rounded icon square, title, optional value, chevron. */
 /**
  * A Settings row that opens a page. [selected] is null for a row that's only a place to go; true or false only in
@@ -502,9 +504,9 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     selected: Boolean? = null, chevron: Boolean = true, onClick: () -> Unit) {
     val open = selected == true
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp)
-        .then(if (open) Modifier.padding(horizontal = 5.dp, vertical = FolioSpace.HAIR.dp).clip(RoundedCornerShape(FolioRadius.CONTROL.dp)).background(LocalAccent.current.fill) else Modifier)
+        .then(if (open) Modifier.padding(SELECTED_ROW_INSET.dp).clip(RoundedCornerShape((FolioRadius.GROUPED_CARD - SELECTED_ROW_INSET).dp)).background(LocalAccent.current.fill) else Modifier)
         // The inset is taken back from the content padding, so the icon and title don't shift when selected.
-        .clickable(onClick = onClick).padding(horizontal = if (open) 9.dp else FolioSpace.COMFY.dp, vertical = if (open) FolioSpace.SNUG.dp else FolioSpace.SMALL.dp).testTag(tag)
+        .clickable(onClick = onClick).padding(horizontal = if (open) (FolioSpace.COMFY - SELECTED_ROW_INSET).dp else FolioSpace.COMFY.dp, vertical = if (open) (FolioSpace.SMALL - SELECTED_ROW_INSET).dp else FolioSpace.SMALL.dp).testTag(tag)
         .then(if (selected != null) Modifier.semantics { this.selected = selected; role = androidx.compose.ui.semantics.Role.Tab } else Modifier),
         verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(30.dp).clip(IconContinuousShape).background(androidx.compose.ui.graphics.Color(color)), contentAlignment = Alignment.Center) {
