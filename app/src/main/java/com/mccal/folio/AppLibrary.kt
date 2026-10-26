@@ -25,6 +25,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -128,8 +129,12 @@ internal fun AppLibrary(
         CategoryFolder(stringResource(category.title), categorized[category].orEmpty(), onDismiss = { openCategory = null },
             onLaunch = { openCategory = null; onLaunchFrom(it, null) }, onActions = { openCategory = null; onActions(it) })
     }
+    val categoryBlurPx = with(androidx.compose.ui.platform.LocalDensity.current) { HOME_BACKDROP_BLUR_DP.dp.toPx() }
+    val categoryBlurs = remember(categoryBlurPx) { backdropBlurSteps(categoryBlurPx) }
+    val categoryOpen by androidx.compose.animation.core.animateFloatAsState(if (openCategory != null && browsing) 1f else 0f,
+        FolioMotion.spring(FolioMotion.Settle), label = "library under category")
     val panelShape = RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)
-    Surface(modifier, shape = panelShape,
+    Surface(modifier.graphicsLayer { renderEffect = categoryBlurs.at(categoryOpen) }, shape = panelShape,
         color = if (glass) Color.Transparent else MaterialTheme.colorScheme.surface,
         contentColor = ink) {
         Column(Modifier.padding(horizontal = FolioSpace.LARGE.dp).padding(top = 18.dp)) {
