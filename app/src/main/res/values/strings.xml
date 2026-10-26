@@ -1,7 +1,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="dune_wallpaper_description">The background you chose in Folio, sized for your display.</string>
     <string name="shade_service_label">Folio gestures &amp; overlays</string>
-    <string name="shade_service_description">Lets Folio open the system notifications and Quick Settings panels from Home gestures, and, only if you turn them on, show Folio’s dock handle and Big Buttons over other apps, launch your dock apps and go Home. It does not read screen content or observe what you do in other apps.</string>
+    <string name="shade_service_description">Lets Folio open Android’s notifications and Quick Settings from Home gestures and run the system actions you give a gesture or button: Home, Back, Recents, lock screen, screenshot, power menu, split screen and play/pause. Only if you turn them on, it also shows Folio’s dock handle, dock and Big Buttons over other apps. It does not read screen content, observe what you do in other apps, or collect any data.</string>
     <string name="personal">Personal</string>
     <string name="work">Work</string>
     <string name="turn_on_work_apps">Turn on work apps</string>
@@ -64,7 +64,7 @@
     <string name="capability_notifications">Notification access</string>
     <string name="capability_notifications_uses">Badges from notifications and Now Playing in Cabinet.</string>
     <string name="capability_accessibility">Accessibility</string>
-    <string name="capability_accessibility_uses">Pull-down panels, Big Buttons and the Notification Shade over other apps.</string>
+    <string name="capability_accessibility_uses">Pull-down panels, gesture actions, and the dock and Big Buttons over other apps.</string>
     <string name="capability_off">Off</string>
     <string name="capability_open_settings">Open Android Settings</string>
     <string name="capabilities_note">Nothing here turns on without you. Folio only uses what you allow, and a feature that needs one of these stays off until you do.</string>
@@ -249,11 +249,16 @@
     <string name="home_hidden">Home hidden</string>
     <string name="folio_gestures_are_starting_swipe_down_a">Folio gestures are starting. Swipe down again.</string>
     <string name="android_couldn_t_open_the_system_panel">Android couldn’t open the system panel.</string>
+    <string name="agree">Agree</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="gestures_disclosure">Folio’s gestures use Android’s Accessibility Service API. With your permission, Folio uses it only to:\n\n• open Android’s notifications and Quick Settings when you swipe down on Home\n• run the actions you give a gesture or button: Home, Back, Recents, lock screen, screenshot, power menu, split screen and play/pause\n• show the dock handle, the dock and Big Buttons over other apps, and open your dock apps from there, if you turn them on\n\nFolio can’t read what’s on your screen or what you type, doesn’t watch what you do in other apps, and collects and shares no data through this service. Nothing leaves your phone.\n\nTap Agree to open Accessibility settings, then turn on “Folio gestures &amp; overlays”.</string>
+    <string name="gestures_restricted_settings_help">If it’s greyed out, or Android says “Restricted setting”, tap App Info, open the ⋮ menu, choose “Allow restricted settings”, then come back and turn it on. Android asks this once for apps installed from outside an app store.</string>
+    <string name="notification_access_disclosure_title">Allow Notification Access?</string>
+    <string name="notification_access_disclosure">Folio reads your notifications to show badges on app icons, an app’s recent notifications and media controls in its panel, and what’s playing. Notification content stays in memory on your phone only while it’s shown. It’s never saved, logged or sent anywhere.\n\nTap Agree to open Android’s settings, then allow Folio.</string>
+    <string name="usage_access_disclosure_title">Allow Usage Access?</string>
+    <string name="usage_access_disclosure">Folio reads which apps you opened and when, to suggest the apps you use most and to put a dot beside dock apps you used in the last hour. This stays on your phone and is never sent anywhere.\n\nTap Agree to open Android’s settings, then allow Folio.</string>
     <string name="turn_on_folio_gestures">Turn On Folio Gestures</string>
-    <string name="folio_uses_it_to_open_notification_cente">Folio uses it to open Android’s notifications and Quick Settings, and for the dock handle and Big Buttons over other apps.\u0020</string>
-    <string name="it_can_t_read_what_s_on_your_screen">It can\'t read what\'s on your screen.</string>
     <string name="app_info">App Info</string>
-    <string name="open_settings">Open Settings</string>
     <string name="accessibility_settings_are_unavailable">Accessibility settings are unavailable.</string>
     <string name="profile_is_unavailable">Profile is unavailable</string>
     <string name="the_system_wallpaper_preview_is_unavaila">The system wallpaper preview is unavailable.</string>

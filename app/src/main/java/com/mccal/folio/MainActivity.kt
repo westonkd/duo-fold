@@ -261,6 +261,7 @@ class MainActivity : ComponentActivity() {
         Diagnostics.checkpoint(this, visible = true)
         FolioActions.home = java.lang.ref.WeakReference(this)
         if (SpotlightRequest.consume()) openSpotlight()
+        if (GesturesSetupRequest.consume()) showShadeSetup()
         FolioActions.pendingPanel?.let { FolioActions.pendingPanel = null; showPanel(it) }
         returningFromShadeSettings = false
         model.refresh(); updateDefaultHome()
@@ -288,26 +289,27 @@ class MainActivity : ComponentActivity() {
     private fun startupSheetUp() = showWhatsNew.value || whatsNewRequested.value ||
         ((showDevBuild.value || DevBuild.reopen.intValue > 0) && DevBuild.load(this) != null)
 
+    private fun installedFromPlay() = runCatching {
+        packageManager.getInstallSourceInfo(packageName).installingPackageName == "com.android.vending"
+    }.getOrDefault(false)
+
     private fun showShadeSetup() {
         if (shadeSetupDialog?.isShowing == true) return
         // Two prompts at once read as one: after an install, a restored gestures dialog came up over the build page.
         if (startupSheetUp()) { shadeSetupWaiting = true; return }
         shadeSetupDialog = android.app.AlertDialog.Builder(this)
             .setTitle(getString(R.string.turn_on_folio_gestures))
-            .setMessage("Android asks you to turn this on yourself:\n\n" +
-                "1. Tap Open Settings, find “Folio gestures & overlays” (often under Installed apps) and turn it on.\n" +
-                "2. If it's greyed out, or you see “App was denied access” or “Restricted setting”, tap App Info below, open the ⋮ menu " +
-                "(top right), choose “Allow restricted settings” and confirm, then come back and turn it on. Android does this for apps " +
-                "installed from a browser or file; it's a one-time step.\n\n" +
-                getString(R.string.folio_uses_it_to_open_notification_cente) +
-                getString(R.string.it_can_t_read_what_s_on_your_screen))
+            .setMessage(listOfNotNull(R.string.gestures_disclosure, R.string.gestures_restricted_settings_help.takeUnless { installedFromPlay() })
+                .joinToString("\n\n") { getString(it) })
             .setNegativeButton(getString(R.string.not_now), null)
-            .setNeutralButton(getString(R.string.app_info)) { _, _ ->
-                returningFromShadeSettings = true
-                runCatching { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))) }
-                    .onFailure { returningFromShadeSettings = false }
+            .apply {
+                if (!installedFromPlay()) setNeutralButton(getString(R.string.app_info)) { _, _ ->
+                    returningFromShadeSettings = true
+                    runCatching { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))) }
+                        .onFailure { returningFromShadeSettings = false }
+                }
             }
-            .setPositiveButton(getString(R.string.open_settings)) { _, _ ->
+            .setPositiveButton(getString(R.string.agree)) { _, _ ->
                 returningFromShadeSettings = true
                 val opened = runCatching { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }.isSuccess
                 if (!opened) {

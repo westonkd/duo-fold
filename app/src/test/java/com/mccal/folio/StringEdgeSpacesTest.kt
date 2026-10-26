@@ -26,8 +26,7 @@ class StringEdgeSpacesTest {
         assertEquals(listOf("a"), edgeSpaces("<string name=\"a\">Ends here. </string><string name=\"b\">Ends here.$kept</string>"))
     }
 
-    @Test fun `the gestures note and the backup note keep their space`() {
-        assertEquals(" ", EnglishStrings.get(R.string.folio_uses_it_to_open_notification_cente).takeLast(1))
+    @Test fun `the backup note keeps its space`() {
         assertEquals(" ", EnglishStrings.get(R.string.save_the_current_home_layout_folders_wid).takeLast(1))
     }
 }

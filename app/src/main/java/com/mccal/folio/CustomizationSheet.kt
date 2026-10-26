@@ -338,7 +338,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         CardNote(if (SafeMode.active) stringResource(R.string.folio_is_running_in_safe_mode_optional_f)
                             else stringResource(R.string.if_folio_closes_unexpectedly_twice_right))
                     }
-                    CapabilitiesCard()
+                    CapabilitiesCard(onShadeSetup)
                     RecentActivityCard()
                     CrashReportsCard()
                     PerformanceCard()
@@ -508,14 +508,14 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
     val perms = remember(tick, isDefaultHome) { listOf(
         Perm(context.getString(R.string.home_app), context.getString(R.string.home_button_folding_gestures), isDefaultHome, onMakeDefault),
         Perm(context.getString(R.string.notification_access), context.getString(R.string.badges_cabinet),
-            NotificationListener.hasAccess(context)) { open(NotificationListener.accessSettingsIntent(context)) },
+            NotificationListener.hasAccess(context)) { PermissionDisclosure.notificationAccess(context) },
         Perm(context.getString(R.string.gestures_service_accessibility), context.getString(R.string.pull_downs_dock_and_big_buttons_in_other),
             SystemShadeAccessibilityService.isConnected(), onShadeSetup),
         Perm(context.getString(R.string.do_not_disturb_access), context.getString(R.string.actions),
             context.getSystemService(android.app.NotificationManager::class.java).isNotificationPolicyAccessGranted) {
             open(android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) },
         Perm(context.getString(R.string.usage_access_optional), context.getString(R.string.better_suggestions_counts_apps_you_open), Suggestions.hasUsageAccess(context)) {
-            open(Suggestions.usageAccessIntent(context)) },
+            PermissionDisclosure.usageAccess(context) },
         Perm(context.getString(R.string.calendar_optional), context.getString(R.string.up_next_widget), UpNext.hasCalendar(context)) { open(appSettings) },
         Perm(context.getString(R.string.contacts), context.getString(R.string.spotlight_contact_search), context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED) { open(appSettings) },
     ) }
@@ -537,6 +537,10 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
         // Some banking apps refuse to run while any accessibility service is on, Folio's included (reported on
         // r/GalaxyFold, 18 Sep 2026). Nothing Folio can do from its side, so say so before someone is caught out.
         CardNote(stringResource(R.string.banking_apps_note))
+        SheetDivider()
+        IosActionRow(stringResource(R.string.privacy_policy), "privacy-policy") {
+            open(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(PRIVACY_POLICY_URL)))
+        }
     }
 }
 
@@ -548,7 +552,7 @@ private fun riskLabel(risk: OperationRisk) = when (risk) {
 }
 
 /** General › Diagnostics: what this phone and your permissions allow, and why a feature might be off (A0 to A2, see Capabilities). */
-@Composable private fun CapabilitiesCard() {
+@Composable private fun CapabilitiesCard(onShadeSetup: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     fun read() = Capabilities.rows(NotificationListener.hasAccess(context), SystemShadeAccessibilityService.isConnected())
     var rows by remember { mutableStateOf(read()) }
@@ -572,10 +576,8 @@ private fun riskLabel(risk: OperationRisk) = when (risk) {
             }
         }
         if (Capabilities.needsPermission(rows).isNotEmpty()) CardAction(stringResource(R.string.capability_open_settings), onClick = {
-            val tier = Capabilities.needsPermission(rows).first()
-            val intent = if (tier == CapabilityTier.NOTIFICATIONS) NotificationListener.accessSettingsIntent(context)
-                else android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-            runCatching { context.startActivity(intent) }
+            if (Capabilities.needsPermission(rows).first() == CapabilityTier.NOTIFICATIONS) PermissionDisclosure.notificationAccess(context)
+            else onShadeSetup()
         }, modifier = Modifier.testTag("capability-open-settings"))
         CardNote(stringResource(R.string.capabilities_note))
     }
@@ -843,9 +845,7 @@ internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { D
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) { Text(stringResource(R.string.recent_app_dots), Modifier.weight(1f, fill = false)); BetaTag() }
             IosSwitch(state.dockRecentDots, { on ->
                 model.setDockRecentDots(on)
-                if (on && !Suggestions.hasUsageAccess(context)) runCatching {
-                    context.startActivity(Suggestions.usageAccessIntent(context).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
-                }
+                if (on && !Suggestions.hasUsageAccess(context)) PermissionDisclosure.usageAccess(context)
             }, Modifier.testTag("dock-recent-dots-switch"))
         }
         CardNote(stringResource(R.string.a_small_dot_beside_dock_apps_you_ve_used))
