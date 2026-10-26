@@ -5,7 +5,7 @@ Folio is in development), and this file follows [Keep a Changelog](https://keepa
 `versionCode` is derived from the version name ((MAJOR × 10000 + MINOR × 100 + PATCH) × 10 + HOTFIX), so every release sorts correctly and a fix on top of one has nine numbers of its own.
 Folio shows the newest section on the phone after an update, and every version under Settings › What's New › Version History.
 
-## [1.0.0] - Unreleased
+## [1.0.0] - 2026-10-26
 
 ### Added
 - **Folio on Google Play:** a calm, two-panel Home screen with a Side Bar, a widgets page, the App Library, search and folders, on the cover screen and unfolded, and Home landing like a page when the phone opens or shuts.
