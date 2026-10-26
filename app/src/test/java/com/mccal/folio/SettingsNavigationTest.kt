@@ -7,25 +7,40 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Settings' Back: what it says, and where it lands. Settings is the list and five flat pages under it, so Back always
- * returns to the list, which keeps its scroll, and a page opened again starts at its top.
+ * Settings' Back: what it says, and where it lands. Settings is the list, five pages under it, and the pages General
+ * opens. Back returns to the page above, which keeps its scroll, and a page opened again starts at its top.
  */
 class SettingsNavigationTest {
     @Before fun forget() { SettingsMemory.overviewScroll = 0 }
 
+    private val listPages = CustomizationPage.entries.filter { it.parent == CustomizationPage.OVERVIEW }
+    private val generalPages = CustomizationPage.entries.filter { it.parent == CustomizationPage.GENERAL }
+
     @Test fun `the list opens exactly five pages`() {
-        assertEquals(listOf(CustomizationPage.HOME, CustomizationPage.SEARCH, CustomizationPage.GESTURES, CustomizationPage.FOLD, CustomizationPage.GENERAL),
-            CustomizationPage.entries.filter { it != CustomizationPage.OVERVIEW })
+        assertEquals(listOf(CustomizationPage.HOME, CustomizationPage.SEARCH, CustomizationPage.GESTURES, CustomizationPage.FOLD, CustomizationPage.GENERAL), listPages)
     }
 
-    @Test fun `Back names the list`() {
-        for (page in CustomizationPage.entries.filter { it != CustomizationPage.OVERVIEW })
-            assertEquals("$page", R.string.folio, settingsBackLabel(page, columns = 1))
+    @Test fun `General opens Diagnostics and Credits & Licenses, and they belong under it in the list`() {
+        assertEquals(listOf(CustomizationPage.DIAGNOSTICS, CustomizationPage.CREDITS), generalPages)
+        for (page in generalPages) assertEquals(CustomizationPage.GENERAL, page.topLevel)
+    }
+
+    @Test fun `Back names the page above`() {
+        for (page in listPages) assertEquals("$page", R.string.folio, settingsBackLabel(page, columns = 1))
+        for (page in generalPages) assertEquals("$page", R.string.general, settingsBackLabel(page, columns = 1))
         assertNull("the list has nowhere to go back to", settingsBackLabel(CustomizationPage.OVERVIEW, columns = 1))
     }
 
-    @Test fun `in two columns the list is on screen, so there is no Back`() {
-        for (page in CustomizationPage.entries) assertNull("$page", settingsBackLabel(page, columns = 2))
+    @Test fun `in two columns the list is on screen, so only General's pages have a Back`() {
+        for (page in listPages + CustomizationPage.OVERVIEW) assertNull("$page", settingsBackLabel(page, columns = 2))
+        for (page in generalPages) assertEquals("$page", R.string.general, settingsBackLabel(page, columns = 2))
+    }
+
+    @Test fun `Back from a page General opened lands where General was left`() = runBlocking {
+        val scroll = SettingsScroll(CustomizationPage.GENERAL, 0)
+        scroll.state.scrollTo(700)
+        scroll.show(CustomizationPage.DIAGNOSTICS).scrollTo(300)
+        assertEquals(700, scroll.show(CustomizationPage.GENERAL).value)
     }
 
     @Test fun `Back lands where the list was left, and a page opened again starts at its top`() = runBlocking {

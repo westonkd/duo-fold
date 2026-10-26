@@ -38,7 +38,7 @@ internal fun AppIconEditor(app: AppEntry, current: AppIconOverride, onChange: (A
                 AppIcon(app, null, Modifier.size(56.dp))
             }
             Spacer(Modifier.width(12.dp))
-            Text(stringResource(R.string.edit_icon_for_1, app.label), color = Color.White, fontSize = FolioType.TITLE.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.edit_icon_for_1, app.label), color = FolioColors.LightLabel, fontSize = FolioType.TITLE.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             Text(stringResource(R.string.done), color = LocalAccent.current.ink, fontSize = FolioType.BODY.sp, fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.clip(CircleShape).clickable(onClick = onDone).padding(FolioSpace.SMALL.dp).testTag("icon-editor-done"))
         }

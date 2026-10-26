@@ -2,29 +2,64 @@ package com.mccal.folio
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 
 internal const val PRIVACY_POLICY_URL = "https://github.com/westonkd/duo-fold/blob/main/PRIVACY.md"
 
+internal data class FolioPrompt(
+    val tag: String,
+    val title: String,
+    val message: String,
+    val confirm: String,
+    val dismiss: String,
+    val onConfirm: () -> Unit,
+    val neutral: String? = null,
+    val onNeutral: () -> Unit = {},
+)
+
+internal object FolioPrompts {
+    val current = mutableStateOf<FolioPrompt?>(null)
+    fun show(prompt: FolioPrompt) { current.value = prompt }
+    fun showing(tag: String) = current.value?.tag == tag
+    fun close() { current.value = null }
+}
+
+@Composable
+internal fun FolioPromptHost() {
+    val prompt = FolioPrompts.current.value ?: return
+    AlertDialog(onDismissRequest = FolioPrompts::close, modifier = Modifier.testTag("prompt-${prompt.tag}"), width = 320.dp,
+        title = { Text(prompt.title) },
+        text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text(prompt.message, textAlign = TextAlign.Start) } },
+        confirmButton = { TextButton(onClick = { FolioPrompts.close(); prompt.onConfirm() }, Modifier.testTag("prompt-confirm")) { Text(prompt.confirm) } },
+        dismissButton = { TextButton(onClick = FolioPrompts::close, Modifier.testTag("prompt-dismiss")) { Text(prompt.dismiss) } },
+        neutralButton = prompt.neutral?.let { label -> { TextButton(onClick = { FolioPrompts.close(); prompt.onNeutral() }) { Text(label) } } })
+}
+
 internal object PermissionDisclosure {
     fun notificationAccess(context: Context) =
-        confirm(context, R.string.notification_access_disclosure_title, R.string.notification_access_disclosure) {
+        confirm(context, "notification-access", R.string.notification_access_disclosure_title, R.string.notification_access_disclosure) {
             NotificationListener.accessSettingsIntent(context)
         }
 
     fun usageAccess(context: Context) =
-        confirm(context, R.string.usage_access_disclosure_title, R.string.usage_access_disclosure) {
+        confirm(context, "usage-access", R.string.usage_access_disclosure_title, R.string.usage_access_disclosure) {
             Suggestions.usageAccessIntent(context)
         }
 
-    private fun confirm(context: Context, title: Int, message: Int, settings: () -> Intent) {
-        android.app.AlertDialog.Builder(context)
-            .setTitle(title)
-            .setMessage(message)
-            .setNegativeButton(R.string.not_now, null)
-            .setPositiveButton(R.string.agree) { _, _ ->
-                runCatching { context.startActivity(settings().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            }
-            .show()
+    private fun confirm(context: Context, tag: String, title: Int, message: Int, settings: () -> Intent) {
+        FolioPrompts.show(FolioPrompt(tag, context.getString(title), context.getString(message),
+            confirm = context.getString(R.string.agree), dismiss = context.getString(R.string.not_now),
+            onConfirm = { runCatching { context.startActivity(settings().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }))
     }
 }
 
