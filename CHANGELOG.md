@@ -48,7 +48,6 @@ Folio shows the newest section on the phone after an update, and every version u
 
 ### Changed
 - **Adding a widget, clearer:** the widget gallery is light and opaque like iOS's, with white cards, and runs behind the navigation bar instead of stopping at a dark strip. While you place a widget the toolbar offers Small, Medium and Large (and the widget's own size when it is something else), finding room for the new size, on another page if it has to; swipe to change page. Place is in bold beside Cancel.
-- **An open App Library category stands alone:** the App Library fades away while a category is open, so the folder sits on the blurred wallpaper instead of on the library's own glass tiles, like iOS.
 - **Softer glint on icons and search fields:** the round glow near the top of app icons and the bright streak along the App Library and Spotlight search fields are gentler, so they read as light on glass rather than a shiny spot. The dock, the Search button and the rest of Home's glass keep theirs.
 - **Carrying an icon to another page is easier to find:** while you drag, a glass tab with an arrow sits at each edge that has a page beyond it and grows when you reach it; hold there for half a second (was 0.65) and Home turns the page with a tick. The edge reaches further in, and holding an icon over a page dot for a moment jumps straight to that page.
 - **Page dots spaced like iPhone's:** the dots sit 16 dp apart instead of 28 and are all the same size, so several pages no longer stretch across the bottom.
