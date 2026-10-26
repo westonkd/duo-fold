@@ -396,8 +396,10 @@ class MainActivity : ComponentActivity() {
         try { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) }
         catch (_: android.content.ActivityNotFoundException) {
             val role = getSystemService(RoleManager::class.java)
-            if (role.isRoleAvailable(RoleManager.ROLE_HOME)) startActivity(role.createRequestRoleIntent(RoleManager.ROLE_HOME))
-            else startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+            runCatching {
+                if (role.isRoleAvailable(RoleManager.ROLE_HOME)) startActivity(role.createRequestRoleIntent(RoleManager.ROLE_HOME))
+                else startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+            }
         }
     }
 

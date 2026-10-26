@@ -41,9 +41,18 @@ val devApplicationId = "com.mccal.folio.dev"
 val folioVersion = "0.6.9-beta.5"
 
 // Bundle the changelog so Folio can show What's New after an update.
-val bundleChangelog = tasks.register<Copy>("bundleChangelog") {
-    from(rootProject.file("CHANGELOG.md"))
-    into(layout.buildDirectory.dir("generated/changelog"))
+abstract class PublishedChangelogTask : DefaultTask() {
+    @get:InputFile abstract val changelog: RegularFileProperty
+    @get:OutputDirectory abstract val outputDir: DirectoryProperty
+
+    @TaskAction fun write() {
+        val published = changelog.get().asFile.readText().substringBefore("\n## Before Google Play").trimEnd() + "\n"
+        outputDir.get().asFile.also { it.mkdirs() }.resolve("CHANGELOG.md").writeText(published)
+    }
+}
+val bundleChangelog = tasks.register<PublishedChangelogTask>("bundleChangelog") {
+    changelog.set(rootProject.layout.projectDirectory.file("CHANGELOG.md"))
+    outputDir.set(layout.buildDirectory.dir("generated/changelog"))
 }
 tasks.named("preBuild") { dependsOn(bundleChangelog) }
 

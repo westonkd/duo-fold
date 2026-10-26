@@ -38,3 +38,11 @@ fi
 if [[ "$version" == *-* ]]; then
     echo "Warning: $version is a pre-release name. Play shows it to testers as is." >&2
 fi
+if grep -q 'android\.permission\.INTERNET' <<< "$manifest"; then
+    echo "The bundle asks for INTERNET. The Data safety answers in docs/releases/play-1.0.0.md assume it doesn't." >&2
+    exit 1
+fi
+if unzip -p "$bundle" base/assets/CHANGELOG.md | grep -q '^## Before Google Play'; then
+    echo "The bundled CHANGELOG.md still carries the history before Google Play." >&2
+    exit 1
+fi
