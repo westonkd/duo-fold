@@ -308,24 +308,25 @@ private object GlassGrain {
 
 @androidx.compose.runtime.Composable
 internal fun androidx.compose.ui.Modifier.liquidGlass(shape: androidx.compose.ui.graphics.Shape, frost: Float, role: GlassRole,
-    base: Color = Glass): androidx.compose.ui.Modifier {
+    base: Color = Glass, live: Boolean = false): androidx.compose.ui.Modifier {
     val tone = LocalWallpaperTone.current
     val spec = androidx.compose.runtime.remember(base, frost, role, tone.primary, tone.secondary) {
         liquidGlassSpec(base, frost, role, tone.primary, tone.secondary)
     }
-    return drawLiquidGlass(shape, spec)
+    return drawLiquidGlass(shape, spec, live)
 }
 
-internal fun androidx.compose.ui.Modifier.drawLiquidGlass(shape: androidx.compose.ui.graphics.Shape, spec: GlassSpec): androidx.compose.ui.Modifier =
-    this then LiquidGlassElement(shape, spec)
+internal fun androidx.compose.ui.Modifier.drawLiquidGlass(shape: androidx.compose.ui.graphics.Shape, spec: GlassSpec,
+    live: Boolean = false): androidx.compose.ui.Modifier = this then LiquidGlassElement(shape, spec, live)
 
-private data class LiquidGlassElement(val shape: androidx.compose.ui.graphics.Shape, val spec: GlassSpec) :
+private data class LiquidGlassElement(val shape: androidx.compose.ui.graphics.Shape, val spec: GlassSpec, val live: Boolean) :
     androidx.compose.ui.node.ModifierNodeElement<LiquidGlassNode>() {
-    override fun create() = LiquidGlassNode(shape, spec)
-    override fun update(node: LiquidGlassNode) = node.restyle(shape, spec)
+    override fun create() = LiquidGlassNode(shape, spec, live)
+    override fun update(node: LiquidGlassNode) = node.restyle(shape, spec, live)
 }
 
-private class LiquidGlassNode(private var shape: androidx.compose.ui.graphics.Shape, private var spec: GlassSpec) : SceneLitNode() {
+private class LiquidGlassNode(private var shape: androidx.compose.ui.graphics.Shape, private var spec: GlassSpec,
+    override var live: Boolean) : SceneLitNode() {
     private class Cut(val size: androidx.compose.ui.geometry.Size, val outline: androidx.compose.ui.graphics.Outline,
         val rimOutline: androidx.compose.ui.graphics.Outline, val body: androidx.compose.ui.graphics.Brush,
         val shadow: Pair<android.graphics.Path, android.graphics.Paint>?)
@@ -341,7 +342,8 @@ private class LiquidGlassNode(private var shape: androidx.compose.ui.graphics.Sh
     private var cut: Cut? = null
     private var lights = Lights(spec)
 
-    fun restyle(shape: androidx.compose.ui.graphics.Shape, spec: GlassSpec) {
+    fun restyle(shape: androidx.compose.ui.graphics.Shape, spec: GlassSpec, live: Boolean) {
+        this.live = live
         if (shape == this.shape && spec == this.spec) return
         if (spec != this.spec) lights = Lights(spec)
         this.shape = shape

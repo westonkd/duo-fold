@@ -163,10 +163,17 @@ internal fun ExpandedWorkspace(
     fun beyondDockColumn(x: Float): Float =
         if (dockColumnLeads) -dockColumnWidth * ((leadingX - x) / stride).coerceIn(0f, 1f)
         else dockColumnWidth * ((x - initialHomeOrigin) / stride).coerceIn(0f, 1f)
+    fun shownX(x: Float, position: Float, clearDockColumn: Boolean): Float {
+        val shown = x - motion.offset(position)
+        return pagerStart + shown + if (clearDockColumn) beyondDockColumn(shown) else 0f
+    }
     fun Modifier.place(x: Float, clearDockColumn: Boolean = true): Modifier = offset {
-        val physicalPosition = pager.currentPage + pager.currentPageOffsetFraction
-        val shown = x - motion.offset(physicalPosition)
-        IntOffset((pagerStart + shown + if (clearDockColumn) beyondDockColumn(shown) else 0f).roundToInt(), 0)
+        IntOffset(shownX(x, pager.currentPage + pager.currentPageOffsetFraction, clearDockColumn).roundToInt(), 0)
+    }
+    val rtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
+    fun restingLight(x: Float, restPage: Int, clearDockColumn: Boolean = true) = LightDrift {
+        val shift = shownX(x, restPage.toFloat(), clearDockColumn) - shownX(x, pager.currentPage + pager.currentPageOffsetFraction, clearDockColumn)
+        Offset(if (rtl) -shift else shift, 0f)
     }
     val showLeading by remember(pager, motion, panelWidth, leadingX, homePaneWidth, dockColumnWidth) {
         derivedStateOf(structuralEqualityPolicy()) {
@@ -188,6 +195,7 @@ internal fun ExpandedWorkspace(
             key("expanded-leading-home") {
                 Box(Modifier.place(leadingX).width((geometry.gridWidth + 16f).dp).fillMaxHeight()
                     .testTag("expanded-leading-home")) {
+                    CompositionLocalProvider(LocalLightDrift provides restingLight(leadingX, 0)) {
                     HomePagePane(
                         -1, state, previewSlots, previewLeadingSlots, previewWidgetPlacements, appsById, geometry, contentHeight, bottomSpace,
                         widgets, drag, target, insertionTarget, showLargeWidget = true,
@@ -195,6 +203,7 @@ internal fun ExpandedWorkspace(
                         onFolder = onFolder, onEmptyWidget = onEmptyWidget, onMove = onMove, onProblem = onProblem,
                         modifier = Modifier, onAddWidget = onAddWidget,
                     )
+                    }
                 }
             }
         }
@@ -204,6 +213,7 @@ internal fun ExpandedWorkspace(
                 stateHolder.SaveableStateProvider("expanded-home-$page") {
                     Box(Modifier.place(initialHomeOrigin + page * stride)
                         .width((geometry.gridWidth + 16f).dp).fillMaxHeight()) {
+                        CompositionLocalProvider(LocalLightDrift provides restingLight(initialHomeOrigin + page * stride, page)) {
                         HomePagePane(
                             page, state, previewSlots, previewLeadingSlots, previewWidgetPlacements, appsById, geometry, contentHeight, bottomSpace,
                             widgets, drag, target, insertionTarget, showLargeWidget = page > 0,
@@ -213,6 +223,7 @@ internal fun ExpandedWorkspace(
                             onMove = onMove,
                             onProblem = onProblem,
                         )
+                        }
                     }
                 }
             }
@@ -222,6 +233,7 @@ internal fun ExpandedWorkspace(
             key("library-pane") {
                 Box(Modifier.place((visibleHomePages - 1) * stride + viewportWidth, clearDockColumn = !dockColumnLeads)
                     .width(with(density) { viewportWidth.toDp() }).fillMaxHeight()) {
+                    CompositionLocalProvider(LocalLightDrift provides restingLight((visibleHomePages - 1) * stride + viewportWidth, visibleHomePages, !dockColumnLeads)) {
                     AppLibrary(state, libraryQuery, onLibraryQuery, onLaunch, onPinned,
                         onActions = onActions,
                         modifier = Modifier.fillMaxSize()
@@ -229,6 +241,7 @@ internal fun ExpandedWorkspace(
                             .padding(start = FolioSpace.LARGE.dp, top = FolioSpace.LARGE.dp, bottom = bottomSpace)
                             .testTag("library-page"),
                         drag = drag, page = visibleHomePages, onLaunchFrom = onLaunchFrom, onTurnOnWork = onTurnOnWork)
+                    }
                 }
             }
         }
@@ -265,15 +278,16 @@ internal fun HomePagePane(
 ) {
     val homeOptionsLabel = stringResource(R.string.home_options)
     val homeScroll = rememberScrollState()
-    var paneBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
+    val paneCoordinates = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
     val pageStart = homeCellIndex(page, 0)
     val backgroundTarget = (pageStart until pageStart + HOME_CELLS).firstOrNull { index ->
         homeCellShown(index, geometry.appRows) && state.layout.slotAt(index) == null && state.widgetPlacements.none { index in it.coveredIndices() }
     } ?: pageStart
     val verticalEdge = with(LocalDensity.current) { 42.dp.toPx() }
-    LaunchedEffect(drag.active, page, paneBounds) {
+    LaunchedEffect(drag.active, page) {
         while (drag.active) {
             val pointer = drag.pointer
+            val paneBounds = paneCoordinates[0]?.takeIf { it.isAttached }?.boundsInRoot() ?: androidx.compose.ui.geometry.Rect.Zero
             val amount = when {
                 !paneBounds.contains(pointer) -> 0f
                 pointer.y < paneBounds.top + verticalEdge && homeScroll.canScrollBackward -> -18f
@@ -306,7 +320,7 @@ internal fun HomePagePane(
                 !drag.active
             }
         }
-        .onGloballyPositioned { paneBounds = it.boundsInRoot() }
+        .onGloballyPositioned { paneCoordinates[0] = it }
         .width((geometry.gridWidth + 16f).dp)
         .height((contentHeight - bottomSpace).coerceAtLeast(0.dp))) {
         Box(Modifier.width(16.dp).fillMaxHeight().testTag("home-options-margin-$page")

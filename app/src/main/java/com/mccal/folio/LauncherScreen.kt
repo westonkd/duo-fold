@@ -636,7 +636,7 @@ fun LauncherScreen(
         var homeBoxTop by remember { mutableFloatStateOf(0f) }
         val hinge = LocalHinge.current
         BoxWithConstraints(Modifier.fillMaxSize().onGloballyPositioned { homeBoxTop = it.positionInWindow().y }
-            .windowInsetsPadding(WindowInsets.safeDrawing.exclude(WindowInsets.ime).union(rememberHiddenCameraInsets()))) {
+            .windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout).union(rememberHiddenCameraInsets()))) {
             val classScale = androidx.compose.ui.platform.LocalConfiguration.current.classScale
             val wide = maxWidth.value * classScale >= EXPANDED_HOME_MIN_WIDTH_DP && maxHeight.value * classScale >= HOME_REGULAR_MIN_HEIGHT_DP
             val layoutScreen = layoutScreenFor(maxWidth.value, maxHeight.value, classScale)
@@ -789,13 +789,19 @@ fun LauncherScreen(
                     )
                 }
             } else {
+                val pagerRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
                 HorizontalPager(nativePager, Modifier.fillMaxSize().then(pagerSemantics),
                     // Keep adjacent Home panes attached so ordinary back-and-forth paging does
                     // not synchronously inflate provider RemoteViews inside the gesture frame.
-                    beyondViewportPageCount = 1,
+                    beyondViewportPageCount = COVER_PAGES_KEPT,
                     userScrollEnabled = !drag.active && !resize.active, flingBehavior = pageFling,
                     key = { if (it - firstHome == visibleHomePages) "library" else "home-${it - firstHome}" }) { physicalPage ->
                     val page = physicalPage - firstHome
+                    val pageLight = remember(nativePager, physicalPage, pagerRtl) {
+                        pagerLightDrift({ nativePager.currentPage + nativePager.currentPageOffsetFraction }, physicalPage,
+                            { nativePager.layoutInfo.let { it.pageSize + it.pageSpacing }.toFloat() }, pagerRtl)
+                    }
+                    CompositionLocalProvider(LocalLightDrift provides pageLight) {
                     Box(clearOfDockColumn.fillMaxSize()) {
                         if (page == visibleHomePages) {
                             AppLibrary(state, libraryQuery, { libraryQuery = it }, onLaunch, model::setPinned,
@@ -825,6 +831,7 @@ fun LauncherScreen(
                             }
                         }
                     }
+                }
                 }
             }
             if (state.verticalStatus) StatusRail(deviceStatus,
@@ -1754,6 +1761,7 @@ private const val PAGE_DOT_PITCH = 16
 private const val PAGE_DOT_SIZE = 6
 private const val DRAG_EDGE_DP = 44
 private const val DRAG_EDGE_HOLD_MS = 500L
+private const val COVER_PAGES_KEPT = 2
 private const val DOT_HOVER_MS = 350L
 
 internal fun pageDotUnder(point: androidx.compose.ui.geometry.Offset, dots: androidx.compose.ui.geometry.Rect, count: Int, slop: Float): Int? {

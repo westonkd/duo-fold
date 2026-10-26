@@ -24,6 +24,13 @@ by the baseline profile.
 Baseline, J2 on the Fold8 inner screen (`fast` build, 20 swipes, `dumpsys gfxinfo`): dunes wallpaper 5.1% janky
 frames, P50 9 ms, P90 16 ms, P99 25 ms; Android wallpaper 4.5%, 5 / 8 / 19 ms.
 
+J2 again, 25 Oct 2026, on the Fold8 cover (`fast` build, 40 swipes between the widgets page, Home and the App Library,
+`dumpsys gfxinfo` and `framestats`). Before: 12.5% janky, P50 17 ms, P90 31 ms, P99 44 ms, RenderThread issuing draws
+for a median 5.9 ms a frame, and one main-thread spike over 6 ms per swipe. After lit icons stopped relighting as a page
+moves, icons got a rounded-rect shadow caster and a cached layer, and the cover pager kept two pages either side: 4.1%
+janky, 6 / 8 / 17 ms, a median 1.2 ms issuing draws, and one spike in 40 swipes. The App Library scrolling (20 flings)
+went from 4.9% janky and 6.0 ms issuing draws to 4.6% and 3.5 ms; what is left there is GPU time.
+
 Baseline, J1 on the Fold8 cover screen (`fast` build compiled with its baseline profile, Home started after an update,
 medians of 5): first frame 80 ms, fully drawn 899 ms (827 to 1,151). Uncompiled, as it is right after an update (one
 run): 114 ms and 1,501 ms. Fully drawn missed the 400 ms target because it waited for the app list: one background

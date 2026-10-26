@@ -27,6 +27,15 @@ class WidgetController(
 ) {
     val host: android.appwidget.AppWidgetHost = ZeroPaddingWidgetHost(activity, 1024)
     val manager = AppWidgetManager.getInstance(activity)
+    private val hostViews = HashMap<Int, android.appwidget.AppWidgetHostView>()
+
+    fun hostView(context: android.content.Context, id: Int, info: AppWidgetProviderInfo): android.appwidget.AppWidgetHostView {
+        hostViews[id]?.takeIf { it.appWidgetInfo?.provider == info.provider && it.context === context }?.let { view ->
+            (view.parent as? android.view.ViewGroup)?.takeIf { !it.isAttachedToWindow }?.removeView(view)
+            if (view.parent == null) return view
+        }
+        return host.createView(context, id, info).also { hostViews[id] = it }
+    }
     private val launcherApps = activity.getSystemService(LauncherApps::class.java)
     var failureMessage by mutableStateOf<String?>(null)
         private set
