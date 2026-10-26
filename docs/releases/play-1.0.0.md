@@ -77,7 +77,9 @@ Sensitive permissions and APIs › Accessibility API:
   the user turns those on. It subscribes to no accessibility events, cannot retrieve window content
   (canRetrieveWindowContent=false), and collects or shares no data."
 - **Personal and sensitive data:** none accessed through the API.
-- **Video** (30 to 60 seconds, screen recording from a phone or emulator):
+- **Video:** Play wants a link (an unlisted YouTube video works). One recorded from the release build on the Fold8
+  emulator, installed as if from Play, is at `artifacts/play/folio-accessibility-declaration.mp4` (git-ignored, so
+  only on the machine that made it). To record it again:
   1. Open Folio, Settings › General › Privacy & Permissions › Gestures service.
   2. Show the Turn On Folio Gestures disclosure, scroll it, tap **Agree**.
   3. Turn on "Folio gestures & overlays" in Android's Accessibility settings and accept Android's dialog.
