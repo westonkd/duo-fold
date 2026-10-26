@@ -89,14 +89,20 @@ These are the values Folio already used most, so adopting them changed nothing o
 
 - **DES-19 MUST** draw Home surfaces in the light appearance through `LocalDuoPalette`. Menus, folders and the App
   Library's cards are light glass (`menuGlass`, `FOLDER_FROST`), as in iOS 27. Spotlight's search field is the one dark
-  glass surface (`FolioColors.SearchGlass`), because iOS 27 draws search that way in light appearance too. Settings and
-  sheets are still dark (`FolioSheetColors`) until they move to light (Gap 7).
+  glass surface (`FolioColors.SearchGlass`), because iOS 27 draws search that way in light appearance too. Settings,
+  sheets and alerts are iOS's light grouped list (`FolioSheetTheme`): white cards on `LightBackground`, iOS's label
+  greys, and the accent's darker ink (`FolioAccents.TealOnLight`). Shared controls read `LocalLightSheet` to tell a
+  sheet from Home's wallpaper and glass.
+- **DES-19a MUST** put a group's explanation under the group, as an iOS footer: a `CardNote` after the last row of a
+  `SettingsCard`, or `SettingsFootnote` under any other group. Notes never sit between rows or at the top of a card.
 
 ### Words
 
 - **DES-21 MUST** put user-visible text in `strings.xml` (new code), with plurals as plurals.
-- **DES-22 SHOULD** name things the way iOS does (Dynamic Island, Control Center, App Library, Spotlight) and use
-  sentence case. Product names are not translated.
+- **DES-22 SHOULD** write the way iOS Settings does: row labels, buttons and page titles in title case ("Show App
+  Names", "Clear Suggestions History"), notes and messages in sentence case. Product names are not translated, and
+  Apple's own feature names (Spotlight, Dynamic Island, Control Center) stay out of what users see, because Folio is
+  published on Google Play.
 
 ## Where Folio is today
 
@@ -135,4 +141,4 @@ Not yet:
 | 4 | ~~Light-surface variants and named status colors~~ (done: `Warning`, `RedSoft`, `CyanLight`, `Teal`, `SheetSurface`, `MenuSurface`, `LightBackground`, plus `FolioColors.Value` for colors held as numbers) | S |
 | 5 | ~~A check that counts raw colors, radii and text sizes outside the token files~~ (done: `DesignTokensTest`) | S |
 | 6 | Remove the drawn backgrounds (`DuneWallpaper`'s dunes, `MoonColumnWallpaper`) and replace them with licensed art under DES-2a and DES-2b, keeping the picker, the drift and the scrim | M |
-| 7 | Settings and sheets in the light appearance, with iOS 26 capsule alert buttons | L |
+| 7 | ~~Settings and sheets in the light appearance, with iOS 26 capsule alert buttons~~ (done) | L |

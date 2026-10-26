@@ -255,9 +255,10 @@ internal fun AppContextMenu(
 @Composable
 internal fun MenuRow(label: String, icon: ImageVector? = null, bitmap: Bitmap? = null, destructive: Boolean = false,
     tag: String? = null, onDark: Boolean = false, onClick: () -> Unit) {
+    val dark = onDark && !LocalLightSheet.current
     val tint = when {
-        destructive -> if (onDark) FolioColors.RedOnDark else FolioColors.RedLight
-        onDark -> Color.White
+        destructive -> if (dark) FolioColors.RedOnDark else FolioColors.RedLight
+        dark -> Color.White
         else -> FolioColors.LightLabel
     }
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClick = onClick)
@@ -282,8 +283,7 @@ internal fun RenameAppAlert(app: AppEntry, onDismiss: () -> Unit, onRename: (Str
     var name by remember(app.id) { mutableStateOf(if (app.label == app.systemLabel) "" else app.label) }
     val focus = remember { androidx.compose.ui.focus.FocusRequester() }
     LaunchedEffect(app.id) { runCatching { focus.requestFocus() } }
-    // Folio's alert is always dark, like its sheets, so the field's ink is white rather than the system's.
-    val ink = Color.White
+    val ink = FolioColors.LightLabel
     AlertDialog(onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.rename_app)) },
         text = {
@@ -315,4 +315,4 @@ internal fun RenameAppAlert(app: AppEntry, onDismiss: () -> Unit, onRename: (Str
 private const val MENU_FADE_MS = 150
 
 @Composable
-internal fun SheetDivider() = HorizontalDivider(color = Color.White.copy(alpha = .1f), thickness = .5.dp)
+internal fun SheetDivider() = HorizontalDivider(color = if (LocalLightSheet.current) FolioColors.LightSeparator else Color.White.copy(alpha = .1f), thickness = .5.dp)

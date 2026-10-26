@@ -96,6 +96,8 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+internal const val WIDGET_MAX_FONT_SCALE = 1.3f
+
 @Composable
 internal fun GlassCard(modifier: Modifier = Modifier, onClick: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val cardShape = RoundedCornerShape(FolioRadius.WIDGET.dp)
@@ -105,7 +107,7 @@ internal fun GlassCard(modifier: Modifier = Modifier, onClick: () -> Unit, conte
         BoxWithConstraints {
             val scale = (minOf(maxWidth, maxHeight) / 150.dp).coerceIn(.6f, 1f)
             val density = LocalDensity.current
-            CompositionLocalProvider(LocalDensity provides androidx.compose.ui.unit.Density(density.density * scale, density.fontScale)) {
+            CompositionLocalProvider(LocalDensity provides androidx.compose.ui.unit.Density(density.density * scale, density.fontScale.coerceAtMost(WIDGET_MAX_FONT_SCALE))) {
                 Column(Modifier.fillMaxSize().padding(FolioSpace.LARGE.dp), verticalArrangement = Arrangement.SpaceBetween, content = content)
             }
         }
@@ -333,7 +335,7 @@ internal fun SmartStack(cards: List<Int>, slot: Int, controller: WidgetControlle
             SmartRotateClock.record(slot, android.os.SystemClock.elapsedRealtime())
             val relevance = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 val apps = Suggestions.packageRelevance(context, homeApps.apps)
-                val soon = UpNext.events(context, limit = 1).firstOrNull()?.let { !it.allDay && it.begin - System.currentTimeMillis() in 0..60 * 60_000L } == true
+                val soon = UP_NEXT_WIDGET in cards && UpNext.events(context, limit = 1).firstOrNull()?.let { !it.allDay && it.begin - System.currentTimeMillis() in 0..60 * 60_000L } == true
                 cards.map { id -> when {
                     id == UP_NEXT_WIDGET -> if (soon) 5.0 else 0.0
                     id >= 0 -> controller.manager.getAppWidgetInfo(id)?.provider?.packageName?.let { apps[it] } ?: 0.0
@@ -403,20 +405,20 @@ internal fun WidgetActions(
         !(placement.id >= 0 && constraints == null) && minWidth <= maxWidth && minHeight <= maxHeight
     val valid = feasible && isValid(width, height)
     fun fits(w: Int, h: Int) = feasible && w in minWidth..maxWidth && h in minHeight..maxHeight && isValid(w, h)
-    val secondary = Color.White.copy(alpha = .6f)
+    val secondary = FolioColors.LightSecondaryLabel
 
     // iOS-style widget menu: quick sizes, widget actions, Smart Stack, and a red Remove at the bottom.
     Column(Modifier.fillMaxWidth().heightIn(max = sheetMaxHeight).verticalScroll(rememberScrollState())
         .padding(horizontal = FolioSpace.XL.dp, vertical = FolioSpace.TINY.dp),
         verticalArrangement = Arrangement.spacedBy(FolioSpace.SMALL.dp)) {
         Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(if (stackCards.size > 1) stringResource(R.string.smart_stack) else stringResource(R.string.widget), Modifier.weight(1f), color = Color.White,
+            Text(if (stackCards.size > 1) stringResource(R.string.smart_stack) else stringResource(R.string.widget), Modifier.weight(1f), color = FolioColors.LightLabel,
                 fontSize = FolioType.TITLE2.sp, fontWeight = FontWeight.Bold)
             // The circle is still 32 dp; the tap is 48 (A11Y-1). The target is the box around it, not the circle.
             Box(Modifier.size(FolioTouch.MIN.dp).clickable(onClickLabel = stringResource(R.string.close_widget_options), onClick = onClose),
                 contentAlignment = Alignment.Center) {
-                Box(Modifier.size(32.dp).clip(CircleShape).background(Color.White.copy(alpha = .14f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Close, stringResource(R.string.close_widget_options), tint = Color.White, modifier = Modifier.size(18.dp))
+                Box(Modifier.size(32.dp).clip(CircleShape).background(FolioColors.LightFill), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.Close, stringResource(R.string.close_widget_options), tint = FolioColors.LightLabel, modifier = Modifier.size(18.dp))
                 }
             }
         }
@@ -428,7 +430,7 @@ internal fun WidgetActions(
                     val ok = fits(w, h) || (placement.spanX == w && placement.spanY == h)
                     IosChip(selected = placement.spanX == w && placement.spanY == h,
                         onClick = { if (ok && (placement.spanX != w || placement.spanY != h)) { onResize(w, h); onClose() } },
-                        label = { Text(label, color = if (ok) Color.Unspecified else Color.White.copy(alpha = .3f)) },
+                        label = { Text(label, color = if (ok) Color.Unspecified else FolioColors.LightTertiaryLabel) },
                         modifier = Modifier.weight(1f).testTag("widget-size-${label.lowercase()}-${placement.slot}"))
                 }
             }
@@ -449,20 +451,20 @@ internal fun WidgetActions(
             if (customSize) Column(Modifier.padding(horizontal = FolioSpace.LARGE.dp, vertical = FolioSpace.SMALL.dp), verticalArrangement = Arrangement.spacedBy(FolioSpace.TINY.dp)) {
                 if (!feasible) Text(stringResource(R.string.move_this_widget_into_the_six_row_grid_b), color = FolioColors.Red, fontSize = FolioType.FOOTNOTE.sp)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.width), Modifier.weight(1f), color = Color.White)
+                    Text(stringResource(R.string.width), Modifier.weight(1f), color = FolioColors.LightLabel)
                     IconButton(enabled = constraints?.canResizeHorizontally != false,
-                        onClick = { if (feasible) width = (width - 1).coerceAtLeast(minWidth) }) { Icon(Icons.Rounded.Remove, stringResource(R.string.decrease_widget_width), tint = Color.White) }
-                    Text(pluralStringResource(R.plurals.columns, width, width), Modifier.width(88.dp), textAlign = TextAlign.Center, color = Color.White)
+                        onClick = { if (feasible) width = (width - 1).coerceAtLeast(minWidth) }) { Icon(Icons.Rounded.Remove, stringResource(R.string.decrease_widget_width), tint = FolioColors.LightLabel) }
+                    Text(pluralStringResource(R.plurals.columns, width, width), Modifier.width(88.dp), textAlign = TextAlign.Center, color = FolioColors.LightLabel)
                     IconButton(enabled = constraints?.canResizeHorizontally != false,
-                        onClick = { if (feasible) width = (width + 1).coerceAtMost(maxWidth) }) { Icon(Icons.Rounded.Add, stringResource(R.string.increase_widget_width), tint = Color.White) }
+                        onClick = { if (feasible) width = (width + 1).coerceAtMost(maxWidth) }) { Icon(Icons.Rounded.Add, stringResource(R.string.increase_widget_width), tint = FolioColors.LightLabel) }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.height), Modifier.weight(1f), color = Color.White)
+                    Text(stringResource(R.string.height), Modifier.weight(1f), color = FolioColors.LightLabel)
                     IconButton(enabled = constraints?.canResizeVertically != false,
-                        onClick = { if (feasible) height = (height - 1).coerceAtLeast(minHeight) }) { Icon(Icons.Rounded.Remove, stringResource(R.string.decrease_widget_height), tint = Color.White) }
-                    Text(pluralStringResource(R.plurals.rows, height, height), Modifier.width(88.dp), textAlign = TextAlign.Center, color = Color.White)
+                        onClick = { if (feasible) height = (height - 1).coerceAtLeast(minHeight) }) { Icon(Icons.Rounded.Remove, stringResource(R.string.decrease_widget_height), tint = FolioColors.LightLabel) }
+                    Text(pluralStringResource(R.plurals.rows, height, height), Modifier.width(88.dp), textAlign = TextAlign.Center, color = FolioColors.LightLabel)
                     IconButton(enabled = constraints?.canResizeVertically != false,
-                        onClick = { if (feasible) height = (height + 1).coerceAtMost(maxHeight) }) { Icon(Icons.Rounded.Add, stringResource(R.string.increase_widget_height), tint = Color.White) }
+                        onClick = { if (feasible) height = (height + 1).coerceAtMost(maxHeight) }) { Icon(Icons.Rounded.Add, stringResource(R.string.increase_widget_height), tint = FolioColors.LightLabel) }
                 }
                 if (!valid) Text(stringResource(R.string.that_size_overlaps_another_item_or_exten), color = secondary, fontSize = FolioType.FOOTNOTE.sp)
                 IosChip(selected = valid, onClick = { if (valid) { onResize(width, height); onClose() } }, label = { Text(stringResource(R.string.apply_size)) },
@@ -494,7 +496,7 @@ internal fun WidgetActions(
                     SheetDivider()
                     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = FolioSpace.LARGE.dp), verticalAlignment = Alignment.CenterVertically) {
                         val cardName = stackLabel(card) ?: stringResource(R.string.widget)
-                        Text("${index + 1}. $cardName", Modifier.weight(1f), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("${index + 1}. $cardName", Modifier.weight(1f), color = FolioColors.LightLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         if (index > 0) TextButton(onClick = { onShowFirstInStack(card) }) { Text(stringResource(R.string.show_first)) }
                         IconButton(onClick = { onRemoveFromStack(card) }) {
                             Icon(Icons.Rounded.RemoveCircleOutline, stringResource(R.string.remove_from_stack, cardName), tint = FolioColors.Red)
@@ -504,7 +506,7 @@ internal fun WidgetActions(
                 SheetDivider()
                 Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(start = FolioSpace.LARGE.dp, end = FolioSpace.SMALL.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.smart_rotate), color = Color.White)
+                        Text(stringResource(R.string.smart_rotate), color = FolioColors.LightLabel)
                         Text(stringResource(R.string.show_the_next_widget_every_30_minutes), color = secondary, fontSize = FolioType.FOOTNOTE.sp)
                     }
                     IosSwitch(stackRotate, onStackRotate)

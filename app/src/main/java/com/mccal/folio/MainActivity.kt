@@ -46,7 +46,6 @@ class MainActivity : ComponentActivity() {
     private val whatsNewRequested = mutableStateOf(false)
     private val showDevBuild = mutableStateOf(false)
     private lateinit var status: DeviceStatusMonitor
-    private var shadeSetupDialog: android.app.AlertDialog? = null
     private var returningFromShadeSettings = false
     // The gestures dialog asked to show while the build page or What's New was up; it shows when they close.
     private var shadeSetupWaiting = false
@@ -83,6 +82,7 @@ class MainActivity : ComponentActivity() {
             androidx.compose.runtime.LaunchedEffect(Unit) { kotlinx.coroutines.delay(31_000); SafeMode.markStable(this@MainActivity) }
             // Saveable: a theme or language change recreates the activity, and the answer must not be asked again.
             val safeAcknowledged = androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+            FolioPromptHost()
             if (safeMode.value && !safeAcknowledged.value) AlertDialog(onDismissRequest = {},
                 title = { androidx.compose.material3.Text(getString(R.string.folio_started_in_safe_mode)) },
                 text = { androidx.compose.material3.Text(stringResource(R.string.folio_closed_unexpectedly_twice_so_opt)) },
@@ -244,7 +244,7 @@ class MainActivity : ComponentActivity() {
     }
     override fun onDestroy() {
         LauncherSheets.closeAllOf(this); LauncherPages.closeAllOf(this) // an entry left by a window that never closed cannot outlive its screen
-        shadeSetupDialog?.dismiss()
+        if (FolioPrompts.showing(GESTURES_PROMPT)) FolioPrompts.close()
         super.onDestroy()
     }
     override fun onPause() {
@@ -261,6 +261,7 @@ class MainActivity : ComponentActivity() {
         Diagnostics.checkpoint(this, visible = true)
         FolioActions.home = java.lang.ref.WeakReference(this)
         if (SpotlightRequest.consume()) openSpotlight()
+        if (GesturesSetupRequest.consume()) showShadeSetup()
         FolioActions.pendingPanel?.let { FolioActions.pendingPanel = null; showPanel(it) }
         returningFromShadeSettings = false
         model.refresh(); updateDefaultHome()
@@ -288,35 +289,33 @@ class MainActivity : ComponentActivity() {
     private fun startupSheetUp() = showWhatsNew.value || whatsNewRequested.value ||
         ((showDevBuild.value || DevBuild.reopen.intValue > 0) && DevBuild.load(this) != null)
 
+    private fun installedFromPlay() = runCatching {
+        packageManager.getInstallSourceInfo(packageName).installingPackageName == "com.android.vending"
+    }.getOrDefault(false)
+
     private fun showShadeSetup() {
-        if (shadeSetupDialog?.isShowing == true) return
+        if (FolioPrompts.showing(GESTURES_PROMPT)) return
         // Two prompts at once read as one: after an install, a restored gestures dialog came up over the build page.
         if (startupSheetUp()) { shadeSetupWaiting = true; return }
-        shadeSetupDialog = android.app.AlertDialog.Builder(this)
-            .setTitle(getString(R.string.turn_on_folio_gestures))
-            .setMessage("Android asks you to turn this on yourself:\n\n" +
-                "1. Tap Open Settings, find “Folio gestures & overlays” (often under Installed apps) and turn it on.\n" +
-                "2. If it's greyed out, or you see “App was denied access” or “Restricted setting”, tap App Info below, open the ⋮ menu " +
-                "(top right), choose “Allow restricted settings” and confirm, then come back and turn it on. Android does this for apps " +
-                "installed from a browser or file; it's a one-time step.\n\n" +
-                getString(R.string.folio_uses_it_to_open_notification_cente) +
-                getString(R.string.it_can_t_read_what_s_on_your_screen))
-            .setNegativeButton(getString(R.string.not_now), null)
-            .setNeutralButton(getString(R.string.app_info)) { _, _ ->
-                returningFromShadeSettings = true
-                runCatching { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))) }
-                    .onFailure { returningFromShadeSettings = false }
-            }
-            .setPositiveButton(getString(R.string.open_settings)) { _, _ ->
+        val fromPlay = installedFromPlay()
+        FolioPrompts.show(FolioPrompt(GESTURES_PROMPT, getString(R.string.turn_on_folio_gestures),
+            listOfNotNull(R.string.gestures_disclosure, R.string.gestures_restricted_settings_help.takeUnless { fromPlay })
+                .joinToString("\n\n") { getString(it) },
+            confirm = getString(R.string.agree), dismiss = getString(R.string.not_now),
+            onConfirm = {
                 returningFromShadeSettings = true
                 val opened = runCatching { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }.isSuccess
                 if (!opened) {
                     returningFromShadeSettings = false
                     FolioNotice.show(this, getString(R.string.accessibility_settings_are_unavailable))
                 }
-            }
-            .also { dialog -> dialog.setOnDismissListener { shadeSetupDialog = null } }
-            .show()
+            },
+            neutral = if (fromPlay) null else getString(R.string.app_info),
+            onNeutral = {
+                returningFromShadeSettings = true
+                runCatching { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))) }
+                    .onFailure { returningFromShadeSettings = false }
+            }))
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -325,7 +324,7 @@ class MainActivity : ComponentActivity() {
     }
     override fun onSaveInstanceState(outState: Bundle) {
         widgets.save(outState)
-        outState.putBoolean(SHADE_DIALOG_VISIBLE, (shadeSetupDialog?.isShowing == true || shadeSetupWaiting) && !returningFromShadeSettings)
+        outState.putBoolean(SHADE_DIALOG_VISIBLE, (FolioPrompts.showing(GESTURES_PROMPT) || shadeSetupWaiting) && !returningFromShadeSettings)
         outState.putBoolean(SHADE_SETTINGS_PENDING, returningFromShadeSettings)
         super.onSaveInstanceState(outState)
     }
@@ -397,8 +396,10 @@ class MainActivity : ComponentActivity() {
         try { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) }
         catch (_: android.content.ActivityNotFoundException) {
             val role = getSystemService(RoleManager::class.java)
-            if (role.isRoleAvailable(RoleManager.ROLE_HOME)) startActivity(role.createRequestRoleIntent(RoleManager.ROLE_HOME))
-            else startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+            runCatching {
+                if (role.isRoleAvailable(RoleManager.ROLE_HOME)) startActivity(role.createRequestRoleIntent(RoleManager.ROLE_HOME))
+                else startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+            }
         }
     }
 
@@ -444,3 +445,5 @@ class MainActivity : ComponentActivity() {
         const val SHADE_SETTINGS_PENDING = "duo.shade.settings_pending"
     }
 }
+
+private const val GESTURES_PROMPT = "gestures"

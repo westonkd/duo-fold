@@ -1,0 +1,27 @@
+Folio replaces your Home screen with a calm, two-panel layout made for foldables, and it works on ordinary phones and tablets too. It does a few things carefully instead of everything at once.
+
+<b>What you get</b>
+• Home pages of apps and widgets, with real folders you make by dropping one app on another
+• A Side Bar along the edge with the time, a battery ring and your dock
+• A widgets page beside Home, and widgets that move, resize and stack
+• The App Library: every app sorted into categories automatically, with search at the top
+• Search for apps, contacts, settings, quick math and the web, with the engine you choose
+• Frosted glass, lit from one light above Home, and icons with depth
+• On a foldable, Home lands like a page when the phone opens flat or closes, and both screens share one layout
+• Hidden apps, icon packs, your own picture for any app's icon, layout backups and undo for big changes
+
+<b>Private by design</b>
+Folio has no account, no ads and no analytics, and it doesn't ask Android for internet access at all. Your layout, settings and suggestions stay on your phone.
+
+<b>Optional permissions, explained before you grant them</b>
+• Notification access: badges on app icons and what's playing. Notification content is never saved or sent.
+• Folio gestures (an accessibility service): opens Android's notifications and Quick Settings from Home gestures, runs the system actions you give a gesture or button (Home, Back, Recents, close notifications, Android's app drawer, lock screen, screenshot, power menu, split screen, play/pause), and shows the dock and Big Buttons over other apps if you turn them on. It can't read your screen or what you type, and it collects no data.
+• Usage access: better app suggestions and dots beside recently used dock apps.
+• Contacts and calendar: contact search and the Up Next widget.
+• Do Not Disturb access: gesture and button actions that turn Do Not Disturb on or off.
+Folio works without any of them.
+
+<b>Open source</b>
+Folio is free and open source under the MIT license. It was created by McCal and started from DuoLauncher by jakesgoodapps; this edition is maintained by Weston Dransfield. Source code: https://github.com/westonkd/duo-fold
+
+Android still owns the lock screen, recents, notifications and Quick Settings. Google, Android, Samsung and Galaxy are trademarks of their owners; Folio is not affiliated with them.

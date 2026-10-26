@@ -118,7 +118,7 @@ class IconActionsTileTest {
         show(IconActions(up = torch, down = spotlight, double = ActionRef("LOCK")))
         val labels = compose.onNodeWithTag("tile").fetchSemanticsNode().config
             .getOrNull(SemanticsActions.CustomActions)!!.map { it.label }
-        assertEquals(listOf("Swipe up: Flashlight", "Swipe down: Spotlight", "Double tap: Lock Screen"), labels)
+        assertEquals(listOf("Swipe up: Flashlight", "Swipe down: Search", "Double tap: Lock Screen"), labels)
     }
 
     @Test fun `Home provides no host while editing, in Safe Mode or with nothing saved`() {

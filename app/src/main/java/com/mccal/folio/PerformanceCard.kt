@@ -29,11 +29,11 @@ import androidx.compose.ui.semantics.semantics
     val status by PerfLog.status.collectAsState()
     SettingsCard(stringResource(R.string.performance_log)) {
         val minutes = (status.elapsedMs / 60_000).toInt()
-        Text(when {
+        CardText(when {
             status.running -> stringResource(R.string.performance_status_running, minutes, status.readings)
             status.hasReport -> stringResource(R.string.performance_status_done, minutes)
             else -> stringResource(R.string.performance_status_off)
-        }, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag("performance-status"))
+        }, Modifier.testTag("performance-status"))
         CardAction(stringResource(if (status.running) R.string.performance_stop else R.string.performance_start), onClick = {
             if (status.running) PerfLog.stop() else PerfLog.start(context, context.findActivity())
         }, modifier = Modifier.testTag("performance-toggle"))

@@ -1,20 +1,28 @@
-# Third-party notices
+Folio was created by McCal (github.com/McCal-Codes/folio) and started from DuoLauncher by jakesgoodapps (github.com/jakesgoodapps/DuoLauncher), both under the MIT License below.
 
-Folio source uses the MIT license in LICENSE. Dependencies retain their own licenses. The app includes this notice and the Apache 2.0 license text under `assets/licenses/`.
+Folio is built with these open source libraries, each under the Apache License 2.0 below:
 
-| Component family | Source | License |
-| --- | --- | --- |
-| AndroidX, Jetpack Compose, Material components and icons, Window | https://android.googlesource.com/platform/frameworks/support/ | Apache 2.0 |
-| Kotlin standard library | https://github.com/JetBrains/kotlin | Apache 2.0 |
-| Kotlin coroutines | https://github.com/Kotlin/kotlinx.coroutines | Apache 2.0 |
-| Kotlin serialization | https://github.com/Kotlin/kotlinx.serialization | Apache 2.0 |
-| JetBrains annotations | https://github.com/JetBrains/java-annotations | Apache 2.0 |
-| Guava ListenableFuture | https://github.com/google/guava | Apache 2.0 |
-| JSpecify annotations | https://github.com/jspecify/jspecify | Apache 2.0 |
-| Gradle wrapper and build tooling | https://github.com/gradle/gradle | Apache 2.0; build-tool distributions include their additional notices |
+AndroidX, Jetpack Compose, Material components and icons, and Window Manager
+android.googlesource.com/platform/frameworks/support
 
-The Gradle dependency graph records the resolved artifact versions. Test and build tools are not application features; their upstream distributions provide their respective notices.
+Kotlin standard library
+github.com/JetBrains/kotlin
 
-The default wallpaper and launcher icon are generated locally from project drawing code/resources. Installed application icons and widget content belong to their respective providers. Google search runs in the installed Google application; that application and its content are not redistributed here.
+Kotlin coroutines
+github.com/Kotlin/kotlinx.coroutines
 
-Private design-study images, copied reference files, device captures, and probe research are excluded from the public source package. Apple, Google, Android, Samsung, and other referenced names are trademarks of their respective owners; this project is unaffiliated with those companies.
+Kotlin serialization
+github.com/Kotlin/kotlinx.serialization
+
+JetBrains annotations
+github.com/JetBrains/java-annotations
+
+Guava ListenableFuture
+github.com/google/guava
+
+JSpecify annotations
+github.com/jspecify/jspecify
+
+The two built-in backgrounds are woodblock prints by Utagawa Hiroshige, in the public domain: "Night View of Saruwaka-machi" (1856, Library of Congress) and "Naruto Whirlpools" (1855, National Library of New Zealand). The Dune live wallpaper and the app icon are drawn by Folio itself. App icons and widget content belong to the apps that provide them.
+
+Google, Android, Samsung and other names mentioned are trademarks of their owners. Folio is not affiliated with them.

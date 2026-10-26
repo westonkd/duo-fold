@@ -181,13 +181,13 @@ internal fun DevBuildSheet(info: DevBuildInfo, seen: DevBuildSeen, onDismiss: ()
                         androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Build, null, tint = white, modifier = Modifier.size(36.dp))
                     }
                     Text(when (kind) { DevBuild.Kind.FIRST -> DevText.WELCOME; DevBuild.Kind.NEW -> DevText.NEW_BUILD; DevBuild.Kind.REOPENED -> DevText.THIS_BUILD },
-                        color = white, fontSize = FolioType.TITLE.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        color = FolioColors.LightLabel, fontSize = FolioType.TITLE.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         modifier = Modifier.padding(top = FolioSpace.COMFY.dp))
-                    Text(info.branch + " · " + info.sha, color = FolioColors.Cyan, fontSize = FolioType.FOOTNOTE.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                    Text(info.branch + " · " + info.sha, color = LocalAccent.current.ink, fontSize = FolioType.FOOTNOTE.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                         modifier = Modifier.padding(top = FolioSpace.SMALL.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(FolioRadius.CONTROL.dp))
-                            .background(FolioColors.Cyan.copy(alpha = .16f)).padding(horizontal = FolioSpace.COMPACT.dp, vertical = FolioSpace.TINY.dp).testTag("dev-build-sha"))
+                            .background(LocalAccent.current.fill.copy(alpha = .12f)).padding(horizontal = FolioSpace.COMPACT.dp, vertical = FolioSpace.TINY.dp).testTag("dev-build-sha"))
                     Text(when (kind) { DevBuild.Kind.FIRST -> DevText.WELCOME_BODY; DevBuild.Kind.NEW -> DevText.NEW_BODY; DevBuild.Kind.REOPENED -> DevText.REOPENED_BODY },
-                        color = white.copy(alpha = .8f), fontSize = FolioType.SUBHEAD.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        color = FolioColors.LightSecondaryLabel, fontSize = FolioType.SUBHEAD.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         modifier = Modifier.padding(top = FolioSpace.COMPACT.dp))
                 }
                 if (kind == DevBuild.Kind.FIRST) DevText.first.forEach { (title, detail) -> DevRow(androidx.compose.material.icons.Icons.Rounded.AutoAwesome, amber, title, detail) }
@@ -197,7 +197,7 @@ internal fun DevBuildSheet(info: DevBuildInfo, seen: DevBuildSeen, onDismiss: ()
                     if (rest.isNotEmpty() && !moreOpen) SheetGroup(Modifier.padding(top = FolioSpace.MEDIUM.dp)) {
                         androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { moreOpen = true }.padding(horizontal = FolioSpace.LARGE.dp)
                             .testTag("dev-build-more"), verticalAlignment = Alignment.CenterVertically) {
-                            Text(DevText.more(rest.size), color = FolioColors.Cyan, fontSize = FolioType.BODY.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                            Text(DevText.more(rest.size), color = LocalAccent.current.ink, fontSize = FolioType.BODY.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
                         }
                     }
                     if (moreOpen) rest.forEach { c -> WhatsNew.symbol(c.subject).let { (icon, color) -> DevRow(icon, androidx.compose.ui.graphics.Color(color), c.subject, c.sha) } }
@@ -212,12 +212,12 @@ internal fun DevBuildSheet(info: DevBuildInfo, seen: DevBuildSeen, onDismiss: ()
                                     ticks = if (on) ticks + i else ticks - i
                                     DevBuild.setTicks(context, info.sha, ticks)
                                 }, modifier = Modifier.semantics { contentDescription = step }.testTag("dev-build-step-$i"))
-                                Text(step, color = white, fontSize = FolioType.BODY.sp)
+                                Text(step, color = FolioColors.LightLabel, fontSize = FolioType.BODY.sp)
                             }
                         }
                     }
                 }
-                Text(DevBuild.footer(info, seen), color = white.copy(alpha = .6f), fontSize = FolioType.GROUP_LABEL.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                Text(DevBuild.footer(info, seen), color = FolioColors.LightSecondaryLabel, fontSize = FolioType.GROUP_LABEL.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(top = FolioSpace.LARGE.dp, bottom = FolioSpace.MEDIUM.dp).testTag("dev-build-footer"))
             }
             val allDone = info.notes.isNotEmpty() && ticks.size == info.notes.size
@@ -230,7 +230,7 @@ internal fun DevBuildSheet(info: DevBuildInfo, seen: DevBuildSeen, onDismiss: ()
             TextButton(onClick = {
                 val clip = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                 clip.setPrimaryClip(android.content.ClipData.newPlainText(DevText.CLIP_LABEL, DevBuild.summary(info)))
-            }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("dev-build-copy")) { Text(DevText.COPY, color = FolioColors.Cyan) }
+            }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("dev-build-copy")) { Text(DevText.COPY, color = LocalAccent.current.ink) }
         }
     }
 }
@@ -242,8 +242,8 @@ internal fun DevBuildSheet(info: DevBuildInfo, seen: DevBuildSeen, onDismiss: ()
             androidx.compose.material3.Icon(icon, null, tint = tint, modifier = Modifier.size(24.dp))
         }
         Column(Modifier.padding(start = FolioSpace.COMFY.dp).weight(1f)) {
-            Text(title, color = androidx.compose.ui.graphics.Color.White, fontSize = FolioType.BODY.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
-            Text(detail, color = FolioColors.SecondaryLabel, fontSize = FolioType.SUBHEAD.sp, modifier = Modifier.padding(top = FolioSpace.HAIR.dp))
+            Text(title, color = FolioColors.LightLabel, fontSize = FolioType.BODY.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+            Text(detail, color = FolioColors.LightSecondaryLabel, fontSize = FolioType.SUBHEAD.sp, modifier = Modifier.padding(top = FolioSpace.HAIR.dp))
         }
     }
 }

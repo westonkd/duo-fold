@@ -59,7 +59,7 @@ internal fun GroupedCard(background: Color, divider: Color, modifier: Modifier =
     val lines = remember { FloatArrayList() }
     val cardBottom = remember { floatArrayOf(0f) }
     Layout({ CardScope.content() }, modifier.drawBehind {
-        val radius = 20.dp.toPx()
+        val radius = FolioRadius.GROUPED_CARD.dp.toPx()
         if (cardBottom[0] > 0f) drawRoundRect(background, size = Size(size.width, cardBottom[0]), cornerRadius = CornerRadius(radius))
         val inset = 16.dp.toPx()
         val stroke = .5.dp.toPx().coerceAtLeast(1f)
@@ -120,9 +120,15 @@ internal fun CardPrimaryAction(label: String, modifier: Modifier = Modifier, ena
     }
 }
 
-/** A blue action row, like a button cell in iOS Settings: the text lines up with the other rows' labels. */
+@Composable
+internal fun CardText(text: String, modifier: Modifier = Modifier) {
+    Text(text, fontSize = FolioType.BODY.sp,
+        modifier = modifier.heightIn(min = FolioRow.ACTION.dp).wrapContentHeight(Alignment.CenterVertically))
+}
+
+/** An action row in the accent, like a button cell in iOS Settings: the text lines up with the other rows' labels. */
 @Composable
 internal fun CardAction(label: String, modifier: Modifier = Modifier, enabled: Boolean = true, destructive: Boolean = false, onClick: () -> Unit) {
-    Text(label, color = Color(if (destructive) FolioColors.Value.Red else FolioColors.Value.Blue).copy(alpha = if (enabled) 1f else .4f), fontSize = FolioType.BODY.sp,
+    Text(label, color = (if (destructive) FolioColors.RedLight else LocalAccent.current.ink).copy(alpha = if (enabled) 1f else .4f), fontSize = FolioType.BODY.sp,
         modifier = modifier.heightIn(min = FolioRow.ACTION.dp).clickable(enabled = enabled, role = Role.Button, onClick = onClick).wrapContentHeight(Alignment.CenterVertically))
 }

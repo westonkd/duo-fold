@@ -35,16 +35,20 @@ internal object FolioGlass {
     val edge = BorderStroke(1.dp, Color.White.copy(alpha = .08f))
 }
 
-/** Dark, iOS-like colors for Folio's sheets (settings, app options, setup). */
-internal val FolioSheetColors = androidx.compose.material3.darkColorScheme(
-    primary = FolioColors.BlueOnDark, onPrimary = Color.White,
-    primaryContainer = FolioColors.BlueOnDark, onPrimaryContainer = Color.White,
-    secondary = FolioColors.Cyan, onSecondary = Color.Black,
-    secondaryContainer = FolioColors.MenuSurface, onSecondaryContainer = Color.White,
-    surface = FolioColors.SecondaryBackground, onSurface = Color.White, onSurfaceVariant = FolioColors.LabelVariant,
-    surfaceContainerLowest = FolioColors.SurfaceLowest, surfaceContainerLow = FolioColors.SecondaryBackground,
-    surfaceContainer = FolioColors.SurfaceCard, surfaceContainerHigh = FolioColors.SheetSurface, surfaceContainerHighest = FolioColors.MenuSurface,
-    outline = FolioColors.Outline, outlineVariant = FolioColors.OutlineVariant, error = FolioColors.Red,
+/**
+ * iOS's light grouped colors for Folio's sheets (settings, app options, setup, alerts): the grouped grey behind,
+ * white cards on it, iOS's label greys, and the accent's darker ink, which reads on white.
+ */
+internal val FolioSheetColors = androidx.compose.material3.lightColorScheme(
+    primary = FolioAccents.TealOnLight.ink, onPrimary = Color.White,
+    primaryContainer = FolioAccents.TealOnLight.fill, onPrimaryContainer = Color.White,
+    secondary = FolioColors.CyanLight, onSecondary = Color.White,
+    secondaryContainer = FolioColors.LightFill, onSecondaryContainer = FolioColors.LightLabel,
+    background = FolioColors.LightBackground, onBackground = FolioColors.LightLabel,
+    surface = FolioColors.LightBackground, onSurface = FolioColors.LightLabel, onSurfaceVariant = FolioColors.LightSecondaryLabel,
+    surfaceContainerLowest = FolioColors.LightCard, surfaceContainerLow = FolioColors.LightBackground,
+    surfaceContainer = FolioColors.LightCard, surfaceContainerHigh = FolioColors.LightCard, surfaceContainerHighest = FolioColors.LightTrackOff,
+    outline = FolioColors.LightTertiaryLabel, outlineVariant = FolioColors.LightSeparator, error = FolioColors.RedLight,
 )
 
 /**

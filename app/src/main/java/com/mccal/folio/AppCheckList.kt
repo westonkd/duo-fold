@@ -45,9 +45,9 @@ internal fun AppCheckList(apps: List<AppEntry>, query: String, onQuery: (String)
                 Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(enabled = usable) { onToggle(app) }
                     .graphicsLayer { alpha = if (usable) 1f else .4f }.padding(vertical = FolioSpace.SNUG.dp), verticalAlignment = Alignment.CenterVertically) {
                     AppIcon(app, null, Modifier.size(40.dp))
-                    Text(app.label, color = Color.White, fontSize = FolioType.CALLOUT.sp, modifier = Modifier.weight(1f).padding(start = FolioSpace.MEDIUM.dp))
+                    Text(app.label, color = FolioColors.LightLabel, fontSize = FolioType.CALLOUT.sp, modifier = Modifier.weight(1f).padding(start = FolioSpace.MEDIUM.dp))
                     Icon(if (on) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked, if (on) checkedLabel else uncheckedLabel,
-                        tint = if (on) LocalAccent.current.ink else Color.White.copy(alpha = .35f), modifier = Modifier.size(24.dp))
+                        tint = if (on) LocalAccent.current.ink else FolioColors.LightTertiaryLabel, modifier = Modifier.size(24.dp))
                 }
             }
         }
@@ -64,8 +64,8 @@ internal fun FolderAppsEditor(folder: FolderEntry, apps: List<AppEntry>, onDone:
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(if (folder.title.isBlank()) stringResource(R.string.add_apps) else stringResource(R.string.add_apps_to_1, folder.title),
-                    color = Color.White, fontSize = FolioType.TITLE.sp, fontWeight = FontWeight.Bold)
-                Text(stringResource(R.string.n_selected, picked.size), color = FolioColors.SecondaryLabel, fontSize = FolioType.FOOTNOTE.sp)
+                    color = FolioColors.LightLabel, fontSize = FolioType.TITLE.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.n_selected, picked.size), color = FolioColors.LightSecondaryLabel, fontSize = FolioType.FOOTNOTE.sp)
             }
             Text(stringResource(R.string.done), color = LocalAccent.current.ink, fontSize = FolioType.BODY.sp, fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.clip(CircleShape).clickable { onDone(picked.toList()) }

@@ -94,7 +94,10 @@ abstract class FolioToggleTile(private val key: String, private val default: Boo
 
     /** The dock over other apps needs Folio's accessibility service. */
     protected fun openAccessibilityIfNeeded() {
-        if (!SystemShadeAccessibilityService.isConnected()) openAndCollapse(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        if (!SystemShadeAccessibilityService.isConnected()) {
+            GesturesSetupRequest.request()
+            openAndCollapse(Intent(this, MainActivity::class.java))
+        }
     }
 }
 

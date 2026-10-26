@@ -182,7 +182,7 @@ private fun RowScope.Tile(
         BoxWithConstraints(
             Modifier.fillMaxWidth().aspectRatio(TILE_RATIO)
                 .clip(RoundedCornerShape(FolioRadius.CARD.dp))
-                .background(FolioColors.SecondaryBackground)
+                .background(FolioColors.LightFill)
                 .then(
                     when {
                         selected -> Modifier.border(2.dp, LocalAccent.current.fill, RoundedCornerShape(FolioRadius.CARD.dp))
@@ -241,9 +241,9 @@ private fun RowScope.ArtTile(art: Artwork, selected: Boolean, pending: Boolean, 
         },
         caption = {
             Column(Modifier.padding(top = FolioSpace.SNUG.dp, start = FolioSpace.HAIR.dp)) {
-                Text(art.title, color = Color.White, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(art.artist, color = FolioColors.SecondaryLabel, fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(art.license, color = FolioColors.SecondaryLabel, fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(art.title, color = FolioColors.LightLabel, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(art.artist, color = FolioColors.LightSecondaryLabel, fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(art.license, color = FolioColors.LightSecondaryLabel, fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         },
     )
@@ -275,10 +275,10 @@ private fun RowScope.PhotoTile(selected: Boolean, hasPhoto: Boolean, onPick: () 
             Column(Modifier.padding(top = FolioSpace.SNUG.dp, start = FolioSpace.HAIR.dp)) {
                 Text(
                     stringResource(if (hasPhoto) R.string.your_photo else R.string.choose_a_photo),
-                    color = Color.White, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
+                    color = FolioColors.LightLabel, fontSize = FolioType.FOOTNOTE.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
                 )
                 if (hasPhoto) Text(
-                    stringResource(R.string.choose_a_different_photo), color = LocalAccent.current.fill,
+                    stringResource(R.string.choose_a_different_photo), color = LocalAccent.current.ink,
                     fontSize = FolioType.GROUP_LABEL.sp, maxLines = 1,
                     modifier = Modifier.clickable(onClick = onPick).testTag("background-replace-photo"),
                 )

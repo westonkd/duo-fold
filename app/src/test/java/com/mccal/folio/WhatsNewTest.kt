@@ -40,6 +40,16 @@ class WhatsNewTest {
         assertEquals(version, shipped.version)
     }
 
+    @Test fun `the app shows only the releases published on Google Play`() {
+        val root = generateSequence(java.io.File("").absoluteFile) { it.parentFile }.first { java.io.File(it, "CHANGELOG.md").exists() }
+        val changelog = java.io.File(root, "CHANGELOG.md").readText()
+        assertTrue(WhatsNew.HISTORY_HEADING in changelog)
+        val shown = WhatsNew.parse(WhatsNew.published(changelog)).map { it.version }
+        assertTrue(shown.isNotEmpty())
+        assertTrue(shown.none { it.startsWith("0.") })
+        assertTrue("0.6.8" in WhatsNew.parse(changelog).map { it.version })
+    }
+
     @Test fun `a beta shows the notes for the release it belongs to`() {
         // 0.7.0-beta.1 and 0.7.0 share a versionCode on purpose, and the changelog has one section for both.
         assertEquals("0.7.0", "0.7.0-beta.1".substringBefore('-'))
