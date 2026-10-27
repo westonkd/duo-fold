@@ -54,24 +54,17 @@ class SharedGridIntegrationTest {
             compose.onNodeWithText("Add to Home").assertIsDisplayed()
             compose.onNodeWithTag("empty-space-widgets").performClick()
             compose.onNodeWithTag("visual-widget-picker").assertIsDisplayed()
-            compose.onNodeWithText("Widgets").assertIsDisplayed()
-            compose.onNode(hasText("Search widgets") and hasSetTextAction()).assertIsDisplayed()
+            compose.onNodeWithTag("widget-catalog-search").assertIsDisplayed()
+            compose.openGalleryApp("Folio")
             compose.onNodeWithTag("widget-builtin-$CLOCK_WIDGET").assertIsDisplayed()
-                .assertTextContains("Clock")
+            compose.onNodeWithText("Clock").assertIsDisplayed()
             val allProviders = manager.installedProviders.filter { it.profile == android.os.Process.myUserHandle() }
             assertTrue("Emulator fixture needs an Android widget provider", allProviders.isNotEmpty())
             val visibleProvider = allProviders.first { it.provider.className.endsWith("AnalogAppWidgetProvider") }
-            val visibleProviderTag = "widget-provider-${visibleProvider.provider.flattenToString()}"
-            compose.onNodeWithTag("widget-catalog-list", useUnmergedTree = true)
-                .performScrollToNode(hasTestTag(visibleProviderTag))
-            compose.onNodeWithTag(visibleProviderTag, useUnmergedTree = true).assertIsDisplayed()
-            compose.onNodeWithTag(visibleProviderTag, useUnmergedTree = true).performClick()
-            compose.onNodeWithTag("widget-placement-mode").assertIsDisplayed()
-            pressBack()
-            compose.onNodeWithTag("visual-widget-picker").assertIsDisplayed()
-            compose.onNodeWithTag("widget-placement-mode").assertDoesNotExist()
-            pressBack()
-            compose.onNodeWithTag("visual-widget-picker").assertDoesNotExist()
+            compose.showInGallery(compose.activity, visibleProvider)
+            compose.onNodeWithTag("widget-provider-${visibleProvider.provider.flattenToString()}").assertIsDisplayed()
+            repeat(2) { if (compose.onAllNodesWithTag("visual-widget-picker").fetchSemanticsNodes().isNotEmpty()) pressBack() }
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("visual-widget-picker").fetchSemanticsNodes().isEmpty() }
             assertEquals(catalogBaseline, model().state.value.layout)
             assertEquals(hostIdsBefore, (MainActivity::class.java.getDeclaredField("widgets").apply { isAccessible = true }
                 .get(compose.activity) as WidgetController).host.appWidgetIds.toSet())
@@ -88,14 +81,17 @@ class SharedGridIntegrationTest {
             compose.onNodeWithTag("home-app-${app.id}").performTouchInput { longClick() }
             compose.onNodeWithText("Widgets").performClick()
             compose.onNodeWithTag("visual-widget-picker").assertIsDisplayed()
-            manager.installedProviders.filter { it.profile == android.os.Process.myUserHandle() }.forEach { candidate ->
-                val tag = "widget-provider-${candidate.provider.flattenToString()}"
-                if (candidate.provider.packageName == packageProvider.provider.packageName) {
-                    compose.onNodeWithTag("widget-catalog-list", useUnmergedTree = true)
-                        .performScrollToNode(hasTestTag(tag))
-                    compose.onNodeWithTag(tag, useUnmergedTree = true).assertExists()
-                } else compose.onNodeWithTag(tag, useUnmergedTree = true).assertDoesNotExist()
-            }
+            compose.onNodeWithTag("widget-detail").assertIsDisplayed()
+            compose.onAllNodesWithTag("widget-app-folio", useUnmergedTree = true).assertCountEquals(0)
+            compose.onAllNodesWithTag("widget-featured", useUnmergedTree = true).assertCountEquals(0)
+            val packagePrefix = "widget-provider-${packageProvider.provider.packageName}/"
+            assertTrue("The app's own widgets are shown", compose.onAllNodes(SemanticsMatcher("an app widget") {
+                it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.TestTag) { null }?.startsWith(packagePrefix) == true
+            }).fetchSemanticsNodes().isNotEmpty())
+            assertTrue("No other app's widgets are shown", compose.onAllNodes(SemanticsMatcher("another app's widget") {
+                val tag = it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.TestTag) { null }
+                tag != null && tag.startsWith("widget-provider-") && !tag.startsWith(packagePrefix)
+            }).fetchSemanticsNodes().isEmpty())
         } finally { compose.runOnIdle { model().restoreLayout(before) } }
     }
 
@@ -190,12 +186,8 @@ class SharedGridIntegrationTest {
             compose.waitForIdle()
             compose.onNodeWithTag("home-cell-24").performTouchInput { longClick() }
             compose.onNodeWithTag("empty-space-widgets").performClick()
-            compose.onNode(hasText("Search widgets") and hasSetTextAction())
-                .performTextInput(provider.loadLabel(compose.activity.packageManager).toString())
-            compose.onNodeWithTag("widget-provider-${provider.provider.flattenToString()}").performScrollTo().performClick()
-            compose.onNodeWithTag("widget-placement-preview").assertIsDisplayed().assert(
-                SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Ready to place"))
-            compose.onNodeWithTag("widget-placement-apply").performClick()
+            compose.showInGallery(compose.activity, provider)
+            compose.addShownWidget()
             compose.waitUntil(10_000) { model().placement(slot)?.id?.let { it >= 0 } == true }
             val placed = requireNotNull(model().placement(slot))
             createdId = placed.id

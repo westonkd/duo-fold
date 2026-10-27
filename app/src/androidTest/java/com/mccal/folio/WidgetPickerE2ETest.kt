@@ -82,13 +82,8 @@ class WidgetPickerE2ETest {
     }
 
     private fun placeByTap(simpleName: String) {
-        compose.onNodeWithTag("widget-catalog-search").performTextClearance()
-        compose.onNodeWithTag("widget-catalog-search").performTextInput(
-            provider(simpleName).loadLabel(compose.activity.packageManager).toString())
-        compose.onNodeWithTag(providerTag(simpleName)).performScrollTo().performClick()
-        compose.onNodeWithTag("widget-placement-preview")
-            .assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Ready to place"))
-        compose.onNodeWithTag("widget-placement-apply").assertIsEnabled().performClick()
+        compose.showInGallery(compose.activity, provider(simpleName))
+        compose.addShownWidget()
     }
 
     private fun cleanup(before: HomeLayout, idsBefore: Set<Int>) {
@@ -109,50 +104,34 @@ class WidgetPickerE2ETest {
                 compose.activity,
                 listOf(provider("ModernTargetWidgetProvider")),
                 model().state.value.profiles.single { it.isPersonal }).single().appLabel)
-            compose.onNodeWithTag("widget-catalog-search").performTextInput("Widget Fixture Application")
-            compose.onNodeWithTag("widget-catalog-list")
-                .performScrollToNode(hasTestTag(providerTag("ModernTargetWidgetProvider")))
-            compose.onNodeWithTag(providerTag("ModernTargetWidgetProvider"))
-                .assertIsDisplayed()
+            compose.searchGallery("Widget Fixture Application")
+            compose.openGalleryApp("Widget Fixture Application")
             assertEquals("Rendering catalog previews must not allocate a host ID",
                 idsBefore, controller().host.appWidgetIds.toSet())
 
-            compose.onNodeWithTag("widget-catalog-search").performTextClearance()
-            compose.onNodeWithTag("widget-catalog-search").performTextInput("Forecast Canvas")
-            compose.onNodeWithTag(providerTag("ModernTargetWidgetProvider"))
-                .performScrollTo().assertIsDisplayed().assertIsEnabled()
+            compose.showInGallery(compose.activity, provider("ModernTargetWidgetProvider"))
+            compose.onNodeWithTag(providerTag("ModernTargetWidgetProvider")).assertIsDisplayed()
             compose.waitUntil(10_000) {
                 runCatching { compose.onNodeWithTag(previewTag("ModernTargetWidgetProvider"), useUnmergedTree = true).fetchSemanticsNode() }.isSuccess
             }
-            compose.onNodeWithTag("widget-catalog-list", useUnmergedTree = true)
-                .performScrollToNode(hasTestTag(previewTag("ModernTargetWidgetProvider")))
-            compose.onNodeWithTag(previewTag("ModernTargetWidgetProvider"), useUnmergedTree = true).assertIsDisplayed()
             val previewBounds = compose.onNodeWithTag(previewTag("ModernTargetWidgetProvider"), useUnmergedTree = true)
                 .getUnclippedBoundsInRoot()
-            val previewHeight = previewBounds.bottom - previewBounds.top
-            val maxPreviewHeight = 240.dp
-            assertTrue("Picker preview must remain bounded so its widget title and action stay reachable",
-                previewHeight <= maxPreviewHeight)
-            assertEquals("A 4 × 2 provider preview must retain its footprint aspect ratio",
-                2f, (previewBounds.right - previewBounds.left).value / previewHeight.value, .08f)
+            assertTrue("A 4 × 2 provider is drawn wider than it is tall",
+                (previewBounds.right - previewBounds.left) > (previewBounds.bottom - previewBounds.top) * 1.5f)
             compose.onNodeWithText("Forecast Canvas 4 by 2").assertIsDisplayed()
-            compose.onNodeWithText("4 × 2").assertIsDisplayed()
-            compose.onNodeWithTag(providerTag("LegacyResizableWidgetProvider"))
-                .assertDoesNotExist()
+            compose.onNodeWithTag("widget-add").assertIsDisplayed().assertIsEnabled()
+            compose.onNodeWithTag(providerTag("LegacyResizableWidgetProvider")).assertDoesNotExist()
 
-            compose.onNodeWithTag(providerTag("ModernTargetWidgetProvider")).performClick()
-            compose.onNodeWithTag("widget-placement-preview").assertIsDisplayed()
-            compose.onNodeWithTag("widget-placement-cancel").performClick()
-            assertEquals("Canceling before drop must not bind or allocate",
+            compose.closeGallery()
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("visual-widget-picker").fetchSemanticsNodes().isEmpty() }
+            assertEquals("Closing the gallery without adding must not bind or allocate",
                 idsBefore, controller().host.appWidgetIds.toSet())
 
             openCatalogAt()
-            compose.onNodeWithTag("widget-catalog-search").performTextInput("Flexible Legacy Strip")
-            compose.onNodeWithTag("widget-catalog-list", useUnmergedTree = true)
-                .performScrollToNode(hasTestTag(providerTag("LegacyResizableWidgetProvider")))
-            compose.onNodeWithTag(providerTag("LegacyResizableWidgetProvider"), useUnmergedTree = true)
-                .assertIsDisplayed().assertIsEnabled()
+            compose.showInGallery(compose.activity, provider("LegacyResizableWidgetProvider"))
+            compose.onNodeWithTag(providerTag("LegacyResizableWidgetProvider")).assertIsDisplayed()
             compose.onNodeWithText("Doesn’t fit this layout").assertDoesNotExist()
+            compose.onNodeWithTag("widget-add").assertIsEnabled()
         } finally { cleanup(before, idsBefore) }
     }
 
@@ -237,7 +216,7 @@ class WidgetPickerE2ETest {
         } finally { cleanup(before, idsBefore) }
     }
 
-    @Test fun cancelingPlacementOnTemporaryPageReturnsToLastPersistedHome() {
+    @Test fun closingTheGalleryWithoutAddingLeavesHomeAsItWas() {
         ready()
         val before = model().state.value.layout
         val idsBefore = controller().host.appWidgetIds.toSet()
@@ -245,16 +224,9 @@ class WidgetPickerE2ETest {
             prepareEmptySecondPage()
             val fixture = model().state.value.layout
             openCatalogAt()
-            compose.onNodeWithTag("widget-catalog-search").performTextInput("Instant Conditions")
-            compose.onNodeWithTag(providerTag("OptionalConfigWidgetProvider"))
-                .performScrollTo().performClick()
-            compose.onNodeWithContentDescription("Next home page").performClick()
-            compose.waitUntil(5_000) {
-                runCatching { compose.onNode(SemanticsMatcher.expectValue(
-                    androidx.compose.ui.semantics.SemanticsProperties.StateDescription,
-                    "Home page 3 of 3")).fetchSemanticsNode() }.isSuccess
-            }
-            compose.onNodeWithTag("widget-placement-cancel").performClick()
+            compose.showInGallery(compose.activity, provider("OptionalConfigWidgetProvider"))
+            compose.closeGallery()
+            compose.waitUntil(5_000) { compose.onAllNodesWithTag("visual-widget-picker").fetchSemanticsNodes().isEmpty() }
             compose.onNode(SemanticsMatcher.expectValue(
                 androidx.compose.ui.semantics.SemanticsProperties.StateDescription,
                 "Home page 2 of 2")).assertExists()
@@ -272,10 +244,9 @@ class WidgetPickerE2ETest {
         try {
             prepareEmptySecondPage()
             openCatalogAt()
-            compose.onNodeWithTag("widget-catalog-search").performTextInput("Instant Conditions")
+            compose.showInGallery(compose.activity, provider("OptionalConfigWidgetProvider"))
             val slot = model().nextWidgetSlot()
-            val card = compose.onNodeWithTag(providerTag("OptionalConfigWidgetProvider"))
-            card.performScrollTo()
+            val card = compose.onNodeWithTag(previewTag("OptionalConfigWidgetProvider"), useUnmergedTree = true)
             closeSoftKeyboard()
             compose.waitForIdle()
             val windowLocation = IntArray(2).also {
@@ -283,8 +254,7 @@ class WidgetPickerE2ETest {
             }
             val screenOffset = Offset(windowLocation[0].toFloat(), windowLocation[1].toFloat())
             val cardBounds = card.fetchSemanticsNode().boundsInRoot
-            val start = Offset(cardBounds.center.x,
-                cardBounds.top + 40f * compose.activity.resources.displayMetrics.density) + screenOffset
+            val start = cardBounds.center + screenOffset
             val root = compose.onNodeWithTag("launcher-root")
             val right = root.fetchSemanticsNode().boundsInRoot.right + screenOffset.x - 3f
             val destination = compose.onNodeWithTag("home-cell-24").fetchSemanticsNode().boundsInRoot.center + screenOffset

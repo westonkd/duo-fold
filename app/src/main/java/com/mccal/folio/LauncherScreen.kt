@@ -65,6 +65,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -1137,99 +1138,65 @@ fun LauncherScreen(
                     geometry.cellWidth, minOf(topPitch, geometry.rowHeight),
                     maxOf(topPitch, geometry.rowHeight), 10f, 18f,
                     topRowHeightDp = topPitch, appRowHeightDp = geometry.rowHeight) }
-                val footprint: (AppWidgetProviderInfo) -> WidgetSpan? = { provider ->
-                    widgets.sizing(provider, pickerSizing)?.takeIf { it.minimumFitsGrid }?.preferred
+                val sizesOf: (AppWidgetProviderInfo) -> GallerySizes? = { provider -> gallerySizes(widgets.sizing(provider, pickerSizing)) }
+                fun commitWidget(draft: WidgetPlacement, provider: AppWidgetProviderInfo?, builtinId: Int?) {
+                    provider?.let { widgets.add(draft, it, pickerSizing) } ?: builtinId?.let { widgets.setBuiltin(draft.copy(id = it)) }
+                    haptic.perform(FolioHaptic.Commit)
+                    widgetSession = null; sheet = ""; picker.packageName = null; picker.exactTarget = false; widgetPlacementMessage = null
+                    scope.launch { withFrameNanos { }; pager.glideToPage(draft.page.coerceIn(-1, model.state.value.homePages)) }
+                }
+                fun firstFreeDraft(span: WidgetSpan, firstPage: Int): WidgetPlacement? =
+                    (listOf(firstPage) + (-1..homePages).filter { it != firstPage }).asSequence()
+                        .flatMap { page -> (0 until HOME_CELLS).asSequence().map { homeCellIndex(page, it) } }
+                        .firstNotNullOfOrNull { widgetCandidate(state.layout, picker.slot, it, span.width, span.height, visibleRows) }
+                fun addFromGallery(widget: GalleryWidget, span: WidgetSpan) {
+                    val provider = (widget as? GalleryWidget.Provider)?.entry?.provider
+                    val builtinId = (widget as? GalleryWidget.Builtin)?.id
+                    picker.stackSlot?.let { stackSlot ->
+                        if (builtinId != null) {
+                            model.addToStack(stackSlot, builtinId); picker.stackSlot = null; sheet = ""; picker.packageName = null
+                            return
+                        }
+                        val placement = model.placement(stackSlot)
+                        val min = provider?.let { widgets.sizing(it, pickerSizing)?.minimum }
+                        if (provider == null || placement == null || (min != null && (min.width > placement.spanX || min.height > placement.spanY))) {
+                            widgetPlacementMessage = launcherActivity.getString(R.string.this_widget_needs_a_bigger_space_than_th)
+                        } else {
+                            widgets.addToStack(stackSlot, provider, pickerSizing)
+                            picker.stackSlot = null; sheet = ""; picker.packageName = null; widgetPlacementMessage = null
+                        }
+                        return
+                    }
+                    val existing = model.placement(picker.slot)
+                    val special = existing?.takeIf { it.row + it.spanY > GRID_ROWS }
+                    if (special != null) {
+                        widgetSession = WidgetPickerSession(provider, picker.slot, WidgetSpan(special.spanX, special.spanY), Offset.Zero,
+                            dragging = false, candidate = special, builtinId = builtinId)
+                        widgetPlacementMessage = null
+                        scope.launch { pager.scrollToPage(special.page.coerceIn(0, homePages - 1)) }
+                        return
+                    }
+                    val requested = existing?.let { homeCellIndex(it.page, it.row * GRID_COLUMNS + it.column) }
+                        ?: picker.targetIndex.takeUnless { it == Int.MIN_VALUE } ?: 0
+                    val requestedPage = homeCellPage(requested).coerceIn(-1, homePages)
+                    val draft = (if (existing != null || picker.exactTarget) draftAt(requested, span, picker.slot) else null)
+                        ?: if (existing == null) firstFreeDraft(span, requestedPage) else null
+                    if (draft != null) { commitWidget(draft, provider, builtinId); return }
+                    widgetSession = WidgetPickerSession(provider, picker.slot, span, Offset.Zero, dragging = false,
+                        targetIndex = requested, builtinId = builtinId)
+                    widgetPlacementMessage = launcherActivity.getString(R.string.there_isn_t_room_for_this_size_choose_an)
+                    scope.launch { pager.scrollToPage(requestedPage) }
                 }
                 VisualWidgetPicker(catalog, catalogProfiles.ifEmpty { listOf(selectedProfile) }, selectedProfile,
                     onSelectProfile = { picker.profileSerial = it.userSerial; widgetPlacementMessage = null },
                     onTurnOnWork = { model.turnOnWork(it) }, hiddenForDrag = widgetSession != null,
-                    footprint = footprint,
+                    sizesOf = sizesOf, cellWidthDp = pickerSizing.cellWidthDp, rowHeightDp = pickerSizing.appRowHeightDp,
                     onBack = widgetPickerBack,
-                    onTap = tap@{ provider ->
-                        picker.stackSlot?.let { stackSlot ->
-                            val placement = model.placement(stackSlot)
-                            val min = widgets.sizing(provider, pickerSizing)?.minimum
-                            if (placement == null || (min != null && (min.width > placement.spanX || min.height > placement.spanY))) {
-                                widgetPlacementMessage = launcherActivity.getString(R.string.this_widget_needs_a_bigger_space_than_th)
-                            } else {
-                                widgets.addToStack(stackSlot, provider, pickerSizing)
-                                picker.stackSlot = null; sheet = ""; picker.packageName = null; widgetPlacementMessage = null
-                            }
-                            return@tap
-                        }
-                        footprint(provider)?.let { preferredSpan ->
-                            val existing = model.placement(picker.slot)
-                            val constraints = widgets.sizing(provider, pickerSizing)
-                            val span = existing?.let { placement ->
-                                WidgetSpan(placement.spanX, placement.spanY).takeIf {
-                                    constraints != null && it.width in constraints.minimum.width..constraints.maximum.width &&
-                                        it.height in constraints.minimum.height..constraints.maximum.height
-                                }
-                            } ?: preferredSpan
-                            val special = existing?.takeIf { it.row + it.spanY > GRID_ROWS }
-                            if (special != null) {
-                                widgetSession = WidgetPickerSession(provider, picker.slot,
-                                    WidgetSpan(special.spanX, special.spanY), Offset.Zero,
-                                    dragging = false, candidate = special)
-                                widgetPlacementMessage = null
-                                scope.launch { pager.scrollToPage(special.page.coerceAtLeast(0).coerceAtMost(homePages - 1)) }
-                                return@let
-                            }
-                            val requestedIndex = existing?.let { homeCellIndex(it.page, it.row * GRID_COLUMNS + it.column) }
-                                ?: picker.targetIndex.takeUnless { it == Int.MIN_VALUE } ?: 0
-                            val requestedPage = homeCellPage(requestedIndex).coerceIn(-1, homePages)
-                            val availablePages = -1..homePages
-                            val autoPages = (listOf(requestedPage) + availablePages.filter { it != requestedPage })
-                            val freeIndex = if (existing != null || picker.exactTarget) requestedIndex.takeIf {
-                                draftAt(it, span, picker.slot) != null
-                            } else autoPages.asSequence().flatMap { page ->
-                                (0 until HOME_CELLS).asSequence().map { homeCellIndex(page, it) }
-                            }.firstOrNull { widgetCandidate(state.layout, picker.slot, it, span.width, span.height, visibleRows) != null }
-                            val targetIndex = freeIndex ?: requestedIndex
-                            widgetSession = WidgetPickerSession(provider, picker.slot, span, Offset.Zero,
-                                dragging = false, targetIndex = targetIndex)
-                            widgetPlacementMessage = if (freeIndex == null)
-                                launcherActivity.getString(R.string.there_isn_t_room_for_this_size_choose_an) else null
-                            scope.launch { pager.scrollToPage(homeCellPage(targetIndex).coerceIn(-1, homePages)) }
-                        }
-                    },
-                    onBuiltin = builtin@{ builtinId ->
-                        picker.stackSlot?.let { stackSlot ->
-                            model.addToStack(stackSlot, builtinId); picker.stackSlot = null; sheet = ""; picker.packageName = null
-                            return@builtin
-                        }
-                        val existing = model.placement(picker.slot)
-                        val special = existing?.takeIf { it.row + it.spanY > GRID_ROWS }
-                        // Big Clock starts as wide as the page, like the Lock Screen clock; the others are small.
-                        val span = existing?.let { WidgetSpan(it.spanX, it.spanY) } ?: WidgetSpan(if (builtinId == BIG_CLOCK_WIDGET) 4 else 2, 2)
-                        if (special != null) {
-                            widgetSession = WidgetPickerSession(null, picker.slot, span, Offset.Zero,
-                                dragging = false, candidate = special, builtinId = builtinId)
-                            widgetPlacementMessage = null
-                            scope.launch { pager.scrollToPage(special.page.coerceAtLeast(0).coerceAtMost(homePages - 1)) }
-                            return@builtin
-                        }
-                        val requested = existing?.let {
-                            homeCellIndex(it.page, it.row * GRID_COLUMNS + it.column)
-                        } ?: picker.targetIndex.takeUnless { it == Int.MIN_VALUE } ?: 0
-                        val requestedPage = homeCellPage(requested).coerceIn(-1, homePages)
-                        val availablePages = -1..homePages
-                        val exact = model.placement(picker.slot) != null || picker.exactTarget
-                        val candidates = if (exact) sequenceOf(requested)
-                            else (listOf(requestedPage) + availablePages.filter { it != requestedPage }).asSequence()
-                                .flatMap { page -> (0 until HOME_CELLS).asSequence().map { homeCellIndex(page, it) } }
-                        val free = candidates.firstOrNull {
-                            widgetCandidate(state.layout, picker.slot, it, span.width, span.height, if (exact) pageRows(homeCellPage(it)) else visibleRows) != null
-                        }
-                        widgetSession = WidgetPickerSession(null, picker.slot, span, Offset.Zero,
-                            dragging = false, targetIndex = free ?: requested, builtinId = builtinId)
-                        widgetPlacementMessage = if (free == null)
-                            launcherActivity.getString(R.string.there_isn_t_room_for_this_card_choose_an) else null
-                        scope.launch { pager.scrollToPage(homeCellPage(free ?: requested).coerceIn(-1, homePages)) }
-                    },
-                    onDragStart = { provider, point ->
-                        if (picker.stackSlot == null) footprint(provider)?.let { span ->
-                            widgetSession = WidgetPickerSession(provider, picker.slot, span, point, dragging = true)
+                    onAdd = ::addFromGallery,
+                    onDragStart = { widget, span, point ->
+                        if (picker.stackSlot == null) {
+                            widgetSession = WidgetPickerSession((widget as? GalleryWidget.Provider)?.entry?.provider, picker.slot, span, point,
+                                dragging = true, builtinId = (widget as? GalleryWidget.Builtin)?.id)
                             widgetPlacementMessage = null
                             scope.launch { pager.scrollToPage(lastHomePage.coerceIn(0, homePages - 1)) }
                         }
@@ -1237,20 +1204,22 @@ fun LauncherScreen(
                     onDrag = { point -> widgetSession = widgetSession?.copy(pointer = point) },
                     onDrop = {
                         val session = widgetSession
-                        if (session != null && widgetDraft != null) {
-                            session.provider?.let { widgets.add(widgetDraft, it, pickerSizing) }
-                                ?: session.builtinId?.let { widgets.setBuiltin(widgetDraft.copy(id = it)) }
-                            widgetSession = null; sheet = ""; picker.packageName = null
-                        } else {
-                            leaveTemporaryWidgetPage(); widgetSession = null
-                            widgetPlacementMessage = launcherActivity.getString(R.string.there_isn_t_room_there_try_another_space)
+                        if (session != null) {
+                            val draft = widgetDraft ?: firstFreeDraft(session.span, pager.currentPage.coerceIn(-1, homePages))
+                            if (draft != null) commitWidget(draft, session.provider, session.builtinId)
+                            else {
+                                leaveTemporaryWidgetPage(); widgetSession = null
+                                widgetPlacementMessage = launcherActivity.getString(R.string.there_isn_t_room_there_try_another_space)
+                            }
                         }
                     },
                     onCancelDrag = {
                         if (widgetSession != null) {
                             leaveTemporaryWidgetPage(); widgetSession = null
                         }
-                    })
+                    },
+                    currentSpan = model.placement(picker.stackSlot ?: picker.slot)?.let { WidgetSpan(it.spanX, it.spanY) },
+                    oneApp = picker.packageName != null)
                 widgetSession?.let { session ->
                     val placementDensity = LocalDensity.current
                     val sessionEntry = session.provider?.let { selected -> catalog?.firstOrNull {
@@ -1328,6 +1297,8 @@ fun LauncherScreen(
                                 Box(Modifier.fillMaxSize()) {
                                     if (sessionEntry != null) WidgetProviderPreview(sessionEntry, session.span,
                                         Modifier.fillMaxSize().padding(5.dp).clip(RoundedCornerShape((FolioRadius.WIDGET - 5).dp)))
+                                    else if (session.builtinId != null) BuiltinWidgetPreview(session.builtinId,
+                                        Modifier.fillMaxSize().padding(5.dp).clearAndSetSemantics { })
                                     else Column(Modifier.align(Alignment.Center).padding(FolioSpace.MEDIUM.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(session.provider?.loadLabel(launcherActivity.packageManager)?.toString()
@@ -1357,6 +1328,8 @@ fun LauncherScreen(
                                 Box(contentAlignment = Alignment.Center) {
                                     if (sessionEntry != null) WidgetProviderPreview(sessionEntry, session.span,
                                         Modifier.fillMaxSize().padding(5.dp).clip(RoundedCornerShape((FolioRadius.WIDGET - 5).dp)))
+                                    else if (session.builtinId != null) BuiltinWidgetPreview(session.builtinId,
+                                        Modifier.fillMaxSize().padding(5.dp).clearAndSetSemantics { })
                                     Box(Modifier.matchParentSize().background(FolioColors.RedLight.copy(alpha = .3f)),
                                         contentAlignment = Alignment.Center) { Text(stringResource(R.string.no_room_here), color = Color.White) }
                                 }

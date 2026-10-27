@@ -134,6 +134,13 @@
     <string name="widget_unavailable">Widget unavailable</string>
     <string name="widgets">Widgets</string>
     <string name="search_widgets">Search Widgets</string>
+    <string name="add_widget_button">Add Widget</string>
+    <string name="widget_page_position">%1$d of %2$d</string>
+    <string name="clock_widget_description">The time, big enough to read at a glance.</string>
+    <string name="date_widget_description">Today’s day and date.</string>
+    <string name="up_next_widget_description">What’s next on your calendar today, or your next alarm.</string>
+    <string name="big_clock_widget_description">A large clock across the page, with the date and what’s next.</string>
+    <string name="suggestions_widget_description">Apps you usually open around this time of day.</string>
     <string name="turn_on">Turn on</string>
     <string name="no_widgets_found">No Widgets Found</string>
     <string name="notifications_title">Notifications</string>
@@ -219,7 +226,6 @@
     <string name="all_apps">All apps</string>
     <string name="this_widget_needs_a_bigger_space_than_th">This widget needs a bigger space than this stack. Resize the stack first.</string>
     <string name="there_isn_t_room_for_this_size_choose_an">There isn’t room for this size. Choose another page or move an item first.</string>
-    <string name="there_isn_t_room_for_this_card_choose_an">There isn’t room for this card. Choose another page or move an item first.</string>
     <string name="there_isn_t_room_there_try_another_space">There isn’t room there. Try another space or page.</string>
     <string name="ready_to_place">Ready to place</string>
     <string name="clock">Clock</string>
@@ -587,7 +593,6 @@
         <item quantity="other">%1$s, %2$d notifications</item>
     </plurals>
     <!-- Name of the built-in widget in the widget gallery. -->
-    <string name="widget_panel_title">Widget Panel</string>
     <string name="refresh_icons">Refresh Icons</string>
     <string name="refresh_icons_note">If a theme app changed your icons and Folio still shows the old ones, this loads them again.</string>
     <string name="your_photo">Your Photo</string>
@@ -608,10 +613,6 @@
     <string name="previewing_1">Previewing %1$s</string>
     <string name="wallpaper">Wallpaper</string>
     <string name="wallpaper_moves_with_pages">Wallpaper Moves with Pages</string>
-    <plurals name="show_all_widgets">
-        <item quantity="one">Show all %d</item>
-        <item quantity="other">Show all %d</item>
-    </plurals>
     <string name="general">General</string>
     <string name="home">Home</string>
     <string name="fold">Fold</string>
