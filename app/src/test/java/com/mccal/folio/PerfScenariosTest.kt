@@ -52,7 +52,7 @@ class PerfScenariosTest {
         s.record(40_000_000L, true); s.record(60_000_000L, true)
         s.end(PerfScenario.FOLD)
         val text = PerfReport.build(header, listOf(sample(0, 0), sample(60_000, 3_000)), all, s)
-        assertTrue(text, "Frames by what Folio was doing" in text)
+        assertTrue(text, "Frames by what Twofold was doing" in text)
         assertTrue(text, Regex("""Fold animation: 100 frames, janky 2 \(2(\.0)? %\)""").containsMatchIn(text))
         assertTrue("p99 shows the slow frames the average hides", Regex("""Fold animation:.*p99 (4[0-9]|5[0-9]|60)(\.\d)? ms""").containsMatchIn(text))
         assertFalse("a scenario with no frames is not listed", "Home swipe:" in text)
@@ -63,7 +63,7 @@ class PerfScenariosTest {
         val samples = listOf(sample(0, 0), sample(60_000, 3_000))
         val without = PerfReport.build(header, samples, all)
         assertEquals(without, PerfReport.build(header, samples, all, PerfScenarios()))
-        assertFalse("Frames by what Folio was doing" in without)
+        assertFalse("Frames by what Twofold was doing" in without)
     }
 
     @Test fun `sheets and menus are scenarios of their own, named in the report`() {

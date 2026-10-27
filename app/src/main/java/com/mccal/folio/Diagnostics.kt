@@ -94,7 +94,7 @@ internal object Diagnostics {
     fun onStart(context: Context) {
         runCatching { recordExits(context) }
         runCatching { recordRestart(context) }
-        event("Folio started")
+        event("Twofold started")
     }
 
     private fun previousTrail(context: Context) =
@@ -114,7 +114,7 @@ internal object Diagnostics {
             val trace = if (exit.reason == ApplicationExitInfo.REASON_ANR)
                 runCatching { exit.traceInputStream?.bufferedReader()?.use { it.readText().take(TRACE_LIMIT) } }.getOrNull() else null
             CrashLog.save(context, "exit", buildString {
-                appendLine("Folio ${label(exit.reason)}")
+                appendLine("Twofold ${label(exit.reason)}")
                 appendLine("When: ${format(exit.timestamp)}")
                 appendLine(CrashLog.environment(context))
                 appendLine("Reason: ${exit.description ?: label(exit.reason)} (status ${exit.status}, importance ${exit.importance})")
@@ -136,10 +136,10 @@ internal object Diagnostics {
         // screen leads to. Ordinary restarts hours later aren't recorded.
         if (!prefs.getBoolean(VISIBLE, false) || lastSeen <= 0 || bootedAt - lastSeen !in 0..RESTART_WINDOW_MS) return
         CrashLog.save(context, "restart", buildString {
-            appendLine("Phone restarted while Folio was on screen")
-            appendLine("Folio last seen: ${format(lastSeen)}; phone started again: ${format(bootedAt)}")
+            appendLine("Phone restarted while Twofold was on screen")
+            appendLine("Twofold last seen: ${format(lastSeen)}; phone started again: ${format(bootedAt)}")
             appendLine(CrashLog.environment(context))
-            appendLine("Android doesn't tell apps why a phone restarted. If you restarted it because Folio stopped responding, please say so in your report.")
+            appendLine("Android doesn't tell apps why a phone restarted. If you restarted it because Twofold stopped responding, please say so in your report.")
             previousTrail(context)?.let { appendLine(); appendLine("Before it:"); append(it) }
         })
     }
@@ -175,7 +175,7 @@ internal object Diagnostics {
             "density ${metrics.densityDpi} (default ${android.util.DisplayMetrics.DENSITY_DEVICE_STABLE})",
             "font ${config.fontScale}×",
             "animations ${scale}×",
-            "wallpaper ${if (state?.optBoolean("systemWallpaper", false) == true) "Android" else "Folio"}",
+            "wallpaper ${if (state?.optBoolean("systemWallpaper", false) == true) "Android" else "Twofold"}",
             "fold effect ${if (state?.optBoolean("foldEffect", true) != false) "on" else "off"}",
             "safe mode ${if (SafeMode.active) "on" else "off"}",
         ).joinToString(", ")
@@ -199,7 +199,7 @@ internal object Diagnostics {
                 (if (s.type == android.hardware.Sensor.TYPE_HINGE_ANGLE && s.resolution >= 45f) " · steps only" else ""))
         }
         val learned = context.getSharedPreferences("folio", 0).getString("fold_hinge_capability", null)
-        append("Folio has seen the hinge as: ${learned?.lowercase() ?: "not moved yet"}")
+        append("Twofold has seen the hinge as: ${learned?.lowercase() ?: "not moved yet"}")
     }
 
     /**
@@ -248,8 +248,8 @@ internal object Diagnostics {
         palette: List<Int>? = null, themeColorSource: String? = null): String = buildString {
         fun text(colors: List<Int>?) = colors?.takeIf { it.isNotEmpty() }?.joinToString(" ") { String.format(java.util.Locale.ROOT, "#%06X", it and 0xFFFFFF) } ?: "none"
         appendLine("Wallpaper:")
-        appendLine("  behind Home: ${if (systemWallpaper) "Android's wallpaper" else "Folio's background"}" +
-            " (a Folio picture is ${if (folioPictureSaved) "saved" else "not saved"})")
+        appendLine("  behind Home: ${if (systemWallpaper) "Android's wallpaper" else "Twofold's background"}" +
+            " (a Twofold picture is ${if (folioPictureSaved) "saved" else "not saved"})")
         appendLine("  Android's colors, home: ${text(home)}")
         appendLine("  Android's colors, lock: ${text(lock)}")
         append("  system palette (accent 1, 2, 3 at 500): ${text(palette)}, theme color source: ${themeColorSource ?: "not set"}")
@@ -262,7 +262,7 @@ internal object Diagnostics {
      * Folio's own log lines (apps can only read their own). Built on demand, shown to you before it goes anywhere.
      */
     fun bundle(context: Context): String = buildString {
-        appendLine("Folio diagnostics (${format(System.currentTimeMillis())})")
+        appendLine("Twofold diagnostics (${format(System.currentTimeMillis())})")
         appendLine(CrashLog.environment(context))
         appendLine()
         appendLine(hingeReport(context))
@@ -275,7 +275,7 @@ internal object Diagnostics {
         appendLine(trailText().ifBlank { "(none)" })
         CrashLog.reports(context).take(3).forEach { appendLine(); appendLine("---- ${it.name}"); appendLine(it.readText().take(12_000)) }
         appendLine()
-        appendLine("---- Folio log")
+        appendLine("---- Twofold log")
         append(ownLog().takeLast(20_000))
     }.take(60_000)
 
@@ -302,7 +302,7 @@ internal object Diagnostics {
         val now = System.currentTimeMillis()
         dir.listFiles()?.filter { now - it.lastModified() > 10 * 60_000 }?.forEach { it.delete() }
         val stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmmss"))
-        val file = File(dir, "folio-report-$stamp-${(1000..9999).random()}.txt").apply { writeText(bundle(context)) }
+        val file = File(dir, "twofold-report-$stamp-${(1000..9999).random()}.txt").apply { writeText(bundle(context)) }
         val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.reports", file)
         val send = Intent(Intent.ACTION_SEND).setType("text/plain")
             .putExtra(Intent.EXTRA_STREAM, uri)
@@ -319,7 +319,7 @@ internal object Diagnostics {
     suspend fun copy(context: Context) {
         val text = bundleOffMain(context)
         context.getSystemService(android.content.ClipboardManager::class.java)
-            ?.setPrimaryClip(ClipData.newPlainText("Folio diagnostics", text))
+            ?.setPrimaryClip(ClipData.newPlainText("Twofold diagnostics", text))
     }
 
     fun backgroundSet(choice: BackgroundChoice) = event("Background set: ${choice.save()}")

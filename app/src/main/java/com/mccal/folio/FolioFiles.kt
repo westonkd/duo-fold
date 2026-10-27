@@ -12,7 +12,7 @@ import java.time.LocalDate
  * files to Downloads without any permission, and they show up in the Files app like anything else you download.
  */
 internal object FolioFiles {
-    const val FOLDER = "Folio"
+    const val FOLDER = "Twofold"
     val displayPath = "${Environment.DIRECTORY_DOWNLOADS}/$FOLDER"
 
     /** A dated file name, like folio-layout-2026-09-15.json. Android adds (1), (2)… if the name is taken. */

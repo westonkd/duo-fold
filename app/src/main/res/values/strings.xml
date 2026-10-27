@@ -1,7 +1,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="dune_wallpaper_description">The background you chose in Folio, sized for your display.</string>
-    <string name="shade_service_label">Folio gestures &amp; overlays</string>
-    <string name="shade_service_description">Lets Folio open Android’s notifications and Quick Settings from Home gestures and run the system actions you give a gesture or button: Home, Back, Recents, close notifications, Android’s app drawer, lock screen, screenshot, power menu, split screen and play/pause. Only if you turn them on, it also shows Folio’s dock handle, dock and Big Buttons over other apps. It does not read screen content, observe what you do in other apps, or collect any data.</string>
+    <string name="dune_wallpaper_description">The background you chose in Twofold, sized for your display.</string>
+    <string name="shade_service_label">Twofold gestures &amp; overlays</string>
+    <string name="shade_service_description">Lets Twofold open Android’s notifications and Quick Settings from Home gestures and run the system actions you give a gesture or button: Home, Back, Recents, close notifications, Android’s app drawer, lock screen, screenshot, power menu, split screen and play/pause. Only if you turn them on, it also shows Twofold’s dock handle, dock and Big Buttons over other apps. It does not read screen content, observe what you do in other apps, or collect any data.</string>
     <string name="personal">Personal</string>
     <string name="work">Work</string>
     <string name="turn_on_work_apps">Turn on work apps</string>
@@ -13,16 +13,16 @@
     <string name="undo_last_layout_change">Undo Last Layout Change</string>
     <string name="background">Background</string>
     <string name="android_wallpaper">Android wallpaper</string>
-    <string name="folio_background">Folio background</string>
+    <string name="folio_background">Twofold background</string>
     <string name="change_android_wallpaper">Change Android Wallpaper</string>
     <string name="text_on_home">Text on Home</string>
     <string name="labels_status_page_dots_and_widget_text">Labels, status, page dots and widget text on the wallpaper. Automatic uses dark text over light wallpapers. Darken behind text adds a soft shade at the top and bottom of Home, so white text reads over a pale wallpaper; the middle of your wallpaper is left as it is.</string>
     <string name="darken_behind_text">Darken Behind Text</string>
     <string name="launcher_background">Launcher background</string>
-    <string name="changes_the_image_behind_folio_s_home_sc">Changes the image behind Folio’s Home screens.\u0020</string>
+    <string name="changes_the_image_behind_folio_s_home_sc">Changes the image behind Twofold’s Home screens.\u0020</string>
     <string name="cancel">Cancel</string>
     <string name="apply">Apply</string>
-    <string name="opens_android_s_preview_to_use_folio_s_b">Opens Android’s preview to use Folio’s background as your phone’s wallpaper too (a live wallpaper), so it matches outside Folio.</string>
+    <string name="opens_android_s_preview_to_use_folio_s_b">Opens Android’s preview to use Twofold’s background as your phone’s wallpaper too (a live wallpaper), so it matches outside Twofold.</string>
     <string name="preview_as_phone_wallpaper">Preview as phone wallpaper</string>
     <string name="gestures">Gestures</string>
     <string name="pull_down_from_the_top_left_for_notifica">Pull down from the top-left for Android’s notifications, top-right for Quick Settings. Swipe sideways to change pages. A swipe down lower on Home does what you pick above: set it to Notifications for Android’s notification shade, from anywhere on the page.</string>
@@ -30,14 +30,14 @@
     <string name="message_contacts_with">Message Contacts With</string>
     <string name="texting_app">Texting app</string>
     <string name="actions">Actions</string>
-    <string name="pick_what_gestures_and_events_do_activat">Choose what each gesture or event does. Events only run while Folio is your Home app or its gestures service is on.</string>
+    <string name="pick_what_gestures_and_events_do_activat">Choose what each gesture or event does. Events only run while Twofold is your Home app or its gestures service is on.</string>
     <string name="app_library">App Library</string>
     <string name="group_apps_into_categories">Group Apps into Categories</string>
     <string name="search">Search</string>
     <string name="drag_page_dots_to_flip_pages">Drag Page Dots to Flip Pages</string>
     <string name="haptic_feedback">Haptic Feedback</string>
     <string name="search_button_opens_the_google_app">Open the Google App</string>
-    <string name="when_off_the_search_button_opens_spotlig">When off, the Search button opens Folio’s search: apps, contacts, settings, a calculator, Google without AI, and ChatGPT, Claude or Perplexity.</string>
+    <string name="when_off_the_search_button_opens_spotlig">When off, the Search button opens Twofold’s search: apps, contacts, settings, a calculator, Google without AI, and ChatGPT, Claude or Perplexity.</string>
     <string name="app_icons">App icons</string>
     <string name="icon_pack">Icon Pack</string>
     <string name="install_any_icon_pack_made_for_nova_styl">Install any icon pack made for Nova-style launchers to use it here.</string>
@@ -48,11 +48,11 @@
     <string name="show_status_in_the_rail">Show Status on the Side Bar</string>
     <string name="date">Date</string>
     <string name="dock_handle_on_the_rail_edge">Dock Handle on the Side Bar</string>
-    <string name="uses_folios_accessibility_service_the_sa">Uses Folio’s accessibility service (the same one as shade gestures). Tap or drag the handle to open your dock. If the handle fights the back gesture, lower the right-edge back sensitivity.</string>
+    <string name="uses_folios_accessibility_service_the_sa">Uses Twofold’s accessibility service (the same one as shade gestures). Tap or drag the handle to open your dock. If the handle fights the back gesture, lower the right-edge back sensitivity.</string>
     <string name="fold_animation">Fold animation</string>
     <string name="closing_from_home">Closing from Home</string>
     <string name="stay_awake_on_the_cover_screen">Stay Awake on the Cover Screen</string>
-    <string name="samsung_locks_the_phone_when_you_fold_on">Samsung locks the phone when you fold on any home screen. Folio briefly steps aside while you close it so the cover screen stays on. Needs Settings › Display › Continue apps on cover screen › Always.</string>
+    <string name="samsung_locks_the_phone_when_you_fold_on">Samsung locks the phone when you fold on any home screen. Twofold briefly steps aside while you close it so the cover screen stays on. Needs Settings › Display › Continue apps on cover screen › Always.</string>
     <string name="save_the_current_home_layout_folders_wid">Save the current Home layout, folders, widgets, and layout settings.\u0020</string>
     <string name="restore">Restore</string>
     <string name="restore_shows_a_review_before_changing_h">Restore shows a review before changing Home.</string>
@@ -61,7 +61,7 @@
     <string name="recent_activity">Recent Activity</string>
     <string name="activity_failed">Failed</string>
     <string name="no_activity_to_show">Nothing to show yet.</string>
-    <string name="recent_activity_note">What Folio did lately, newest first, kept only on this phone. A failure is something Folio carried on from.</string>
+    <string name="recent_activity_note">What Twofold did lately, newest first, kept only on this phone. A failure is something Twofold carried on from.</string>
     <string name="share_latest">Share Latest</string>
     <string name="clear">Clear</string>
     <string name="cover">Cover</string>
@@ -154,7 +154,7 @@
     <string name="choose_a_photo">Choose a Photo…</string>
     <string name="reduce_motion">Reduce Motion</string>
     <string name="reduce_motion_note">Pages, sheets and menus fade in where they land instead of sliding or growing, icons stop wiggling while you edit Home, and switches stop without bouncing.</string>
-    <string name="reduce_motion_note_removed">On while Android\'s Remove animations is on. Folio then shows every change at once.</string>
+    <string name="reduce_motion_note_removed">On while Android\'s Remove animations is on. Twofold then shows every change at once.</string>
     <string name="swipe_down_on_home">Swipe Down on Home</string>
     <string name="nothing">Nothing</string>
     <string name="work_apps">Work Apps</string>
@@ -171,7 +171,7 @@
     <string name="include_diagnostics">Include Diagnostics?</string>
     <string name="just_open_form">Just Open Form</string>
     <string name="safe_mode">Safe Mode</string>
-    <string name="folio_is_running_in_safe_mode_optional_f">Folio is running in Safe Mode: optional features are paused for this session.</string>
+    <string name="folio_is_running_in_safe_mode_optional_f">Twofold is running in Safe Mode: optional features are paused for this session.</string>
     <string name="show_or_hide_the_settings_list">Show or hide the settings list</string>
     <string name="home_app">Home App</string>
     <string name="home_button_folding_gestures">Home button, folding, gestures</string>
@@ -181,7 +181,7 @@
     <string name="pull_downs_dock_and_big_buttons_in_other">Pull-downs to Android’s notifications and Quick Settings, dock handle and Big Buttons in other apps, Lock Screen and Screenshot actions</string>
     <string name="do_not_disturb_access">Do Not Disturb Access</string>
     <string name="usage_access_optional">Usage Access</string>
-    <string name="better_suggestions_counts_apps_you_open">Better Suggestions: counts apps you open from anywhere, not just from Folio</string>
+    <string name="better_suggestions_counts_apps_you_open">Better Suggestions: counts apps you open from anywhere, not just from Twofold</string>
     <string name="calendar_optional">Calendar</string>
     <string name="up_next_widget">Up Next widget</string>
     <string name="allowed">Allowed</string>
@@ -190,8 +190,8 @@
     <string name="preview">Preview</string>
     <string name="unlock_to_see_the_apps_you_ve_hidden">Unlock to see the apps you\'ve hidden</string>
     <string name="unhide">Unhide</string>
-    <string name="needs_accessibility_service">Turn on Folio’s accessibility service to do this</string>
-    <string name="needs_dnd_access">Allow Do Not Disturb access for Folio first</string>
+    <string name="needs_accessibility_service">Turn on Twofold’s accessibility service to do this</string>
+    <string name="needs_dnd_access">Allow Do Not Disturb access for Twofold first</string>
     <string name="placement">Placement</string>
     <string name="dock">Dock</string>
     <string name="your_apps">Your Apps</string>
@@ -236,14 +236,14 @@
     <string name="layout_backup_problem">Layout backup problem</string>
     <string name="layout_backup">Layout backup</string>
     <string name="use_as_home">Use as Home</string>
-    <string name="folio_started_in_safe_mode">Folio Started in Safe Mode</string>
+    <string name="folio_started_in_safe_mode">Twofold Started in Safe Mode</string>
     <string name="restart_normally">Restart Normally</string>
     <string name="continue_in_safe_mode">Continue in Safe Mode</string>
     <string name="nothing_open_over_home">Nothing open over Home</string>
     <string name="unfolded_layout">Unfolded layout</string>
     <string name="folded_layout">Folded layout</string>
     <string name="home_hidden">Home hidden</string>
-    <string name="folio_gestures_are_starting_swipe_down_a">Folio gestures are starting. Swipe down again.</string>
+    <string name="folio_gestures_are_starting_swipe_down_a">Twofold gestures are starting. Swipe down again.</string>
     <string name="android_couldn_t_open_the_system_panel">Android couldn’t open the system panel.</string>
     <string name="agree">Agree</string>
     <string name="privacy_policy">Privacy Policy</string>
@@ -257,13 +257,13 @@
     <string name="license_third_party">Third-Party Notices</string>
     <string name="license_mit">MIT License</string>
     <string name="license_apache">Apache License 2.0</string>
-    <string name="gestures_disclosure">Folio’s gestures use Android’s Accessibility Service API. With your permission, Folio uses it only to:\n\n• open Android’s notifications and Quick Settings when you swipe down on Home\n• run the actions you give a gesture or button: Home, Back, Recents, close notifications, Android’s app drawer, lock screen, screenshot, power menu, split screen and play/pause\n• show the dock handle, the dock and Big Buttons over other apps, and open your dock apps from there, if you turn them on\n\nFolio can’t read what’s on your screen or what you type, doesn’t watch what you do in other apps, and collects and shares no data through this service. Nothing leaves your phone.\n\nTap Agree to open Accessibility settings, then turn on “Folio gestures &amp; overlays”.</string>
+    <string name="gestures_disclosure">Twofold’s gestures use Android’s Accessibility Service API. With your permission, Twofold uses it only to:\n\n• open Android’s notifications and Quick Settings when you swipe down on Home\n• run the actions you give a gesture or button: Home, Back, Recents, close notifications, Android’s app drawer, lock screen, screenshot, power menu, split screen and play/pause\n• show the dock handle, the dock and Big Buttons over other apps, and open your dock apps from there, if you turn them on\n\nTwofold can’t read what’s on your screen or what you type, doesn’t watch what you do in other apps, and collects and shares no data through this service. Nothing leaves your phone.\n\nTap Agree to open Accessibility settings, then turn on “Twofold gestures &amp; overlays”.</string>
     <string name="gestures_restricted_settings_help">If it’s greyed out, or Android says “Restricted setting”, tap App Info, open the ⋮ menu, choose “Allow restricted settings”, then come back and turn it on. Android asks this once for apps installed from outside an app store.</string>
     <string name="notification_access_disclosure_title">Allow Notification Access?</string>
-    <string name="notification_access_disclosure">Folio reads your notifications to show badges on app icons, an app’s recent notifications and media controls in its panel, and what’s playing. Notification content stays in memory on your phone only while it’s shown. It’s never saved, logged or sent anywhere.\n\nTap Agree to open Android’s settings, then allow Folio.</string>
+    <string name="notification_access_disclosure">Twofold reads your notifications to show badges on app icons, an app’s recent notifications and media controls in its panel, and what’s playing. Notification content stays in memory on your phone only while it’s shown. It’s never saved, logged or sent anywhere.\n\nTap Agree to open Android’s settings, then allow Twofold.</string>
     <string name="usage_access_disclosure_title">Allow Usage Access?</string>
-    <string name="usage_access_disclosure">Folio reads which apps you opened and when, to suggest the apps you use most and to put a dot beside dock apps you used in the last hour. This stays on your phone and is never sent anywhere.\n\nTap Agree to open Android’s settings, then allow Folio.</string>
-    <string name="turn_on_folio_gestures">Turn On Folio Gestures</string>
+    <string name="usage_access_disclosure">Twofold reads which apps you opened and when, to suggest the apps you use most and to put a dot beside dock apps you used in the last hour. This stays on your phone and is never sent anywhere.\n\nTap Agree to open Android’s settings, then allow Twofold.</string>
+    <string name="turn_on_folio_gestures">Turn On Twofold Gestures</string>
     <string name="app_info">App Info</string>
     <string name="accessibility_settings_are_unavailable">Accessibility settings are unavailable.</string>
     <string name="profile_is_unavailable">Profile is unavailable</string>
@@ -296,7 +296,7 @@
     <string name="nfc_payments">NFC &amp; payments</string>
     <string name="developer_options">Developer options</string>
     <string name="about_phone">About phone</string>
-    <string name="folio">Folio</string>
+    <string name="folio">Twofold</string>
     <string name="mmmm_d">MMMM d</string>
     <string name="saved_widget">Saved widget</string>
     <string name="unavailable_profile">Unavailable profile</string>
@@ -354,9 +354,9 @@
     <string name="shopping_food">Shopping &amp; Food</string>
     <string name="utilities">Utilities</string>
     <string name="other">Other</string>
-    <string name="banking_apps_note">Some banking apps refuse to open while any accessibility service is on, including Folio\'s gestures service. That is their check, not something Folio can change. Everything except the pull-downs and the dock and Big Buttons over other apps works without it, so you can turn it off in Android\'s Accessibility settings and keep using Folio.</string>
+    <string name="banking_apps_note">Some banking apps refuse to open while any accessibility service is on, including Twofold\'s gestures service. That is their check, not something Twofold can change. Everything except the pull-downs and the dock and Big Buttons over other apps works without it, so you can turn it off in Android\'s Accessibility settings and keep using Twofold.</string>
     <string name="app_is_unavailable">%1$s is unavailable.</string>
-    <string name="copy_diagnostics_puts_your_phone_and_scr">Copy Diagnostics puts your phone and screen settings, recent Folio events and Folio\'s own log on the clipboard, so you can paste it into the form. Check it before posting; nothing is sent until you submit.</string>
+    <string name="copy_diagnostics_puts_your_phone_and_scr">Copy Diagnostics puts your phone and screen settings, recent Twofold events and Twofold\'s own log on the clipboard, so you can paste it into the form. Check it before posting; nothing is sent until you submit.</string>
     <string name="copy_diagnostics">Copy Diagnostics</string>
     <string name="used_by_1">Used by: %1$s</string>
     <string name="all">All</string>
@@ -369,7 +369,7 @@
     <string name="allow_calendar_access">Allow calendar access</string>
     <string name="no_more_events_today">No more events today</string>
     <string name="suggestions_appear_as_you_use_your_apps">Suggestions appear as you use your apps.</string>
-    <string name="what_s_new_in_folio">What\'s New in Folio</string>
+    <string name="what_s_new_in_folio">What\'s New in Twofold</string>
     <string name="version_1">Version %1$s</string>
     <string name="continue_choice">Continue</string>
     <string name="search_1_with">Search “%1$s” with</string>
@@ -378,11 +378,11 @@
     <string name="no_shortcuts_or_notifications_for_1">No shortcuts or notifications for %1$s right now.</string>
     <string name="unavailable_apps_1">Unavailable apps (%1$d)</string>
     <string name="its_saved_position_will_stay_empty_1">• %1$s, its saved position will stay empty</string>
-    <string name="folio_kept_your_saved_layout_untouched">Folio kept your saved layout untouched and is showing a basic Home for now. Restore a backup or an earlier layout, or start fresh (Folio keeps a copy of the old one).</string>
-    <string name="home_layout_saved_by_newer_folio">Saved by a Newer Folio</string>
-    <string name="home_layout_saved_by_newer_folio_detail">Your Home layout was saved by a newer version of Folio. Update Folio to use it. Until then Folio keeps it untouched and shows a basic Home, or you can restore a backup.</string>
-    <string name="home_layout_saved_by_newer_folio_short">Home layout saved by a newer Folio; update Folio to use it.</string>
-    <string name="folio_closed_unexpectedly_twice_so_opt">Folio closed unexpectedly twice, so optional features are paused: Cabinet, Actions, the fold animation and the dock over other apps. Your settings haven’t changed.</string>
+    <string name="folio_kept_your_saved_layout_untouched">Twofold kept your saved layout untouched and is showing a basic Home for now. Restore a backup or an earlier layout, or start fresh (Twofold keeps a copy of the old one).</string>
+    <string name="home_layout_saved_by_newer_folio">Saved by a Newer Twofold</string>
+    <string name="home_layout_saved_by_newer_folio_detail">Your Home layout was saved by a newer version of Twofold. Update Twofold to use it. Until then Twofold keeps it untouched and shows a basic Home, or you can restore a backup.</string>
+    <string name="home_layout_saved_by_newer_folio_short">Home layout saved by a newer Twofold; update Twofold to use it.</string>
+    <string name="folio_closed_unexpectedly_twice_so_opt">Twofold closed unexpectedly twice, so optional features are paused: Cabinet, Actions, the fold animation and the dock over other apps. Your settings haven’t changed.</string>
     <string name="all_day">All Day</string>
     <plurals name="widgets_keep_their_saved_space">
         <item quantity="one">%1$d widget will keep its saved space and ask to reconnect after restore.</item>
@@ -457,21 +457,21 @@
     <string name="remove_widget_2">Remove Widget</string>
     <string name="add_page">Add Page</string>
     <string name="remove_this_empty_page">Remove This Empty Page</string>
-    <string name="folio_settings">Folio Settings</string>
+    <string name="folio_settings">Twofold Settings</string>
     <string name="search_your_contacts">Search your contacts</string>
     <string name="allow_contacts_access">Allow contacts access</string>
     <string name="update_channel">Update channel</string>
-    <string name="diagnostics_file_note">Phone and screen settings, recent Folio events, crash, freeze and restart reports, and Folio\'s own log, as one file. You choose where it goes.</string>
+    <string name="diagnostics_file_note">Phone and screen settings, recent Twofold events, crash, freeze and restart reports, and Twofold\'s own log, as one file. You choose where it goes.</string>
     <string name="performance_log">Performance log</string>
     <string name="performance_start">Start recording</string>
     <string name="performance_stop">Stop recording</string>
     <string name="performance_copy">Copy Report</string>
     <string name="performance_share">Share Report</string>
     <string name="performance_copied">Report copied</string>
-    <string name="performance_status_off">Off. Start it to record what Folio costs.</string>
+    <string name="performance_status_off">Off. Start it to record what Twofold costs.</string>
     <string name="performance_status_running">Recording: %1$d min, %2$d readings</string>
     <string name="performance_status_done">Stopped: %1$d min recorded</string>
-    <string name="performance_note">While on, this reads Folio\'s CPU use, memory, frame times and the battery every few seconds, and stops by itself after 6 hours. Nothing leaves the phone unless you copy or share the report.</string>
+    <string name="performance_note">While on, this reads Twofold\'s CPU use, memory, frame times and the battery every few seconds, and stops by itself after 6 hours. Nothing leaves the phone unless you copy or share the report.</string>
     <string name="what_s_new">What\'s New</string>
     <string name="change_wallpaper">Change wallpaper</string>
     <string name="uses_the_same_wallpaper_as_your_phone_s">Uses the same wallpaper as your phone’s home screen (including live wallpapers), so it matches what you had in your last launcher.</string>
@@ -479,16 +479,16 @@
     <string name="icon_packs_and_themes_are_made_by_indepe">Icon packs and themes are made by independent designers. If you use one, please support them by buying it from them on Google Play. Much love.</string>
     <string name="wide">Wide</string>
     <string name="big_back_home_and_recents_buttons_float">Big Back, Home and Recents buttons float over other apps, for when the system\'s are too small. They press the same buttons Android does, sit above Android\'s own navigation, and hide in full-screen apps.</string>
-    <string name="android_s_three_buttons_are_on_so_you_ll">Android\'s three buttons are on, so you\'ll see both sets. Folio\'s bar sits above them; switch to gesture navigation in Android\'s navigation settings to have only these.</string>
-    <string name="if_folio_closes_unexpectedly_twice_right">If Folio closes unexpectedly twice right after starting, it starts in Safe Mode with optional features paused. Your settings are never changed.</string>
+    <string name="android_s_three_buttons_are_on_so_you_ll">Android\'s three buttons are on, so you\'ll see both sets. Twofold\'s bar sits above them; switch to gesture navigation in Android\'s navigation settings to have only these.</string>
+    <string name="if_folio_closes_unexpectedly_twice_right">If Twofold closes unexpectedly twice right after starting, it starts in Safe Mode with optional features paused. Your settings are never changed.</string>
     <string name="close_customization">Close customization</string>
     <string name="spotlight_contact_search">Contact search</string>
-    <string name="everything_stays_on_your_phone_folio_has">Everything stays on your phone. Folio has no ads or analytics, and nothing is sent anywhere unless you share a crash report.</string>
+    <string name="everything_stays_on_your_phone_folio_has">Everything stays on your phone. Twofold has no ads or analytics, and nothing is sent anywhere unless you share a crash report.</string>
     <string name="hidden_apps_count">Hidden Apps (%1$s)</string>
     <string name="hidden_apps_title">Hidden Apps</string>
     <string name="remove_widget_from_unfolded_only_page">Remove widget from Unfolded-only page</string>
     <string name="preview_of_home">Preview of Home</string>
-    <string name="before_restoring_a_backup_or_layout">Before restoring a backup or an older layout, Folio saves your Home here so you can go back. The last %1$s are kept on this phone.</string>
+    <string name="before_restoring_a_backup_or_layout">Before restoring a backup or an older layout, Twofold saves your Home here so you can go back. The last %1$s are kept on this phone.</string>
     <string name="a_small_dot_beside_dock_apps_you_ve_used">A small dot beside dock apps you\'ve used in the last hour. Android doesn\'t tell launchers which apps are running, so this uses Usage Access.</string>
     <string name="settings_live_clock_and_calendar_icons">Live Clock and Calendar Icons</string>
     <string name="home_page_1_d_of_2_d">Home page %1$d of %2$d</string>
@@ -499,17 +499,17 @@
     </plurals>
     <string name="widgets_page_number">Widgets · Page %1$d</string>
     <string name="widget_size_row" tools:ignore="PluralsCandidate">%1$d × %2$d widget · row %3$d</string>
-    <string name="default_backup_name">Folio Layout %1$s</string>
+    <string name="default_backup_name">Twofold Layout %1$s</string>
 
     <!-- Button that applies the background being previewed. -->
     <string name="set">Set</string>
     <!-- Name of Folio's live wallpaper in Android's wallpaper picker. -->
-    <string name="label_dune_wallpaper">Folio background</string>
+    <string name="label_dune_wallpaper">Twofold background</string>
     <!-- Shown in Android Settings, Notification access. -->
-    <string name="label_notification_listener">Folio notifications</string>
-    <string name="label_settings_shortcut">Folio settings</string>
+    <string name="label_notification_listener">Twofold notifications</string>
+    <string name="label_settings_shortcut">Twofold settings</string>
     <!-- Quick Settings tile that shows or hides the dock over other apps. -->
-    <string name="label_dock_tile">Folio Dock</string>
+    <string name="label_dock_tile">Twofold Dock</string>
     <string name="layout_backup_could_not_be_prepared">Layout backup could not be prepared.</string>
     <string name="layout_backup_could_not_be_saved">Layout backup could not be saved.</string>
     <string name="this_layout_backup_is_no_longer_valid">This layout backup is no longer valid.</string>
@@ -532,7 +532,7 @@
     <string name="this_widget_could_not_open_its_settings">This widget could not open its settings.</string>
     <string name="add_to_home_screen">Add to Home Screen</string>
     <string name="shortcut">Shortcut</string>
-    <string name="open_folio_once_then_try_again">Open Folio once, then try again.</string>
+    <string name="open_folio_once_then_try_again">Open Twofold once, then try again.</string>
     <string name="the_shortcut_couldn_t_be_added">The shortcut couldn\'t be added.</string>
     <string name="there_s_no_room_on_home_for_this_widget">There\'s no room on Home for this widget.</string>
     <string name="the_widget_couldn_t_be_added">The widget couldn\'t be added.</string>
@@ -594,22 +594,23 @@
     </plurals>
     <!-- Name of the built-in widget in the widget gallery. -->
     <string name="refresh_icons">Refresh Icons</string>
-    <string name="refresh_icons_note">If a theme app changed your icons and Folio still shows the old ones, this loads them again.</string>
+    <string name="refresh_icons_note">If a theme app changed your icons and Twofold still shows the old ones, this loads them again.</string>
     <string name="your_photo">Your Photo</string>
-    <string name="from_folio">From Folio</string>
+    <string name="from_folio">From Twofold</string>
     <string name="wallpaper_by_artist">%1$s by %2$s</string>
-    <string name="a_picture_you_choose_in_folio_only_behind">A picture you choose in Folio, only behind Folio.</string>
+    <string name="a_picture_you_choose_in_folio_only_behind">A picture you choose in Twofold, only behind Twofold.</string>
     <string name="no_background_behind_home">No background behind Home.</string>
     <string name="tweak_cabinet_detail">Swipe up on an app icon for a small panel with its shortcuts, latest notifications and music controls.</string>
     <string name="tweak_harborline_detail">Dock icons swell under your finger as you slide along the dock.</string>
     <string name="credit_folio_mccal">McCal (github.com/McCal-Codes/folio) · MIT · Folio itself: the Side Bar, App Library, search, folders, widgets, glass and motion all started as McCal’s work</string>
+    <string name="credit_folio_title">Folio</string>
     <string name="credit_duo_fold_live">joeconsorti and contributors · MIT · ideas for the fold animation</string>
     <string name="credit_hingewave">Ant-lib · MIT · ideas for the fold animation</string>
     <string name="page_landing">Page Landing</string>
     <string name="page_landing_detail">When the phone opens flat or closes, Home lands like the page of a book: a small bounce at the hinge and a soft tap.</string>
     <string name="also_set_as_phone_wallpaper">Also Set as Phone Wallpaper</string>
-    <string name="set_as_phone_wallpaper_note">Opens Android’s own preview, so the lock screen shows it too. That change can’t be undone from Folio, which is why it asks again there.</string>
-    <string name="wallpaper_group_note">Folio draws this behind Home. The phone’s own wallpaper is what the lock screen shows.</string>
+    <string name="set_as_phone_wallpaper_note">Opens Android’s own preview, so the lock screen shows it too. That change can’t be undone from Twofold, which is why it asks again there.</string>
+    <string name="wallpaper_group_note">Twofold draws this behind Home. The phone’s own wallpaper is what the lock screen shows.</string>
     <string name="previewing_1">Previewing %1$s</string>
     <string name="wallpaper">Wallpaper</string>
     <string name="wallpaper_moves_with_pages">Wallpaper Moves with Pages</string>
@@ -619,9 +620,9 @@
     <string name="apps_could_not_be_loaded">Apps could not be loaded.</string>
     <string name="saved_home_layout_could_not_be_read">Saved Home layout could not be read; it was left unchanged.</string>
     <string name="widget_waiting_for_setup">%1$s, waiting for setup</string>
-    <string name="add_folio_settings_to_home">Add Folio Settings to Home</string>
-    <string name="folio_settings_on_home">Folio Settings is on Home</string>
-    <string name="folio_settings_icon_note">The icon opens Folio\'s Settings when Folio is your Home app.</string>
+    <string name="add_folio_settings_to_home">Add Twofold Settings to Home</string>
+    <string name="folio_settings_on_home">Twofold Settings is on Home</string>
+    <string name="folio_settings_icon_note">The icon opens Twofold\'s Settings when Twofold is your Home app.</string>
     <string name="add_apps">Add Apps</string>
     <string name="add_apps_to_1">Add Apps to “%1$s”</string>
     <string name="n_selected">%1$d selected</string>
@@ -629,14 +630,14 @@
     <string name="app_not_selected">Not selected</string>
     <string name="custom_search_engine">Custom…</string>
     <string name="custom_search_note" formatted="false">Your own search address, with %s where the search goes. It leaves your phone for that site, like any web search.</string>
-    <string name="custom_search_invalid" formatted="false">That is not a web address Folio can use. It needs http or https, a site name, and %s where the search goes.</string>
+    <string name="custom_search_invalid" formatted="false">That is not a web address Twofold can use. It needs http or https, a site name, and %s where the search goes.</string>
     <string name="edit_icon">Edit Icon</string>
     <string name="edit_icon_for_1">Icon for %1$s</string>
     <string name="your_picture">Your Picture</string>
     <string name="choose_picture">Choose Picture</string>
     <string name="change_picture">Change Picture</string>
     <string name="remove_picture">Remove Picture</string>
-    <string name="edit_icon_picture_note">The picture is copied into Folio and cropped to a square, so it keeps working if the photo is deleted. It stays on this phone and is not part of a backup.</string>
+    <string name="edit_icon_picture_note">The picture is copied into Twofold and cropped to a square, so it keeps working if the photo is deleted. It stays on this phone and is not part of a backup.</string>
     <string name="custom_search_blank">Until you type an address, Search with Enter uses Google.</string>
     <string name="full_width_home">Full-Width Home</string>
     <string name="full_width_home_note">The dock runs along the bottom and the status Side Bar goes away, so Home uses the whole width, like most phone launchers. The Side Bar setting is for both screens. Turning this off puts back the dock and Side Bar you had.</string>
@@ -696,7 +697,7 @@
     <!-- Settings › Search › Suggestions. Wording is a placeholder for McCal. -->
     <string name="clear_suggestions_history">Clear Suggestions History</string>
     <string name="clear_suggestions_history_q">Clear Suggestions History?</string>
-    <string name="clear_suggestions_history_text">Folio forgets what it learned from your app use, including your recent apps. Android\'s own usage data is not changed.</string>
+    <string name="clear_suggestions_history_text">Twofold forgets what it learned from your app use, including your recent apps. Android\'s own usage data is not changed.</string>
     <string name="suggestions_start_again_from_now">Search, the App Library, the Suggestions widget and Smart Stack start learning again from now.</string>
     <string name="media_previous">Previous</string>
     <string name="media_next">Next</string>
@@ -705,7 +706,7 @@
         <item quantity="one">%d widget was left out because its app is missing.</item>
         <item quantity="other">%d widgets were left out because their apps are missing.</item>
     </plurals>
-    <string name="layout_backup_is_too_large">That layout backup is larger than 2 MB, so Folio can\'t read it.</string>
-    <string name="layout_backup_is_from_a_newer_folio">That layout backup is from a newer version of Folio. Update Folio to restore it.</string>
+    <string name="layout_backup_is_too_large">That layout backup is larger than 2 MB, so Twofold can\'t read it.</string>
+    <string name="layout_backup_is_from_a_newer_folio">That layout backup is from a newer version of Twofold. Update Twofold to restore it.</string>
     <string name="document_picker_unavailable">The file picker isn\'t available right now.</string>
 </resources>

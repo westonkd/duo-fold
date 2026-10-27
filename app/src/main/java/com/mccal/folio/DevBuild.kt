@@ -132,29 +132,29 @@ internal object DevBuild {
 
     /** Text for an issue or a message: which build this is, with nothing about the person. */
     fun summary(info: DevBuildInfo): String = buildString {
-        append("Folio Dev ").append(info.branch).append(' ').append(info.sha).append(if (info.dirty) " (uncommitted changes)" else "")
+        append("Twofold Dev ").append(info.branch).append(' ').append(info.sha).append(if (info.dirty) " (uncommitted changes)" else "")
         append(", built ").append(info.builtAt)
     }
 }
 
 /** Folio Dev's page is for the person who builds Folio, so its words stay English and are kept here, one per line, not in strings.xml. */
 private object DevText {
-    const val WELCOME = "Welcome to Folio Dev" // english-only
+    const val WELCOME = "Welcome to Twofold Dev" // english-only
     const val NEW_BUILD = "New build" // english-only
     const val THIS_BUILD = "This build" // english-only
-    const val WELCOME_BODY = "The amber copy of Folio for testing." // english-only
+    const val WELCOME_BODY = "The amber copy of Twofold for testing." // english-only
     const val REOPENED_BODY = "You are on this build now." // english-only
-    const val NEW_BODY = "Folio Dev was just replaced. Here is what is new on this phone." // english-only
+    const val NEW_BODY = "Twofold Dev was just replaced. Here is what is new on this phone." // english-only
     const val TRY = "What to try" // english-only
     const val CONTINUE = "Continue" // english-only
     const val ALL_DONE = "All done" // english-only
     const val DONE = "Done" // english-only
     const val COPY = "Copy build info" // english-only
-    const val CLIP_LABEL = "Folio Dev build" // english-only
+    const val CLIP_LABEL = "Twofold Dev build" // english-only
     fun more(n: Int) = "$n more changes" // english-only
     fun tried(done: Int, total: Int) = "$done of $total" // english-only
     val first = listOf(
-        "Its own copy" to "Separate from your Folio, with its own Home and settings.", // english-only
+        "Its own copy" to "Separate from your Twofold, with its own Home and settings.", // english-only
         "Updates keep your Home" to "A new build installs over it without wiping anything.", // english-only
         "Shown once per build" to "Each new build says what changed and what to try.", // english-only
     )

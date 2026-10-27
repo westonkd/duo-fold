@@ -176,8 +176,8 @@ internal object PerfReport {
 
     fun build(header: PerfHeader, samples: List<PerfSample>, histogram: FrameHistogram, scenarios: PerfScenarios? = null): String {
         val sb = StringBuilder()
-        sb.append("Folio performance report\n")
-        sb.append("Folio ${header.version} on ${header.device} (Android ${header.android}), ${header.screen}\n")
+        sb.append("Twofold performance report\n")
+        sb.append("Twofold ${header.version} on ${header.device} (Android ${header.android}), ${header.screen}\n")
         sb.append("Started ${header.startedAt}${if (header.running) " (still recording)" else ""}\n\n")
         if (samples.size < 2) {
             sb.append("Not enough readings yet. Leave the recording on for a few minutes.\n")
@@ -188,7 +188,7 @@ internal object PerfReport {
         val cpu = cpuSeries(samples)
         sb.append("Duration: ${duration(spanMs)} (${samples.size} readings, every ${PerfMath.INTERVAL_MS / 1000} s)\n\n")
 
-        sb.append("CPU (Folio's own process, percent of one core; 100 = one core fully busy)\n")
+        sb.append("CPU (Twofold's own process, percent of one core; 100 = one core fully busy)\n")
         sb.append("  Average: ${PerfMath.fmt(PerfMath.cpuPercent(first.cpuMs, last.cpuMs, first.atMs, last.atMs))} %\n")
         sb.append("  Peak over one reading: ${PerfMath.fmt(cpu.maxOrNull() ?: 0.0)} %\n\n")
 
@@ -198,21 +198,21 @@ internal object PerfReport {
             drain != null -> {
                 sb.append("  Drain: about ${PerfMath.fmt(drain.percentPerHour)} % per hour") // english-only
                 drain.mahPerHour?.let { sb.append(", ${PerfMath.fmt(it, 0)} mAh per hour from the charge counter") } // english-only
-                sb.append("\n  This is the whole phone, not only Folio.\n")
+                sb.append("\n  This is the whole phone, not only Twofold.\n")
             }
             samples.any { it.plugged != 0 || it.chargingMs > 0 } -> sb.append("  Drain: not estimated, the phone was charging during this run.\n")
             else -> sb.append("  Drain: not estimated, the run is shorter than ${PerfMath.MIN_DRAIN_MS / 60_000} minutes.\n")
         }
         sb.append("  Level ${first.batteryPercent} % to ${last.batteryPercent} %, temperature ${PerfMath.fmt(last.tempTenthsC / 10.0)} C, current now ${last.currentUa / 1000} mA (sign differs by phone)\n\n")
 
-        sb.append("Frames (only while Folio was in front)\n")
-        if (histogram.frames == 0L) sb.append("  None drawn: Folio was not in front.\n\n") else {
+        sb.append("Frames (only while Twofold was in front)\n")
+        if (histogram.frames == 0L) sb.append("  None drawn: Twofold was not in front.\n\n") else {
             sb.append("  Total: ${histogram.frames}, janky (past the frame deadline): ${histogram.janky} (${PerfMath.fmt(PerfMath.percent(histogram.janky, histogram.frames))} %)\n")
             sb.append("  Frame time p50 ${PerfMath.fmt(histogram.percentileMs(50.0))} ms, p95 ${PerfMath.fmt(histogram.percentileMs(95.0))} ms, p99 ${PerfMath.fmt(histogram.percentileMs(99.0))} ms\n\n")
         }
 
         if (scenarios != null && PerfScenario.entries.any { scenarios.histogram(it).frames > 0 }) {
-            sb.append("Frames by what Folio was doing\n") // english-only
+            sb.append("Frames by what Twofold was doing\n") // english-only
             for (sc in PerfScenario.entries) {
                 val h = scenarios.histogram(sc)
                 if (h.frames == 0L) continue
@@ -220,7 +220,7 @@ internal object PerfReport {
             }
             sb.append("\n")
         }
-        sb.append("Memory (Folio's own process)\n")
+        sb.append("Memory (Twofold's own process)\n")
         val mem = samples.filter { it.pssKb > 0 }
         if (mem.isEmpty()) sb.append("  No reading.\n\n") else {
             val m = mem.last()
@@ -231,7 +231,7 @@ internal object PerfReport {
         val frontPct = PerfMath.percent(last.frontMs - first.frontMs, spanMs)
         val screenPct = PerfMath.percent(last.screenOnMs - first.screenOnMs, spanMs)
         val chargePct = PerfMath.percent(last.chargingMs - first.chargingMs, spanMs)
-        sb.append("Context: Folio in front ${PerfMath.fmt(frontPct, 0)} % of the run, screen on ${PerfMath.fmt(screenPct, 0)} %, charging ${PerfMath.fmt(chargePct, 0)} %, ")
+        sb.append("Context: Twofold in front ${PerfMath.fmt(frontPct, 0)} % of the run, screen on ${PerfMath.fmt(screenPct, 0)} %, charging ${PerfMath.fmt(chargePct, 0)} %, ")
         sb.append("fold or unfold seen ${last.folds - first.folds} times\n\n")
 
         sb.append("Per minute (cpu = percent of one core; front, screen = percent of that minute)\n")
@@ -240,7 +240,7 @@ internal object PerfReport {
             sb.append(String.format(Locale.US, "%3d  %4.1f  %5s  %6.0f  %7.0f  %5d  %6s  %5d\n", i + 1, row.cpu,
                 if (row.frames == 0L) "-" else PerfMath.fmt(row.jank), row.front, row.screen, row.battery, if (row.pssMb > 0) row.pssMb.toString() else "-", row.folds))
         }
-        sb.append("\nThese numbers are Folio's own view of itself. Android's own account is `dumpsys batterystats`; see tools/perf-capture.sh.\n")
+        sb.append("\nThese numbers are Twofold's own view of itself. Android's own account is `dumpsys batterystats`; see tools/perf-capture.sh.\n")
         sb.append("Nothing in this report left the phone unless you shared it.\n")
         return sb.toString()
     }
