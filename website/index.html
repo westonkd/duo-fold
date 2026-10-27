@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Twofold: Foldable Launcher · A calm Home screen for Android foldables</title>
+    <meta name="description" content="Twofold is a calm, glassy Home screen launcher for Android foldables like the Galaxy Z Fold8, with a Side Bar, an App Library, real folders and no ads or tracking. Get it on Google Play." />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" href="/icon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Twofold" />
+    <meta property="og:title" content="Twofold: Foldable Launcher" />
+    <meta property="og:description" content="A calm, glassy Home screen for Android foldables. On Google Play, with no ads, no account and no tracking." />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Twofold on an open foldable and its cover screen, beside the words Home, made for the fold." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="google-play-app" content="app-id=com.westonkd.folio" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "MobileApplication",
+        "name": "Twofold: Foldable Launcher",
+        "alternateName": "Twofold",
+        "description": "A calm, glassy Home screen launcher for Android foldables, phones and tablets, with a Side Bar, an App Library, real folders, widget stacks and search.",
+        "operatingSystem": "Android 12 or later",
+        "applicationCategory": "UtilitiesApplication",
+        "installUrl": "https://play.google.com/store/apps/details?id=com.westonkd.folio",
+        "author": { "@type": "Person", "name": "Weston Dransfield" },
+        "license": "https://opensource.org/license/mit"
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Which phones does Twofold work on?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Twofold was made first for the Galaxy Z Fold8 and works on other Android foldables, phones and tablets running Android 12 or later." }
+          },
+          {
+            "@type": "Question",
+            "name": "How much does Twofold cost?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Twofold is a one-time purchase on Google Play, with no ads, subscriptions or in-app purchases. The source code is MIT licensed, so you can also build it yourself for free." }
+          },
+          {
+            "@type": "Question",
+            "name": "What permissions does it need?",
+            "acceptedAnswer": { "@type": "Answer", "text": "None to get started. Notification access adds badges, the gestures service opens notifications and Quick Settings from Home, usage access improves suggestions, and contacts and calendar power search and the Up Next widget. Each one is explained before you grant it." }
+          },
+          {
+            "@type": "Question",
+            "name": "Does it replace my lock screen or notifications?",
+            "acceptedAnswer": { "@type": "Answer", "text": "No. Twofold is your Home screen only. Android keeps the lock screen, recents, notifications and Quick Settings." }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I switch back to my old Home screen?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Open Android's Settings, go to Apps, then Default apps, and choose another Home app. Your Twofold layout stays put if you come back." }
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#top">Skip to content</a>
+    <header class="bar">
+      <nav class="bar__inner" aria-label="Main">
+        <a class="bar__brand" href="/">
+          <img src="./src/images/icon-56.png" alt="" width="28" height="28" />
+          <span>Twofold</span>
+        </a>
+        <div class="bar__links">
+          <a href="#features">Features</a>
+          <a href="#privacy">Privacy</a>
+          <a href="#faq">FAQ</a>
+          <a class="bar__cta" href="https://play.google.com/store/apps/details?id=com.westonkd.folio">Get it on Google Play</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero__copy">
+          <p class="eyebrow">Twofold: Foldable Launcher</p>
+          <h1 id="hero-title">Home, made for <br />the fold.</h1>
+          <p class="lede">The two-panel Home screen from all those concept renders, on the foldable you already own. Made first for the Galaxy Z Fold8, and just as at home on phones and tablets.</p>
+          <div class="actions">
+            <a class="badge" href="https://play.google.com/store/apps/details?id=com.westonkd.folio">
+              <svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true"><path d="M4 3v22l19-11z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" /></svg>
+              <span class="badge__text"><span class="badge__small">Get it on</span><span class="badge__big">Google Play</span></span>
+            </a>
+            <a class="more" href="#features">See what's inside</a>
+          </div>
+          <p class="fineprint">One purchase · No ads · No account · Open source</p>
+        </div>
+        <div class="hero__devices">
+          <div class="device device--open">
+            <img
+              src="./src/images/home-open-1800.webp"
+              srcset="./src/images/home-open-960.webp 960w, ./src/images/home-open-1800.webp 1800w"
+              sizes="(min-width: 1124px) 929px, 86vw"
+              width="1800"
+              height="1359"
+              fetchpriority="high"
+              alt="Twofold Home screen on an open Galaxy Z Fold8: a clock and date, a folder, a grid of apps with widgets above, and the Side Bar dock along the right edge"
+            />
+          </div>
+          <div class="device device--cover">
+            <img
+              src="./src/images/home-cover-640.webp"
+              srcset="./src/images/home-cover-360.webp 360w, ./src/images/home-cover-640.webp 640w"
+              sizes="(min-width: 1124px) 292px, 27vw"
+              width="640"
+              height="1011"
+              alt="Twofold on the Galaxy Z Fold8 cover screen with clock and date widgets, an app grid and the Side Bar dock"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section id="features" class="band band--gray" aria-labelledby="features-title">
+        <div class="wrap">
+          <h2 id="features-title">The Home screen you've been picturing.</h2>
+          <div class="tiles">
+            <article class="tile tile--wide tile--shot">
+              <h3>The Side Bar.</h3>
+              <p>The time, a battery ring and your dock stand in a glass column along the edge, folded or open.</p>
+              <img class="is-right" src="./src/images/home-cover-640.webp" width="640" height="1011" loading="lazy" alt="The Side Bar on the cover screen: the time, a battery ring and a vertical dock of phone, browser, messages and music apps beside the app grid" />
+            </article>
+            <article class="tile tile--mid tile--shot">
+              <h3>The App Library.</h3>
+              <p>Every app, sorted into categories for you, with search at the top. No drawer to tidy.</p>
+              <img src="./src/images/library-cover-640.webp" width="640" height="1011" loading="lazy" alt="The App Library: apps grouped into Suggestions, Utilities, Productivity and Finance, and Photo and Video, under a search field" />
+            </article>
+            <article class="tile">
+              <svg class="tile__icon" viewBox="0 0 44 44" aria-hidden="true"><rect x="7" y="7" width="30" height="30" rx="9" /><path d="M12 16a5 5 0 0 1 5-5" /><path d="M32 28a5 5 0 0 1-5 5" /></svg>
+              <h3>Glass that catches the light.</h3>
+              <p>Frosted panels lit from one light above Home, edges that glint on two corners, and icons with real depth.</p>
+            </article>
+            <article class="tile">
+              <svg class="tile__icon" viewBox="0 0 44 44" aria-hidden="true"><rect x="9" y="15" width="26" height="22" rx="6" /><path d="M13 10h18" /><path d="M17 5h10" /></svg>
+              <h3>Widgets in stacks.</h3>
+              <p>Swipe through a stack in place, pick Small, Medium or Large from the gallery, and keep a whole page of widgets beside Home.</p>
+            </article>
+            <article class="tile">
+              <svg class="tile__icon" viewBox="0 0 44 44" aria-hidden="true"><rect x="13" y="13" width="18" height="18" rx="5" transform="rotate(-10 22 22)" /><path d="M7 17c-2 3-2 7 0 10" /><path d="M37 17c2 3 2 7 0 10" /></svg>
+              <h3>Press, hold, wiggle.</h3>
+              <p>Hold Home and the icons start to wiggle. Drag them anywhere, drop one on another to make a folder, and tap + for widgets.</p>
+            </article>
+            <article class="tile tile--wide">
+              <svg class="tile__icon" viewBox="0 0 44 44" aria-hidden="true"><path d="M22 8v28M8 10h12v24H8zM24 10h12v24H24z" /></svg>
+              <h3>Lands like a page.</h3>
+              <p>Open your foldable flat or close it, and Home settles like the page of a book: a small bounce at the hinge and a soft tap. Both screens share one layout.</p>
+            </article>
+            <article class="tile tile--mid tile--shot">
+              <h3>Search, one swipe away.</h3>
+              <p>Swipe down or tap the round button for apps, contacts, settings, quick math and the web.</p>
+              <img src="./src/images/search-cover-640.webp" width="640" height="1011" loading="lazy" alt="Search showing Maps as the top hit for the letters ma, with Gmail, Camera and Messages below" />
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="band band--center" aria-labelledby="calm-title">
+        <div class="wrap">
+          <h2 id="calm-title">Even Settings <br />looks the part.</h2>
+          <p class="lede">Light, grouped and short. The same corners and springs run through every screen, and where a choice can be made once, Twofold makes it, so Settings fits on five pages.</p>
+          <div class="device device--wide">
+            <img
+              src="./src/images/settings-open-1800.webp"
+              srcset="./src/images/settings-open-960.webp 960w, ./src/images/settings-open-1800.webp 1800w"
+              sizes="(min-width: 1124px) 1080px, 100vw"
+              width="1800"
+              height="1359"
+              loading="lazy"
+              alt="Twofold settings on the open foldable: five pages named Home, Search, Gestures, Fold and General, with the Fold page showing the Page Landing animation switch"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section id="privacy" class="band band--gray" aria-labelledby="privacy-title">
+        <div class="wrap">
+          <div class="intro">
+            <svg class="shield" viewBox="0 0 48 56" aria-hidden="true"><path d="M24 4L6 11v14c0 13 7.7 22.5 18 27 10.3-4.5 18-14 18-27V11z" /><path d="M16 28l6 6 11-12" /></svg>
+            <h2 id="privacy-title">Your Home stays on your phone.</h2>
+            <p class="lede">Twofold doesn't ask Android for internet access at all. Your layout, settings and suggestions never leave the device.</p>
+          </div>
+          <div class="facts">
+            <div class="fact">
+              <h3>No account.</h3>
+              <p>Install it, set it as Home, done. Nothing to sign in to.</p>
+            </div>
+            <div class="fact">
+              <h3>No ads or analytics.</h3>
+              <p>Nothing is tracked, counted or sold.</p>
+            </div>
+            <div class="fact">
+              <h3>Permissions, explained.</h3>
+              <p>Every optional permission says what it's for before you grant it. Twofold works without any of them.</p>
+            </div>
+          </div>
+          <a class="more" href="/privacy">Read the privacy policy</a>
+        </div>
+      </section>
+
+      <section class="band" aria-labelledby="oss-title">
+        <div class="wrap split">
+          <div class="split__main">
+            <h2 id="oss-title">Open source, too.</h2>
+            <p class="lede">Every line of Twofold is on GitHub under the MIT license. Buying it on Google Play gets you signed builds and updates; building it yourself is free.</p>
+          </div>
+          <a class="more split__side" href="https://github.com/westonkd/folio">View the source on GitHub</a>
+        </div>
+      </section>
+
+      <section id="faq" class="band band--gray" aria-labelledby="faq-title">
+        <div class="wrap wrap--narrow">
+          <h2 id="faq-title">Questions.</h2>
+          <div class="faq">
+            <details>
+              <summary>Which phones does Twofold work on?</summary>
+              <p>Twofold was made first for the Galaxy Z Fold8 and works on other Android foldables, phones and tablets running Android 12 or later.</p>
+            </details>
+            <details>
+              <summary>How much does Twofold cost?</summary>
+              <p>Twofold is a one-time purchase on Google Play, with no ads, subscriptions or in-app purchases. The source code is MIT licensed, so you can also build it yourself for free.</p>
+            </details>
+            <details>
+              <summary>What permissions does it need?</summary>
+              <p>None to get started. Notification access adds badges, the gestures service opens notifications and Quick Settings from Home, usage access improves suggestions, and contacts and calendar power search and the Up Next widget. Each one is explained before you grant it. <a href="/permissions">See every permission</a>.</p>
+            </details>
+            <details>
+              <summary>Does it replace my lock screen or notifications?</summary>
+              <p>No. Twofold is your Home screen only. Android keeps the lock screen, recents, notifications and Quick Settings.</p>
+            </details>
+            <details>
+              <summary>How do I switch back to my old Home screen?</summary>
+              <p>Open Android's Settings, go to Apps, then Default apps, and choose another Home app. Your Twofold layout stays put if you come back.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="band band--center cta" aria-labelledby="cta-title">
+        <div class="wrap">
+          <img class="cta__icon" src="./src/images/icon-224.png" alt="Twofold app icon" width="112" height="112" loading="lazy" />
+          <h2 id="cta-title">Give your fold a calmer Home.</h2>
+          <a class="badge" href="https://play.google.com/store/apps/details?id=com.westonkd.folio">
+            <svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true"><path d="M4 3v22l19-11z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" /></svg>
+            <span class="badge__text"><span class="badge__small">Get it on</span><span class="badge__big">Google Play</span></span>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        <nav class="footer__links" aria-label="Footer">
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/permissions">Permissions</a>
+          <a href="https://github.com/westonkd/folio">Source Code</a>
+          <a href="https://play.google.com/store/apps/details?id=com.westonkd.folio">Google Play</a>
+        </nav>
+        <p>Google Play and the Google Play logo are trademarks of Google LLC. Android is a trademark of Google LLC. Samsung and Galaxy are trademarks of Samsung Electronics Co., Ltd. Twofold is not affiliated with Google or Samsung.</p>
+        <p>Built on the open source work of McCal and jakesgoodapps.</p>
+        <p>Copyright © 2026 Weston Dransfield. Twofold is released under the MIT license.</p>
+      </div>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
