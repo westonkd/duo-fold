@@ -98,15 +98,15 @@ Sensitive permissions and APIs › Accessibility API:
   the user turns those on. It subscribes to no accessibility events, cannot retrieve window content
   (canRetrieveWindowContent=false), and collects or shares no data."
 - **Personal and sensitive data:** none accessed through the API.
-- **Video:** Play wants a link (an unlisted YouTube video works). One recorded from the release build on the Fold8
-  emulator, installed as if from Play, is at `artifacts/play/folio-accessibility-declaration.mp4` (git-ignored, so
-  only on the machine that made it). To record it again:
-  1. Open Twofold, Settings › General › Privacy & Permissions › Gestures service.
-  2. Show the Turn On Twofold Gestures disclosure, scroll it, tap **Agree**.
-  3. Turn on "Twofold gestures & overlays" in Android's Accessibility settings and accept Android's dialog.
-  4. Back on Home, swipe down from the top right: Quick Settings opens. Swipe down on Home with the setting set to
-     Notifications: the shade opens.
-  5. Turn on Big Buttons in Settings › Gestures and show them over another app.
+- **Video:** Play wants a link (an unlisted YouTube video works). One recorded on 26 Oct 2026 from the release
+  build with the Twofold icon and name, on the Fold8 emulator, is at
+  `artifacts/play/twofold-accessibility-declaration.mp4` (84 seconds, git-ignored, so only on the machine that made
+  it; the older `folio-accessibility-declaration.mp4` beside it still shows the Folio name, don't use it). It shows:
+  1. Twofold's Settings › General › Privacy & Permissions › Gestures Service.
+  2. The Turn On Twofold Gestures disclosure, then **Agree**.
+  3. "Twofold gestures & overlays" turned on in Android's Accessibility settings, and Android's dialog accepted.
+  4. Settings › Gestures › Swipe Down on Home set to Notifications, then a swipe down on Home opening the shade.
+  5. Big Buttons turned on in Settings › Gestures and shown over Android's Settings app.
 
 ### Permissions Play may ask about
 
