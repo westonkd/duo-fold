@@ -11,6 +11,7 @@ Folio shows the newest section on the phone after an update, and every version u
 - **A new widget gallery:** tap + while editing Home and the gallery slides up over Home with every app that has widgets. Choose one to swipe through its widgets at the size they'll be on Home, pick Small, Medium or Large, and tap Add Widget to put it in the first free spot. Unfolded, the apps and their widgets sit side by side, and Twofold's own widgets show what they really look like.
 
 ### Changed
+- **A new app icon:** Twofold's icon is now two glass panels opening on a sunset gradient, the same one you see on Google Play and the website.
 - **Brighter glass edges:** glass in Twofold now catches the light on two opposite corners so the App Library, folders, the dock and menus stand out more clearly from the wallpaper.
 - **App Library search:** the search field is taller and clearer, and its magnifier and "App Library" sit in the middle until you tap it.
 - **Search matches the App Library:** the search field at the top of Search is the same light glass capsule as the App Library's, instead of a dark one.

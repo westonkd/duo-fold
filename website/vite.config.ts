@@ -4,7 +4,7 @@ import { Marked, type Tokens } from 'marked'
 import { defineConfig, type Plugin } from 'vite'
 
 const repoRoot = resolve(import.meta.dirname, '..')
-const repoBlob = 'https://github.com/westonkd/folio/blob/main/'
+const repoBlob = 'https://github.com/westonkd/duo-fold/blob/main/'
 const sitePages: Record<string, string> = {
   'PRIVACY.md': '/privacy',
   'PERMISSIONS.md': '/permissions',

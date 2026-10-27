@@ -26,23 +26,42 @@ and on your machine.
 
 ## 2. Upload key and the bundle
 
-Play App Signing holds the key users' phones trust; you keep an **upload key**. Make it once, keep it and its
-passwords outside the repository (`.gitignore` already refuses `*.jks`), and back it up.
+Play App Signing holds the key users' phones trust; you keep an **upload key**. Keep it and its passwords outside
+the repository (`.gitignore` already refuses `*.jks`), and back both files up somewhere other than this machine.
+
+The upload key is already made: `~/keys/folio-upload.jks` (alias `folio-upload`, RSA 4096, SHA-256
+`A3:B5:91:D2:FD:BC:BE:1E:94:3A:84:B6:70:67:63:64:2D:0E:37:32:4F:6E:C8:B7:1B:85:BB:ED:ED:AF:D1:D5`), with its
+passwords in `~/keys/folio-upload.env`. To make a new one instead:
 
 ```bash
 keytool -genkeypair -v -keystore ~/keys/folio-upload.jks -alias folio-upload -keyalg RSA -keysize 4096 -validity 10000
 ```
 
-Build the bundle from a clean `main`:
+Build the bundle from a clean, up-to-date `main`:
 
 ```bash
-FOLIO_RELEASE_STORE_FILE=~/keys/folio-upload.jks FOLIO_RELEASE_KEY_ALIAS=folio-upload \
-FOLIO_RELEASE_STORE_PASSWORD=... FOLIO_RELEASE_KEY_PASSWORD=... bash tools/build-play-bundle.sh
+set -a; source ~/keys/folio-upload.env; set +a; bash tools/build-play-bundle.sh
 ```
 
 The script refuses a dirty tree, runs the unit tests and release lint, builds
 `app/build/outputs/bundle/release/app-release.aab`, and checks the package, version and signer. The first upload
 in Play Console asks to enroll in Play App Signing: accept Google-generated app signing key.
+
+## 2a. Create the app and get paid
+
+Twofold is a one-time purchase. Play only lets a paid app become free later, never a free one become paid, so
+choose Paid when you create it.
+
+- [ ] **Create app** (Play Console › Home › Create app): App name `Twofold: Foldable Launcher`, default language
+  English (United States), App, **Paid**. Accept the Developer Program Policies and US export laws declarations.
+- [ ] **Payments profile** (Play Console › Settings › Payments profile, or Monetize with Play › Overview): create or
+  link one, add a bank account and fill in the tax forms. A paid app can't be priced until this is done, and Google
+  verifies the bank account, which can take a few days, so start it first.
+- [ ] **Price** (Monetize with Play › App pricing): set it in USD and let Play convert it for other countries. The price
+  applies to the closed test too: testers have to buy the app unless their Google accounts are license testers
+  (Settings › License testing), who check out with a test card and aren't charged. Add the 12 testers there.
+- [ ] **Store settings** (Grow users › Store presence › Store settings): category **Personalization**, contact email (shown
+  publicly), website <https://github.com/westonkd/duo-fold> until the Twofold website has its own domain.
 
 ## 3. App content (Policy › App content)
 
@@ -104,7 +123,8 @@ taken from the release build on the emulator. The changelog for this version is 
 Keep the listing free of Apple's names (iPhone, iOS, iPad, Spotlight, Dynamic Island, Liquid Glass): Play's
 metadata and impersonation policies are strict about other companies' trademarks, and a rejection costs days.
 
-Contact details: an email address is required and shown publicly. The website can be the GitHub repository.
+Contact details are under Store settings, see 2a. The feature graphic and store icon use the Twofold icon from
+`website/brand/`, the same artwork as the launcher icon.
 
 ## 5. Tracks
 
