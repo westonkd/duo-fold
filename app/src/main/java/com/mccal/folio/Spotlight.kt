@@ -250,7 +250,7 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
                 // The whole capsule is the tap target, not just the text line.
                 Modifier.weight(1f).clickable(remember { MutableInteractionSource() }, null) { fieldScope.launch { raiseKeyboard() } },
                 fieldModifier = Modifier.focusRequester(focus).onFocusChanged { fieldFocused = it.isFocused }.testTag("spotlight-field"),
-                ink = Color.White, glass = true, darkGlass = true, minHeight = 48.dp, onSearch = {
+                ink = ink.primary, glass = true, onSearch = {
                     when {
                         appHits.isNotEmpty() -> launch(appHits.first())
                         q.isNotEmpty() -> { onClose(); openEnterSearch(context, state, q) }

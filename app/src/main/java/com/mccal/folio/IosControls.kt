@@ -81,7 +81,7 @@ internal fun IosChip(selected: Boolean, onClick: () -> Unit, label: @Composable 
 /** iOS search field: frosted rounded capsule, magnifier, placeholder and a clear button. */
 @Composable
 internal fun IosSearchField(query: String, onQuery: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier,
-    fieldModifier: Modifier = Modifier, ink: Color = if (LocalLightSheet.current) FolioColors.LightLabel else Color.White, glass: Boolean = false, darkGlass: Boolean = false,
+    fieldModifier: Modifier = Modifier, ink: Color = if (LocalLightSheet.current) FolioColors.LightLabel else Color.White, glass: Boolean = false,
     minHeight: androidx.compose.ui.unit.Dp = if (glass) GLASS_SEARCH_HEIGHT.dp else 40.dp, onSearch: (() -> Unit)? = null) {
     // 40 dp at the normal text size, taller only when larger text needs it (A11Y-12). The row is as tall as its
     // content (IntrinsicSize.Min), so the clear button's fillMaxHeight fills the field, not the space around it.
@@ -101,7 +101,6 @@ internal fun IosSearchField(query: String, onQuery: (String) -> Unit, placeholde
     }
     val slide = Modifier.graphicsLayer { translationX = restShift * centered }
     Row(modifier.fillMaxWidth().clip(fieldShape).then(when {
-            darkGlass -> Modifier.liquidGlass(fieldShape, SEARCH_DARK_FROST, GlassRole.SEARCH, FolioColors.SearchGlass)
             glass -> Modifier.liquidGlass(fieldShape, LIBRARY_TILE_FROST, GlassRole.SEARCH)
             LocalLightSheet.current -> Modifier.background(FolioColors.LightFill)
             else -> Modifier.background(ink.copy(alpha = SEARCH_FIELD_FROST))
