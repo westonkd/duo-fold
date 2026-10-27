@@ -13,6 +13,12 @@ Folio shows the newest section on the phone after an update, and every version u
 - **Search matches the App Library:** the search field at the top of Search is the same light glass capsule as the App Library's, instead of a dark one.
 - **Settings sidebar:** unfolded, the Settings list sits right on the background, and the open page is marked with a soft grey capsule instead of a teal highlight. On the cover screen, the lines between rows start at the row's name.
 
+### Fixed
+- **A full dock on any phone:** the first time Folio starts, the dock and Home get your phone, browser, messages and music apps, and the usual everyday apps, whoever made the phone. Before, Folio only knew Samsung's and Google's apps.
+- **Fold settings only on foldables:** Settings › Fold, with Page Landing, shows only on a phone that folds. Stay Awake on the Cover Screen shows only on Samsung foldables, the phones that need it.
+- **Cloned apps:** a second copy of an app is labelled Clone under its name, Android's own word for it.
+- **Notes that fit every phone:** the wallpaper and navigation notes in Settings no longer point to Samsung's menus.
+
 ## [1.0.0] - 2026-10-26
 
 ### Added

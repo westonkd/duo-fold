@@ -124,6 +124,8 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
 ) {
     var wide by rememberSaveable { mutableStateOf(initiallyWide) }
     var namingBackup by remember { mutableStateOf(false) }
+    val sheetContext = androidx.compose.ui.platform.LocalContext.current
+    val foldable = remember { sheetContext.hasHinge() } || LocalHinge.current != null
     // Reopening Settings lands where it was, scrolled the same. Back lands where the list was left; any other page
     // opens at its top.
     val scroll = remember { SettingsScroll(page, SettingsMemory.bodyScroll) }
@@ -149,8 +151,10 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         between()
                         TweakRow(Icons.Rounded.Gesture, FolioColors.Value.Teal, stringResource(R.string.gestures), "customization-gestures", selected = pick(CustomizationPage.GESTURES), chevron = !sidebar) { onPage(CustomizationPage.GESTURES) }
                         between()
-                        TweakRow(Icons.Rounded.Devices, FolioColors.Value.Pink, stringResource(R.string.fold), "customization-fold", selected = pick(CustomizationPage.FOLD), chevron = !sidebar) { onPage(CustomizationPage.FOLD) }
-                        between()
+                        if (foldable) {
+                            TweakRow(Icons.Rounded.Devices, FolioColors.Value.Pink, stringResource(R.string.fold), "customization-fold", selected = pick(CustomizationPage.FOLD), chevron = !sidebar) { onPage(CustomizationPage.FOLD) }
+                            between()
+                        }
                         TweakRow(Icons.Rounded.Settings, FolioColors.Value.Gray, stringResource(R.string.general), "customization-general", selected = pick(CustomizationPage.GENERAL), chevron = !sidebar) { onPage(CustomizationPage.GENERAL) }
                     }
     }
@@ -327,7 +331,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                         SettingsSwitch(stringResource(R.string.page_landing), state.foldEffect, model::setFoldEffect, "duet-switch")
                         CardNote(stringResource(R.string.page_landing_detail))
                     }
-                    SettingsCard(stringResource(R.string.closing_from_home)) {
+                    if (FoldBridgeActivity.needed) SettingsCard(stringResource(R.string.closing_from_home)) {
                         SettingsSwitch(stringResource(R.string.stay_awake_on_the_cover_screen), state.stayAwakeOnFold, model::setStayAwakeOnFold, "fold-awake-switch")
                         CardNote(stringResource(R.string.samsung_locks_the_phone_when_you_fold_on))
                     }
