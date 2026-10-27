@@ -36,7 +36,7 @@ internal fun folioIconBitmap(context: android.content.Context, size: Int = 216):
     runCatching<androidx.compose.ui.graphics.ImageBitmap> {
         android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888).also { bitmap ->
             val canvas = android.graphics.Canvas(bitmap)
-            listOf(R.drawable.folio_icon_teal_background, R.drawable.ic_launcher_foreground).mapNotNull(context::getDrawable).forEach { layer ->
+            listOf(R.drawable.twofold_icon_background, R.drawable.ic_launcher_foreground).mapNotNull(context::getDrawable).forEach { layer ->
                 // Adaptive layers are 108dp with the visible icon in the middle 72dp.
                 layer.setBounds(-size / 4, -size / 4, size * 5 / 4, size * 5 / 4); layer.draw(canvas)
             }

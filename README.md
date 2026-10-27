@@ -58,7 +58,7 @@ Then pick Folio Dev as the Home app in Settings › Apps › Default apps.
 ## Release
 
 Play releases are built with `tools/build-play-bundle.sh` from a clean `main`. The store listing lives in
-`fastlane/metadata/android/en-US/`, and [docs/releases/play-1.0.0.md](docs/releases/play-1.0.0.md) is the runbook:
+`fastlane/metadata/android/en-US/`, and [docs/releases/play-launch.md](docs/releases/play-launch.md) is the runbook:
 signing, Play Console's forms, and the testing tracks.
 
 ## Licence and credits

@@ -1,4 +1,4 @@
-# Twofold 1.0.0 on Google Play
+# Twofold on Google Play: the first release
 
 The runbook for Twofold's first Play release, written before the build ([REL-26](../standards/releases.md)). The
 repository side is done in the pull requests that added this file; everything below is what happens in Play Console
@@ -26,23 +26,42 @@ and on your machine.
 
 ## 2. Upload key and the bundle
 
-Play App Signing holds the key users' phones trust; you keep an **upload key**. Make it once, keep it and its
-passwords outside the repository (`.gitignore` already refuses `*.jks`), and back it up.
+Play App Signing holds the key users' phones trust; you keep an **upload key**. Keep it and its passwords outside
+the repository (`.gitignore` already refuses `*.jks`), and back both files up somewhere other than this machine.
+
+The upload key is already made: `~/keys/folio-upload.jks` (alias `folio-upload`, RSA 4096, SHA-256
+`A3:B5:91:D2:FD:BC:BE:1E:94:3A:84:B6:70:67:63:64:2D:0E:37:32:4F:6E:C8:B7:1B:85:BB:ED:ED:AF:D1:D5`), with its
+passwords in `~/keys/folio-upload.env`. To make a new one instead:
 
 ```bash
 keytool -genkeypair -v -keystore ~/keys/folio-upload.jks -alias folio-upload -keyalg RSA -keysize 4096 -validity 10000
 ```
 
-Build the bundle from a clean `main`:
+Build the bundle from a clean, up-to-date `main`:
 
 ```bash
-FOLIO_RELEASE_STORE_FILE=~/keys/folio-upload.jks FOLIO_RELEASE_KEY_ALIAS=folio-upload \
-FOLIO_RELEASE_STORE_PASSWORD=... FOLIO_RELEASE_KEY_PASSWORD=... bash tools/build-play-bundle.sh
+set -a; source ~/keys/folio-upload.env; set +a; bash tools/build-play-bundle.sh
 ```
 
 The script refuses a dirty tree, runs the unit tests and release lint, builds
 `app/build/outputs/bundle/release/app-release.aab`, and checks the package, version and signer. The first upload
 in Play Console asks to enroll in Play App Signing: accept Google-generated app signing key.
+
+## 2a. Create the app and get paid
+
+Twofold is a one-time purchase. Play only lets a paid app become free later, never a free one become paid, so
+choose Paid when you create it.
+
+- [ ] **Create app** (Play Console › Home › Create app): App name `Twofold: Foldable Launcher`, default language
+  English (United States), App, **Paid**. Accept the Developer Program Policies and US export laws declarations.
+- [ ] **Payments profile** (Play Console › Settings › Payments profile, or Monetize with Play › Overview): create or
+  link one, add a bank account and fill in the tax forms. A paid app can't be priced until this is done, and Google
+  verifies the bank account, which can take a few days, so start it first.
+- [ ] **Price** (Monetize with Play › App pricing): set it in USD and let Play convert it for other countries. The price
+  applies to the closed test too: testers have to buy the app unless their Google accounts are license testers
+  (Settings › License testing), who check out with a test card and aren't charged. Add the 12 testers there.
+- [ ] **Store settings** (Grow users › Store presence › Store settings): category **Personalization**, contact email (shown
+  publicly), website <https://github.com/westonkd/duo-fold> until the Twofold website has its own domain.
 
 ## 3. App content (Policy › App content)
 
@@ -79,15 +98,15 @@ Sensitive permissions and APIs › Accessibility API:
   the user turns those on. It subscribes to no accessibility events, cannot retrieve window content
   (canRetrieveWindowContent=false), and collects or shares no data."
 - **Personal and sensitive data:** none accessed through the API.
-- **Video:** Play wants a link (an unlisted YouTube video works). One recorded from the release build on the Fold8
-  emulator, installed as if from Play, is at `artifacts/play/folio-accessibility-declaration.mp4` (git-ignored, so
-  only on the machine that made it). To record it again:
-  1. Open Twofold, Settings › General › Privacy & Permissions › Gestures service.
-  2. Show the Turn On Twofold Gestures disclosure, scroll it, tap **Agree**.
-  3. Turn on "Twofold gestures & overlays" in Android's Accessibility settings and accept Android's dialog.
-  4. Back on Home, swipe down from the top right: Quick Settings opens. Swipe down on Home with the setting set to
-     Notifications: the shade opens.
-  5. Turn on Big Buttons in Settings › Gestures and show them over another app.
+- **Video:** Play wants a link (an unlisted YouTube video works). One recorded on 26 Oct 2026 from the release
+  build with the Twofold icon and name, on the Fold8 emulator, is at
+  `artifacts/play/twofold-accessibility-declaration.mp4` (84 seconds, git-ignored, so only on the machine that made
+  it; the older `folio-accessibility-declaration.mp4` beside it still shows the Folio name, don't use it). It shows:
+  1. Twofold's Settings › General › Privacy & Permissions › Gestures Service.
+  2. The Turn On Twofold Gestures disclosure, then **Agree**.
+  3. "Twofold gestures & overlays" turned on in Android's Accessibility settings, and Android's dialog accepted.
+  4. Settings › Gestures › Swipe Down on Home set to Notifications, then a swipe down on Home opening the shade.
+  5. Big Buttons turned on in Settings › Gestures and shown over Android's Settings app.
 
 ### Permissions Play may ask about
 
@@ -104,7 +123,8 @@ taken from the release build on the emulator. The changelog for this version is 
 Keep the listing free of Apple's names (iPhone, iOS, iPad, Spotlight, Dynamic Island, Liquid Glass): Play's
 metadata and impersonation policies are strict about other companies' trademarks, and a rejection costs days.
 
-Contact details: an email address is required and shown publicly. The website can be the GitHub repository.
+Contact details are under Store settings, see 2a. The feature graphic and store icon use the Twofold icon from
+`website/brand/`, the same artwork as the launcher icon.
 
 ## 5. Tracks
 

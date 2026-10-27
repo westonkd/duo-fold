@@ -4,7 +4,7 @@ cd "$(git rev-parse --show-toplevel)"
 
 for name in FOLIO_RELEASE_STORE_FILE FOLIO_RELEASE_STORE_PASSWORD FOLIO_RELEASE_KEY_ALIAS FOLIO_RELEASE_KEY_PASSWORD; do
     if [[ -z "${!name:-}" ]]; then
-        echo "Set $name first. See docs/releases/play-1.0.0.md." >&2
+        echo "Set $name first. See docs/releases/play-launch.md." >&2
         exit 1
     fi
 done
@@ -39,7 +39,7 @@ if [[ "$version" == *-* ]]; then
     echo "Warning: $version is a pre-release name. Play shows it to testers as is." >&2
 fi
 if grep -q 'android\.permission\.INTERNET' <<< "$manifest"; then
-    echo "The bundle asks for INTERNET. The Data safety answers in docs/releases/play-1.0.0.md assume it doesn't." >&2
+    echo "The bundle asks for INTERNET. The Data safety answers in docs/releases/play-launch.md assume it doesn't." >&2
     exit 1
 fi
 if unzip -p "$bundle" base/assets/CHANGELOG.md | grep -q '^## Before Google Play'; then
