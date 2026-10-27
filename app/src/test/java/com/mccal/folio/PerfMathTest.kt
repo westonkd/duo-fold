@@ -108,8 +108,8 @@ class PerfMathTest {
         val h = FrameHistogram().apply { repeat(10) { record(5_000_000, false) }; record(30_000_000, true) }
         val s = (0..40).map { i -> sample(i * 5_000L, cpuMs = i * 250L, battery = 80, frames = 11, janky = 1, front = i * 2_500L, screen = i * 5_000L, pss = 200_000 + i, folds = if (i > 20) 1 else 0) }
         val text = PerfReport.build(header, s, h)
-        listOf("Folio performance report", "Duration: 3 min 20 s", "Average: 5.0 %", "Peak over one reading: 5.0 %", "Drain: not estimated, the run is shorter",
-            "Total: 11, janky", "p50", "p95", "p99", "Peak PSS", "Folio in front 50 %", "fold or unfold seen 1 times", "Per minute", "batterystats").forEach {
+        listOf("Twofold performance report", "Duration: 3 min 20 s", "Average: 5.0 %", "Peak over one reading: 5.0 %", "Drain: not estimated, the run is shorter",
+            "Total: 11, janky", "p50", "p95", "p99", "Peak PSS", "Twofold in front 50 %", "fold or unfold seen 1 times", "Per minute", "batterystats").forEach {
             assertTrue("missing: $it\n$text", text.contains(it))
         }
         assertFalse(text.contains('—'))

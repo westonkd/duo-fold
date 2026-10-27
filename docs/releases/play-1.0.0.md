@@ -1,6 +1,6 @@
-# Folio 1.0.0 on Google Play
+# Twofold 1.0.0 on Google Play
 
-The runbook for Folio's first Play release, written before the build ([REL-26](../standards/releases.md)). The
+The runbook for Twofold's first Play release, written before the build ([REL-26](../standards/releases.md)). The
 repository side is done in the pull requests that added this file; everything below is what happens in Play Console
 and on your machine.
 
@@ -50,7 +50,7 @@ in Play Console asks to enroll in Play App Signing: accept Google-generated app 
 |---|---|
 | Privacy policy | The URL above |
 | Ads | No ads |
-| App access | All functionality is available without special access. Note for reviewers: "Folio is a Home screen. Open it, tap Use as Home, and choose Folio. No account or login." |
+| App access | All functionality is available without special access. Note for reviewers: "Twofold is a Home screen. Open it, tap Use as Home, and choose Twofold. No account or login." |
 | Content rating (IARC) | Category: Utility, Productivity, Communication or Other. Answer No to violence, sexuality, language, controlled substances, gambling, user interaction/chat, sharing location, digital purchases. Expect Everyone / PEGI 3 |
 | Target audience | 13 and over (all three adult ranges). Not designed for children, so the Families policy doesn't apply |
 | News app | No |
@@ -61,7 +61,7 @@ in Play Console asks to enroll in Play App Signing: accept Google-generated app 
 ### Data safety
 
 - Does your app collect or share any of the required user data types? **No.**
-- Why that's true: Folio has no `INTERNET` permission, so nothing leaves the phone by itself. Data it reads
+- Why that's true: Twofold has no `INTERNET` permission, so nothing leaves the phone by itself. Data it reads
   (installed apps, notifications, contacts, calendar, usage) is processed on the device only, which Play doesn't
   count as collection. Sharing a problem report is a user-initiated share through Android's share sheet to an app the
   user picks, not to the developer.
@@ -69,10 +69,10 @@ in Play Console asks to enroll in Play App Signing: accept Google-generated app 
 
 ### Accessibility API declaration
 
-Folio's gestures service is not an accessibility tool (`isAccessibilityTool` is unset). Play Console › App content ›
+Twofold's gestures service is not an accessibility tool (`isAccessibilityTool` is unset). Play Console › App content ›
 Sensitive permissions and APIs › Accessibility API:
 
-- **Core functionality:** "Folio is a Home screen. Its optional gestures service lets a swipe down on Home open
+- **Core functionality:** "Twofold is a Home screen. Its optional gestures service lets a swipe down on Home open
   Android's notification shade or Quick Settings, runs system actions the user assigns to gestures and on-screen
   buttons (Home, Back, Recents, close notifications, Android's app drawer, lock screen, screenshot, power menu, split screen, play/pause) through
   performGlobalAction, and shows the user's dock and navigation buttons over other apps as accessibility overlays when
@@ -82,16 +82,16 @@ Sensitive permissions and APIs › Accessibility API:
 - **Video:** Play wants a link (an unlisted YouTube video works). One recorded from the release build on the Fold8
   emulator, installed as if from Play, is at `artifacts/play/folio-accessibility-declaration.mp4` (git-ignored, so
   only on the machine that made it). To record it again:
-  1. Open Folio, Settings › General › Privacy & Permissions › Gestures service.
-  2. Show the Turn On Folio Gestures disclosure, scroll it, tap **Agree**.
-  3. Turn on "Folio gestures & overlays" in Android's Accessibility settings and accept Android's dialog.
+  1. Open Twofold, Settings › General › Privacy & Permissions › Gestures service.
+  2. Show the Turn On Twofold Gestures disclosure, scroll it, tap **Agree**.
+  3. Turn on "Twofold gestures & overlays" in Android's Accessibility settings and accept Android's dialog.
   4. Back on Home, swipe down from the top right: Quick Settings opens. Swipe down on Home with the setting set to
      Notifications: the shade opens.
   5. Turn on Big Buttons in Settings › Gestures and show them over another app.
 
 ### Permissions Play may ask about
 
-None of Folio's permissions are on Play's restricted list (no SMS, call log, all files, `QUERY_ALL_PACKAGES`,
+None of Twofold's permissions are on Play's restricted list (no SMS, call log, all files, `QUERY_ALL_PACKAGES`,
 install packages, background location or exact alarms). `PACKAGE_USAGE_STATS` and notification access are special
 access the user grants in Android's settings, each behind an in-app disclosure.
 
@@ -116,14 +116,14 @@ Contact details: an email address is required and shown publicly. The website ca
 
 ## 5a. Devices
 
-Folio supports phones, foldables and tablets on Android 12 and up. Tested for this release on the emulator, with the
+Twofold supports phones, foldables and tablets on Android 12 and up. Tested for this release on the emulator, with the
 release build, at: Galaxy Z Fold8 inner and cover, Pixel Fold, Pixel 8 (Android 16), a 360 x 640 dp phone, a 320 dp
 wide phone, a square flip cover, 1000 to 1440 dp wide tablets in landscape and portrait, and font scales 1.3 and 2.0.
 Device catalog: nothing needs excluding; Android TV, Wear OS and Automotive don't match the manifest anyway.
 
 ## 6. After it's live
 
-- The Folio Dev build on your phone is `com.mccal.folio.dev` and stays separate. Installing Folio from Play adds a
+- The Twofold Dev build on your phone is `com.mccal.folio.dev` and stays separate. Installing Twofold from Play adds a
   second app; move your layout across with Settings › General › Save Backup, then Restore from Backup in the Play
   build.
 - A Play package name and its signing key are permanent. Losing the upload key is recoverable (Play Console can reset

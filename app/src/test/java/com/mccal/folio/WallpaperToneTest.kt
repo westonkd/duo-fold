@@ -33,10 +33,10 @@ class WallpaperToneTest {
 
     @Test fun `Diagnostics says what Android returned for the wallpaper colors`() {
         val text = Diagnostics.wallpaperReportText(systemWallpaper = true, folioPictureSaved = true, home = listOf(blue, orange, green), lock = null)
-        assertTrue(text, text.contains("behind Home: Android's wallpaper (a Folio picture is saved)"))
+        assertTrue(text, text.contains("behind Home: Android's wallpaper (a Twofold picture is saved)"))
         assertTrue(text, text.contains("Android's colors, home: #1E5AA8 #E07A1F #2E8B57"))
         assertTrue(text, text.contains("Android's colors, lock: none"))
-        assertTrue(Diagnostics.wallpaperReportText(false, false, null, emptyList()).contains("Folio's background (a Folio picture is not saved)"))
+        assertTrue(Diagnostics.wallpaperReportText(false, false, null, emptyList()).contains("Twofold's background (a Twofold picture is not saved)"))
     }
 
     @Test fun `Diagnostics lists the system palette and the theme color source`() {

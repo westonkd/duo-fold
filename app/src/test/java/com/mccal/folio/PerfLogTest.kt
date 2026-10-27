@@ -28,7 +28,7 @@ class PerfLogTest {
         assertTrue("readings: ${status.readings}", status.readings >= 2)
         assertTrue(status.hasReport)
         val text = PerfLog.reportText()
-        assertTrue(text.startsWith("Folio performance report"))
+        assertTrue(text.startsWith("Twofold performance report"))
         assertTrue(text.contains("Per minute"))
     }
 

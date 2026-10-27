@@ -634,7 +634,7 @@ private const val TWEAK_ICON_GAP = 12
 /** What Folio is built from: the code it includes and the licences that ask to be named. */
 @Composable private fun CreditsCard() {
     val credits = listOf(
-        stringResource(R.string.folio) to stringResource(R.string.credit_folio_mccal),
+        stringResource(R.string.credit_folio_title) to stringResource(R.string.credit_folio_mccal),
         stringResource(R.string.duolauncher) to "jakesgoodapps (github.com/jakesgoodapps/DuoLauncher) · MIT · Folio’s starting codebase", // english-only
         "Duo Fold Live" to stringResource(R.string.credit_duo_fold_live), // english-only
         "iphone-duo" to "chuspeeism · MIT · ideas for the fold animation, by way of Duo Fold Live", // english-only

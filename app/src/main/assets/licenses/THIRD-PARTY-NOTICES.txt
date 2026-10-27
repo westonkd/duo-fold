@@ -1,6 +1,6 @@
 Folio was created by McCal (github.com/McCal-Codes/folio) and started from DuoLauncher by jakesgoodapps (github.com/jakesgoodapps/DuoLauncher), both under the MIT License below.
 
-Folio is built with these open source libraries, each under the Apache License 2.0 below:
+Twofold is built with these open source libraries, each under the Apache License 2.0 below:
 
 AndroidX, Jetpack Compose, Material components and icons, and Window Manager
 android.googlesource.com/platform/frameworks/support
@@ -23,6 +23,6 @@ github.com/google/guava
 JSpecify annotations
 github.com/jspecify/jspecify
 
-The two built-in backgrounds are woodblock prints by Utagawa Hiroshige, in the public domain: "Night View of Saruwaka-machi" (1856, Library of Congress) and "Naruto Whirlpools" (1855, National Library of New Zealand). The Dune live wallpaper and the app icon are drawn by Folio itself. App icons and widget content belong to the apps that provide them.
+The two built-in backgrounds are woodblock prints by Utagawa Hiroshige, in the public domain: "Night View of Saruwaka-machi" (1856, Library of Congress) and "Naruto Whirlpools" (1855, National Library of New Zealand). The Dune live wallpaper and the app icon are drawn by Twofold itself. App icons and widget content belong to the apps that provide them.
 
-Google, Android, Samsung and other names mentioned are trademarks of their owners. Folio is not affiliated with them.
+Google, Android, Samsung and other names mentioned are trademarks of their owners. Twofold is not affiliated with them.
