@@ -8,17 +8,17 @@ Folio shows the newest section on the phone after an update, and every version u
 ## [1.0.1] - Unreleased
 
 ### Added
-- **A new widget gallery:** tap + while editing Home and the gallery slides up over Home with every app that has widgets. Choose one to swipe through its widgets at the size they'll be on Home, pick Small, Medium or Large, and tap Add Widget to put it in the first free spot. Unfolded, the apps and their widgets sit side by side, and Folio's own widgets show what they really look like.
+- **A new widget gallery:** tap + while editing Home and the gallery slides up over Home with every app that has widgets. Choose one to swipe through its widgets at the size they'll be on Home, pick Small, Medium or Large, and tap Add Widget to put it in the first free spot. Unfolded, the apps and their widgets sit side by side, and Twofold's own widgets show what they really look like.
 
 ### Changed
-- **Brighter glass edges:** glass in Folio now catches the light on two opposite corners, like the iPhone's, so the App Library, folders, the dock and menus stand out more clearly from the wallpaper.
+- **Brighter glass edges:** glass in Twofold now catches the light on two opposite corners so the App Library, folders, the dock and menus stand out more clearly from the wallpaper.
 - **App Library search:** the search field is taller and clearer, and its magnifier and "App Library" sit in the middle until you tap it.
 - **Search matches the App Library:** the search field at the top of Search is the same light glass capsule as the App Library's, instead of a dark one.
 - **Settings sidebar:** unfolded, the Settings list sits right on the background, and the open page is marked with a soft grey capsule instead of a teal highlight. On the cover screen, the lines between rows start at the row's name.
 
 ### Fixed
 - **Dropping a widget where it doesn't fit:** a widget held out of the gallery and let go where there's no room goes to the next free spot instead of disappearing.
-- **A full dock on any phone:** the first time Folio starts, the dock and Home get your phone, browser, messages and music apps, and the usual everyday apps, whoever made the phone. Before, Folio only knew Samsung's and Google's apps.
+- **A full dock on any phone:** the first time Twofold starts, the dock and Home get your phone, browser, messages and music apps, and the usual everyday apps, whoever made the phone. Before, Twofold only knew Samsung's and Google's apps.
 - **Fold settings only on foldables:** Settings › Fold, with Page Landing, shows only on a phone that folds. Stay Awake on the Cover Screen shows only on Samsung foldables, the phones that need it.
 - **Cloned apps:** a second copy of an app is labelled Clone under its name, Android's own word for it.
 - **Notes that fit every phone:** the wallpaper and navigation notes in Settings no longer point to Samsung's menus.
@@ -26,21 +26,21 @@ Folio shows the newest section on the phone after an update, and every version u
 ## [1.0.0] - 2026-10-26
 
 ### Added
-- **Folio on Google Play:** a calm, two-panel Home screen with a Side Bar, a widgets page, the App Library, search and folders, on the cover screen and unfolded, and Home landing like a page when the phone opens or shuts.
-- **Clear permission requests:** before Folio opens Android's settings for its gestures service, notification access or usage access, it says what that access is for and what it never does, and you choose Agree or Not Now.
-- **Privacy policy and licenses:** Settings › General › About links to the privacy policy, and Credits & Licenses names McCal, who created Folio, and shows the licenses Folio ships with.
+- **Twofold on Google Play:** a two-panel Home screen with a Side Bar, a widgets page, the App Library, search and folders, on the cover screen and unfolded, and Home landing like a page when the phone opens or shuts.
+- **Clear permission requests:** before Twofold opens Android's settings for its gestures service, notification access or usage access, it says what that access is for and what it never does, and you choose Agree or Not Now.
+- **Privacy policy and licenses:** Settings › General › About links to the privacy policy, and Credits & Licenses names McCal, who created Folio, and shows the licenses Twofold ships with.
 
 ### Changed
-- **Settings in light:** Settings, What's New, alerts and every sheet now use the same light look as the rest of Folio, with notes under each group instead of inside it, one accent color for actions, and row names written the same way everywhere.
-- **Alerts with capsule buttons:** Folio's alerts, including the permission requests, show their choices as rounded buttons side by side, with the one you probably want in bold.
+- **Settings in light:** Settings, What's New, alerts and every sheet now use the same light look as the rest of Twofold, with notes under each group instead of inside it, one accent color for actions, and row names written the same way everywhere.
+- **Alerts with capsule buttons:** Twofold's alerts, including the permission requests, show their choices as rounded buttons side by side, with the one you probably want in bold.
 - **Diagnostics in one place:** crash reports, the performance log and recent activity moved from General to General › About › Diagnostics.
-- **Search, by name:** the search panel is called Search everywhere in Folio, including its Quick Settings tile and the Swipe Down on Home menu.
+- **Search, by name:** the search panel is called Search everywhere in Twofold, including its Quick Settings tile and the Swipe Down on Home menu.
 
 ### Fixed
 - **Wide tablets:** on a screen wider than about 1200dp, the edge of the App Library no longer shows beside the dock while you're on Home.
-- **Widgets with large text:** with Android's font size turned up past 130%, Folio's Clock, Date and other widgets keep their text at 130% so the time fits instead of being cut off.
-- **Permission requests on every phone:** where a phone has no settings page for Folio's own notification or usage access, Agree opens the general list instead of doing nothing.
-- **Less in problem reports:** a crash report keeps where Folio failed but no longer the error's own text, which could name a file or a contact, and the Up Next calendar is only read when a stack holds that widget.
+- **Widgets with large text:** with Android's font size turned up past 130%, Twofold's Clock, Date and other widgets keep their text at 130% so the time fits instead of being cut off.
+- **Permission requests on every phone:** where a phone has no settings page for Twofold's own notification or usage access, Agree opens the general list instead of doing nothing.
+- **Less in problem reports:** a crash report keeps where Twofold failed but no longer the error's own text, which could name a file or a contact, and the Up Next calendar is only read when a stack holds that widget.
 
 ## Before Google Play
 

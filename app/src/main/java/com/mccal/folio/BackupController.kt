@@ -67,7 +67,7 @@ class BackupController(
         else if (operation != null) pickerPending = true
     }
 
-    fun startExport(fileName: String = "folio-layout.json") {
+    fun startExport(fileName: String = "twofold-layout.json") {
         val state = model.stateForBackup() ?: run { errorMessage = damagedMessage(); return }
         val raw = runCatching { encodeBackup(state) }.getOrElse {
             errorMessage = failureMessage(it, R.string.layout_backup_could_not_be_prepared); return
@@ -83,7 +83,7 @@ class BackupController(
         val raw = runCatching { encodeBackup(state) }.getOrElse {
             errorMessage = failureMessage(it, R.string.layout_backup_could_not_be_prepared); return
         }
-        val name = FolioFiles.fileName(name, "folio-layout")
+        val name = FolioFiles.fileName(name, "twofold-layout")
         activity.lifecycleScope.launch {
             val saved = withContext(Dispatchers.IO) { FolioFiles.save(activity, name, "application/json", raw.toByteArray())?.let { FolioFiles.displayName(activity, it) ?: name } }
             if (saved != null) successMessage = savedMessage(activity.getString(R.string.saved_to_as, FolioFiles.displayPath, saved))
@@ -121,7 +121,7 @@ class BackupController(
     fun clearMessage() { errorMessage = null; successMessage = null }
 
     fun resumePendingPicker(): Boolean = when (operation) {
-        OP_EXPORT -> runCatching { createDocument.launch("folio-layout.json") }.isSuccess
+        OP_EXPORT -> runCatching { createDocument.launch("twofold-layout.json") }.isSuccess
         OP_IMPORT -> runCatching { openDocument.launch(arrayOf("application/json", "text/json", "text/plain")) }.isSuccess
         else -> false
     }
