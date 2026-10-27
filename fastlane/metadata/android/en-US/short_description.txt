@@ -1,1 +1,1 @@
-A calm, glassy Home screen with a Side Bar, an App Library and real folders.
+A two-panel Home screen for foldables, with a Side Bar, App Library and search.

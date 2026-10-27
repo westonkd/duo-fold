@@ -8,7 +8,7 @@ and on your machine.
 |---|---|
 | Package | `com.westonkd.folio` (permanent after the first upload) |
 | Version | `1.0.0`, `versionCode` 100000 |
-| Store title | Folio: Home for Foldables |
+| Store title | Twofold: Foldable Launcher |
 | Category | Personalization |
 | Privacy policy | <https://github.com/westonkd/duo-fold/blob/main/PRIVACY.md> |
 | Listing text and graphics | `fastlane/metadata/android/en-US/` |
