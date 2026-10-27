@@ -88,8 +88,8 @@ These are the values Folio already used most, so adopting them changed nothing o
 ### Theming
 
 - **DES-19 MUST** draw Home surfaces in the light appearance through `LocalDuoPalette`. Menus, folders and the App
-  Library's cards are light glass (`menuGlass`, `FOLDER_FROST`), as in iOS 27. Spotlight's search field is the one dark
-  glass surface (`FolioColors.SearchGlass`), because iOS 27 draws search that way in light appearance too. Settings,
+  Library's cards are light glass (`menuGlass`, `FOLDER_FROST`), as in iOS 27. Spotlight's and the App Library's search
+  fields are the same light glass capsule (`IosSearchField` with `glass`), in Home's text color. Settings,
   sheets and alerts are iOS's light grouped list (`FolioSheetTheme`): white cards on `LightBackground`, iOS's label
   greys, and the accent's darker ink (`FolioAccents.TealOnLight`). Shared controls read `LocalLightSheet` to tell a
   sheet from Home's wallpaper and glass.

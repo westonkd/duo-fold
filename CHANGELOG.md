@@ -10,6 +10,7 @@ Folio shows the newest section on the phone after an update, and every version u
 ### Changed
 - **Brighter glass edges:** glass in Folio now catches the light on two opposite corners, like the iPhone's, so the App Library, folders, the dock and menus stand out more clearly from the wallpaper.
 - **App Library search:** the search field is taller and clearer, and its magnifier and "App Library" sit in the middle until you tap it.
+- **Search matches the App Library:** the search field at the top of Search is the same light glass capsule as the App Library's, instead of a dark one.
 - **Settings sidebar:** unfolded, the Settings list sits right on the background, and the open page is marked with a soft grey capsule instead of a teal highlight. On the cover screen, the lines between rows start at the row's name.
 
 ## [1.0.0] - 2026-10-26
