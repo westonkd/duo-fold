@@ -320,7 +320,7 @@ internal fun v9BackupNeeded(sourceSchema: Int, writtenSchema: Int, hasBackup: Bo
 /** Home's state. */
 class LauncherModel(application: Application) : AndroidViewModel(application) {
     private data class RefreshedApps(val entries: List<AppEntry>, val profiles: List<AppProfile>,
-        val authoritativeProfiles: Set<Long>, val removedProfiles: Set<Long>)
+        val authoritativeProfiles: Set<Long>, val removedProfiles: Set<Long>, val starter: StarterApps = StarterApps.KNOWN)
     private data class UndoImportSettings(val coverDock: DockPlacement, val innerDock: DockPlacement, val labels: Boolean,
         val googleSearch: Boolean, val verticalStatus: Boolean)
     private val prefs = application.getSharedPreferences("launcher", 0)
@@ -515,14 +515,15 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
                     iconCache.keys.retainAll(entries.map { it.id }.toSet())
                     RefreshedApps(entries, (profiles + unavailable.map { AppProfile(it.userSerial, it.profileLabel, false, it.kind == ProfileKind.WORK,
                         quiet = true, unlocked = false, available = false, kind = it.kind) }).distinctBy(AppProfile::userSerial),
-                        authoritativeProfiles.toSet(), removedProfileSerials)
+                        authoritativeProfiles.toSet(), removedProfileSerials,
+                        if (!prefs.getBoolean("initialized", false) || needsMigration) StarterApps.resolve(application) else StarterApps.KNOWN)
                 }
                 mutable.update { old ->
                     val entries = apps.entries.withAppNames(old.appNames)
                     val profiles = apps.profiles
-                    val dock = if (!prefs.getBoolean("initialized", false)) initialDock(entries) else old.dock
+                    val dock = if (!prefs.getBoolean("initialized", false)) initialDock(entries, apps.starter) else old.dock
                     val installed = entries.map { it.id }
-                    val legacyPins = if (needsMigration) migrateHomePins(old.order, installed, suggestedPins(entries, dock))
+                    val legacyPins = if (needsMigration) migrateHomePins(old.order, installed, suggestedPins(entries, dock, apps.starter))
                         else old.homeSlots
                     val pins = if (sourceSchema < 6 && needsMigration) migrateSchema5Apps(legacyPins) else legacyPins
                     val availableIds = entries.mapTo(mutableSetOf(), AppEntry::id)
@@ -702,37 +703,17 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
         appCatalogPrefs.edit().putString("apps", array.toString()).apply()
     }
 
-    private fun initialDock(apps: List<AppEntry>): List<String?> {
-        val packages = listOf(
-            listOf("com.samsung.android.dialer", "com.google.android.dialer"),
-            listOf("com.android.chrome", "com.sec.android.app.sbrowser"),
-            listOf("com.google.android.apps.messaging", "com.samsung.android.messaging"),
-            listOf("com.spotify.music", "com.google.android.apps.youtube.music"),
-        )
-        return packages.map { choices -> choices.firstNotNullOfOrNull { pkg -> apps.firstOrNull { !it.isWork && it.packageName == pkg }?.id } }
+    private fun initialDock(apps: List<AppEntry>, starter: StarterApps): List<String?> {
+        val chosen = mutableSetOf<String>()
+        return starter.dock.map { choices ->
+            choices.firstNotNullOfOrNull { pkg -> apps.firstOrNull { !it.isWork && it.packageName == pkg && it.id !in chosen }?.id }?.also(chosen::add)
+        }
     }
 
-    private fun suggestedPins(apps: List<AppEntry>, dock: List<String?>): List<String> {
-        val groups = listOf(
-            listOf("com.samsung.android.calendar", "com.google.android.calendar"),
-            listOf("com.sec.android.app.camera", "com.android.camera2", "com.google.android.GoogleCamera"),
-            listOf("com.sec.android.gallery3d", "com.google.android.apps.photos"),
-            listOf("com.sec.android.app.clockpackage", "com.google.android.deskclock"),
-            listOf("com.google.android.gm", "com.samsung.android.email.provider"),
-            listOf("com.google.android.apps.maps"),
-            listOf("com.samsung.android.app.notes", "com.google.android.keep"),
-            listOf("com.sec.android.app.myfiles", "com.google.android.documentsui"),
-            listOf("com.android.settings"),
-            listOf("com.sec.android.app.popupcalculator", "com.google.android.calculator"),
-            listOf("com.android.vending"), listOf("com.google.android.youtube"),
-            listOf("com.samsung.android.app.contacts", "com.google.android.contacts"),
-            listOf("com.google.android.apps.docs"), listOf("com.google.android.apps.walletnfcrel"),
-            listOf("com.sec.android.app.shealth"),
-        )
-        return groups.mapNotNull { choices -> choices.firstNotNullOfOrNull { pkg ->
+    private fun suggestedPins(apps: List<AppEntry>, dock: List<String?>, starter: StarterApps): List<String> =
+        starter.pins.mapNotNull { choices -> choices.firstNotNullOfOrNull { pkg ->
             apps.firstOrNull { !it.isWork && it.packageName == pkg && it.id !in dock }?.id
         } }.distinct()
-    }
 
     fun setPinned(id: String, pinned: Boolean) {
         if (statePayloadInvalid) return

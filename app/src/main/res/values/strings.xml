@@ -468,12 +468,12 @@
     <string name="performance_note">While on, this reads Folio\'s CPU use, memory, frame times and the battery every few seconds, and stops by itself after 6 hours. Nothing leaves the phone unless you copy or share the report.</string>
     <string name="what_s_new">What\'s New</string>
     <string name="change_wallpaper">Change wallpaper</string>
-    <string name="uses_the_same_wallpaper_as_your_phone_s">Uses the same wallpaper as your phone’s home screen (including live wallpapers), so it matches what you had in Samsung’s or another launcher.</string>
+    <string name="uses_the_same_wallpaper_as_your_phone_s">Uses the same wallpaper as your phone’s home screen (including live wallpapers), so it matches what you had in your last launcher.</string>
     <string name="google_no_ai">Google (no AI)</string>
     <string name="icon_packs_and_themes_are_made_by_indepe">Icon packs and themes are made by independent designers. If you use one, please support them by buying it from them on Google Play. Much love.</string>
     <string name="wide">Wide</string>
     <string name="big_back_home_and_recents_buttons_float">Big Back, Home and Recents buttons float over other apps, for when the system\'s are too small. They press the same buttons Android does, sit above Android\'s own navigation, and hide in full-screen apps.</string>
-    <string name="android_s_three_buttons_are_on_so_you_ll">Android\'s three buttons are on, so you\'ll see both sets. Folio\'s bar sits above them; switch to gesture navigation in Android\'s Display settings to have only these.</string>
+    <string name="android_s_three_buttons_are_on_so_you_ll">Android\'s three buttons are on, so you\'ll see both sets. Folio\'s bar sits above them; switch to gesture navigation in Android\'s navigation settings to have only these.</string>
     <string name="if_folio_closes_unexpectedly_twice_right">If Folio closes unexpectedly twice right after starting, it starts in Safe Mode with optional features paused. Your settings are never changed.</string>
     <string name="close_customization">Close customization</string>
     <string name="spotlight_contact_search">Contact search</string>
@@ -564,8 +564,8 @@
     <string name="remove_from_home_2">Remove %1$s from Home</string>
     <string name="work_apps_are_paused">Work apps are paused</string>
     <string name="work_profile_is_unavailable">Work profile is unavailable</string>
-    <!-- The line under a cloned app (Samsung's Dual Messenger, Android's App cloning) in the App Library and in folders. -->
-    <string name="profile_dual">Dual</string>
+    <!-- The line under a cloned app (Android's app cloning, Samsung's Dual Messenger, Xiaomi's Dual apps) in the App Library and in folders. -->
+    <string name="profile_dual">Clone</string>
     <string name="loading_apps">Loading apps…</string>
     <string name="remove_from_home_3">Remove %1$s from home</string>
     <string name="pin_to_home">Pin %1$s to home</string>

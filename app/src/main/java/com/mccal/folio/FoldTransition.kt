@@ -1,6 +1,7 @@
 package com.mccal.folio
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -219,6 +220,9 @@ internal fun landingPage(landing: Landing, rotation: Int, hinge: Hinge?, width: 
         CoverEdge.BOTTOM -> LandingPage(true, height, false)
     }
 }
+
+internal fun Context.hasHinge(): Boolean = packageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_HINGE_ANGLE) ||
+    getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_HINGE_ANGLE) != null
 
 internal class FoldWatcher(context: Context) : SensorEventListener {
     val wake = Channel<Unit>(Channel.CONFLATED)

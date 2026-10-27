@@ -5,6 +5,7 @@ import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -78,7 +79,10 @@ class FoldBridgeActivity : Activity() {
         /** Set by start(), cleared by cancel(): an activity created after cancel finishes at once. */
         @Volatile private var wanted = false
 
+        val needed: Boolean get() = Build.MANUFACTURER.equals("samsung", ignoreCase = true)
+
         fun start(context: Context) {
+            if (!needed) return
             wanted = true
             if (instance.get()?.isFinishing == false) return
             val options = ActivityOptions.makeCustomAnimation(context, 0, 0).toBundle()

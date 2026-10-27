@@ -26,7 +26,7 @@ well instead of doing everything.
 3. **Polish over features.** New work goes into consistency and motion: the same corners, glass, type and springs
    everywhere, and every surface growing out of the thing you touched and going back into it. A feature that can't be
    made to feel finished is a candidate for removal.
-4. **Android does what Android is good at.** The lock screen, recents, notifications and Quick Settings are One UI's.
+4. **Android does what Android is good at.** The lock screen, recents, notifications and Quick Settings are your phone's.
    Folio doesn't draw its own Dynamic Island, Control Center or Notification Center.
 5. **Private and offline.** No Market, codes, update checks, accounts or network use. Folio declares no internet
    permission; [PRIVACY.md](PRIVACY.md) is the privacy policy and [PERMISSIONS.md](PERMISSIONS.md) lists every
@@ -37,7 +37,7 @@ next.
 
 ## What it is
 
-Folio replaces One UI's Home screen. On both screens it gives you iPhone Duo's layout: Home pages of apps and widgets,
+Folio replaces your phone's Home screen. On both screens it gives you iPhone Duo's layout: Home pages of apps and widgets,
 a Side Bar along the edge with the time, a battery Ring and the dock, a widgets page left of Home, an App Library,
 Spotlight and folders, and Home lands like a page with a small bounce when the phone opens flat or closes. Android
 still owns the lock screen, recents and the notification shade.
