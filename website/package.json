@@ -1,0 +1,27 @@
+{
+  "name": "folio-website",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "cf:dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "devDependencies": {
+    "marked": "^18.1.2",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.5",
+    "wrangler": "^4.153.0"
+  },
+  "allowScripts": {
+    "workerd@1.20261023.1": true,
+    "esbuild@0.28.2": true,
+    "sharp@0.35.5": true
+  }
+}
