@@ -7,6 +7,9 @@ Folio shows the newest section on the phone after an update, and every version u
 
 ## [1.0.1] - Unreleased
 
+### Added
+- **A new widget gallery:** tap + while editing Home and the gallery slides up over Home with every app that has widgets. Choose one to swipe through its widgets at the size they'll be on Home, pick Small, Medium or Large, and tap Add Widget to put it in the first free spot. Unfolded, the apps and their widgets sit side by side, and Folio's own widgets show what they really look like.
+
 ### Changed
 - **Brighter glass edges:** glass in Folio now catches the light on two opposite corners, like the iPhone's, so the App Library, folders, the dock and menus stand out more clearly from the wallpaper.
 - **App Library search:** the search field is taller and clearer, and its magnifier and "App Library" sit in the middle until you tap it.
@@ -14,6 +17,7 @@ Folio shows the newest section on the phone after an update, and every version u
 - **Settings sidebar:** unfolded, the Settings list sits right on the background, and the open page is marked with a soft grey capsule instead of a teal highlight. On the cover screen, the lines between rows start at the row's name.
 
 ### Fixed
+- **Dropping a widget where it doesn't fit:** a widget held out of the gallery and let go where there's no room goes to the next free spot instead of disappearing.
 - **A full dock on any phone:** the first time Folio starts, the dock and Home get your phone, browser, messages and music apps, and the usual everyday apps, whoever made the phone. Before, Folio only knew Samsung's and Google's apps.
 - **Fold settings only on foldables:** Settings › Fold, with Page Landing, shows only on a phone that folds. Stay Awake on the Cover Screen shows only on Samsung foldables, the phones that need it.
 - **Cloned apps:** a second copy of an app is labelled Clone under its name, Android's own word for it.

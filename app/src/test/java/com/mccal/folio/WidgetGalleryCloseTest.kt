@@ -19,8 +19,9 @@ class WidgetGalleryCloseTest {
 
     @Test fun `the close button is called Close, and nothing is called Back`() {
         compose.setContent {
-            VisualWidgetPicker(emptyList(), listOf(personal), personal, {}, {}, hiddenForDrag = false, footprint = { WidgetSpan(2, 2) },
-                onBack = {}, onTap = {}, onBuiltin = {}, onDragStart = { _, _ -> }, onDrag = {}, onDrop = {}, onCancelDrag = {})
+            VisualWidgetPicker(emptyList(), listOf(personal), personal, {}, {}, hiddenForDrag = false,
+                sizesOf = { GallerySizes(WidgetSpan(2, 2), listOf(WidgetSpan(2, 2))) }, cellWidthDp = 80f, rowHeightDp = 90f,
+                onBack = {}, onAdd = { _, _ -> }, onDragStart = { _, _, _ -> }, onDrag = {}, onDrop = {}, onCancelDrag = {})
         }
         compose.onAllNodesWithContentDescription("Close").assertCountEquals(1)
         compose.onAllNodesWithContentDescription("Back").assertCountEquals(0)

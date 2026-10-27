@@ -27,24 +27,11 @@ class SpecialWidgetReplacementIntegrationTest {
         }
     }
 
-    private fun openReplacement(slot: Int, provider: android.appwidget.AppWidgetProviderInfo, locked: Boolean) {
+    private fun openReplacement(slot: Int, provider: android.appwidget.AppWidgetProviderInfo) {
         compose.onNodeWithTag("widget-slot-$slot", useUnmergedTree = true)
             .performSemanticsAction(SemanticsActions.OnLongClick)
         compose.onNodeWithText("Replace").performClick()
-        compose.onNodeWithTag("widget-catalog-search").performTextInput(
-            provider.loadLabel(compose.activity.packageManager).toString())
-        val tag = "widget-provider-${provider.provider.flattenToString()}"
-        compose.onNodeWithTag(tag).performScrollTo().performClick()
-        if (locked) {
-            compose.onNodeWithTag("widget-replacement-locked").assertIsDisplayed().assertTextContains("Replace here")
-            compose.onNodeWithContentDescription("Previous home page").assertDoesNotExist()
-            compose.onNodeWithContentDescription("Next home page").assertDoesNotExist()
-        } else {
-            compose.onNodeWithTag("widget-replacement-locked").assertDoesNotExist()
-            compose.onNodeWithContentDescription("Previous home page").assertExists().assertIsNotEnabled()
-            compose.onNodeWithContentDescription("Next home page").assertExists().assertIsEnabled()
-        }
-        compose.onNodeWithTag("widget-placement-preview").assertIsDisplayed()
+        compose.showInGallery(compose.activity, provider)
     }
 
     private fun exerciseReplacement(special: WidgetPlacement,
@@ -52,15 +39,24 @@ class SpecialWidgetReplacementIntegrationTest {
         val ordinaryHomeBefore = model().state.value.homeSlots
         val leadingHomeBefore = model().state.value.leadingSlots
         val locked = special.row + special.spanY > GRID_ROWS
-        openReplacement(special.slot, provider, locked)
-        compose.onNodeWithTag("widget-placement-cancel").performClick()
+        openReplacement(special.slot, provider)
+        if (locked) {
+            compose.addShownWidget()
+            compose.onNodeWithTag("widget-replacement-locked").assertIsDisplayed().assertTextContains("Replace here")
+            compose.onNodeWithContentDescription("Previous home page").assertDoesNotExist()
+            compose.onNodeWithContentDescription("Next home page").assertDoesNotExist()
+            compose.onNodeWithTag("widget-placement-preview").assertIsDisplayed()
+            compose.onNodeWithTag("widget-placement-cancel").performClick()
+        } else compose.closeGallery()
+        compose.waitForIdle()
         assertEquals(special, model().placement(special.slot))
         assertEquals(ordinaryHomeBefore, model().state.value.homeSlots)
         assertEquals(leadingHomeBefore, model().state.value.leadingSlots)
         assertEquals(idsBefore, controller().host.appWidgetIds.toSet())
 
-        openReplacement(special.slot, provider, locked)
-        compose.onNodeWithTag("widget-placement-apply").assertIsEnabled().performClick()
+        openReplacement(special.slot, provider)
+        compose.addShownWidget()
+        if (locked) compose.onNodeWithTag("widget-placement-apply").assertIsEnabled().performClick()
         compose.waitUntil(10_000) {
             model().placement(special.slot)?.id?.let { it >= 0 && it != special.id } == true &&
                 controller().pendingPlacement == null

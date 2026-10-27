@@ -52,11 +52,8 @@ class LeadingWidgetInteractionIntegrationTest {
     private fun placeOptionalAt(index: Int): WidgetPlacement {
         val slot = model().nextWidgetSlot()
         openCatalogAt(index)
-        compose.onNodeWithTag("widget-catalog-search").performTextInput("Instant Conditions")
-        compose.onNodeWithTag(providerTag()).performScrollTo().performClick()
-        compose.onNodeWithTag("widget-placement-preview").assert(
-            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Ready to place"))
-        compose.onNodeWithTag("widget-placement-apply").assertIsEnabled().performClick()
+        compose.showInGallery(compose.activity, provider())
+        compose.addShownWidget()
         compose.waitUntil(10_000) { model().placement(slot)?.id?.let { it >= 0 } == true }
         return requireNotNull(model().placement(slot))
     }
@@ -273,10 +270,8 @@ class LeadingWidgetInteractionIntegrationTest {
             compose.waitUntil(15_000) { compose.activity.windowManager.currentWindowMetrics.bounds.width() == 2448 }
 
             openCatalogAt(-24)
-            compose.onNodeWithTag("widget-catalog-search").performTextInput("Instant Conditions")
-            compose.onNodeWithTag(providerTag()).performScrollTo().performClick()
-            compose.onNodeWithTag("widget-placement-mode").assertExists()
-            compose.onNodeWithTag("widget-placement-preview").assertIsDisplayed()
+            compose.showInGallery(compose.activity, provider())
+            compose.onNodeWithTag(providerTag()).assertIsDisplayed()
             assertEquals(idsBefore, controller().host.appWidgetIds.toSet())
             assertEquals(fixture, model().state.value.layout)
 
@@ -284,25 +279,18 @@ class LeadingWidgetInteractionIntegrationTest {
             compose.waitUntil(15_000) { compose.activity.windowManager.currentWindowMetrics.bounds.width() == 1248 }
             compose.onNodeWithTag("widget-placement-mode").assertDoesNotExist()
             compose.onNodeWithTag("visual-widget-picker").assertDoesNotExist()
-            compose.onNodeWithTag("widget-placement-preview").assertDoesNotExist()
             assertNull(controller().pendingPlacement)
             assertEquals(idsBefore, controller().host.appWidgetIds.toSet())
             assertEquals(fixture, model().state.value.layout)
 
-            // Unfolding does not resurrect the signed target. A fresh request on Screen 1
-            // must open a normal picker and remain unbound until the user chooses Place.
             shell("wm size 2448x1848")
             compose.waitUntil(15_000) { compose.activity.windowManager.currentWindowMetrics.bounds.width() == 2448 }
             openCatalogAt(0)
             compose.onNodeWithTag("visual-widget-picker").assertIsDisplayed()
-            compose.onNodeWithTag("widget-catalog-search").performTextInput("Instant Conditions")
-            compose.onNodeWithTag(providerTag()).performScrollTo().performClick()
-            compose.onNodeWithTag("widget-placement-preview").assertIsDisplayed()
-            assertTrue("Fresh normal-page request must target Screen 1 cell 0",
-                compose.onNodeWithTag("widget-placement-preview").fetchSemanticsNode().boundsInRoot.contains(center("home-cell-0")))
+            compose.showInGallery(compose.activity, provider())
             assertEquals(idsBefore, controller().host.appWidgetIds.toSet())
             assertEquals(fixture, model().state.value.layout)
-            compose.onNodeWithTag("widget-placement-cancel").performClick()
+            compose.closeGallery()
         } catch (failure: Throwable) {
             primaryFailure = failure
             throw failure
