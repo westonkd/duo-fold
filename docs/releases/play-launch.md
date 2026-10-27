@@ -1,4 +1,4 @@
-# Twofold 1.0.0 on Google Play
+# Twofold on Google Play: the first release
 
 The runbook for Twofold's first Play release, written before the build ([REL-26](../standards/releases.md)). The
 repository side is done in the pull requests that added this file; everything below is what happens in Play Console
