@@ -18,6 +18,7 @@ Folio shows the newest section on the phone after an update, and every version u
 - **Settings sidebar:** unfolded, the Settings list sits right on the background, and the open page is marked with a soft grey capsule instead of a teal highlight. On the cover screen, the lines between rows start at the row's name.
 
 ### Fixed
+- **Smoother return to Home:** swiping up from an app, Home settles into place without stalling and jumping, whichever app you opened.
 - **Widgets that came out short:** a widget drawn as a card a little smaller than its spot on Home, like Tesla's, now fills the spot, so it lines up with the widgets beside it and catches the light on its glass edge like they do.
 - **Dropping a widget where it doesn't fit:** a widget held out of the gallery and let go where there's no room goes to the next free spot instead of disappearing.
 - **A full dock on any phone:** the first time Twofold starts, the dock and Home get your phone, browser, messages and music apps, and the usual everyday apps, whoever made the phone. Before, Twofold only knew Samsung's and Google's apps.
