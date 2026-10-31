@@ -2,7 +2,8 @@
 
 A calm, two-panel Home screen for Android foldables, made first for the Galaxy Z Fold8 and published on Google Play
 as **Twofold: Foldable Launcher** (`com.westonkd.folio`). It is a fork of
-[McCal-Codes/folio](https://github.com/McCal-Codes/folio), maintained separately.
+[McCal-Codes/folio](https://github.com/McCal-Codes/folio), maintained separately. Its website is
+<https://twofoldlauncher.app>, built from `website/`.
 
 ## Thank you, McCal
 

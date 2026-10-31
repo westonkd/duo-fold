@@ -10,7 +10,8 @@ and on your machine.
 | Version | `1.0.0`, `versionCode` 100000 |
 | Store title | Twofold: Foldable Launcher |
 | Category | Personalization |
-| Privacy policy | <https://github.com/westonkd/duo-fold/blob/main/PRIVACY.md> |
+| Privacy policy | <https://twofoldlauncher.app/privacy> |
+| Website | <https://twofoldlauncher.app> |
 | Listing text and graphics | `fastlane/metadata/android/en-US/` |
 | Min / target SDK | 31 (Android 12) / 36 (Android 16, Play's floor since 31 Aug 2026) |
 
@@ -21,8 +22,8 @@ and on your machine.
   two weeks after the closed test starts. An organization account skips it.
 - [ ] **Identity verification** in Play Console must be finished before the app can be published.
 - [ ] **Merge** the Play pull requests in order, then the version bump.
-  The privacy policy URL is a 404 until `PRIVACY.md` is on `main`, and Play checks it when you save App content,
-  so merge before filling in section 3.
+  The privacy policy URL is a 404 until the website is deployed from `main` (`website/README.md`), and Play checks
+  it when you save App content, so merge and deploy before filling in section 3.
 
 ## 2. Upload key and the bundle
 
@@ -61,7 +62,7 @@ choose Paid when you create it.
   applies to the closed test too: testers have to buy the app unless their Google accounts are license testers
   (Settings › License testing), who check out with a test card and aren't charged. Add the 12 testers there.
 - [ ] **Store settings** (Grow users › Store presence › Store settings): category **Personalization**, contact email (shown
-  publicly), website <https://github.com/westonkd/duo-fold> until the Twofold website has its own domain.
+  publicly), website <https://twofoldlauncher.app>.
 
 ## 3. App content (Policy › App content)
 

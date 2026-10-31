@@ -23,6 +23,7 @@ Folio shows the newest section on the phone after an update, and every version u
 - **Brighter glass edges:** glass in Twofold now catches the light on two opposite corners so the App Library, folders, the dock and menus stand out more clearly from the wallpaper.
 - **App Library search:** the search field is taller and clearer, and its magnifier and "App Library" sit in the middle until you tap it.
 - **Search matches the App Library:** the search field at the top of Search is the same light glass capsule as the App Library's, instead of a dark one.
+- **The privacy policy on Twofold's website:** Settings › General › About › Privacy Policy opens it at twofoldlauncher.app instead of on GitHub.
 - **Settings sidebar:** unfolded, the Settings list sits right on the background, and the open page is marked with a soft grey capsule instead of a teal highlight. On the cover screen, the lines between rows start at the row's name.
 
 ### Fixed

@@ -15,7 +15,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
-internal const val PRIVACY_POLICY_URL = "https://github.com/westonkd/duo-fold/blob/main/PRIVACY.md"
+internal const val PRIVACY_POLICY_URL = "https://twofoldlauncher.app/privacy"
 
 internal data class FolioPrompt(
     val tag: String,

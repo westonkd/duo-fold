@@ -1,6 +1,6 @@
 # Twofold website
 
-The marketing site for Twofold (the Folio app in this repository, sold on Google Play as Twofold). Plain Vite with TypeScript, no framework, served as static assets by Cloudflare Workers (free plan).
+The marketing site for Twofold, at <https://twofoldlauncher.app> (the Folio app in this repository, sold on Google Play as Twofold). Plain Vite with TypeScript, no framework, served as static assets by Cloudflare Workers (free plan).
 
 ## Develop
 
@@ -29,7 +29,7 @@ One time: in the Cloudflare dashboard, Workers & Pages › Create › Import a r
 - Build command: `npm run build`
 - Deploy command: `npx wrangler deploy`
 
-Every push to `main` then deploys, and other branches get preview URLs. Add the custom domain under the Worker's Settings › Domains & Routes.
+Every push to `main` then deploys, and other branches get preview URLs. The site lives at <https://twofoldlauncher.app>: `routes` in `wrangler.jsonc` binds that domain to the Worker on deploy, so its zone has to be in the same Cloudflare account. The canonical links, `og:url`, `og:image` and `public/sitemap.xml` name the domain too, so a move touches all of them.
 
 To deploy by hand instead: `npx wrangler login`, then `npm run deploy`.
 

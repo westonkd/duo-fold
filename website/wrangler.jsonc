@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "folio-website",
   "compatibility_date": "2026-10-26",
+  "routes": [{ "pattern": "twofoldlauncher.app", "custom_domain": true }],
   "assets": {
     "directory": "./dist",
     "not_found_handling": "404-page",
