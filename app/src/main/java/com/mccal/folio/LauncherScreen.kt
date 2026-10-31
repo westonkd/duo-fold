@@ -557,21 +557,21 @@ fun LauncherScreen(
         }
     }
 
-    val homeReturn = remember { Animatable(1f) }
     LaunchedEffect(HomeReturn.plays) {
         if (HomeReturn.plays == 0 || dockReduceMotion) return@LaunchedEffect
-        homeReturn.snapTo(0f)
-        homeReturn.animateTo(1f, FolioMotion.spring(FolioMotion.Settle))
+        try {
+            HomeReturn.pivotOn(homeView)
+            HomeReturn.zoom(homeView, 0f)
+            repeat(2) { withFrameNanos { } }
+            Animatable(0f).animateTo(1f, FolioMotion.spring(FolioMotion.Settle)) { HomeReturn.zoom(homeView, value) }
+        } finally {
+            HomeReturn.zoom(homeView, 1f)
+        }
     }
     Box(Modifier.fillMaxSize().graphicsLayer {
         // The 0.6.9 motion pass (MO5): Home steps back a little while a folder is open; not under Reduce Motion.
         if (!dockReduceMotion && FolderOpening.id != null) {
             val s = FolderOpening.homeScale(FolderOpening.progress); scaleX = s; scaleY = s
-        }
-        if (homeReturn.value < 1f) {
-            val s = HomeReturn.scale(homeReturn.value)
-            scaleX *= s; scaleY *= s
-            transformOrigin = HomeReturn.transformOrigin(drag.landing.rootInWindow, size)
         }
     }.testTag("launcher-root").onGloballyPositioned { drag.landing.rootInWindow = it.boundsInWindow().topLeft }.homeDragInput(drag,
         enabled = sheet.isEmpty() && overlays.menu == null && !resize.active && pager.currentPage >= -1,
