@@ -3,6 +3,12 @@ package com.mccal.folio
 import android.content.Context
 import android.content.Intent
 import android.provider.AlarmClock
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -167,7 +173,7 @@ internal fun AppIcon(app: AppEntry, contentDescription: String?, modifier: Modif
                 Image(bitmap, null, fill.lit(fills))
             }
         }
-        if (badgeCount > 0) IconBadge(badgeCount, look.badges, BadgeRed, badgePlacement)
+        ArrivingIconBadge(badgeCount, look.badges, BadgeRed, badgePlacement)
         // Updating: the icon dims under an iOS-style progress ring until the installer finishes.
         installProgressFor(app.component.packageName)?.let { progress -> InstallRing(progress, fill) }
     }
@@ -269,6 +275,25 @@ internal data class LivePalette(val calendarBackground: Color, val calendarNumbe
 internal val BadgeRed = FolioColors.RedLight
 
 /** iOS-style badge: sits over the icon's top-right corner (or where [placement] says), a dot or a pill that widens for 2+ digits. */
+@Composable
+internal fun androidx.compose.foundation.layout.BoxScope.ArrivingIconBadge(count: Int, style: BadgeStyle, color: Color,
+    placement: BadgePlacement = BadgePlacement.DEFAULT) {
+    val lastCount = remember { IntArray(1) }
+    if (count > 0) lastCount[0] = count
+    val origin = when (placement.corner) {
+        BadgeCorner.TOP_END -> androidx.compose.ui.graphics.TransformOrigin(1f, 0f)
+        BadgeCorner.TOP_START -> androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
+    }
+    val reduceMotion = LocalReduceMotion.current
+    AnimatedVisibility(count > 0, Modifier.matchParentSize(),
+        enter = if (reduceMotion) fadeIn(tween(FolioMotion.FADE_MS))
+            else scaleIn(FolioMotion.spring(FolioMotion.Pop), transformOrigin = origin) + fadeIn(tween(FolioMotion.FADE_MS)),
+        exit = if (reduceMotion) fadeOut(tween(FolioMotion.FADE_MS))
+            else scaleOut(FolioMotion.spring(FolioMotion.Firm), transformOrigin = origin) + fadeOut(tween(FolioMotion.FADE_MS))) {
+        Box(Modifier.fillMaxSize()) { IconBadge(lastCount[0], style, color, placement) }
+    }
+}
+
 @Composable
 internal fun androidx.compose.foundation.layout.BoxScope.IconBadge(count: Int, style: BadgeStyle, color: Color,
     placement: BadgePlacement = BadgePlacement.DEFAULT) {

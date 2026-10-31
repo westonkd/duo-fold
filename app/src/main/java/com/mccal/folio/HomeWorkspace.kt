@@ -137,6 +137,7 @@ internal fun ExpandedWorkspace(
     /** A tap on the message Home shows when apps or the layout couldn't be loaded. */
     onProblem: () -> Unit,
     onAddWidget: (() -> Unit)? = null,
+    edgeStretch: () -> Float = { 0f },
 ) {
     val density = LocalDensity.current
     val viewportWidth = motion.pageWidth
@@ -175,7 +176,7 @@ internal fun ExpandedWorkspace(
         return pagerStart + shown + clearance
     }
     fun Modifier.place(x: Float, clearDockColumn: Boolean = true, library: Boolean = false): Modifier = offset {
-        IntOffset(shownX(x, pager.currentPage + pager.currentPageOffsetFraction, clearDockColumn, library).roundToInt(), 0)
+        IntOffset((shownX(x, pager.currentPage + pager.currentPageOffsetFraction, clearDockColumn, library) + edgeStretch()).roundToInt(), 0)
     }
     val rtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
     fun restingLight(x: Float, restPage: Int, clearDockColumn: Boolean = true) = LightDrift {
@@ -308,6 +309,15 @@ internal fun HomePagePane(
     val edit = LocalHomeEdit.current
     val context = LocalContext.current
     val doubleTapAction = FolioAction.entries.firstOrNull { it.name == state.triggerActions[FolioTrigger.DOUBLE_TAP.name] } ?: FolioAction.NONE
+    // Jiggle mode: room under the + / Edit / Done bar so the top row's remove buttons never crowd it.
+    // Frozen while something is held: sliding the grid under a finger would change where it drops.
+    var roomWanted by remember { mutableStateOf(edit.active) }
+    if (!drag.active) roomWanted = edit.active
+    // Only as much room as the Edit bar actually needs above this page's first row; pushing the whole grid down by a
+    // fixed amount cut off the bottom row's labels on screens that already had space at the top.
+    // Unfolded, the bar sits in the space above the widget row, so the grid doesn't move at all (like iPad).
+    val editRoom by animateDpAsState(if (roomWanted && !geometry.expanded) (JIGGLE_BAR_BOTTOM - geometry.contentTop.dp).coerceAtLeast(0.dp) else 0.dp,
+        FolioMotion.spring(FolioMotion.Settle, androidx.compose.ui.unit.Dp.VisibilityThreshold), label = "jiggle room")
     Box(modifier.testTag("home-page-$page")
         // Jiggle mode: a tap on empty space (not on an icon, which handles its own taps) finishes editing.
         .pointerInput(edit.active, doubleTapAction, backgroundTarget, drag.active) {
@@ -329,22 +339,13 @@ internal fun HomePagePane(
         }
         .onGloballyPositioned { paneCoordinates[0] = it }
         .width((geometry.gridWidth + 16f).dp)
-        .height((contentHeight - bottomSpace).coerceAtLeast(0.dp))) {
+        .height((contentHeight - bottomSpace + minOf(editRoom, EDIT_LABEL_REACH)).coerceAtLeast(0.dp))) {
         Box(Modifier.width(16.dp).fillMaxHeight().testTag("home-options-margin-$page")
             .pointerInput(backgroundTarget, drag.active) {
                 detectTapGestures(onLongPress = {
                     if (!drag.active) onEmptyWidget(backgroundTarget)
                 })
             })
-        // Jiggle mode: room under the + / Edit / Done bar so the top row's remove buttons never crowd it.
-        // Frozen while something is held: sliding the grid under a finger would change where it drops.
-        var roomWanted by remember { mutableStateOf(edit.active) }
-        if (!drag.active) roomWanted = edit.active
-        // Only as much room as the Edit bar actually needs above this page's first row; pushing the whole grid down by a
-        // fixed amount cut off the bottom row's labels on screens that already had space at the top.
-        // Unfolded, the bar sits in the space above the widget row, so the grid doesn't move at all (like iPad).
-        val editRoom by animateDpAsState(if (roomWanted && !geometry.expanded) (JIGGLE_BAR_BOTTOM - geometry.contentTop.dp).coerceAtLeast(0.dp) else 0.dp,
-            FolioMotion.spring(FolioMotion.Settle, androidx.compose.ui.unit.Dp.VisibilityThreshold), label = "jiggle room")
         Column(Modifier.offset(x = 16.dp).width(geometry.gridWidth.dp).fillMaxHeight()
             .verticalScroll(homeScroll).padding(top = geometry.contentTop.dp + editRoom, bottom = FolioSpace.SMALL.dp)) {
             SharedHomeGrid(page, state.homeSlots, state.leadingSlots, previewSlots, previewLeadingSlots, previewWidgetPlacements,
@@ -366,9 +367,19 @@ internal fun HomePagePane(
 }
 
 @Composable
-internal fun CircleControl(icon: ImageVector, label: String, tag: String, visualSize: Dp, action: () -> Unit) {
-    IconButton(onClick = action, modifier = Modifier.size(visualSize.coerceAtLeast(48.dp)).testTag(tag)) {
-        Box(Modifier.size(visualSize).testTag("$tag-visual").liquidGlass(CircleShape, LIBRARY_TILE_FROST, GlassRole.CAPSULE),
+internal fun CircleControl(icon: ImageVector, label: String, tag: String, visualSize: Dp,
+    longClickLabel: String? = null, onLongClick: (() -> Unit)? = null, action: () -> Unit) {
+    val interactions = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by interactions.collectIsPressedAsState()
+    val haptic = LocalHapticFeedback.current
+    Box(Modifier.size(visualSize.coerceAtLeast(48.dp)).testTag(tag)
+        .combinedClickable(interactions, indication = null, role = androidx.compose.ui.semantics.Role.Button,
+            onLongClickLabel = longClickLabel,
+            onLongClick = onLongClick?.let { longClick -> { haptic.perform(FolioHaptic.Open); longClick() } },
+            onClick = action),
+        contentAlignment = Alignment.Center) {
+        Box(Modifier.size(visualSize).testTag("$tag-visual").pressFeedback(pressed)
+            .liquidGlass(CircleShape, LIBRARY_TILE_FROST, GlassRole.CAPSULE),
             contentAlignment = Alignment.Center) {
             Icon(icon, label, tint = Color.White, modifier = Modifier.size(22.dp))
         }
@@ -524,7 +535,9 @@ internal fun SharedHomeGrid(
                 val plateGrowth by animateFloatAsState(if (plateOn) 1f else 0f,
                     FolioMotion.spring(if (plateOn) FolioMotion.Quick else FolioMotion.Firm), label = "folderPlate $id")
                 Box(Modifier.offset { animatedOffset }.width(cellWidth).height(rowHeight.dp)
-                    .graphicsLayer { alpha = opacity * drag.landing.cellAlpha(id) }.moveActions(id, page, onMove).testTag("home-app-$id"), contentAlignment = Alignment.TopCenter) {
+                    .graphicsLayer { alpha = opacity * drag.landing.cellAlpha(id) }
+                    .arrival(homeArrivalOrder(DOCK_ARRIVAL_LEAD, row, localIndex % GRID_COLUMNS))
+                    .moveActions(id, page, onMove).testTag("home-app-$id"), contentAlignment = Alignment.TopCenter) {
                     if (visible) AppTile(app, iconSize, labels,
                         onClick = { if (!edit.active) onLaunch(app, it) }, onLongClick = { onActions(app) },
                         onRemove = if (edit.active && savedIndex != null) {{ edit.onRemove(DropTarget.Home(savedIndex)) }} else null,
@@ -548,6 +561,7 @@ internal fun SharedHomeGrid(
                     label = "folderSlide ${folder.id}")
                 FolderTile(folder, appsById, iconSize, labels, drag, page,
                     Modifier.offset { placed }.width(cellWidth).height(rowHeight.dp)
+                        .arrival(homeArrivalOrder(DOCK_ARRIVAL_LEAD, row, localIndex % GRID_COLUMNS))
                         .moveActions(folder.id, page, onMove).testTag("home-folder-${folder.id}"), onClick = { onFolder(folder.id) })
             }
         }

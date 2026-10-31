@@ -249,6 +249,11 @@ internal object FolioMotion {
     /** A refusal: the dock shaking its head. Deliberately underdamped, and started with a push ([SHAKE_VELOCITY]). */
     val Shake = .22f to 900f
     const val SHAKE_VELOCITY = 260f
+    val Fill = apple(.9f, 0f)
+    val Bell = .3f to 700f
+    const val BELL_VELOCITY = 520f
+    val Rubber = 1f to 600f
+    val Pop = .6f to 900f
 
     /** Apple's way of naming a spring: how long it feels, and how much it overshoots (0 none, .15 brisk, .3 bouncy). */
     fun apple(duration: Float, bounce: Float): Pair<Float, Float> {

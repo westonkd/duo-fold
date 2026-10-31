@@ -10,7 +10,14 @@ Folio shows the newest section on the phone after an update, and every version u
 ### Added
 - **A new widget gallery:** tap + while editing Home and the gallery slides up over Home with every app that has widgets. Choose one to swipe through its widgets at the size they'll be on Home, pick Small, Medium or Large, and tap Add Widget to put it in the first free spot. Unfolded, the apps and their widgets sit side by side, and Twofold's own widgets show what they really look like.
 
+- **A hello on first launch:** the first time Twofold opens, the dock and your apps settle onto Home one after another, starting next to the Side Bar.
+- **Search holds a second search:** touch and hold the round Search button for the other search, Twofold's own Search when the button opens Google and Google when it opens Twofold's.
+
 ### Changed
+- **The Ring notices things:** plug in and the battery Ring fills up in green, and the bell rings for a moment when you turn on Silent mode.
+- **Home stretches at the ends:** swiping past the first or last page pulls Home a little way and lets it spring back, instead of stopping dead.
+- **Badges come and go:** a new notification badge pops onto its icon, and one you've read shrinks away instead of vanishing.
+- **The Search button presses like an icon:** it dips under your finger like the apps around it, instead of showing a ripple.
 - **A new app icon:** Twofold's icon is now two glass panels opening on a sunset gradient, the same one you see on Google Play and the website.
 - **Brighter glass edges:** glass in Twofold now catches the light on two opposite corners so the App Library, folders, the dock and menus stand out more clearly from the wallpaper.
 - **App Library search:** the search field is taller and clearer, and its magnifier and "App Library" sit in the middle until you tap it.
@@ -18,6 +25,7 @@ Folio shows the newest section on the phone after an update, and every version u
 - **Settings sidebar:** unfolded, the Settings list sits right on the background, and the open page is marked with a soft grey capsule instead of a teal highlight. On the cover screen, the lines between rows start at the row's name.
 
 ### Fixed
+- **Labels while editing Home:** on the cover screen, the bottom row of apps keeps its names while you edit Home.
 - **Smoother return to Home:** swiping up from an app, Home settles into place without stalling and jumping, whichever app you opened.
 - **Dropping a widget where it doesn't fit:** a widget held out of the gallery and let go where there's no room goes to the next free spot instead of disappearing.
 - **A full dock on any phone:** the first time Twofold starts, the dock and Home get your phone, browser, messages and music apps, and the usual everyday apps, whoever made the phone. Before, Twofold only knew Samsung's and Google's apps.

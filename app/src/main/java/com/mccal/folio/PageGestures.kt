@@ -9,6 +9,7 @@ import androidx.compose.ui.input.pointer.util.addPointerInputChange
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -22,7 +23,10 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.pager.PagerSnapDistance
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -59,6 +63,41 @@ internal fun boundedPagePosition(position: Float, anchor: Int, count: Int): Floa
     return position.coerceIn(low.toFloat(), high.toFloat())
 }
 
+internal const val RUBBER_BAND = .55f
+internal const val EDGE_REACH = .3f
+
+internal fun rubberBand(overshoot: Float, dimension: Float): Float {
+    if (overshoot == 0f || dimension <= 0f) return 0f
+    return sign(overshoot) * (1f - 1f / (abs(overshoot) * RUBBER_BAND / dimension + 1f)) * dimension
+}
+
+internal fun edgeOvershoot(requested: Float, count: Int): Float = when {
+    count <= 0 -> 0f
+    requested < 0f -> requested
+    requested > count - 1 -> requested - (count - 1)
+    else -> 0f
+}
+
+@Stable
+internal class PageEdgeStretch {
+    var offset by mutableFloatStateOf(0f)
+        private set
+    private var settle: Job? = null
+
+    fun pull(requested: Float, count: Int, stride: Float) {
+        settle?.cancel()
+        offset = -rubberBand(edgeOvershoot(requested, count) * stride, stride * EDGE_REACH)
+    }
+
+    fun release(scope: CoroutineScope) {
+        settle?.cancel()
+        if (offset == 0f) return
+        settle = scope.launch {
+            animate(offset, 0f, animationSpec = FolioMotion.spring(FolioMotion.Rubber)) { value, _ -> offset = value }
+        }
+    }
+}
+
 internal fun releasePage(position: Float, anchor: Int, count: Int, velocity: Float, threshold: Float,
     distanceThreshold: Float = .2f): Int {
     val displacement = position - anchor
@@ -93,12 +132,14 @@ internal fun Modifier.onePageGestures(
     /** False for touches that belong to another control (e.g. the page scrubber) and must not page Home. */
     canStartGesture: (Offset) -> Boolean = { true },
     onDownwardSwipe: ((ShadePanel) -> Unit)? = null,
+    edge: PageEdgeStretch? = null,
 ) : Modifier {
+    val stretchEdges = edge.takeUnless { LocalReduceMotion.current }
     val currentEnabled by rememberUpdatedState(enabled)
     val currentCanStartDownwardSwipe by rememberUpdatedState(canStartDownwardSwipe)
     val currentCanStartGesture by rememberUpdatedState(canStartGesture)
     val currentDownwardSwipe by rememberUpdatedState(onDownwardSwipe)
-    return nestedScroll(limits).pointerInput(pager, limits, motion) {
+    return nestedScroll(limits).pointerInput(pager, limits, motion, stretchEdges) {
         coroutineScope {
             var motionJob: Job? = null
             awaitEachGesture {
@@ -170,18 +211,20 @@ internal fun Modifier.onePageGestures(
                                     try {
                                         pager.scroll(MutatePriority.UserInput) {
                                             with(pager) { updateTargetPage((anchor - sign(distance.x).toInt()).coerceIn(0, pager.pageCount - 1)) }
-                                            fun moveBy(pixels: Float) {
+                                            fun moveBy(pixels: Float, following: Boolean = false) {
                                                 val current = position()
                                                 val requested = motion?.positionAfterVisualDelta(current, pixels)
                                                     ?: (current + pixels / stride())
+                                                if (following) stretchEdges?.pull(requested, pager.pageCount, stride())
                                                 val allowed = boundedPagePosition(requested, anchor, pager.pageCount)
                                                 scrollBy((allowed - current) * stride())
                                             }
                                             val dragStartVisualOffset = visualOffset()
                                             for (dragPosition in channel) {
                                                 if (dragPosition != 0f) with(pager) { updateTargetPage((anchor - sign(dragPosition).toInt()).coerceIn(0, pager.pageCount - 1)) }
-                                                moveBy(dragStartVisualOffset - dragPosition - visualOffset())
+                                                moveBy(dragStartVisualOffset - dragPosition - visualOffset(), following = true)
                                             }
+                                            stretchEdges?.release(this@coroutineScope)
                                             val velocity = if (canceled) 0f else releaseVelocity
                                             // A relaxed thumb swipe should commit even if the finger
                                             // slows before lifting. Cap the distance on the unfolded
@@ -217,6 +260,7 @@ internal fun Modifier.onePageGestures(
                                         }
                                         trace?.motionCompleted(position(), visualOffset())
                                     } catch (failure: CancellationException) {
+                                        stretchEdges?.release(this@coroutineScope)
                                         trace?.motionCanceled(position(), visualOffset())
                                         throw failure
                                     }

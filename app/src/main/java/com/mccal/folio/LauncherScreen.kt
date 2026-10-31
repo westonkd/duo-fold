@@ -254,6 +254,7 @@ fun LauncherScreen(
         }
     }
     val pageGestures = remember(nativePager) { PageGestureLimits(nativePager) }
+    val edgeStretch = remember { PageEdgeStretch() }
     SideEffect { pageGestures.editing = drag.active || widgetSession != null || resize.active }
     val pageFling = androidx.compose.foundation.pager.PagerDefaults.flingBehavior(nativePager, pagerSnapDistance = pageGestures,
         snapAnimationSpec = FolioMotion.spring(FolioMotion.Page))
@@ -722,6 +723,7 @@ fun LauncherScreen(
                 pageGestures,
                 motion = workspaceMotion,
                 enabled = pagerInputEnabled,
+                edge = edgeStretch,
                 // Positive IDs are provider-owned Android views. Leave their vertical
                 // stream untouched so scrollable widgets retain native gesture handling.
                 // A dock that is already scrolled, or magnifies under the finger, also gets first use of a downward drag.
@@ -789,11 +791,12 @@ fun LauncherScreen(
                         onProblem = onProblem,
                         libraryBack = { libraryBack },
                         onAddWidget = addWidgetToWidgetsPage.takeIf { widgetSession == null && sheet.isEmpty() },
+                        edgeStretch = { edgeStretch.offset },
                     )
                 }
             } else {
                 val pagerRtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
-                HorizontalPager(nativePager, Modifier.fillMaxSize().then(pagerSemantics),
+                HorizontalPager(nativePager, Modifier.fillMaxSize().graphicsLayer { translationX = edgeStretch.offset }.then(pagerSemantics),
                     // Keep adjacent Home panes attached so ordinary back-and-forth paging does
                     // not synchronously inflate provider RemoteViews inside the gesture frame.
                     beyondViewportPageCount = COVER_PAGES_KEPT,
@@ -1019,7 +1022,11 @@ fun LauncherScreen(
                 val controlSize = dockIconSize(geometry.iconSize).dp
                 val searchBounds = remember { android.graphics.Rect() }
                 if (!state.searchPill || pager.currentPage !in 0 until homePages) Box(Modifier.onGloballyPositioned { searchBounds.set(it.boundsInWindow().toAndroidBounds()) }) {
-                    CircleControl(Icons.Rounded.Search, if (state.googleSearch) stringResource(R.string.search_google) else stringResource(R.string.search_apps), "search", controlSize) {
+                    CircleControl(Icons.Rounded.Search, if (state.googleSearch) stringResource(R.string.search_google) else stringResource(R.string.search_apps), "search", controlSize,
+                        longClickLabel = if (state.googleSearch) stringResource(R.string.search_apps) else stringResource(R.string.search_google),
+                        onLongClick = {
+                            if (state.googleSearch || !onGoogleSearch(searchBounds)) launcherActivity.openSpotlight()
+                        }) {
                         if (!state.googleSearch || !onGoogleSearch(searchBounds)) launcherActivity.openSpotlight()
                     }
                 }

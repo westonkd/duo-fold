@@ -14,6 +14,15 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.material3.Text
@@ -55,6 +64,12 @@ internal fun statusRingDotAngles(dots: Int): List<Float> =
     List(dots.coerceAtLeast(0)) { i -> 90f + ((dots - 1) / 2f - i) * STATUS_RING_DOT_PITCH }
 
 internal const val STATUS_SPACING = 4f
+
+internal fun ringFillStart(wasCharging: Boolean, charging: Boolean, reduceMotion: Boolean): Float? =
+    if (charging && !wasCharging && !reduceMotion) 0f else null
+
+internal fun bellShouldRing(wasSilent: Boolean, silent: Boolean, reduceMotion: Boolean): Boolean =
+    silent && !wasSilent && !reduceMotion
 
 @Composable
 fun StatusRail(
@@ -99,6 +114,28 @@ fun StatusRail(
         (status.battery ?: 100) <= 20 -> low
         else -> ink
     }
+    val reduceMotion = LocalReduceMotion.current
+    val fill = remember { Animatable((status.battery ?: 0) / 100f) }
+    val seenCharging = remember { booleanArrayOf(status.charging) }
+    LaunchedEffect(status.charging, status.battery, reduceMotion) {
+        val target = (status.battery ?: 0) / 100f
+        val from = ringFillStart(seenCharging[0], status.charging, reduceMotion)
+        seenCharging[0] = status.charging
+        when {
+            reduceMotion -> fill.snapTo(target)
+            from != null -> { fill.snapTo(from); fill.animateTo(target, FolioMotion.spring(FolioMotion.Fill)) }
+            else -> fill.animateTo(target, FolioMotion.spring(FolioMotion.Snap))
+        }
+    }
+    val shownBatteryColor by animateColorAsState(batteryColor, tween(if (reduceMotion) 0 else 450), label = "battery color")
+    val bellAngle = remember { Animatable(0f) }
+    val seenSilent = remember { booleanArrayOf(status.silent) }
+    LaunchedEffect(status.silent, reduceMotion) {
+        val ring = bellShouldRing(seenSilent[0], status.silent, reduceMotion)
+        seenSilent[0] = status.silent
+        if (ring) bellAngle.animateTo(0f, FolioMotion.spring(FolioMotion.Bell), initialVelocity = FolioMotion.BELL_VELOCITY)
+        else bellAngle.snapTo(0f)
+    }
     val openLabel = stringResource(R.string.quick_settings)
     BoxWithConstraints(modifier.testTag("status-rail").semantics(mergeDescendants = true) { contentDescription = description }
         .then(if (onClick == null) Modifier else Modifier.clickable(remember { MutableInteractionSource() }, indication = null,
@@ -107,9 +144,16 @@ fun StatusRail(
         val visualSize = minOf(iconSize * .9f, availableWidth, if (compact) 34.dp else 44.dp)
         val timeSize = minOf(17f, availableWidth.value / (2.5f * fontScale)).sp
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(STATUS_SPACING.dp)) {
-            if (status.silent) Icon(Icons.Rounded.NotificationsOff, null,
-                tint = if (onLight) SilentOnLight else Silent,
-                modifier = Modifier.size(if (compact) 14.dp else 16.dp).testTag("status-silent"))
+            AnimatedVisibility(status.silent,
+                enter = if (reduceMotion) fadeIn(tween(FolioMotion.FADE_MS))
+                    else fadeIn(tween(FolioMotion.FADE_MS)) + expandVertically(FolioMotion.spring(FolioMotion.Quick), expandFrom = Alignment.Top),
+                exit = if (reduceMotion) fadeOut(tween(FolioMotion.FADE_MS))
+                    else fadeOut(tween(FolioMotion.FADE_MS)) + shrinkVertically(FolioMotion.spring(FolioMotion.Firm), shrinkTowards = Alignment.Top)) {
+                Icon(Icons.Rounded.NotificationsOff, null,
+                    tint = if (onLight) SilentOnLight else Silent,
+                    modifier = Modifier.size(if (compact) 14.dp else 16.dp).testTag("status-silent")
+                        .graphicsLayer { transformOrigin = TransformOrigin(.5f, .15f); rotationZ = bellAngle.value })
+            }
             Text(now.format(timeFormatter), color = ink, fontSize = timeSize, fontWeight = FontWeight.SemiBold, style = LocalTextStyle.current.copy(shadow = textShadow),
                 maxLines = 1, softWrap = false, overflow = TextOverflow.Clip)
             Box(Modifier.padding(top = FolioSpace.HAIR.dp).size(visualSize), contentAlignment = Alignment.Center) {
@@ -129,8 +173,8 @@ fun StatusRail(
                     val ringTopLeft = Offset(center.x - radius, center.y - radius)
                     drawArc(ink.copy(alpha = faint(look.trackAlpha)), arc.start, arc.sweep, false, ringTopLeft, Size(radius * 2, radius * 2),
                         style = Stroke(ringStroke, cap = StrokeCap.Round))
-                    status.battery?.let { level ->
-                        drawArc(batteryColor, arc.start, arc.sweep * level / 100, false, ringTopLeft,
+                    if (status.battery != null) {
+                        drawArc(shownBatteryColor, arc.start, arc.sweep * fill.value.coerceIn(0f, 1f), false, ringTopLeft,
                             Size(radius * 2, radius * 2), style = Stroke(width = ringStroke, cap = StrokeCap.Round))
                     }
                     statusRingDotAngles(dots).forEachIndexed { i, angle ->

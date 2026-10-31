@@ -171,3 +171,4 @@ internal fun HomeSearchPill(onClick: () -> Unit) {
 
 /** Where the jiggle bar's bottom edge falls (top inset + 48dp touch height + a little air), for Home's first-row clearance. */
 internal val JIGGLE_BAR_BOTTOM = FolioSpace.HAIR.dp + 48.dp + 4.dp
+internal val EDIT_LABEL_REACH = 16.dp
