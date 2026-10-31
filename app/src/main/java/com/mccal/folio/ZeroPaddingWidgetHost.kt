@@ -8,6 +8,8 @@ import android.content.Context
 import android.os.Bundle
 import android.util.SizeF
 import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
 import androidx.compose.ui.geometry.Offset
 
 internal class ZeroPaddingWidgetHost(context: Context, hostId: Int) : AppWidgetHost(context, hostId) {
@@ -18,6 +20,7 @@ internal class ZeroPaddingWidgetHost(context: Context, hostId: Int) : AppWidgetH
 
 internal class ZeroPaddingWidgetHostView(context: Context) : AppWidgetHostView(context) {
     private var providerOwnsVerticalGesture = false
+    private var stretch = CardStretch.NONE
     var fillsBox = false
         private set
     var onFillsBoxChanged: ((Boolean) -> Unit)? = null
@@ -27,7 +30,8 @@ internal class ZeroPaddingWidgetHostView(context: Context) : AppWidgetHostView(c
         }
     private val measureFill = Runnable {
         if (!isAttachedToWindow || width <= 0 || height <= 0) return@Runnable
-        val fills = renderFillsBox()
+        val fills = drawnFillsBox()
+        if (!fills && stretchWrappedCard()) return@Runnable
         if (fills != fillsBox) {
             fillsBox = fills
             onFillsBoxChanged?.invoke(fills)
@@ -40,6 +44,7 @@ internal class ZeroPaddingWidgetHostView(context: Context) : AppWidgetHostView(c
     }
 
     override fun setAppWidget(appWidgetId: Int, info: AppWidgetProviderInfo?) {
+        if (appWidgetId != this.appWidgetId) stretch = CardStretch.NONE
         super.setAppWidget(appWidgetId, info)
         setPadding(0, 0, 0, 0)
         scheduleSizePublication()
@@ -61,6 +66,11 @@ internal class ZeroPaddingWidgetHostView(context: Context) : AppWidgetHostView(c
     override fun updateAppWidget(remoteViews: android.widget.RemoteViews?) {
         super.updateAppWidget(remoteViews)
         scheduleFillCheck()
+    }
+
+    override fun prepareView(view: View) {
+        super.prepareView(view)
+        view.layoutParams?.let(::stretchToSlot)
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
@@ -102,20 +112,26 @@ internal class ZeroPaddingWidgetHostView(context: Context) : AppWidgetHostView(c
         postDelayed(measureFill, FILL_CHECK_DELAY_MS)
     }
 
-    private fun renderFillsBox(): Boolean = runCatching {
-        val scale = FILL_SAMPLE_PX / maxOf(width, height).toFloat()
-        val sampleWidth = maxOf(1, (width * scale).toInt())
-        val sampleHeight = maxOf(1, (height * scale).toInt())
-        val sample = android.graphics.Bitmap.createBitmap(sampleWidth, sampleHeight, android.graphics.Bitmap.Config.ARGB_8888)
-        try {
-            val canvas = android.graphics.Canvas(sample)
-            canvas.scale(scale, scale)
-            draw(canvas)
-            fillsBox(sampleWidth, sampleHeight) { x, y -> android.graphics.Color.alpha(sample.getPixel(x, y)) }
-        } finally {
-            sample.recycle()
-        }
-    }.getOrDefault(false)
+    private fun stretchWrappedCard(): Boolean {
+        val card = getChildAt(0) ?: return false
+        val params = card.layoutParams ?: return false
+        val next = wrappedCardStretch(
+            slotWidth = width, slotHeight = height,
+            cardWidth = card.width, cardHeight = card.height,
+            wrapsWidth = params.width == ViewGroup.LayoutParams.WRAP_CONTENT,
+            wrapsHeight = params.height == ViewGroup.LayoutParams.WRAP_CONTENT,
+        )
+        if (next == CardStretch.NONE || !card.drawnFillsBox()) return false
+        stretch = CardStretch(width = stretch.width || next.width, height = stretch.height || next.height)
+        stretchToSlot(params)
+        card.layoutParams = params
+        return true
+    }
+
+    private fun stretchToSlot(params: ViewGroup.LayoutParams) {
+        if (stretch.width && params.width == ViewGroup.LayoutParams.WRAP_CONTENT) params.width = ViewGroup.LayoutParams.MATCH_PARENT
+        if (stretch.height && params.height == ViewGroup.LayoutParams.WRAP_CONTENT) params.height = ViewGroup.LayoutParams.MATCH_PARENT
+    }
 
     private fun scheduleSizePublication() {
         removeCallbacks(publishCurrentSize)
@@ -125,6 +141,41 @@ internal class ZeroPaddingWidgetHostView(context: Context) : AppWidgetHostView(c
 
 private const val FILL_CHECK_DELAY_MS = 250L
 private const val FILL_SAMPLE_PX = 96f
+private const val STRETCHABLE_CARD_SHARE = .75f
+
+private fun View.drawnFillsBox(): Boolean = runCatching {
+    if (width <= 0 || height <= 0) return@runCatching false
+    val scale = FILL_SAMPLE_PX / maxOf(width, height).toFloat()
+    val sampleWidth = maxOf(1, (width * scale).toInt())
+    val sampleHeight = maxOf(1, (height * scale).toInt())
+    val sample = android.graphics.Bitmap.createBitmap(sampleWidth, sampleHeight, android.graphics.Bitmap.Config.ARGB_8888)
+    try {
+        val canvas = android.graphics.Canvas(sample)
+        canvas.scale(scale, scale)
+        draw(canvas)
+        fillsBox(sampleWidth, sampleHeight) { x, y -> android.graphics.Color.alpha(sample.getPixel(x, y)) }
+    } finally {
+        sample.recycle()
+    }
+}.getOrDefault(false)
+
+internal data class CardStretch(val width: Boolean, val height: Boolean) {
+    companion object {
+        val NONE = CardStretch(width = false, height = false)
+    }
+}
+
+internal fun wrappedCardStretch(
+    slotWidth: Int, slotHeight: Int,
+    cardWidth: Int, cardHeight: Int,
+    wrapsWidth: Boolean, wrapsHeight: Boolean,
+): CardStretch {
+    fun stretchable(card: Int, slot: Int) = card < slot && card >= slot * STRETCHABLE_CARD_SHARE
+    return CardStretch(
+        width = wrapsWidth && cardHeight >= slotHeight && stretchable(cardWidth, slotWidth),
+        height = wrapsHeight && cardWidth >= slotWidth && stretchable(cardHeight, slotHeight),
+    )
+}
 
 internal fun exactWidgetSizeOptions(widthDp: Float, heightDp: Float) = Bundle().apply {
     val width = widthDp.coerceAtLeast(1f)
