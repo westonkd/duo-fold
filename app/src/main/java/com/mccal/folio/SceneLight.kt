@@ -4,6 +4,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.toArgb
@@ -132,19 +133,30 @@ internal class PlacedGradient private constructor(private val shader: android.gr
 
 internal abstract class SceneLitNode : Modifier.Node(), GlobalPositionAwareModifierNode, DrawModifierNode,
     CompositionLocalConsumerModifierNode {
-    protected var toward = SceneLight.UNPLACED
-        private set
+    private var placed = SceneLight.UNPLACED
+    private var light = Offset.Unspecified
+    private var litSize = Size.Zero
+    private var window = Size.Zero
     protected abstract val live: Boolean
+
+    protected val toward: Offset
+        get() {
+            val tilt = if (live && light.isSpecified) currentValueOf(LocalLightTilt)?.shift else null
+            if (tilt == null || tilt == Offset.Zero) return placed
+            return SceneLight.toward(litSize, light + Offset(tilt.x * window.width, tilt.y * window.height))
+        }
 
     override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
         if (!coordinates.isAttached) return
         val root = coordinates.findRootCoordinates()
         if (live && !root.localBoundingBoxOf(coordinates, clipBounds = false).overlaps(Rect(Offset.Zero, root.size.toSize()))) return
         val drift = if (live) Offset.Zero else currentValueOf(LocalLightDrift).at(root.localPositionOf(coordinates, Offset.Zero))
-        val light = coordinates.localPositionOf(root, currentValueOf(LocalLightSource).at(root.size.toSize(), requireLayoutDirection()) - drift)
-        val next = SceneLight.toward(coordinates.size.toSize(), light)
-        if ((next - toward).getDistance() > SceneLight.SETTLE) {
-            toward = next
+        light = coordinates.localPositionOf(root, currentValueOf(LocalLightSource).at(root.size.toSize(), requireLayoutDirection()) - drift)
+        litSize = coordinates.size.toSize()
+        window = root.size.toSize()
+        val next = SceneLight.toward(litSize, light)
+        if ((next - placed).getDistance() > SceneLight.SETTLE) {
+            placed = next
             invalidateDraw()
         }
     }

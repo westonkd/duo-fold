@@ -175,14 +175,15 @@ internal fun androidx.compose.ui.Modifier.fadingVerticalScroll() = composed {
     edgeFade(state).verticalScroll(state)
 }
 
-internal enum class GlassRole(val rim: Float, val light: Float, val inset: Boolean = false, val lift: Float = 0f, val glint: Float = 1f) {
-    PANEL(1f, 1f), TILE(.9f, .8f), CAPSULE(1f, .9f), SEARCH(1f, .9f, glint = .6f), FIELD(.7f, 0f, inset = true), FLOATING(1f, .7f, lift = 1f)
+internal enum class GlassRole(val rim: Float, val light: Float, val inset: Boolean = false, val lift: Float = 0f, val glint: Float = 1f,
+    val bloom: Boolean = true) {
+    PANEL(1f, 1f), TILE(.9f, .8f), EDGE_LIT(1f, .8f, glint = 0f, bloom = false), CAPSULE(1f, .9f), SEARCH(1f, .9f, glint = .6f), FIELD(.7f, 0f, inset = true), FLOATING(1f, .7f, lift = 1f)
 }
 
 @androidx.compose.runtime.Immutable
 internal data class GlassSpec(val bodyStart: Color, val bodyEnd: Color, val light: Float, val grain: Float,
     val rimLead: Color, val rimSide: Color, val rimTrail: Color, val lift: Float, val edge: Color = Color.Transparent,
-    val glint: Float = 0f)
+    val glint: Float = 0f, val bloom: Boolean = true)
 
 internal const val LIQUID_FROST = .30f
 internal const val SEARCH_FIELD_FROST = .12f
@@ -293,7 +294,7 @@ internal fun liquidGlassSpec(base: Color, frost: Float, role: GlassRole, primary
     val side = Color.White.copy(alpha = LiquidGlass.RIM_SIDE)
     return GlassSpec(start, end, LiquidGlass.LIGHT * role.light, LiquidGlass.GRAIN,
         if (role.inset) trail else bright, side, if (role.inset) bright else trail, LiquidGlass.LIFT * role.lift,
-        Color.Black.copy(alpha = LiquidGlass.EDGE * role.rim), if (role.inset) 0f else LiquidGlass.GLINT * role.light * role.glint)
+        Color.Black.copy(alpha = LiquidGlass.EDGE * role.rim), if (role.inset) 0f else LiquidGlass.GLINT * role.light * role.glint, role.bloom)
 }
 
 private object GlassGrain {
@@ -385,7 +386,7 @@ private class LiquidGlassNode(private var shape: androidx.compose.ui.graphics.Sh
         drawOutline(outline, cut.body)
         if (spec.light > 0f) {
             drawOutline(outline, lights.light.along(frame, frame.lit, frame.span * .55f).brush)
-            drawOutline(outline, lights.bloom.around(frame, frame.inward(.04f), frame.side * .6f).brush)
+            if (spec.bloom) drawOutline(outline, lights.bloom.around(frame, frame.inward(.04f), frame.side * .6f).brush)
         }
         drawOutline(outline, GlassGrain.brush, alpha = spec.grain)
         if (spec.glint > 0f) drawOutline(outline, lights.glint.around(frame, frame.inward(.1f), frame.side * .36f).brush)

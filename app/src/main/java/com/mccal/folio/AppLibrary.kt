@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.positionInRoot
 
 /** Incremented to focus the All apps search field (e.g. after a middle swipe-down on Home). */
@@ -129,8 +130,15 @@ internal fun AppLibrary(
             onLaunch = { openCategory = null; onLaunchFrom(it, null) }, onActions = { openCategory = null; onActions(it) })
     }
     val panelShape = RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)
-    CompositionLocalProvider(LocalLightSource provides SceneLight.Library) {
-    Surface(modifier, shape = panelShape,
+    var libraryShown by remember { mutableStateOf(false) }
+    val librarySettled = remember { booleanArrayOf(false) }
+    val tilt = rememberLightTilt(libraryShown) { !librarySettled[0] || listState.isScrollInProgress }
+    CompositionLocalProvider(LocalLightSource provides SceneLight.Library, LocalLightTilt provides tilt) {
+    Surface(modifier.onGloballyPositioned {
+        val shown = it.boundsInRoot().width
+        libraryShown = shown > 0f
+        librarySettled[0] = shown >= it.size.width - 1f
+    }, shape = panelShape,
         color = if (glass) Color.Transparent else MaterialTheme.colorScheme.surface,
         contentColor = ink) {
         Column(Modifier.padding(horizontal = FolioSpace.LARGE.dp).padding(top = 18.dp)) {
