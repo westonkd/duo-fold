@@ -94,7 +94,7 @@ internal fun CategoryCard(title: String, apps: List<AppEntry>, modifier: Modifie
             val gap = 10.dp
             val cell = (maxWidth - inset * 2 - gap) / 2
             val tileShape = ContinuousRoundedShape(concentricRadius(cell.value * ICON_CORNER_FRACTION, inset.value) / maxWidth.value)
-            Box(Modifier.fillMaxSize().clip(tileShape).liquidGlass(tileShape, LIBRARY_TILE_FROST, GlassRole.TILE).padding(inset)) {
+            Box(Modifier.fillMaxSize().clip(tileShape).liquidGlass(tileShape, LIBRARY_TILE_FROST, GlassRole.EDGE_LIT, live = true).padding(inset)) {
             val big = if (apps.size > 4) apps.take(3) else apps.take(4)
             val rest = if (apps.size > 4) apps.drop(3) else emptyList()
             Column(verticalArrangement = Arrangement.spacedBy(gap)) {

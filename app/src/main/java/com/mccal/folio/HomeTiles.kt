@@ -215,7 +215,7 @@ internal fun DockAppColumn(
                     label = "dock insertion visibility $id", // english-only
                 )
                 Box(Modifier.offset { animatedOffset }.then(if (horizontal) Modifier.fillMaxHeight().width(rowHeight.dp) else Modifier.fillMaxWidth().height(rowHeight.dp)).graphicsLayer { alpha = opacity * drag.landing.cellAlpha(id) }
-                    .testTag("dock-app-$id"), contentAlignment = Alignment.Center) {
+                    .arrival(renderIndex).testTag("dock-app-$id"), contentAlignment = Alignment.Center) {
                     Box(Modifier.size(iconSize.dp).testTag("dock-icon-$id")
                         .onGloballyPositioned { if (savedIndex >= 0) { launchBounds[savedIndex].set(it.boundsInWindow().toAndroidBounds()); IconBounds.update(id, launchBounds[savedIndex]) } }
                         .jiggle(id)) {
@@ -289,7 +289,7 @@ internal fun FolderTile(folder: FolderEntry, apps: Map<String, AppEntry>, size: 
                 }
             }
             }
-            if (total > 0) IconBadge(total, look.badges, BadgeRed)
+            ArrivingIconBadge(total, look.badges, BadgeRed)
         }
         if (labels) Text(folder.title, color = LocalHomeInk.current.primary, fontSize = HOME_LABEL_SP.sp, maxLines = 1,
             overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = FolioSpace.TINY.dp))

@@ -22,6 +22,14 @@ class SceneLightTest {
         assertEquals(window.width - ltr.x, rtl.x, .001f)
     }
 
+    @Test fun `the App Library's light sits inside the window's upper leading corner`() {
+        val ltr = SceneLight.Library.at(window, LayoutDirection.Ltr)
+        val rtl = SceneLight.Library.at(window, LayoutDirection.Rtl)
+        assertTrue(ltr.y in 0f..window.height / 2f)
+        assertTrue(ltr.x in 0f..window.width / 2f)
+        assertEquals(window.width - ltr.x, rtl.x, .001f)
+    }
+
     @Test fun `two surfaces side by side catch the light at different places`() {
         val left = SceneLight.litEdge(box, towardFrom(Offset(50f, 100f)))
         val right = SceneLight.litEdge(box, towardFrom(Offset(550f, 100f)))

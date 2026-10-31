@@ -2,7 +2,9 @@ package com.mccal.folio
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.toArgb
@@ -26,14 +28,22 @@ import kotlin.math.sqrt
 internal object SceneLight {
     const val ACROSS = .3f
     const val ABOVE = .04f
+    const val LIBRARY_ACROSS = .2f
+    const val LIBRARY_DOWN = .18f
     const val SETTLE = .003f
     const val SPOT_REACH = .38f
     val UNPLACED = unit(Offset(-.45f, -1f))
 
-    fun source(window: Size, layoutDirection: LayoutDirection): Offset {
-        val across = if (layoutDirection == LayoutDirection.Rtl) 1f - ACROSS else ACROSS
-        return Offset(window.width * across, -window.height * ABOVE)
+    val Above = LightSource(::source)
+    val Library = LightSource { window, layoutDirection ->
+        Offset(window.width * leading(LIBRARY_ACROSS, layoutDirection), window.height * LIBRARY_DOWN)
     }
+
+    fun source(window: Size, layoutDirection: LayoutDirection): Offset =
+        Offset(window.width * leading(ACROSS, layoutDirection), -window.height * ABOVE)
+
+    private fun leading(across: Float, layoutDirection: LayoutDirection) =
+        if (layoutDirection == LayoutDirection.Rtl) 1f - across else across
 
     fun toward(size: Size, light: Offset): Offset {
         val side = minOf(size.width, size.height).coerceAtLeast(1f)
@@ -56,6 +66,12 @@ internal object SceneLight {
 
     private val Size.center get() = Offset(width / 2f, height / 2f)
 }
+
+internal fun interface LightSource {
+    fun at(window: Size, layoutDirection: LayoutDirection): Offset
+}
+
+internal val LocalLightSource = compositionLocalOf { SceneLight.Above }
 
 internal fun interface LightDrift {
     fun at(window: Offset): Offset
@@ -117,18 +133,30 @@ internal class PlacedGradient private constructor(private val shader: android.gr
 
 internal abstract class SceneLitNode : Modifier.Node(), GlobalPositionAwareModifierNode, DrawModifierNode,
     CompositionLocalConsumerModifierNode {
-    protected var toward = SceneLight.UNPLACED
-        private set
+    private var placed = SceneLight.UNPLACED
+    private var light = Offset.Unspecified
+    private var litSize = Size.Zero
+    private var window = Size.Zero
     protected abstract val live: Boolean
+
+    protected val toward: Offset
+        get() {
+            val tilt = if (live && light.isSpecified) currentValueOf(LocalLightTilt)?.shift else null
+            if (tilt == null || tilt == Offset.Zero) return placed
+            return SceneLight.toward(litSize, light + Offset(tilt.x * window.width, tilt.y * window.height))
+        }
 
     override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
         if (!coordinates.isAttached) return
         val root = coordinates.findRootCoordinates()
+        if (live && !root.localBoundingBoxOf(coordinates, clipBounds = false).overlaps(Rect(Offset.Zero, root.size.toSize()))) return
         val drift = if (live) Offset.Zero else currentValueOf(LocalLightDrift).at(root.localPositionOf(coordinates, Offset.Zero))
-        val light = coordinates.localPositionOf(root, SceneLight.source(root.size.toSize(), requireLayoutDirection()) - drift)
-        val next = SceneLight.toward(coordinates.size.toSize(), light)
-        if ((next - toward).getDistance() > SceneLight.SETTLE) {
-            toward = next
+        light = coordinates.localPositionOf(root, currentValueOf(LocalLightSource).at(root.size.toSize(), requireLayoutDirection()) - drift)
+        litSize = coordinates.size.toSize()
+        window = root.size.toSize()
+        val next = SceneLight.toward(litSize, light)
+        if ((next - placed).getDistance() > SceneLight.SETTLE) {
+            placed = next
             invalidateDraw()
         }
     }

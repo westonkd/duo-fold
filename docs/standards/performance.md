@@ -31,6 +31,21 @@ moves, icons got a rounded-rect shadow caster and a cached layer, and the cover 
 janky, 6 / 8 / 17 ms, a median 1.2 ms issuing draws, and one spike in 40 swipes. The App Library scrolling (20 flings)
 went from 4.9% janky and 6.0 ms issuing draws to 4.6% and 3.5 ms; what is left there is GPU time.
 
+App Library category glass relit, 30 Oct 2026, on the Fold8 cover (`fast` build, A/B installs, two runs each). Glass
+that relights on every move slowed J2 (40 swipes) from P50 11 ms and P90 21 ms to 13 and 23 to 24 ms, because the App
+Library page stays attached beside Home and relit on every swipe while off screen. Live glass now skips relighting
+while it is outside the window. With that, and the App Library's own light inside its upper leading corner, J2 measured
+5.3 to 6.2% janky, P50 12 ms, P90 20 to 23 ms against 5.5 to 6.3%, 11 ms and 22 ms; 20 App Library flings 2.1 to 2.2%
+janky against 2.7 to 2.9%, P50 11 to 13 ms both ways.
+
+App Library tilt, 30 Oct 2026, same setup, with the gravity sensor replaced by a steady simulated tilt (a worst case:
+the phone always moving). Still, tilt costs nothing: 10 frames in 10 s, as on Home, and the sensor is off unless the App
+Library is on screen. Moving, the App Library redraws for the light: at 50 Hz with every reading, 44 frames a second
+idle, about 6 ms of GPU each (the blurred wallpaper under the glass, not the glass), scrolling 33% janky and J2 16%. With
+the sensor at 30 Hz and tilt held while the list scrolls or the page moves: 29 frames a second idle, scrolling 25% janky
+against 2.2%, J2 13.7% against 5.6 to 6.3%. P50 and P90 match the build without tilt (scrolling 11 / 15 ms, J2 12 to 13
+/ 19 to 22 ms); the extra janky frames are the tilt redraws between gestures, about one each.
+
 Baseline, J1 on the Fold8 cover screen (`fast` build compiled with its baseline profile, Home started after an update,
 medians of 5): first frame 80 ms, fully drawn 899 ms (827 to 1,151). Uncompiled, as it is right after an update (one
 run): 114 ms and 1,501 ms. Fully drawn missed the 400 ms target because it waited for the app list: one background

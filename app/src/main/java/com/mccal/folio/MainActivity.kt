@@ -45,6 +45,7 @@ class MainActivity : ComponentActivity() {
     private val showWhatsNew = mutableStateOf(false)
     private val whatsNewRequested = mutableStateOf(false)
     private val showDevBuild = mutableStateOf(false)
+    private var homeArrival: HomeArrival? = null
     private lateinit var status: DeviceStatusMonitor
     private var returningFromShadeSettings = false
     // The gestures dialog asked to show while the build page or What's New was up; it shows when they close.
@@ -55,6 +56,7 @@ class MainActivity : ComponentActivity() {
         if (usesSystemWallpaper(this)) setTheme(R.style.Theme_Duo_Wallpaper)
         super.onCreate(savedInstanceState)
         showWhatsNew.value = savedInstanceState == null && WhatsNew.shouldShow(this)
+        homeArrival = if (savedInstanceState == null && FirstArrival.take(this)) HomeArrival() else null
         Installs.start(this); NewApps.load(this)
         // Folio Dev only: its builds keep one version name, so What's New never shows; this page is keyed to the commit.
         // Not tied to savedInstanceState: after an install the app is killed and Android restores Home from saved state, which
@@ -155,6 +157,13 @@ class MainActivity : ComponentActivity() {
             if (state.badgesWhenOpened) androidx.compose.runtime.LaunchedEffect(postedBadges) { model.trimBadgesSeen(postedBadges) }
             androidx.compose.runtime.SideEffect { latestNotifications = notificationItems }
             val wallpaperTone = rememberWallpaperTone(state.systemWallpaper)
+            homeArrival?.let { arrival ->
+                val sheetUp = showWhatsNew.value || whatsNewRequested.value || showDevBuild.value
+                androidx.compose.runtime.LaunchedEffect(arrival, sheetUp) {
+                    if (!sheetUp) arrival.begin()
+                    else { kotlinx.coroutines.delay(ArrivalMotion.FAILSAFE_MS); arrival.begin() }
+                }
+            }
             // Re-read on every resume so turning Remove animations on/off applies without restarting.
             val reduceMotionState = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(reduceMotionEnabled(this@MainActivity)) }
             androidx.lifecycle.compose.LifecycleResumeEffect(Unit) { reduceMotionState.value = reduceMotionEnabled(this@MainActivity); onPauseOrDispose { } }
@@ -181,7 +190,8 @@ class MainActivity : ComponentActivity() {
                 LocalAppIconStyles provides state.appIconStyles,
                 LocalIconsAreDark provides iconsAreDark,
                 LocalRecentPackages provides recentPackages,
-                LocalBadgeCounts provides badgeCounts, LocalInstallProgress provides installProgress, LocalNewApps provides newApps, LocalFolderColors provides state.folderColors) { FoldTransitionHost(state.foldEffect, state.stayAwakeOnFold,
+                LocalBadgeCounts provides badgeCounts, LocalInstallProgress provides installProgress, LocalNewApps provides newApps, LocalFolderColors provides state.folderColors,
+                LocalHomeArrival provides homeArrival) { FoldTransitionHost(state.foldEffect, state.stayAwakeOnFold,
                     state.haptics, reduceMotion = reduceMotion) {
                 // The launcher blurs behind every overlay with the same spring the overlay uses.
                 androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()

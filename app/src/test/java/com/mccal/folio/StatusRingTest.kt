@@ -25,4 +25,18 @@ class StatusRingTest {
         assertTrue(kotlin.math.cos(Math.toRadians(angles.first().toDouble())) < 0)
         assertTrue(kotlin.math.cos(Math.toRadians(angles.last().toDouble())) > 0)
     }
+
+    @Test fun `the ring refills from empty only when a charger connects`() {
+        assertEquals(0f, ringFillStart(wasCharging = false, charging = true, reduceMotion = false))
+        assertEquals(null, ringFillStart(wasCharging = true, charging = true, reduceMotion = false))
+        assertEquals(null, ringFillStart(wasCharging = true, charging = false, reduceMotion = false))
+        assertEquals(null, ringFillStart(wasCharging = false, charging = true, reduceMotion = true))
+    }
+
+    @Test fun `the bell rings only when Silent turns on, and never with Reduce Motion`() {
+        assertTrue(bellShouldRing(wasSilent = false, silent = true, reduceMotion = false))
+        assertTrue(!bellShouldRing(wasSilent = true, silent = true, reduceMotion = false))
+        assertTrue(!bellShouldRing(wasSilent = true, silent = false, reduceMotion = false))
+        assertTrue(!bellShouldRing(wasSilent = false, silent = true, reduceMotion = true))
+    }
 }
