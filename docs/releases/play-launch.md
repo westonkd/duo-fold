@@ -7,7 +7,7 @@ and on your machine.
 | | |
 |---|---|
 | Package | `com.westonkd.folio` (permanent after the first upload) |
-| Version | `1.0.0`, `versionCode` 100000 |
+| Version | `1.0.1`, `versionCode` 100010. 1.0.0 is dated in CHANGELOG.md but was never uploaded; 1.0.1 is the first build Play sees |
 | Store title | Twofold: Foldable Launcher |
 | Category | Personalization |
 | Privacy policy | <https://twofoldlauncher.app/privacy> |
@@ -119,7 +119,7 @@ access the user grants in Android's settings, each behind an in-app disclosure.
 
 Everything is in `fastlane/metadata/android/en-US/`: `title.txt`, `short_description.txt`, `full_description.txt`,
 `images/icon.png` (512 x 512), `images/featureGraphic.png` (1024 x 500), and screenshots for phones and tablets
-taken from the release build on the emulator. The changelog for this version is `changelogs/100000.txt`.
+taken from the release build on the emulator. The changelog for this version is `changelogs/100010.txt`.
 
 Keep the listing free of Apple's names (iPhone, iOS, iPad, Spotlight, Dynamic Island, Liquid Glass): Play's
 metadata and impersonation policies are strict about other companies' trademarks, and a rejection costs days.
