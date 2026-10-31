@@ -31,6 +31,13 @@ moves, icons got a rounded-rect shadow caster and a cached layer, and the cover 
 janky, 6 / 8 / 17 ms, a median 1.2 ms issuing draws, and one spike in 40 swipes. The App Library scrolling (20 flings)
 went from 4.9% janky and 6.0 ms issuing draws to 4.6% and 3.5 ms; what is left there is GPU time.
 
+App Library category glass relit, 30 Oct 2026, on the Fold8 cover (`fast` build, A/B installs, two runs each). Glass
+that relights on every move slowed J2 (40 swipes) from P50 11 ms and P90 21 ms to 13 and 23 to 24 ms, because the App
+Library page stays attached beside Home and relit on every swipe while off screen. Live glass now skips relighting
+while it is outside the window. With that, and the App Library's own light inside its upper leading corner, J2 measured
+5.3 to 6.2% janky, P50 12 ms, P90 20 to 23 ms against 5.5 to 6.3%, 11 ms and 22 ms; 20 App Library flings 2.1 to 2.2%
+janky against 2.7 to 2.9%, P50 11 to 13 ms both ways.
+
 Baseline, J1 on the Fold8 cover screen (`fast` build compiled with its baseline profile, Home started after an update,
 medians of 5): first frame 80 ms, fully drawn 899 ms (827 to 1,151). Uncompiled, as it is right after an update (one
 run): 114 ms and 1,501 ms. Fully drawn missed the 400 ms target because it waited for the app list: one background

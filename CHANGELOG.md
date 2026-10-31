@@ -17,6 +17,7 @@ Folio shows the newest section on the phone after an update, and every version u
 - **The Ring notices things:** plug in and the battery Ring fills up in green, and the bell rings for a moment when you turn on Silent mode.
 - **Home stretches at the ends:** swiping past the first or last page pulls Home a little way and lets it spring back, instead of stopping dead.
 - **Badges come and go:** a new notification badge pops onto its icon, and one you've read shrinks away instead of vanishing.
+- **The App Library catches the light:** the App Library has its own light, up in its top corner, and each category's glass catches it from wherever it sits, so the shine moves as you scroll or swipe in.
 - **The Search button presses like an icon:** it dips under your finger like the apps around it, instead of showing a ripple.
 - **A new app icon:** Twofold's icon is now two glass panels opening on a sunset gradient, the same one you see on Google Play and the website.
 - **Brighter glass edges:** glass in Twofold now catches the light on two opposite corners so the App Library, folders, the dock and menus stand out more clearly from the wallpaper.

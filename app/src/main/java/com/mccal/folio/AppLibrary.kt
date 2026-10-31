@@ -129,6 +129,7 @@ internal fun AppLibrary(
             onLaunch = { openCategory = null; onLaunchFrom(it, null) }, onActions = { openCategory = null; onActions(it) })
     }
     val panelShape = RoundedCornerShape(FolioRadius.GROUPED_CARD.dp)
+    CompositionLocalProvider(LocalLightSource provides SceneLight.Library) {
     Surface(modifier, shape = panelShape,
         color = if (glass) Color.Transparent else MaterialTheme.colorScheme.surface,
         contentColor = ink) {
@@ -236,6 +237,7 @@ internal fun AppLibrary(
             }
             }
         }
+    }
     }
 }
 
