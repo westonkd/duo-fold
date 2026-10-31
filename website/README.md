@@ -23,14 +23,16 @@ npm run dev
 
 ## Deploy
 
-One time: in the Cloudflare dashboard, Workers & Pages › Create › Import a repository, pick this repository, and set
+The site lives at <https://twofoldlauncher.app>, served by the Worker `folio-website`. It deploys by hand, from an up-to-date `main`, with Wrangler logged in (`npx wrangler whoami`; `npx wrangler login` if not):
 
-- Root directory: `website`
-- Build command: `npm run build`
-- Deploy command: `npx wrangler deploy`
+```bash
+bash tools/deploy-website.sh
+```
 
-Every push to `main` then deploys, and other branches get preview URLs. The site lives at <https://twofoldlauncher.app>: `routes` in `wrangler.jsonc` binds that domain to the Worker on deploy, so its zone has to be in the same Cloudflare account. The canonical links, `og:url`, `og:image` and `public/sitemap.xml` name the domain too, so a move touches all of them.
+The script refuses uncommitted changes to the site or to `PRIVACY.md` and `PERMISSIONS.md`, and refuses anything but `origin/main`, then builds, runs `wrangler deploy` and checks that every page answers on the live domain. `--dry-run` builds and checks the upload without sending it, and `--check` only checks the live site. A change to `PRIVACY.md` isn't public until the site is deployed, since the app and Play link to `/privacy`.
 
-To deploy by hand instead: `npx wrangler login`, then `npm run deploy`.
+`routes` in `wrangler.jsonc` binds the domain to the Worker on deploy, so its zone has to be in the same Cloudflare account. The canonical links, `og:url`, `og:image` and `public/sitemap.xml` name the domain too, so a move touches all of them.
+
+To deploy on every push to `main` instead, connect the repository under the Worker's Settings › Build in the Cloudflare dashboard with root directory `website`, build command `npm run build` and deploy command `npx wrangler deploy`.
 
 Keep Apple's names (iPhone, iOS, Spotlight, Dynamic Island, Liquid Glass) out of the copy, the same as the store listing.
