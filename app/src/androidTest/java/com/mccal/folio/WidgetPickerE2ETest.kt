@@ -69,15 +69,17 @@ class WidgetPickerE2ETest {
     private fun prepareEmptySecondPage() {
         val layout = model().state.value.layout
         val app = model().state.value.apps.first { it.id !in layout.dock }
-        compose.runOnIdle { model().applyDrop(app.id, DropTarget.Home(47)) }
+        compose.runOnIdle { model().applyDrop(app.id, DropTarget.Home(2 * HOME_CELLS - 1)) }
         compose.onNodeWithContentDescription("Home page 2").performClick()
         compose.waitForIdle()
-        assertNull(model().state.value.homeSlots[24])
+        assertNull(model().state.value.homeSlots[HOME_CELLS])
     }
 
-    private fun openCatalogAt(index: Int = 24) {
+    private fun openCatalogAt(index: Int = HOME_CELLS) {
+        val addWidget = hasText("Add Widget")
         compose.onNodeWithTag("home-cell-$index").performTouchInput { longClick() }
-        compose.onNodeWithText("Add widget").performClick()
+        if (compose.onAllNodes(addWidget).fetchSemanticsNodes().isEmpty()) compose.onNodeWithTag("home-cell-$index").performTouchInput { longClick() }
+        compose.onNode(addWidget).performClick()
         compose.onNodeWithTag("visual-widget-picker").assertIsDisplayed()
     }
 
@@ -110,7 +112,7 @@ class WidgetPickerE2ETest {
                 idsBefore, controller().host.appWidgetIds.toSet())
 
             compose.showInGallery(compose.activity, provider("ModernTargetWidgetProvider"))
-            compose.onNodeWithTag(providerTag("ModernTargetWidgetProvider")).assertIsDisplayed()
+            compose.onNodeWithTag(providerTag("ModernTargetWidgetProvider"), useUnmergedTree = true).assertIsDisplayed()
             compose.waitUntil(10_000) {
                 runCatching { compose.onNodeWithTag(previewTag("ModernTargetWidgetProvider"), useUnmergedTree = true).fetchSemanticsNode() }.isSuccess
             }
@@ -129,7 +131,7 @@ class WidgetPickerE2ETest {
 
             openCatalogAt()
             compose.showInGallery(compose.activity, provider("LegacyResizableWidgetProvider"))
-            compose.onNodeWithTag(providerTag("LegacyResizableWidgetProvider")).assertIsDisplayed()
+            compose.onNodeWithTag(providerTag("LegacyResizableWidgetProvider"), useUnmergedTree = true).assertIsDisplayed()
             compose.onNodeWithText("Doesn’t fit this layout").assertDoesNotExist()
             compose.onNodeWithTag("widget-add").assertIsEnabled()
         } finally { cleanup(before, idsBefore) }
@@ -196,7 +198,7 @@ class WidgetPickerE2ETest {
             placeByTap("OptionalConfigWidgetProvider")
             compose.waitUntil(10_000) { model().placement(slot)?.id?.let { it >= 0 } == true }
             val placed = requireNotNull(model().placement(slot))
-            assertEquals(24, placed.page * HOME_CELLS + placed.row * GRID_COLUMNS + placed.column)
+            assertEquals(HOME_CELLS, placed.page * HOME_CELLS + placed.row * GRID_COLUMNS + placed.column)
             assertNull("Optional + reconfigurable must not leave a configuration transaction", controller().pendingPlacement)
             assertEquals(provider("OptionalConfigWidgetProvider").provider,
                 controller().manager.getAppWidgetInfo(placed.id)?.provider)
@@ -257,7 +259,7 @@ class WidgetPickerE2ETest {
             val start = cardBounds.center + screenOffset
             val root = compose.onNodeWithTag("launcher-root")
             val right = root.fetchSemanticsNode().boundsInRoot.right + screenOffset.x - 3f
-            val destination = compose.onNodeWithTag("home-cell-24").fetchSemanticsNode().boundsInRoot.center + screenOffset
+            val destination = compose.onNodeWithTag("home-cell-$HOME_CELLS").fetchSemanticsNode().boundsInRoot.center + screenOffset
             val edge = Offset(right, start.y)
             val outcome = java.util.concurrent.atomic.AtomicReference<Result<Unit>>()
             val stage = java.util.concurrent.atomic.AtomicInteger(0)
@@ -362,7 +364,7 @@ class WidgetPickerE2ETest {
                 "Home page 3 of 3")).assertExists("Held provider must turn to the new blank page before release")
             compose.waitUntil(10_000) { model().placement(slot)?.id?.let { it >= 0 } == true }
             val placed = requireNotNull(model().placement(slot))
-            assertEquals("The held provider must use the selected blank-page anchor", 48,
+            assertEquals("The held provider must use the selected blank-page anchor", 2 * HOME_CELLS,
                 placed.page * HOME_CELLS + placed.row * GRID_COLUMNS + placed.column)
         } finally { cleanup(before, idsBefore) }
     }

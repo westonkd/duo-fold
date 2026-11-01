@@ -29,7 +29,7 @@ internal fun SemanticsNodeInteractionsProvider.openGalleryApp(appLabel: String) 
     val row = "widget-app-$appLabel"
     onNodeWithTag("widget-catalog-list", useUnmergedTree = true).performScrollToNode(hasTestTag(row))
     onNodeWithTag(row, useUnmergedTree = true).performClick()
-    onNodeWithTag("widget-detail").assertIsDisplayed()
+    onNodeWithTag("widget-detail", useUnmergedTree = true).assertIsDisplayed()
 }
 
 internal fun SemanticsNodeInteractionsProvider.showInGallery(context: Context, provider: AppWidgetProviderInfo) {
