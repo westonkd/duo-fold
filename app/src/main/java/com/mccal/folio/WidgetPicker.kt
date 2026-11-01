@@ -769,7 +769,7 @@ internal fun WidgetStage(widget: GalleryWidget, span: WidgetSpan, cellWidthDp: F
 @Composable
 internal fun BuiltinWidgetPreview(id: Int, modifier: Modifier) {
     Box(modifier.clip(RoundedCornerShape(FolioRadius.WIDGET.dp))) {
-        DuneWallpaper(Modifier.matchParentSize())
+        Box(Modifier.matchParentSize().background(FolioColors.HomeFallbackSurface))
         Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = .14f)))
         BuiltinWidgetCard(id, slot = -1) {}
     }

@@ -94,8 +94,8 @@ internal object FolioColors {
     val PopoverSurface = Color(0xFF2A2A2E)
     /** The outline and handle of a widget that can't be dropped where it is: softer than [Red], which is for destructive actions. */
     val InvalidDrop = Color(0xFFFF6B6B)
-    /** The bezel drawn around a phone in the Customization previews. */
-    val PreviewBezel = Color(0xFF0B0B0C)
+    /** Drawn behind Home on the rare window that doesn't show Android's wallpaper, so it never shows an earlier frame (#12, #35). */
+    val HomeFallbackSurface = Color(0xFFE9E9EC)
     /** Supporting text on dark glass and sheets. */
     val SecondaryLabel = Color.White.copy(alpha = .62f)
     /** iOS's label in light appearance: text on light glass (menus). */

@@ -121,7 +121,7 @@ fun LauncherScreen(
     state: LauncherState, model: LauncherModel, widgets: WidgetController, homeRequests: Int,
     homeFromFront: Boolean = false,
     onLaunch: (AppEntry) -> Unit, onMakeDefault: () -> Unit, onAppInfo: (AppEntry) -> Unit,
-    isDefaultHome: Boolean, deviceStatus: DeviceStatus, onStatusMode: (Boolean) -> Unit, onWallpaperPreview: () -> Unit,
+    isDefaultHome: Boolean, deviceStatus: DeviceStatus, onStatusMode: (Boolean) -> Unit,
     searchRequests: Int = 0, settingsRequests: Int = 0,
     onLaunchFrom: (AppEntry, android.graphics.Rect?) -> Unit = { app, _ -> onLaunch(app) },
     onGoogleSearch: (android.graphics.Rect?) -> Boolean = { false },
@@ -176,13 +176,6 @@ fun LauncherScreen(
         runCatching { uninstall.launch(uninstallIntent(app.packageName)) }.onFailure {
             deleting = null; deletingPackage = null
             FolioNotice.show(launcherActivity, launcherActivity.getString(R.string.app_not_deleted, app.label))
-        }
-    }
-    // The setting says Android's wallpaper but the window was built without it: rebuild it once to match.
-    LaunchedEffect(state.systemWallpaper) {
-        if (state.systemWallpaper && !launcherActivity.showsWallpaper && !WallpaperWindowRepair.tried) {
-            WallpaperWindowRepair.tried = true
-            launcherActivity.applyWallpaperWindow(true)
         }
     }
     val launcherRootView = LocalView.current.rootView
@@ -620,19 +613,12 @@ fun LauncherScreen(
             LocalAppPanel provides remember(state.appPanels, homeEdit.active, haptic) {
                 if (state.appPanels && !homeEdit.active) { app: AppEntry -> haptic.perform(FolioHaptic.Open); overlays.panel = app.id } else null
             }) {
-        // Folio's background unless Android's wallpaper is really behind the window: a see-through window with
-        // nothing behind it shows every earlier frame (#12, #35), so the worst case is a plain surface, never a
-        // smear. Only Android's wallpaper drifts now, and the system is what moves it (DYN-11: Reduce Motion leaves
-        // it still); a picture of Folio's has no spare width to slide, so it stays where it is.
         val backgroundMoves = state.wallpaperMotion && !LocalReduceMotion.current
-        // The scrim (iOS's legibility gradient, A11Y-9 and DES-16) rides inside the layer the background is already cached in, so it costs nothing per frame.
-        if (!state.systemWallpaper || !launcherActivity.showsWallpaper) DuneWallpaper(scrim = scrim)
-        else {
-            if (backgroundMoves) SystemWallpaperParallax(nativePager)
-            // Android's wallpaper is the system's to draw, so there is no cached layer of Folio's to bake the scrim
-            // into: here it is two gradient bands of fill a frame, in the window's own render node, with no new layer.
-            if (scrim.draws) Box(Modifier.fillMaxSize().homeScrim(scrim))
-        }
+        if (!launcherActivity.showsWallpaper) Box(Modifier.fillMaxSize().background(FolioColors.HomeFallbackSurface))
+        else if (backgroundMoves) SystemWallpaperParallax(nativePager)
+        // Android's wallpaper is the system's to draw, so there is no cached layer of Folio's to bake the scrim
+        // into: here it is two gradient bands of fill a frame, in the window's own render node, with no new layer.
+        if (scrim.draws) Box(Modifier.fillMaxSize().homeScrim(scrim))
         val wash = libraryWash(homeInk.dark, LocalGlassLook.current.backdropBlur)
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = LibraryShown.floatValue }.background(wash))
         // Home never moves for the keyboard: including IME insets here re-measured the whole grid on every
@@ -712,7 +698,7 @@ fun LauncherScreen(
                 widgetSession == null && !resize.active && sheet.isEmpty() && overlays.menu == null &&
                 overlays.folder == null && overlays.emptyCell == null && overlays.newFolder == null &&
                 launcherActivity.backups.preview == null && !launcherActivity.backups.pickerPending &&
-                !launcherActivity.backgrounds.pickerPending && widgets.setupStatus == null &&
+                widgets.setupStatus == null &&
                 widgets.reconfigureWidgetId == null
             val libraryPullZone = with(density) { 40.dp.toPx() }
             Box(Modifier.fillMaxSize().onGloballyPositioned {
@@ -1063,7 +1049,6 @@ fun LauncherScreen(
                                 onTurnOnWork = { model.turnOnWork(it) })
                         }
                         "settings", "settings:wallpaper" -> {
-                            CompositionLocalProvider(LocalPreviewPage provides pager.currentPage.coerceIn(0, homePages - 1)) {
                             CustomizationSheet(state, wide, model, isDefaultHome = isDefaultHome,
                             page = activeCustomizationPage, onPage = { customizationPage = it; sheet = "settings" },
                             onMakeDefault = { sheet = ""; onMakeDefault() },
@@ -1076,9 +1061,7 @@ fun LauncherScreen(
                             onImportLayout = { sheet = ""; launcherActivity.backups.startImport() },
                             onShadeSetup = { sheet = ""; onShadeSetup() },
                             onShowWhatsNew = { sheet = ""; onShowWhatsNew() },
-                            backgrounds = launcherActivity.backgrounds,
-                            onWallpaperPreview = { sheet = ""; onWallpaperPreview() }, homePage = pager.currentPage.coerceIn(0, homePages - 1))
-                            }
+                            homePage = pager.currentPage.coerceIn(0, homePages - 1))
                         }
                         "widgetActions" -> model.placement(picker.slot)?.let { placement ->
                             val topPitch = (geometry.widgetHeight + 18f) / 2f
@@ -1679,13 +1662,6 @@ fun LauncherScreen(
                 modifier = Modifier.testTag("backup-picker-resume")) { Text(stringResource(R.string.resume)) } },
             dismissButton = { TextButton(onClick = launcherActivity.backups::cancelImport,
                 modifier = Modifier.testTag("backup-picker-cancel")) { Text(stringResource(R.string.cancel)) } })
-        if (launcherActivity.backgrounds.pickerPending && !launcherActivity.backgrounds.loading) AlertDialog(
-            onDismissRequest = {}, title = { Text(stringResource(R.string.background_photo)) },
-            text = { Text(stringResource(R.string.the_photo_picker_was_interrupted_resume)) },
-            confirmButton = { TextButton(onClick = launcherActivity.backgrounds::choosePhoto,
-                modifier = Modifier.testTag("background-picker-resume")) { Text(stringResource(R.string.resume)) } },
-            dismissButton = { TextButton(onClick = launcherActivity.backgrounds::cancelPendingSelection,
-                modifier = Modifier.testTag("background-picker-cancel")) { Text(stringResource(R.string.cancel)) } })
         // A short confirmation ("Layout backup saved.") is a toast, which nothing has to dismiss; a problem,
         // or a long message the person has to read (what a restore did, which widgets to reconnect), keeps its dialog.
         launcherActivity.backups.successMessage?.takeIf { launcherActivity.backups.errorMessage == null && it.length <= SHORT_CONFIRMATION }?.let { message ->

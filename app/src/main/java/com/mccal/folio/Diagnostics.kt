@@ -175,7 +175,6 @@ internal object Diagnostics {
             "density ${metrics.densityDpi} (default ${android.util.DisplayMetrics.DENSITY_DEVICE_STABLE})",
             "font ${config.fontScale}×",
             "animations ${scale}×",
-            "wallpaper ${if (state?.optBoolean("systemWallpaper", false) == true) "Android" else "Twofold"}",
             "fold effect ${if (state?.optBoolean("foldEffect", true) != false) "on" else "off"}",
             "safe mode ${if (SafeMode.active) "on" else "off"}",
         ).joinToString(", ")
@@ -226,8 +225,7 @@ internal object Diagnostics {
     }.trimEnd()
 
     /**
-     * What Android shares about its wallpaper, and which background Folio puts behind Home (#353); "none" means Android
-     * gave Folio no colors.
+     * What Android shares about its wallpaper (#353); "none" means Android gave Folio no colors.
      */
     fun wallpaperReport(context: Context): String {
         val manager = runCatching { android.app.WallpaperManager.getInstance(context) }.getOrNull()
@@ -235,8 +233,7 @@ internal object Diagnostics {
             ?.let { c -> listOfNotNull(c.primaryColor.toArgb(), c.secondaryColor?.toArgb(), c.tertiaryColor?.toArgb()) }
         // AOSP's record of where the theme colors come from (a readable setting); One UI may keep its own instead.
         val themeSetting = runCatching { android.provider.Settings.Secure.getString(context.contentResolver, "theme_customization_overlay_packages") }.getOrNull()
-        return wallpaperReportText(usesSystemWallpaper(context), runCatching { launcherBackgroundEnabled(context) }.getOrDefault(false),
-            colors(android.app.WallpaperManager.FLAG_SYSTEM), colors(android.app.WallpaperManager.FLAG_LOCK),
+        return wallpaperReportText(colors(android.app.WallpaperManager.FLAG_SYSTEM), colors(android.app.WallpaperManager.FLAG_LOCK),
             systemPalette(context)?.colors, themeColorSource(themeSetting))
     }
 
@@ -244,12 +241,10 @@ internal object Diagnostics {
     internal fun themeColorSource(setting: String?): String? =
         setting?.let { Regex(""""android\.theme\.customization\.color_source"\s*:\s*"([^"]*)"""").find(it)?.groupValues?.get(1) }
 
-    internal fun wallpaperReportText(systemWallpaper: Boolean, folioPictureSaved: Boolean, home: List<Int>?, lock: List<Int>?,
+    internal fun wallpaperReportText(home: List<Int>?, lock: List<Int>?,
         palette: List<Int>? = null, themeColorSource: String? = null): String = buildString {
         fun text(colors: List<Int>?) = colors?.takeIf { it.isNotEmpty() }?.joinToString(" ") { String.format(java.util.Locale.ROOT, "#%06X", it and 0xFFFFFF) } ?: "none"
         appendLine("Wallpaper:")
-        appendLine("  behind Home: ${if (systemWallpaper) "Android's wallpaper" else "Twofold's background"}" +
-            " (a Twofold picture is ${if (folioPictureSaved) "saved" else "not saved"})")
         appendLine("  Android's colors, home: ${text(home)}")
         appendLine("  Android's colors, lock: ${text(lock)}")
         append("  system palette (accent 1, 2, 3 at 500): ${text(palette)}, theme color source: ${themeColorSource ?: "not set"}")
@@ -321,16 +316,6 @@ internal object Diagnostics {
         context.getSystemService(android.content.ClipboardManager::class.java)
             ?.setPrimaryClip(ClipData.newPlainText("Twofold diagnostics", text))
     }
-
-    fun backgroundSet(choice: BackgroundChoice) = event("Background set: ${choice.save()}")
-
-    /** Home asked for its background and got nothing back from the decoder. */
-    fun backgroundUnreadable(choice: BackgroundChoice, width: Int = 0, height: Int = 0) =
-        event("Background ${choice.save()} couldn't be decoded" + if (width > 0) " (${width}x$height)" else "")
-
-    /** The background was bigger than Folio draws and was decoded smaller. Expected never to happen. */
-    fun backgroundSampled(choice: BackgroundChoice, width: Int, height: Int, sample: Int) =
-        event("Background ${choice.save()} is ${width}x$height, decoded at 1/$sample")
 
     /** A pin request turned away. [why] is one of [PinTrust]'s reasons; the package is the one the request named. */
     fun pinRefused(packageName: String?, why: String) = event("Pin request from ${packageName ?: "an unknown app"} refused: $why")

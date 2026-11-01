@@ -27,13 +27,8 @@ class HomeScrimTest {
     }
 
     /**
-     * The palest colour Folio itself ships: the lit paper at the top of Night View of Saruwaka-machi, measured off
-     * the file in `assets/wallpapers` by reducing it to 48x48 so one pixel is a whole region and taking the
-     * brightest. Naruto Whirlpools is a shade darker at #D7C4A7, so this is the harder of the two.
-     *
-     * It used to be the sand at the foot of the dunes, which were removed with the rest of the drawn backgrounds.
-     * The number moved by a hair, which is the point: real art is about as pale as the scene that stood in for it,
-     * so the scrim still has to do the same work.
+     * A pale sand, about as light as a wallpaper gets before Automatic should pick dark text: the lit paper of a
+     * Hiroshige print Folio once shipped, kept as the hard case the scrim has to work over.
      */
     private val paleSand = 0xDFC69B
 
@@ -117,18 +112,6 @@ class HomeScrimTest {
         assertTrue("and .43 is what it would take", whiteOver(paleSand, .43f) >= 4.5)
     }
 
-    @Test fun `the scrim rides inside the layer the background is already cached in`() {
-        val wallpaper = source("DuneWallpaper.kt")
-        val block = wallpaper.substring(wallpaper.indexOf("internal fun DuneWallpaper("),
-            wallpaper.indexOf("internal fun DrawScope.drawLauncherBackground"))
-        val layer = block.indexOf(".graphicsLayer {")
-        val scrim = block.indexOf(".homeScrim(scrim)")
-        assertTrue("the background must still be cached offscreen", "CompositingStrategy.Offscreen" in block)
-        assertTrue("the scrim has to be drawn", scrim > 0)
-        assertTrue("after the layer, or it is composited over the cached background every frame instead of into it",
-            scrim > layer)
-    }
-
     @Test fun `the scrim costs no blur, no render effect and no layer of its own`() {
         val scrim = source("HomeScrim.kt")
         // Comments out: they name these very things to say the scrim does not use them.
@@ -141,12 +124,10 @@ class HomeScrimTest {
         assertTrue("drawWithCache" in code)
     }
 
-    @Test fun `Home composes the scrim with the text colour, and draws it over Android's wallpaper too`() {
+    @Test fun `Home composes the scrim with the text colour, and draws it over Android's wallpaper`() {
         val screen = source("LauncherScreen.kt")
         assertTrue("the scrim has to take the resolved ink",
             "HomeScrim.of(state.homeScrim, homeInk.dark)" in screen)
-        assertTrue("Folio's own background gets it inside its cached layer",
-            "DuneWallpaper(scrim = scrim)" in screen)
         assertTrue("Android's wallpaper is the system's to draw, so Home draws the bands over it",
             "if (scrim.draws) Box(Modifier.fillMaxSize().homeScrim(scrim))" in screen)
     }

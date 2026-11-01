@@ -1,5 +1,4 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="dune_wallpaper_description">The background you chose in Twofold, sized for your display.</string>
     <string name="shade_service_label">Twofold gestures &amp; overlays</string>
     <string name="shade_service_description">Lets Twofold open Android’s notifications and Quick Settings from Home gestures and run the system actions you give a gesture or button: Home, Back, Recents, close notifications, Android’s app drawer, lock screen, screenshot, power menu, split screen and play/pause. Only if you turn them on, it also shows Twofold’s dock handle, dock and Big Buttons over other apps. It does not read screen content, observe what you do in other apps, or collect any data.</string>
     <string name="personal">Personal</string>
@@ -11,19 +10,13 @@
     <string name="done">Done</string>
     <string name="set_as_home_app">Set as Home App</string>
     <string name="undo_last_layout_change">Undo Last Layout Change</string>
-    <string name="background">Background</string>
-    <string name="android_wallpaper">Android wallpaper</string>
-    <string name="folio_background">Twofold background</string>
     <string name="change_android_wallpaper">Change Android Wallpaper</string>
     <string name="text_on_home">Text on Home</string>
     <string name="labels_status_page_dots_and_widget_text">Labels, status, page dots and widget text on the wallpaper. Automatic uses dark text over light wallpapers. Darken behind text adds a soft shade at the top and bottom of Home, so white text reads over a pale wallpaper; the middle of your wallpaper is left as it is.</string>
     <string name="darken_behind_text">Darken Behind Text</string>
-    <string name="launcher_background">Launcher background</string>
     <string name="changes_the_image_behind_folio_s_home_sc">Changes the image behind Twofold’s Home screens.\u0020</string>
     <string name="cancel">Cancel</string>
     <string name="apply">Apply</string>
-    <string name="opens_android_s_preview_to_use_folio_s_b">Opens Android’s preview to use Twofold’s background as your phone’s wallpaper too (a live wallpaper), so it matches outside Twofold.</string>
-    <string name="preview_as_phone_wallpaper">Preview as phone wallpaper</string>
     <string name="gestures">Gestures</string>
     <string name="pull_down_from_the_top_left_for_notifica">Pull down from the top-left for Android’s notifications, top-right for Quick Settings. Swipe sideways to change pages. A swipe down lower on Home does what you pick above: set it to Notifications for Android’s notification shade, from anywhere on the page.</string>
     <string name="search_with_enter">Search with Enter</string>
@@ -87,8 +80,6 @@
     <string name="layout_document">Layout document</string>
     <string name="the_system_document_picker_is_still_open">The system document picker is still open. Return to it to finish, or cancel this operation.</string>
     <string name="resume">Resume</string>
-    <string name="background_photo">Background photo</string>
-    <string name="the_photo_picker_was_interrupted_resume">The photo picker was interrupted. Resume choosing a photo, or cancel and keep the current background.</string>
     <string name="ok">OK</string>
     <string name="widget_not_added">Widget not added</string>
     <string name="finish_widget_setup">Finish widget setup</string>
@@ -122,7 +113,6 @@
     <string name="review_restored_layout">Review restored layout</string>
     <string name="includes_your_unfolded_only_page">Includes your unfolded-only page.</string>
     <string name="this_also_restores_icon_layout_labels_se">This also restores icon layout, labels, search, and status settings.</string>
-    <string name="your_selected_launcher_background_photo">Your selected launcher background photo is not included in layout backups.</string>
     <string name="profile_attention">Profile attention</string>
     <string name="nothing_changes_until_you_choose_restore">Nothing changes until you choose Restore.</string>
     <string name="no_results_on_this_phone">No results on this phone</string>
@@ -147,11 +137,8 @@
     <string name="backup">Backup</string>
     <string name="credits">Credits</string>
     <string name="privacy_permissions">Privacy &amp; Permissions</string>
-    <string name="photo_ready">Photo ready</string>
     <string name="text_color">Text Color</string>
     <string name="automatic">Automatic</string>
-    <string name="choose_a_different_photo">Choose a Different Photo…</string>
-    <string name="choose_a_photo">Choose a Photo…</string>
     <string name="reduce_motion">Reduce Motion</string>
     <string name="reduce_motion_note">Pages, sheets and menus fade in where they land instead of sliding or growing, icons stop wiggling while you edit Home, and switches stop without bouncing.</string>
     <string name="reduce_motion_note_removed">On while Android\'s Remove animations is on. Twofold then shows every change at once.</string>
@@ -267,7 +254,6 @@
     <string name="app_info">App Info</string>
     <string name="accessibility_settings_are_unavailable">Accessibility settings are unavailable.</string>
     <string name="profile_is_unavailable">Profile is unavailable</string>
-    <string name="the_system_wallpaper_preview_is_unavaila">The system wallpaper preview is unavailable.</string>
     <string name="eeee_mmmm_d">EEEE, MMMM d</string>
     <string name="large">Large</string>
     <string name="flashlight">Flashlight</string>
@@ -487,7 +473,6 @@
     <string name="hidden_apps_count">Hidden Apps (%1$s)</string>
     <string name="hidden_apps_title">Hidden Apps</string>
     <string name="remove_widget_from_unfolded_only_page">Remove widget from Unfolded-only page</string>
-    <string name="preview_of_home">Preview of Home</string>
     <string name="before_restoring_a_backup_or_layout">Before restoring a backup or an older layout, Twofold saves your Home here so you can go back. The last %1$s are kept on this phone.</string>
     <string name="a_small_dot_beside_dock_apps_you_ve_used">A small dot beside dock apps you\'ve used in the last hour. Android doesn\'t tell launchers which apps are running, so this uses Usage Access.</string>
     <string name="settings_live_clock_and_calendar_icons">Live Clock and Calendar Icons</string>
@@ -501,10 +486,6 @@
     <string name="widget_size_row" tools:ignore="PluralsCandidate">%1$d × %2$d widget · row %3$d</string>
     <string name="default_backup_name">Twofold Layout %1$s</string>
 
-    <!-- Button that applies the background being previewed. -->
-    <string name="set">Set</string>
-    <!-- Name of Folio's live wallpaper in Android's wallpaper picker. -->
-    <string name="label_dune_wallpaper">Twofold background</string>
     <!-- Shown in Android Settings, Notification access. -->
     <string name="label_notification_listener">Twofold notifications</string>
     <string name="label_settings_shortcut">Twofold settings</string>
@@ -518,13 +499,6 @@
     <string name="layout_backup_saved">Layout backup saved.</string>
     <string name="layout_backup_could_not_be_read">Layout backup could not be read.</string>
     <string name="this_layout_backup_is_invalid">This layout backup is invalid.</string>
-    <string name="the_pending_photo_selection_could_not_be">The pending photo selection could not be restored.</string>
-    <string name="the_pending_photo_preview_could_not_be_r">The pending photo preview could not be restored.</string>
-    <string name="the_photo_picker_is_unavailable">The photo picker is unavailable.</string>
-    <string name="launcher_background_updated">Launcher background updated.</string>
-    <string name="that_photo_could_not_be_saved">That photo could not be saved.</string>
-    <string name="that_photo_could_not_be_used">That photo could not be used.</string>
-    <string name="that_photo_preview_could_not_be_saved">That photo preview could not be saved.</string>
     <string name="the_widget_host_returned_an_unexpected_b">The widget host returned an unexpected binding. Try again.</string>
     <string name="finish_or_cancel_the_open_widget_setting">Finish or cancel the open widget settings first.</string>
     <string name="this_widget_could_not_be_added_try_anoth">This widget could not be added. Try another widget.</string>
@@ -595,11 +569,8 @@
     <!-- Name of the built-in widget in the widget gallery. -->
     <string name="refresh_icons">Refresh Icons</string>
     <string name="refresh_icons_note">If a theme app changed your icons and Twofold still shows the old ones, this loads them again.</string>
-    <string name="your_photo">Your Photo</string>
     <string name="from_folio">From Twofold</string>
-    <string name="wallpaper_by_artist">%1$s by %2$s</string>
     <string name="a_picture_you_choose_in_folio_only_behind">A picture you choose in Twofold, only behind Twofold.</string>
-    <string name="no_background_behind_home">No background behind Home.</string>
     <string name="tweak_cabinet_detail">Swipe up on an app icon for a small panel with its shortcuts, latest notifications and music controls.</string>
     <string name="tweak_harborline_detail">Dock icons swell under your finger as you slide along the dock.</string>
     <string name="credit_folio_mccal">McCal (github.com/McCal-Codes/folio) · MIT · Folio itself: the Side Bar, App Library, search, folders, widgets, glass and motion all started as McCal’s work</string>
@@ -608,9 +579,6 @@
     <string name="credit_hingewave">Ant-lib · MIT · ideas for the fold animation</string>
     <string name="page_landing">Page Landing</string>
     <string name="page_landing_detail">When the phone opens flat or closes, Home lands like the page of a book: a small bounce at the hinge and a soft tap.</string>
-    <string name="also_set_as_phone_wallpaper">Also Set as Phone Wallpaper</string>
-    <string name="set_as_phone_wallpaper_note">Opens Android’s own preview, so the lock screen shows it too. That change can’t be undone from Twofold, which is why it asks again there.</string>
-    <string name="wallpaper_group_note">Twofold draws this behind Home. The phone’s own wallpaper is what the lock screen shows.</string>
     <string name="previewing_1">Previewing %1$s</string>
     <string name="wallpaper">Wallpaper</string>
     <string name="wallpaper_moves_with_pages">Wallpaper Moves with Pages</string>
