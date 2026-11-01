@@ -5,7 +5,7 @@ Folio is in development), and this file follows [Keep a Changelog](https://keepa
 `versionCode` is derived from the version name ((MAJOR × 10000 + MINOR × 100 + PATCH) × 10 + HOTFIX), so every release sorts correctly and a fix on top of one has nine numbers of its own.
 Folio shows the newest section on the phone after an update, and every version under Settings › What's New › Version History.
 
-## [1.0.2] - Unreleased
+## [1.0.2] - 2026-10-31
 
 ### Removed
 - **One wallpaper, the phone's own:** Home always shows the wallpaper you set in Android, live wallpapers included, and Settings › Home › Wallpaper is just Change Android Wallpaper and Wallpaper Moves with Pages. Twofold's own backgrounds are gone: the photo picker, the two Hiroshige prints and the Twofold background live wallpaper. If you had chosen a Twofold background, Home switches to your Android wallpaper, and the photo Twofold kept for it is deleted from the phone. If you had set the Twofold background as your phone's wallpaper, Android goes back to its default one.
