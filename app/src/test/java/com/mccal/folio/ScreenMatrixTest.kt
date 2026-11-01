@@ -77,32 +77,6 @@ class ScreenMatrixTest {
     }
 
     /**
-     * The wallpaper picker's grid, on every window Folio supports.
-     *
-     * A picker of wallpapers is only useful if a tile is big enough to judge a picture by, and the grid decides how
-     * many fit from the width it is given rather than from the device (ADP-1). This checks the outcome of that
-     * decision rather than the rule: on the narrowest window Folio runs in and on the widest, a tile stays inside a
-     * band where it is neither a thumbnail nor a poster.
-     */
-    @Test fun `a wallpaper tile is a usable size on every window`() {
-        val gap = FolioSpace.MEDIUM
-        val sidePadding = FolioSpace.TINY * 2
-        for (screen in screens) {
-            // Settings is a sheet inside the window, and on a wide window it shares that width with a sidebar. The
-            // narrow case is the whole window; the wide case is what is left beside the panes.
-            for (content in listOf(screen.width, screen.width / settingsColumns(screen.width, screen.height))) {
-                val available = content - sidePadding
-                if (available < 200f) continue // Smaller than any pane Settings will draw into.
-                val columns = gridColumns(available.dp)
-                assertTrue("$columns columns on ${screen.name}", columns >= 2)
-                val tile = (available - gap * (columns - 1)) / columns
-                assertTrue("a tile is ${tile}dp wide on ${screen.name}, too narrow to judge a picture", tile >= 110f)
-                assertTrue("a tile is ${tile}dp wide on ${screen.name}, wider than a phone", tile <= 300f)
-            }
-        }
-    }
-
-    /**
      * The keyboard added back has to be what the IME padding actually took, not the whole IME inset. FolioSheet's
      * full-screen page pads its column by navigationBarsPadding() and then by WindowInsets.ime, and windowInsetsPadding
      * subtracts what an earlier one consumed, so the IME padding removes only the part past the navigation bar. Adding

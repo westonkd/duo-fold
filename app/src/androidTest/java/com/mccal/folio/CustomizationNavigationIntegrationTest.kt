@@ -40,7 +40,7 @@ class CustomizationNavigationIntegrationTest {
         compose.onNodeWithTag("customization-general").assertDoesNotExist()
     }
 
-    @Test fun emptySpaceWallpaperOpensPhotoControlsWithoutChangingLayoutOrBindings() {
+    @Test fun emptySpaceWallpaperOpensWallpaperControlsWithoutChangingLayoutOrBindings() {
         ready()
         val before = model().state.value.layout
         val idsBefore = model().state.value.widgetPlacements.map { it.slot to it.id }
@@ -49,8 +49,7 @@ class CustomizationNavigationIntegrationTest {
 
         compose.onNodeWithTag("home-cell-$empty").performSemanticsAction(SemanticsActions.OnLongClick)
         compose.onNodeWithTag("empty-space-wallpaper").performClick()
-        compose.onNodeWithTag("background-choose").assertIsDisplayed()
-        compose.onNodeWithTag("wallpaper-preview").assertExists()
+        compose.onNodeWithTag("background-change-system").assertIsDisplayed()
         assertEquals(before, model().state.value.layout)
         assertEquals(idsBefore, model().state.value.widgetPlacements.map { it.slot to it.id })
     }

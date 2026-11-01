@@ -159,8 +159,6 @@ data class LauncherState(
     val layoutHistory: Boolean = false,
     /** Beta: a dot under dock apps used in the last hour (needs Usage Access). */
     val dockRecentDots: Boolean = false,
-    /** Show Android's own home-screen wallpaper behind Folio (live wallpapers included) instead of Folio's background. */
-    val systemWallpaper: Boolean = false,
     /** Text drawn on the wallpaper: "AUTO" follows the wallpaper, "LIGHT" white, "DARK" dark. */
     val homeInk: String = "AUTO",
     /** Settings › Gestures › Reduce Motion: fades instead of slides and pops, no wiggle. Android's Remove animations turns it on too. */
@@ -932,7 +930,6 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
         persist()
         return true
     }
-    fun setSystemWallpaper(value: Boolean) = updateSettings(soon = false) { it.copy(systemWallpaper = value) }
     fun setHomeInk(value: String) = updateSettings(soon = false) { it.copy(homeInk = value) }
     /** A package installed an effect (or an update replaced it): one entry per package id. */
     fun setHomeScrim(value: Boolean) = updateSettings(soon = false) { it.copy(homeScrim = value) }
@@ -1203,7 +1200,7 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
             .put("widgetStacks", JSONObject().apply { s.widgetStacks.forEach { (slot, ids) -> put(slot.toString(), JSONArray(ids)) } })
             .put("stackRotate", s.stackRotate).put("addNewAppsToHome", s.addNewAppsToHome)
             .put("layoutHistory", s.layoutHistory).put("dockRecentDots", s.dockRecentDots)
-            .put("systemWallpaper", s.systemWallpaper).put("homeInk", s.homeInk)
+            .put("homeInk", s.homeInk)
             .put("homeScrim", s.homeScrim)
             .put("dockMagnify", s.dockMagnify).put("appPanels", s.appPanels).put("haptics", s.haptics)
             .put("pageScrub", s.pageScrub).put("reduceMotion", s.reduceMotion).put("wallpaperMotion", s.wallpaperMotion).put("liveIcons", s.liveIcons)
@@ -1236,9 +1233,7 @@ class LauncherModel(application: Application) : AndroidViewModel(application) {
         // The first save that writes schema 10 (one with icon actions) keeps the schema 9 file it replaces, like every step before it.
         if (legacyRaw != null && v9BackupNeeded(sourceSchema, stateSchemaFor(s), prefs.contains("state_v9_backup")))
             editor.putString("state_v9_backup", legacyRaw)
-        editor.putString("state", data.toString()).putBoolean("initialized", true)
-            // Kept beside the state so a restore that changes it chooses the right window next time.
-            .putBoolean(SettingKeys.SYSTEM_WALLPAPER, s.systemWallpaper).apply()
+        editor.putString("state", data.toString()).putBoolean("initialized", true).apply()
     }
 
     private fun load(): LauncherState = traced("Folio.decodeState") { runCatching {
@@ -1426,7 +1421,6 @@ internal fun decodeLauncherState(raw: String, legacyRaw: String?): LauncherState
         stackRotate = j.optBoolean("stackRotate", true),
         addNewAppsToHome = j.optBoolean("addNewAppsToHome", false),
         layoutHistory = j.optBoolean("layoutHistory", false), dockRecentDots = j.optBoolean("dockRecentDots", false),
-        systemWallpaper = j.optBoolean("systemWallpaper", false),
         homeInk = j.optString("homeInk", "AUTO").takeIf { it in setOf("AUTO", "LIGHT", "DARK") } ?: "AUTO",
         homeScrim = j.optBoolean("homeScrim", true),
         dockMagnify = j.optBoolean("dockMagnify", false), appPanels = j.optBoolean("appPanels", false), haptics = j.optBoolean("haptics", true),

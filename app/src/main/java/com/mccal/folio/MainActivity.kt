@@ -2,8 +2,6 @@ package com.mccal.folio
 
 import androidx.lifecycle.repeatOnLifecycle
 import android.app.role.RoleManager
-import android.app.WallpaperManager
-import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.os.Bundle
@@ -31,8 +29,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var widgets: WidgetController
     internal lateinit var backups: BackupController
         private set
-    internal lateinit var backgrounds: LauncherBackgroundController
-        private set
     private val homeRequests = mutableIntStateOf(0)
     /** True when the Home press that made [homeRequests] count up found Folio already in front, with no overlay of its own open. */
     private val homeFromFront = mutableStateOf(false)
@@ -52,8 +48,6 @@ class MainActivity : ComponentActivity() {
     private var shadeSetupWaiting = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // The wallpaper theme must be chosen before the window exists (switching to it starts the screen again).
-        if (usesSystemWallpaper(this)) setTheme(R.style.Theme_Duo_Wallpaper)
         super.onCreate(savedInstanceState)
         showWhatsNew.value = savedInstanceState == null && WhatsNew.shouldShow(this)
         homeArrival = if (savedInstanceState == null && FirstArrival.take(this)) HomeArrival() else null
@@ -68,8 +62,8 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
         widgets = WidgetController(this, model).also { it.restore(savedInstanceState) }
         backups = BackupController(this, model, widgets).also { it.restore() }
-        backgrounds = LauncherBackgroundController(this)
         status = DeviceStatusMonitor(this).also { lifecycle.addObserver(it) }
+        if (savedInstanceState == null) Thread { forgetFolioBackground(applicationContext) }.start()
         lifecycle.addObserver(SystemEvents.Observer(this))
         updateDefaultHome()
         if (savedInstanceState == null && intent.getStringExtra("duo_destination") == "search") searchRequests.intValue++
@@ -156,7 +150,7 @@ class MainActivity : ComponentActivity() {
             val badgeCounts = androidx.compose.runtime.remember(postedBadges, seenBadges) { BadgesWhenOpened.visible(postedBadges, seenBadges) }
             if (state.badgesWhenOpened) androidx.compose.runtime.LaunchedEffect(postedBadges) { model.trimBadgesSeen(postedBadges) }
             androidx.compose.runtime.SideEffect { latestNotifications = notificationItems }
-            val wallpaperTone = rememberWallpaperTone(state.systemWallpaper)
+            val wallpaperTone = rememberWallpaperTone()
             homeArrival?.let { arrival ->
                 val sheetUp = showWhatsNew.value || whatsNewRequested.value || showDevBuild.value
                 androidx.compose.runtime.LaunchedEffect(arrival, sheetUp) {
@@ -170,7 +164,7 @@ class MainActivity : ComponentActivity() {
             // Folio's own Reduce Motion, or Android's Remove animations: the same flag to every screen.
             val reduceMotion = reduceMotionState.value || state.reduceMotion
             val crossWindowBlur = rememberCrossWindowBlur()
-            val libraryBlur = crossWindowBlur && state.systemWallpaper && showsWallpaper
+            val libraryBlur = crossWindowBlur && showsWallpaper
             LibraryBackdropBlur(window, libraryBlur)
             androidx.compose.runtime.CompositionLocalProvider(
                 LocalWallpaperTone provides wallpaperTone,
@@ -201,7 +195,7 @@ class MainActivity : ComponentActivity() {
                 }) {
                 LauncherScreen(state, model, widgets, homeRequests.intValue, homeFromFront = homeFromFront.value,
                     onLaunch = { launchApp(it) }, onMakeDefault = ::makeDefault, onAppInfo = ::appInfo,
-                    isDefaultHome = defaultHome.value, deviceStatus = deviceStatus, onStatusMode = ::setStatusMode, onWallpaperPreview = ::previewWallpaper,
+                    isDefaultHome = defaultHome.value, deviceStatus = deviceStatus, onStatusMode = ::setStatusMode,
                     searchRequests = searchRequests.intValue, settingsRequests = settingsRequests.intValue,
                     onLaunchFrom = ::launchApp, onGoogleSearch = ::openGoogleSearch,
                     onShadeSetup = ::showShadeSetup, onShowWhatsNew = { whatsNewRequested.value = true })
@@ -428,15 +422,6 @@ class MainActivity : ComponentActivity() {
         val controller = WindowCompat.getInsetsController(window, window.decorView)
         controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         if (vertical) controller.hide(WindowInsetsCompat.Type.statusBars()) else controller.show(WindowInsetsCompat.Type.statusBars())
-    }
-
-    private fun previewWallpaper() {
-        try {
-            startActivity(Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
-                .putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, ComponentName(this, DuneWallpaperService::class.java)))
-        } catch (_: android.content.ActivityNotFoundException) {
-            FolioNotice.show(this, getString(R.string.the_system_wallpaper_preview_is_unavaila))
-        }
     }
 
     private fun appInfo(app: AppEntry) {

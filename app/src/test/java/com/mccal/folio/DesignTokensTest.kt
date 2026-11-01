@@ -14,13 +14,13 @@ import org.junit.Test
  * Run with `LIST_TOKENS=1` to print every hit with its file and line.
  *
  * [tokenFiles] are where a raw value belongs: the token files themselves, the Home palette, and the
- * drawings whose colors are the artwork (`DuneWallpaper`, `LiveIcons`, `AppIcons`).
+ * drawings whose colors are the artwork (`LiveIcons`, `AppIcons`).
  */
 class DesignTokensTest {
     private val root = generateSequence(java.io.File("").absoluteFile) { it.parentFile }.first { java.io.File(it, "CHANGELOG.md").exists() }
 
     private val tokenFiles = setOf(
-        "FolioTokens.kt", "FolioGlass.kt", "Appearance.kt", "LiveIcons.kt", "DuneWallpaper.kt", "AppIcons.kt",
+        "FolioTokens.kt", "FolioGlass.kt", "Appearance.kt", "LiveIcons.kt", "AppIcons.kt",
     )
 
     private val patterns = mapOf(

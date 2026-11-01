@@ -24,8 +24,6 @@ internal fun LayoutRestorePreview(preview: LayoutImportPreview, onRestore: () ->
                 if (preview.layout.leadingSlots.any { it != null } || preview.layout.widgetPlacements.any { it.page == -1 })
                     Text(stringResource(R.string.includes_your_unfolded_only_page), style = MaterialTheme.typography.bodySmall)
                 Text(stringResource(R.string.this_also_restores_icon_layout_labels_se))
-                Text(stringResource(R.string.your_selected_launcher_background_photo),
-                    style = MaterialTheme.typography.bodySmall)
                 if (preview.missingApps.isNotEmpty()) {
                     Text(stringResource(R.string.unavailable_apps_1, preview.missingApps.size), style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.error)

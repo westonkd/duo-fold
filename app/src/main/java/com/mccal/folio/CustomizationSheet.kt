@@ -2,18 +2,15 @@ package com.mccal.folio
 
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,8 +33,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -116,9 +111,9 @@ internal fun SettingsPageBack(page: CustomizationPage, onBack: () -> Unit) =
 internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, model: LauncherModel,
     isDefaultHome: Boolean, page: CustomizationPage, onPage: (CustomizationPage) -> Unit,
     onMakeDefault: () -> Unit, onClose: () -> Unit, onEditPins: () -> Unit, onWidget: (Int) -> Unit,
-    onAddWidget: (Int) -> Unit, onRemoveWidget: (Int) -> Unit, onWallpaperPreview: () -> Unit,
+    onAddWidget: (Int) -> Unit, onRemoveWidget: (Int) -> Unit,
     onExportLayout: () -> Unit, onImportLayout: () -> Unit, onSaveLayoutToFolder: (String) -> Unit = {},
-    backgrounds: LauncherBackgroundController, homePage: Int = 0,
+    homePage: Int = 0,
     onShadeSetup: () -> Unit = {},
     onShowWhatsNew: () -> Unit = {},
 ) {
@@ -145,7 +140,7 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                     val between: @Composable () -> Unit = { if (!sidebar) TweakDivider() }
                     list {
                         TweakRow(Icons.Rounded.GridView, FolioColors.Value.Blue, stringResource(R.string.home), "customization-home",
-                            if (backgrounds.previewPending) stringResource(R.string.photo_ready) else null, selected = pick(CustomizationPage.HOME), chevron = !sidebar) { onPage(CustomizationPage.HOME) }
+                            selected = pick(CustomizationPage.HOME), chevron = !sidebar) { onPage(CustomizationPage.HOME) }
                         between()
                         TweakRow(Icons.Rounded.Search, FolioColors.Value.Gray, stringResource(R.string.search), "customization-search", selected = pick(CustomizationPage.SEARCH), chevron = !sidebar) { onPage(CustomizationPage.SEARCH) }
                         between()
@@ -185,53 +180,13 @@ internal fun CustomizationSheet(state: LauncherState, initiallyWide: Boolean, mo
                 }
                 CustomizationPage.HOME -> {
                     val wallpaperContext = androidx.compose.ui.platform.LocalContext.current
-                    // The preview shows the candidate when there is one, under Home's real chrome, which is what AOSP's
-                    // small preview and iOS's Lock Screen preview both do. Art and photos apply the same way: a tap
-                    // stages, Set writes.
-                    // "Once" means once: leaving the page ends the offer as well as taking it.
-                    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { backgrounds.offerTaken() } }
-                    val candidate = backgrounds.pendingArtBitmap ?: backgrounds.previewBitmap
-                    val staging = backgrounds.pendingArt != null || backgrounds.previewPending
-                    if (!state.systemWallpaper) {
-                        MiniHomePreview(candidate, state, if (split) 240.dp else 228.dp)
-                        if (staging) SheetGroup {
-                            IosActionRow(stringResource(R.string.set), "background-set",
-                                enabled = candidate != null || backgrounds.pendingArt != null,
-                                onClick = { if (backgrounds.previewPending) backgrounds.applyPreview() else backgrounds.setPendingArt() })
-                            SheetDivider()
-                            IosActionRow(stringResource(R.string.cancel), "background-cancel",
-                                onClick = { if (backgrounds.previewPending) backgrounds.cancelPreview() else backgrounds.cancelPendingArt() })
-                        } else if (backgrounds.justSet) SheetGroup {
-                            // Once, after a Set, and behind Android's own preview: the phone's wallpaper cannot be read
-                            // back at this targetSdk, so setting it cannot be undone from here.
-                            IosActionRow(stringResource(R.string.also_set_as_phone_wallpaper), "wallpaper-preview",
-                                onClick = { backgrounds.offerTaken(); onWallpaperPreview() })
-                            // A bare group doesn't pad its rows the way SettingsCard does, so the note brings its own.
-                            CardNote(stringResource(R.string.set_as_phone_wallpaper_note),
-                                Modifier.padding(start = FolioSpace.LARGE.dp, end = FolioSpace.LARGE.dp, bottom = FolioSpace.MEDIUM.dp))
-                        }
-                        if (backgrounds.loading) LinearProgressIndicator(Modifier.fillMaxWidth().testTag("background-loading"))
-                    }
-                    SettingsSection(stringResource(R.string.wallpaper)) {
-                        IosSegmented(listOf(true to stringResource(R.string.android_wallpaper), false to stringResource(R.string.folio_background)),
-                            state.systemWallpaper, { system -> model.setSystemWallpaper(system); wallpaperContext.asActivity()?.applyWallpaperWindow(system) },
-                            tag = "background-choice")
-                    }
-                    if (state.systemWallpaper) SettingsCard(null) {
+                    SettingsCard(stringResource(R.string.wallpaper)) {
                         CardAction(stringResource(R.string.change_android_wallpaper), onClick = {
                             runCatching { wallpaperContext.startActivity(android.content.Intent.createChooser(android.content.Intent(android.content.Intent.ACTION_SET_WALLPAPER), wallpaperContext.getString(R.string.change_wallpaper))
                                 .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
                         }, modifier = Modifier.testTag("background-change-system"))
-                        // Only Android's wallpaper drifts now, and the system moves it, so the switch lives with the
-                        // wallpaper it moves. Folio's own picture has no spare width to slide (see DuneWallpaper).
                         SettingsSwitch(stringResource(R.string.wallpaper_moves_with_pages), state.wallpaperMotion, model::setWallpaperMotion, "wallpaper-motion-switch")
                         CardNote(stringResource(R.string.uses_the_same_wallpaper_as_your_phone_s))
-                    } else SettingsFootnote(stringResource(R.string.wallpaper_group_note))
-                    if (!state.systemWallpaper) {
-                        BackgroundPicker(backgrounds)
-                        (backgrounds.errorMessage ?: backgrounds.successMessage)?.let { message ->
-                            TextButton(onClick = backgrounds::clearMessage, Modifier.fillMaxWidth().testTag("background-message")) { Text(message) }
-                        }
                     }
                     SettingsCard(stringResource(R.string.text_on_home)) {
                         IosMenuRow(stringResource(R.string.text_color), listOf("AUTO" to stringResource(R.string.automatic), "LIGHT" to stringResource(R.string.light), "DARK" to stringResource(R.string.dark)), state.homeInk, model::setHomeInk, tag = "home-ink")
@@ -671,122 +626,8 @@ private val LICENSE_FILES = listOf(
     }
 }
 
-/** The Home page the Settings previews draw: set from the page Home is on, so a widget placed on page 2 shows up. */
-internal val LocalPreviewPage = androidx.compose.runtime.compositionLocalOf { 0 }
-
 /** The phone's own status for the Settings previews, which already show the real time; the sample is for previews with no phone behind them. */
 internal val LocalDeviceStatus = androidx.compose.runtime.compositionLocalOf { DeviceStatus(battery = 80, wifiConnected = true, wifiLevel = 4, cellularLevel = 4) }
-
-/**
- * Live preview of Home on Folio's own background, built from real data only: your Home and dock apps (with the
- * current icon pack, badges and live icons), your text, glass and dimming settings, and the background, or the one
- * being tried. It draws the page Home is on (LocalPreviewPage) in the cover's layout.
- */
-@Composable internal fun MiniHomePreview(stagedBitmap: android.graphics.Bitmap?, state: LauncherState, previewHeight: androidx.compose.ui.unit.Dp) {
-    val page = LocalPreviewPage.current
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val backgroundRevision = LauncherBackgroundCache.revision.intValue
-    val committedBitmap = remember(backgroundRevision) { cachedLauncherBackground(context) }
-    val bitmap = stagedBitmap ?: committedBitmap
-    val apps = remember(state.apps) { state.apps.associateBy { it.id } }
-    val tone = LocalWallpaperTone.current
-    val ink = homeInkFor(state.homeInk, tone.prefersDarkText)
-    val basePalette = LocalDuoPalette.current
-    val glass = tintedGlass(basePalette.glass, tone.primary, GLASS_TINT)
-    // Home page 1 drawn at a real cover-screen size with Folio's own layout math and parts (widget cards, icons,
-    // status rail, dock, search pill), then scaled down, so the preview matches Home instead of approximating it.
-    val refW = 420f; val refH = 720f
-    val geometry = homeGeometry(refW, refH, state.coverDock, state.labels, statusHeight = if (state.verticalStatus) 180f else 0f, labelHeight = 20f,
-        appRows = state.homeAppRows, dockSlots = state.dock.size, statusRail = state.verticalStatus,
-        railControls = if (state.searchPill) 0 else 1) // the Home pages' rail, as Home lays it out
-    val placements = state.widgetPlacements.filter { it.page == page }
-    val shownRows = shownHomeRows(state.homeAppRows, state.homeSlots.drop(homeCellIndex(page, 0).coerceAtLeast(0)).take(HOME_CELLS), placements)
-    val cells = HomeCellLayout.forPage(geometry, placements.map { it.row to it.spanY })
-    val iconSize = geometry.cellIconSize(state.labels)
-    val labels = state.labels
-    val scale = previewHeight.value / refH
-    val left = state.leftHanded
-    val railAlign = if (left) Alignment.TopStart else Alignment.TopEnd
-    val railEdge = if (left) Modifier.padding(start = FolioSpace.MEDIUM.dp) else Modifier.padding(end = FolioSpace.MEDIUM.dp)
-    // A thin black bezel with the screen's own corners inside it, so the preview reads as the phone, not a card.
-    val corner = 26.dp * (previewHeight.value / 260f)
-    val bezel = previewHeight * .022f
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Box(Modifier.clip(RoundedCornerShape(corner + bezel)).background(FolioColors.PreviewBezel)
-            .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = .2f), RoundedCornerShape(corner + bezel)).padding(bezel)) {
-        Box(Modifier.height(previewHeight).width(previewHeight * (refW / refH))
-            .clip(RoundedCornerShape(corner))
-            .testTag("customization-home-preview").clearedDescription(R.string.preview_of_home), contentAlignment = Alignment.Center) {
-            Box(Modifier.requiredSize(refW.dp, refH.dp).graphicsLayer { scaleX = scale; scaleY = scale }) {
-                DuneWallpaper()
-                bitmap?.let { Image(it.asImageBitmap(), null, Modifier.matchParentSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
-                // Drawn over the background rather than inside it, because the preview lays the chosen photo over the
-                // background; on Home the same scrim is baked into the background's cached layer.
-                HomeScrim.of(state.homeScrim, ink.dark).let { if (it.draws) Box(Modifier.matchParentSize().homeScrim(it)) }
-                CompositionLocalProvider(LocalHomeInk provides ink, LocalDuoPalette provides basePalette.copy(glass = glass), LocalHomeIconSize provides geometry.iconSize) {
-                    Box(Modifier.offset(x = (if (left) refW - 16f - geometry.gridWidth else 16f).dp, y = geometry.contentTop.dp).width(geometry.gridWidth.dp).height((cells.height(shownRows)).dp)) {
-                        placements.forEach { w ->
-                            // A freely placed widget (Place Freely) is drawn a part of a cell from its cells, as on Home.
-                            val rowPitch = if (w.offsetY < 0f && w.row > 0) cells.y(w.row) - cells.y(w.row - 1)
-                                else if (w.row + 1 < GRID_ROWS) cells.y(w.row + 1) - cells.y(w.row) else cells.y(w.row) - cells.y(w.row - 1)
-                            Box(Modifier.offset(x = (cells.x(w.column, w.row) + 5f + geometry.cellWidth * w.offsetX).dp, y = (cells.y(w.row) + rowPitch * w.offsetY).dp)
-                                .size((geometry.cellWidth * w.spanX - 10f).dp, (cells.spanHeight(w.row, w.spanY) - 18f).coerceAtLeast(48f).dp)) {
-                                if (w.id < 0) BuiltinWidgetCard(w.id, w.slot) {}
-                                else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(FolioRadius.WIDGET.dp)).background(glass.copy(alpha = LIQUID_FROST)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Rounded.Widgets, null, tint = ink.secondary, modifier = Modifier.size(32.dp))
-                                }
-                            }
-                        }
-                        repeat(shownRows * GRID_COLUMNS) { local ->
-                            val id = state.homeSlots.getOrNull(homeCellIndex(page, local)) ?: return@repeat
-                            val app = apps[id]
-                            val folder = if (app == null) state.folders.firstOrNull { it.id == id } ?: return@repeat else null
-                            val row = local / GRID_COLUMNS
-                            Column(Modifier.offset(x = cells.x(local % GRID_COLUMNS, row).dp, y = cells.y(row).dp).width(geometry.cellWidth.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally) {
-                                if (app != null) AppIcon(app, null, Modifier.size(iconSize.dp), badge = true)
-                                else if (folder != null) PreviewFolder(folder, apps, iconSize)
-                                if (labels) Text(app?.label ?: folder?.title.orEmpty(), color = ink.primary, fontSize = HOME_LABEL_SP.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(top = FolioSpace.TINY.dp, start = FolioSpace.HAIR.dp, end = FolioSpace.HAIR.dp),
-                                    style = androidx.compose.ui.text.TextStyle(shadow = ink.labelShadow))
-                            }
-                        }
-                    }
-                    if (state.verticalStatus) StatusRail(LocalDeviceStatus.current,
-                        Modifier.align(railAlign).then(railEdge).offset(y = geometry.contentTop.dp).width(DOCK_WIDTH.dp),
-                        iconSize = dockIconSize(iconSize).dp)
-                    val barShape = RoundedCornerShape(dockCornerRadius(geometry.dockBarHeight, dockIconSize(iconSize)).dp)
-                    val railShape = RoundedCornerShape(dockCornerRadius(DOCK_WIDTH, dockIconSize(iconSize)).dp)
-                    // A bottom dock bar: beside the status Side Bar, or the whole width when there is none (Full-Width Home).
-                    if (geometry.horizontalDock) Box(Modifier.align(if (!geometry.dockBesideRail) Alignment.BottomCenter else if (left) Alignment.BottomEnd else Alignment.BottomStart)
-                        .width((if (geometry.dockBesideRail) refW - DOCK_WIDTH - 28f else refW).dp).padding(bottom = 58.dp), contentAlignment = Alignment.Center) { Row(Modifier
-                        .height(geometry.dockBarHeight.dp).background(glass.copy(alpha = LIQUID_FROST), barShape)
-                        .border(1.dp, GlassOutlineColor, barShape).padding(horizontal = FolioSpace.SMALL.dp), verticalAlignment = Alignment.CenterVertically) {
-                        state.dock.forEach { id ->
-                            Box(Modifier.width(geometry.dockPitch.dp), contentAlignment = Alignment.Center) {
-                                id?.let(apps::get)?.let { AppIcon(it, null, Modifier.size(dockIconSize(iconSize).dp), badge = true) }
-                            }
-                        }
-                    } }
-                    else Column(Modifier.align(railAlign).then(railEdge).offset(y = geometry.dockTop.dp).width(DOCK_WIDTH.dp)
-                        .height(geometry.dockHeight.dp).background(glass.copy(alpha = LIQUID_FROST), railShape)
-                        .border(1.dp, GlassOutlineColor, railShape).padding(vertical = FolioSpace.SMALL.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        state.dock.forEach { id ->
-                            Box(Modifier.fillMaxWidth().height(geometry.dockRowHeight.dp), contentAlignment = Alignment.Center) {
-                                id?.let(apps::get)?.let { AppIcon(it, null, Modifier.size(dockIconSize(iconSize).dp), badge = true) }
-                            }
-                        }
-                    }
-                    if (state.searchPill) Box(Modifier.align(Alignment.BottomCenter).padding(bottom = FolioSpace.COMFY.dp)
-                        .then(if (left) Modifier.padding(start = (DOCK_WIDTH + 24f).dp) else Modifier.padding(end = (DOCK_WIDTH + 24f).dp))) {
-                        HomeSearchPill {}
-                    }
-                }
-            }
-        }
-        }
-    }
-}
 
 /**
  * Hidden apps, like iOS: kept out of the App Library, and listed here only after unlocking with a fingerprint, face or

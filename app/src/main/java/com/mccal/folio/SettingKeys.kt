@@ -4,8 +4,6 @@ package com.mccal.folio
 internal object SettingKeys {
     const val PREFS = "launcher"
     const val STATE = "state"
-    /** Whether Home's window shows Android's wallpaper, saved on its own and at once (see applyWallpaperWindow). */
-    const val SYSTEM_WALLPAPER = "systemWallpaperWindow"
     /** Clear Suggestions History: uses at or before this time are ignored, a plain long beside the state so no schema changes. */
     const val SUGGESTIONS_CLEARED_AT = "suggestionsClearedAt"
     const val DOCK = "dock"

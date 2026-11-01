@@ -60,11 +60,4 @@ class SettingsTalkBackTest {
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
         compose.onNodeWithTag("other").assertIsNotSelected()
     }
-
-    @Test fun `the Home preview is one picture with a name`() {
-        compose.setContent { MiniHomePreview(null, LauncherState(), 176.dp) }
-        compose.onNodeWithTag("customization-home-preview").assert(hasContentDescription("Preview of Home"))
-        compose.onAllNodes(hasClickAction()).assertCountEquals(0)
-        compose.onAllNodesWithText("Search").assertCountEquals(0)
-    }
 }
