@@ -15,9 +15,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.util.Collections
+import java.util.WeakHashMap
 
 enum class WidgetSetupStatus { BINDING, CONFIGURING }
 
@@ -67,6 +71,13 @@ class WidgetController(
         }
     }
 
+    init {
+        live.add(this)
+        activity.lifecycle.addObserver(LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_DESTROY) live.remove(this)
+        })
+    }
+
     fun restore(bundle: Bundle?) {
         val saved = bundle?.takeIf { it.containsKey(PENDING_ID) } ?: storedPending()
         val restoredId = saved?.getInt(PENDING_ID, -1) ?: -1
@@ -108,7 +119,7 @@ class WidgetController(
         } else {
             // A malformed bundle may point at a widget already owned by Home or Undo.
             // Clear the transaction, but only delete an ID known to be unretained.
-            if (restoredId >= 0 && restoredId !in model.retainedWidgetIds) host.deleteAppWidgetId(restoredId)
+            if (restoredId >= 0 && restoredId !in model.retainedWidgetIds + retainedElsewhere()) host.deleteAppWidgetId(restoredId)
             clearPending()
         }
         reconcileHostIds()
@@ -295,14 +306,19 @@ class WidgetController(
         reconcileHostIds()
     }
 
+    private fun retainedIds(): Set<Int> = model.retainedWidgetIds + pendingId + listOfNotNull(reconfigureWidgetId)
+
+    private fun retainedElsewhere(): Set<Int> = liveControllers().filter { it !== this }.flatMap { it.retainedIds() }.toSet()
+
     private fun reconcileHostIds() {
-        if (!model.canPruneWidgetIds) return
-        val retained = model.retainedWidgetIds + pendingId + listOfNotNull(reconfigureWidgetId)
+        val controllers = liveControllers()
+        if (controllers.any { !it.model.canPruneWidgetIds }) return
+        val retained = controllers.flatMap { it.retainedIds() }.toSet()
         host.appWidgetIds.filter { it !in retained }.forEach(host::deleteAppWidgetId)
     }
 
     private fun cancel() {
-        if (pendingId >= 0 && pendingId !in model.retainedWidgetIds) host.deleteAppWidgetId(pendingId)
+        if (pendingId >= 0 && pendingId !in model.retainedWidgetIds + retainedElsewhere()) host.deleteAppWidgetId(pendingId)
         clearPending()
     }
 
@@ -447,6 +463,8 @@ class WidgetController(
     else WidgetPlacement(slot, id, slot / 3, (slot % 3) * 2, 0, 2, 2)
 
     companion object {
+        private val live: MutableSet<WidgetController> = Collections.synchronizedSet(Collections.newSetFromMap(WeakHashMap()))
+        private fun liveControllers(): List<WidgetController> = synchronized(live) { live.toList() }
         private const val CONFIGURE = 701
         private const val RECONFIGURE = 702
         private const val RECONFIGURE_ID = "reconfigureWidget"
