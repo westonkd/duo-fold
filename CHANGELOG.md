@@ -5,6 +5,11 @@ Folio is in development), and this file follows [Keep a Changelog](https://keepa
 `versionCode` is derived from the version name ((MAJOR × 10000 + MINOR × 100 + PATCH) × 10 + HOTFIX), so every release sorts correctly and a fix on top of one has nine numbers of its own.
 Folio shows the newest section on the phone after an update, and every version under Settings › What's New › Version History.
 
+## [1.0.3] - Unreleased
+
+### Fixed
+- **Widgets stay on Home:** if you opened Twofold from its app icon or from Google Play before making it your Home app, widgets you added to Home no longer turn into "Widget unavailable" a few minutes later.
+
 ## [1.0.2] - 2026-10-31
 
 ### Removed
