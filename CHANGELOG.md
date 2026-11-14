@@ -5,6 +5,16 @@ Folio is in development), and this file follows [Keep a Changelog](https://keepa
 `versionCode` is derived from the version name ((MAJOR × 10000 + MINOR × 100 + PATCH) × 10 + HOTFIX), so every release sorts correctly and a fix on top of one has nine numbers of its own.
 Folio shows the newest section on the phone after an update, and every version under Settings › What's New › Version History.
 
+## [1.0.4] - Unreleased
+
+### Fixed
+- **Dock remove buttons in the corner:** while editing Home, the remove button on each dock app sits in the icon's corner like on the Home grid, instead of covering the middle of the icon.
+- **Widget gallery previews:** tapping a Twofold widget's preview in the gallery opens that widget, instead of opening a calendar app or doing nothing.
+- **A clear Edit menu:** the menu under Edit is solid, so the widgets and icons behind it no longer show through.
+- **Every row fits sideways:** turned sideways on a phone, the bottom row of apps on Home and their names are no longer cut off.
+- **Nothing slides off Home while editing:** on shorter screens, editing Home tightens the rows to make room for the + / Edit / Done bar, so the last row and widgets stay above the bottom dock instead of sliding under it.
+- **Exact sums in Search:** the calculator in Search gives exact answers for large numbers, and shows ≈ instead of = when an answer is rounded.
+
 ## [1.0.3] - 2026-11-01
 
 ### Fixed

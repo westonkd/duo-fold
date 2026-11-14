@@ -772,6 +772,7 @@ internal fun BuiltinWidgetPreview(id: Int, modifier: Modifier) {
         Box(Modifier.matchParentSize().background(FolioColors.HomeFallbackSurface))
         Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = .14f)))
         BuiltinWidgetCard(id, slot = -1) {}
+        Box(Modifier.matchParentSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } })
     }
 }
 

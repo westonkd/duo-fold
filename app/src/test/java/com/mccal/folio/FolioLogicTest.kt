@@ -25,6 +25,20 @@ class SpotlightMathTest {
         } finally { java.util.Locale.setDefault(previous) }
     }
 
+    @Test fun largeProductsAreExact() {
+        assertEquals("121932631112635269", evaluateMath("123456789*987654321"))
+        assertEquals("99999999980000000001", evaluateMath("9999999999*9999999999"))
+        assertEquals("= 99999999980000000001", calculate("9999999999*9999999999")?.display)
+        assertEquals("0.3", evaluateMath("0.1+0.2"))
+    }
+
+    @Test fun roundedResultsAreMarked() {
+        assertEquals("≈ 0.3333333333", calculate("1/3")?.display)
+        assertEquals("= 0.125", calculate("1/8")?.display)
+        assertEquals("≈ 1E+30", calculate("10^30")?.display)
+        assertEquals("≈ 1.4142135624", calculate("2^0.5")?.display)
+    }
+
     @Test fun phoneNumbersDatesAndWordsAreNotMath() {
         assertNull(evaluateMath("555-1234"))
         assertNull(evaluateMath("2026-09-12"))

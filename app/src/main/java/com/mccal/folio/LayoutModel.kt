@@ -173,7 +173,14 @@ fun homeGeometry(width: Float, height: Float, dockPlacement: DockPlacement, labe
      * Whether the status Side Bar is shown. Without it, a bottom dock bar has nothing to sit beside, so the page and the
      * bar use the whole width (Full-width Home); with it, they leave its strip as they always did.
      */
-    statusRail: Boolean = true): HomeGeometry {
+    statusRail: Boolean = true,
+    editTop: Float = 0f): HomeGeometry {
+    if (editTop > 16f) {
+        val resting = homeGeometry(width, height, dockPlacement, labels, statusHeight, labelHeight, inLibrary, homeBottomSpace,
+            railControls, homeRailControls, classScale, appRows, foldAtCenter, fillSpace, dockSlots, statusRail)
+        if (resting.expanded || resting.contentTop >= editTop) return resting
+    }
+    val squeezeToFit = editTop > 16f
     val slots = dockSlots.coerceIn(MIN_DOCK_SLOTS, MAX_DOCK_SLOTS).toFloat()
     // Unfolded Duo layout only with regular size both ways; the cover in landscape is still compact.
     // Two Duo panels side by side need a window wider than tall. Taller than wide (portrait), iPhone Duo keeps one
@@ -215,7 +222,8 @@ fun homeGeometry(width: Float, height: Float, dockPlacement: DockPlacement, labe
     // shrinking to a sliver on narrow phones.
     var icon = minOf(HOME_ICON_SIZE, (gridWidth / 4f * .8f).coerceAtLeast(32f))
     var gap = HOME_ROW_GAP
-    val fitHeight = height - 16f - homeBottomSpace
+    val topMargin = maxOf(16f, editTop)
+    val fitHeight = height - topMargin - homeBottomSpace
     val rows = appRows.coerceIn(BASE_APP_ROWS, MAX_APP_ROWS)
     // Rows the page is spaced and centered for: the rows it shows.
     val layoutRows = rows
@@ -250,6 +258,10 @@ fun homeGeometry(width: Float, height: Float, dockPlacement: DockPlacement, labe
             val tight = minOf(gap, tightGap)
             if (needed(layoutRows, tight) <= fitHeight) gap = tight
         }
+        if (squeezeToFit && needed(layoutRows) > fitHeight) {
+            gap = 0f
+            if (needed(layoutRows) > fitHeight) icon = minOf(icon, (fitHeight / (layoutRows + 2f) - labelSpace).coerceAtLeast(40f))
+        }
     }
     // Automatic rows fill the height: leftover space (less than a row) is shared out as even space between rows
     // instead of a wide empty margin, capped so pages never look stretched; the rest stays as the centering margin.
@@ -266,7 +278,7 @@ fun homeGeometry(width: Float, height: Float, dockPlacement: DockPlacement, labe
     // rows continue in the right half and scroll, so they don't move the page either.
     val pageHeight = if (splitColumns) maxOf(widget + 18f + 2f * row, 3f * row) else widget + 18f + layoutRows * row
     // Centered in the free space; tall phones may sit lower (up to 18% of the height) instead of leaving the bottom empty.
-    val contentTop = ((height - pageHeight - homeBottomSpace) / 2f).coerceIn(16f, maxOf(72f, height * .18f))
+    val contentTop = ((height - pageHeight - homeBottomSpace) / 2f).coerceIn(topMargin, maxOf(72f, height * .18f, topMargin))
     // Search reclaims the redundant bottom controls' space for all four dock apps.
     // Extremely short windows still scroll rather than reduce touch targets below 48dp.
     // The status rail sits at the content top; in two columns the dock shares its edge with it, so it starts below.

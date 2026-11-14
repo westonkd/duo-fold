@@ -102,6 +102,7 @@ internal fun HomeEditMenu(anchor: androidx.compose.ui.unit.IntRect?, onDismiss: 
                 val g = appear.value; alpha = g.coerceIn(0f, 1f); scaleX = .7f + .3f * g; scaleY = scaleX
                 transformOrigin = androidx.compose.ui.graphics.TransformOrigin(if (alignEnd) 1f else 0f, 0f)
             }
+            .background(FolioColors.LightBackground.copy(alpha = POPOVER_BACKING), RoundedCornerShape(FolioRadius.FLOATING.dp))
             .menuGlass(RoundedCornerShape(FolioRadius.FLOATING.dp))
             .clip(RoundedCornerShape(FolioRadius.FLOATING.dp)).testTag("home-edit-menu")) {
             fun act(action: () -> Unit) = { onDismiss(); action() }

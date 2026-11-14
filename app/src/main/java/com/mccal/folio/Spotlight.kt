@@ -223,7 +223,7 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
     val appHits = remember(q, apps, frecency) { if (q.isEmpty()) emptyList() else rankApps(apps, q, frecency) }
     val shortcuts = remember(context) { settingShortcuts(context) }
     val settingHits = remember(q, shortcuts) { if (q.length < 2) emptyList() else shortcuts.filter { it.matches(q) }.take(4) }
-    val math = remember(q) { evaluateMath(q) }
+    val math = remember(q) { calculate(q) }
     var contactsGranted by remember { mutableStateOf(context.checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) }
     val contactsPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { contactsGranted = it }
     val contacts by produceState(emptyList<ContactHit>(), q, contactsGranted) {
@@ -272,9 +272,9 @@ private fun SpotlightContent(state: LauncherState, active: Boolean, onClose: () 
                 } else {
                     math?.takeIf { shows(SpotlightSection.CALCULATOR) }?.let { result -> item("math") {
                         Section(stringResource(R.string.calculator)) {
-                            ResultRow(Icons.Rounded.Calculate, "= $result", q) {
+                            ResultRow(Icons.Rounded.Calculate, result.display, q) {
                                 val clip = context.getSystemService(android.content.ClipboardManager::class.java)
-                                clip.setPrimaryClip(android.content.ClipData.newPlainText("Result", result))
+                                clip.setPrimaryClip(android.content.ClipData.newPlainText("Result", result.text))
                             }
                         }
                     } }
@@ -491,7 +491,13 @@ internal fun isSubsequence(needle: String, hay: String): Boolean {
 }
 
 /** Evaluates simple arithmetic like "12*(3+4)/2". Returns null when the query isn't math. */
-internal fun evaluateMath(input: String): String? {
+internal fun evaluateMath(input: String): String? = calculate(input)?.text
+
+internal data class MathAnswer(val text: String, val exact: Boolean) {
+    val display get() = (if (exact) "= " else "≈ ") + text
+}
+
+internal fun calculate(input: String): MathAnswer? {
     val text = input.replace('×', '*').replace('÷', '/').replace(" ", "")
     if (text.length < 3 || !text.any { it in "+-*/^%" } || !text.all { it.isDigit() || it in "+-*/^%.()" }) return null
     // Phone numbers and dates ("555-1234", "2026-09-12") aren't sums.
@@ -499,36 +505,81 @@ internal fun evaluateMath(input: String): String? {
     return runCatching {
         val parser = MathParser(text)
         val value = parser.expression()
-        if (!parser.done || value.isNaN() || value.isInfinite()) null
-        else if (value == Math.rint(value) && kotlin.math.abs(value) < 1e15) value.toLong().toString()
-        else String.format(java.util.Locale.ROOT, "%.6f", value).trimEnd('0').trimEnd('.')
+        if (!parser.done) null else mathAnswer(value)
     }.getOrNull()
+}
+
+private const val MATH_MAX_INTEGER_DIGITS = 20
+private const val MATH_MAX_DECIMALS = 10
+private val MATH_CONTEXT = java.math.MathContext(34, java.math.RoundingMode.HALF_EVEN)
+
+private class MathValue(val value: java.math.BigDecimal, val exact: Boolean)
+
+private fun mathAnswer(result: MathValue): MathAnswer {
+    val value = result.value.stripTrailingZeros()
+    val integerDigits = value.precision() - value.scale()
+    if (integerDigits > MATH_MAX_INTEGER_DIGITS) {
+        val rounded = value.round(java.math.MathContext(MATH_MAX_DECIMALS, java.math.RoundingMode.HALF_EVEN))
+        return MathAnswer(rounded.toString(), false)
+    }
+    if (value.scale() <= MATH_MAX_DECIMALS) return MathAnswer(value.toPlainString().let { if (it == "-0") "0" else it }, result.exact)
+    val rounded = value.setScale(MATH_MAX_DECIMALS, java.math.RoundingMode.HALF_EVEN).stripTrailingZeros()
+    return MathAnswer(if (rounded.signum() == 0) "0" else rounded.toPlainString(), false)
 }
 
 private class MathParser(private val text: String) {
     private var i = 0
     val done get() = i == text.length
     private fun peek() = text.getOrNull(i)
-    fun expression(): Double {
+    fun expression(): MathValue {
         var v = term()
-        while (peek() == '+' || peek() == '-') { val op = text[i++]; val r = term(); v = if (op == '+') v + r else v - r }
-        return v
-    }
-    private fun term(): Double {
-        var v = power()
-        while (peek() == '*' || peek() == '/' || peek() == '%') {
-            val op = text[i++]; val r = power()
-            v = when (op) { '*' -> v * r; '/' -> v / r; else -> v % r }
+        while (peek() == '+' || peek() == '-') {
+            val op = text[i++]; val r = term()
+            v = MathValue(if (op == '+') v.value.add(r.value) else v.value.subtract(r.value), v.exact && r.exact)
         }
         return v
     }
-    private fun power(): Double { val b = unary(); return if (peek() == '^') { i++; Math.pow(b, power()) } else b }
-    private fun unary(): Double {
-        if (peek() == '-') { i++; return -unary() }
+    private fun term(): MathValue {
+        var v = power()
+        while (peek() == '*' || peek() == '/' || peek() == '%') {
+            val op = text[i++]; val r = power()
+            v = when (op) {
+                '*' -> MathValue(v.value.multiply(r.value), v.exact && r.exact)
+                '/' -> divide(v, r)
+                else -> MathValue(v.value.remainder(r.value), v.exact && r.exact)
+            }
+        }
+        return v
+    }
+    private fun divide(a: MathValue, b: MathValue): MathValue = try {
+        MathValue(a.value.divide(b.value), a.exact && b.exact)
+    } catch (_: ArithmeticException) {
+        require(b.value.signum() != 0)
+        MathValue(a.value.divide(b.value, MATH_CONTEXT), false)
+    }
+    private fun power(): MathValue {
+        val b = unary()
+        if (peek() != '^') return b
+        i++
+        return raise(b, power())
+    }
+    private fun raise(base: MathValue, exponent: MathValue): MathValue {
+        val whole = runCatching { exponent.value.intValueExact() }.getOrNull()
+        if (whole != null && whole >= 0 && base.value.precision().toLong() * whole <= 1000) return MathValue(base.value.pow(whole), base.exact && exponent.exact)
+        if (whole != null) {
+            require(base.value.signum() != 0 || whole > 0)
+            return MathValue(base.value.pow(whole, MATH_CONTEXT), false)
+        }
+        val raised = Math.pow(base.value.toDouble(), exponent.value.toDouble())
+        require(!raised.isNaN() && !raised.isInfinite())
+        return MathValue(java.math.BigDecimal(raised), false)
+    }
+    private fun unary(): MathValue {
+        if (peek() == '-') { i++; return unary().let { MathValue(it.value.negate(), it.exact) } }
         if (peek() == '(') { i++; val v = expression(); require(peek() == ')'); i++; return v }
         val start = i
         while (peek()?.let { it.isDigit() || it == '.' } == true) i++
-        return text.substring(start, i).toDouble()
+        return MathValue(java.math.BigDecimal(text.substring(start, i)), true)
     }
 }
 

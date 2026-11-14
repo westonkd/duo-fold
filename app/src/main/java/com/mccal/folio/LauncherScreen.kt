@@ -639,15 +639,24 @@ fun LauncherScreen(
             val dockOpenPlace = drag.active && drag.source?.appId != null && drag.source?.target !is DropTarget.Dock &&
                 state.dock.size < MAX_DOCK_SLOTS && state.dock.none { it == null }
             val shownDock = if (dockOpenPlace) state.dock + null else state.dock
+            // The page controls under Home (and the Preview bar before Folio is the Home app), measured: the old guess
+            // of 44dp, 88dp with the Preview bar, left the App Library's panel under the Preview bar sideways.
+            var bottomControlsHeight by remember { mutableStateOf(0.dp) }
+            // As the Home app it stays 44dp unless the dots are taller, so no one's automatic rows shrink; the Preview
+            // bar gets a clear gap above it.
+            val controlsSpace = if (isDefaultHome) maxOf(44.dp, bottomControlsHeight) else maxOf(88.dp, bottomControlsHeight + 12.dp)
+            var editTopWanted by remember { mutableStateOf(homeEdit.active) }
+            if (!drag.active) editTopWanted = homeEdit.active
             val geometry = homeGeometry(maxWidth.value, maxHeight.value, dockPlacement, state.labels, dockSlots = shownDock.size, statusRail = state.verticalStatus,
                 statusHeight = if (state.verticalStatus) statusHeight + 22f else 0f,
                 labelHeight = with(density) { HOME_LABEL_LINE_SP.sp.toDp().value } + 6f, inLibrary = inLibrary,
-                homeBottomSpace = if (isDefaultHome) 44f else 88f,
+                homeBottomSpace = controlsSpace.value,
                 // The rail's round controls, counted as the column at its bottom draws them: Search without the search
                 // pill or off the Home pages. Home's own count anchors the dock.
                 railControls = if (!state.searchPill || pager.currentPage !in 0 until homePages) 1 else 0,
                 homeRailControls = if (state.searchPill) 0 else 1, classScale = classScale, appRows = homeAppRows,
-                foldAtCenter = hinge?.vertical == true, fillSpace = true)
+                foldAtCenter = hinge?.vertical == true, fillSpace = true,
+                editTop = if (editTopWanted) JIGGLE_BAR_BOTTOM.value else 0f)
             // Half folded like a laptop: the status (information) stays above the hinge and the dock (controls) goes
             // below it, like Folio's other fold-aware panels; the dock scrolls if the lower half is short.
             val tableHinge = hinge?.takeIf { it.active && !it.vertical }
@@ -662,7 +671,7 @@ fun LauncherScreen(
             // More rows (Automatic): remember how many rows fit this screen, so both screens can show the same number.
             // Only the full-screen Home counts: not split-screen or pop-up windows, short windows, or two-column pages
             // (micro covers never get here).
-            val measuresRows = !geometry.splitColumns && maxHeight.value * classScale >= HOME_REGULAR_MIN_HEIGHT_DP &&
+            val measuresRows = !editTopWanted && !geometry.splitColumns && maxHeight.value * classScale >= HOME_REGULAR_MIN_HEIGHT_DP &&
                 !launcherActivity.isInMultiWindowMode
             LaunchedEffect(measuresRows, layoutScreen, geometry.fitAppRows) { if (measuresRows) model.recordHomeFit(layoutScreen, geometry.fitAppRows) }
             SideEffect {
@@ -680,12 +689,6 @@ fun LauncherScreen(
             val pagerWidth = if (geometry.horizontalDock && !geometry.dockBesideRail) maxWidth else maxWidth - DOCK_WIDTH.dp - 28.dp
             val leftColumnOrigin = (maxWidth / 2f - geometry.gridWidth.dp) / 2f - 16.dp
             val homeStride = panelWidth - leftColumnOrigin
-            // The page controls under Home (and the Preview bar before Folio is the Home app), measured: the old guess
-            // of 44dp, 88dp with the Preview bar, left the App Library's panel under the Preview bar sideways.
-            var bottomControlsHeight by remember { mutableStateOf(0.dp) }
-            // As the Home app it stays 44dp unless the dots are taller, so no one's automatic rows shrink; the Preview
-            // bar gets a clear gap above it.
-            val controlsSpace = if (isDefaultHome) maxOf(44.dp, bottomControlsHeight) else maxOf(88.dp, bottomControlsHeight + 12.dp)
             val bottomSpace = controlsSpace + if (geometry.horizontalDock) (geometry.dockBarHeight + 16f).dp else 0.dp
             val workspaceMotion = if (geometry.expanded) remember(visibleHomePages, pagerWidth, homeStride, density) {
                 WorkspacePageMotion(visibleHomePages, with(density) { pagerWidth.toPx() }, with(density) { homeStride.toPx() })
