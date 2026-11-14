@@ -190,6 +190,7 @@ internal const val SEARCH_FIELD_FROST = .12f
 internal const val LIQUID_OVERLAY_FROST = .72f
 internal const val LIBRARY_TILE_FROST = .22f
 internal const val MENU_FROST = .84f
+internal const val POPOVER_BACKING = .9f
 internal const val FOLDER_FROST = .24f
 internal const val TOOLBAR_FROST = .9f
 internal const val FOLDER_TILE_FROST = .72f

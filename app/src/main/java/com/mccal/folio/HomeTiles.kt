@@ -229,7 +229,7 @@ internal fun DockAppColumn(
                             transformOrigin = if (horizontal) androidx.compose.ui.graphics.TransformOrigin(.5f, 1f)
                                 else androidx.compose.ui.graphics.TransformOrigin(if (leftHanded) 0f else 1f, .5f)
                         }, badge = true)
-                        if (edit.active && savedIndex >= 0) JiggleRemoveButton(stringResource(R.string.remove_from_dock, app.label), inset = 6.dp) { edit.onRemove(DropTarget.Dock(savedIndex)) }
+                        if (edit.active && savedIndex >= 0) JiggleRemoveButton(stringResource(R.string.remove_from_dock, app.label), inset = (-8).dp, badge = 16.dp) { edit.onRemove(DropTarget.Dock(savedIndex)) }
                     }
                     // Recent-app dot (Beta): below the icon in a horizontal dock, on the screen side of a side dock.
                     if (!edit.active && app.packageName in LocalRecentPackages.current) Box(Modifier

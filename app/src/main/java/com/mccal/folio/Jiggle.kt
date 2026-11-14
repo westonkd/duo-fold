@@ -109,7 +109,7 @@ internal fun Modifier.jiggle(key: Any, amount: Float = 1f): Modifier {
 
 /** The gray "–" in an icon's corner while jiggling. */
 @Composable
-internal fun BoxScope.JiggleRemoveButton(label: String, inset: Dp = 0.dp, onRemove: () -> Unit) {
+internal fun BoxScope.JiggleRemoveButton(label: String, inset: Dp = 0.dp, badge: Dp = 22.dp, onRemove: () -> Unit) {
     val haptic = LocalHapticFeedback.current
     // 44dp touch target (accessibility minimum) around a 22dp visual, centered on the corner; [inset] pulls it in so it
     // stays inside a tight container like the side dock, as iPhone keeps it inside the dock.
@@ -117,8 +117,8 @@ internal fun BoxScope.JiggleRemoveButton(label: String, inset: Dp = 0.dp, onRemo
         .clickable(role = Role.Button, onClickLabel = label, interactionSource = null, indication = null) {
             haptic.perform(FolioHaptic.Refuse); onRemove()
         }.semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
-        Box(Modifier.size(22.dp).shadow(2.dp, CircleShape).background(Color(0xFFD1D1D6), CircleShape), contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.Remove, null, tint = FolioColors.SecondaryBackground, modifier = Modifier.size(15.dp))
+        Box(Modifier.size(badge).shadow(2.dp, CircleShape).background(Color(0xFFD1D1D6), CircleShape), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.Remove, null, tint = FolioColors.SecondaryBackground, modifier = Modifier.size(badge * 15 / 22))
         }
     }
 }
