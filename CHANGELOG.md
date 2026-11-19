@@ -5,7 +5,7 @@ Folio is in development), and this file follows [Keep a Changelog](https://keepa
 `versionCode` is derived from the version name ((MAJOR × 10000 + MINOR × 100 + PATCH) × 10 + HOTFIX), so every release sorts correctly and a fix on top of one has nine numbers of its own.
 Folio shows the newest section on the phone after an update, and every version under Settings › What's New › Version History.
 
-## [1.0.4] - Unreleased
+## [1.0.4] - 2026-11-14
 
 ### Fixed
 - **Dock remove buttons in the corner:** while editing Home, the remove button on each dock app sits in the icon's corner like on the Home grid, instead of covering the middle of the icon.
