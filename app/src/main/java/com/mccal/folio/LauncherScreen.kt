@@ -1718,16 +1718,16 @@ internal fun libraryEdges(statusInCorner: Boolean, leftHanded: Boolean, spansWin
 /** Shown while Folio is open as an app, before it's the Home app: says so, and offers both ways forward. */
 @Composable
 private fun PreviewBar(onUseAsHome: () -> Unit, onExit: () -> Unit) {
-    val ink = LocalHomeInk.current
-    Row(Modifier.padding(bottom = FolioSpace.SNUG.dp).heightIn(min = 48.dp).liquidGlass(CircleShape, LIQUID_FROST, GlassRole.CAPSULE)
-        .padding(start = FolioSpace.LARGE.dp, end = FolioSpace.TINY.dp).testTag("home-setup"), verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(R.string.preview), color = ink.secondary, fontSize = FolioType.SUBHEAD.sp, modifier = Modifier.semantics { heading() })
-        Spacer(Modifier.width(12.dp))
-        Text(stringResource(R.string.use_as_home), color = LocalAccent.current.ink, fontSize = FolioType.SUBHEAD.sp, fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.clip(CircleShape).clickable(onClick = onUseAsHome)
-                .heightIn(min = 48.dp).wrapContentHeight().padding(horizontal = FolioSpace.SMALL.dp).testTag("preview-use-as-home"))
+    Row(Modifier.padding(bottom = FolioSpace.SNUG.dp).heightIn(min = 48.dp)
+        .liquidGlass(CircleShape, TOOLBAR_FROST, GlassRole.CAPSULE, Color.White)
+        .padding(start = FolioSpace.LARGE.dp, end = FolioSpace.TINY.dp, top = FolioSpace.TINY.dp, bottom = FolioSpace.TINY.dp)
+        .testTag("home-setup"), verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(R.string.preview), color = FolioColors.LightLabel, fontSize = FolioType.SUBHEAD.sp,
+            fontWeight = FontWeight.SemiBold, modifier = Modifier.semantics { heading() })
+        Spacer(Modifier.width(FolioSpace.MEDIUM.dp))
+        FolioButton(stringResource(R.string.use_as_home), onClick = onUseAsHome, tag = "preview-use-as-home")
         IconButton(onClick = onExit, Modifier.size(48.dp).testTag("preview-exit")) {
-            Icon(Icons.Rounded.Close, stringResource(R.string.exit_preview), tint = ink.secondary, modifier = Modifier.size(18.dp))
+            Icon(Icons.Rounded.Close, stringResource(R.string.exit_preview), tint = FolioColors.LightSecondaryLabel, modifier = Modifier.size(18.dp))
         }
     }
 }
