@@ -5,6 +5,12 @@ Folio is in development), and this file follows [Keep a Changelog](https://keepa
 `versionCode` is derived from the version name ((MAJOR × 10000 + MINOR × 100 + PATCH) × 10 + HOTFIX), so every release sorts correctly and a fix on top of one has nine numbers of its own.
 Folio shows the newest section on the phone after an update, and every version under Settings › What's New › Version History.
 
+## [1.0.5] - Unreleased
+
+### Fixed
+- **A preview bar you can read:** when Twofold is open but isn't your Home app yet, the Preview bar at the bottom is solid with dark text and a filled Use as Home button, so it stands out on any wallpaper.
+- **Devices without Wi-Fi:** Twofold can be installed on devices that have no Wi-Fi hardware.
+
 ## [1.0.4] - 2026-11-14
 
 ### Fixed
