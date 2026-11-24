@@ -1,1 +1,1 @@
-A two-panel Home screen for foldables, with a Side Bar, App Library and search.
+Two-panel foldable launcher: Side Bar, App Library, widget stacks and search
