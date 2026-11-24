@@ -41,6 +41,7 @@ check_live() {
 /permissions 200
 /sitemap.xml 200
 /robots.txt 200
+/llms.txt 200
 /og.png 200
 /no-such-page 404
 EOF
