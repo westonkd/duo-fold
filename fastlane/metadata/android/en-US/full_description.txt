@@ -1,4 +1,4 @@
-Twofold is a two-panel Home screen for Android foldables, made for the Galaxy Z Fold8. It works on other Android phones and tablets running Android 12 or later too.
+Twofold is a foldable launcher that gives your Android foldable a two-panel Home screen. It's made for the Galaxy Z Fold8 and works on other Android phones and tablets running Android 12 or later too.
 
 <b>Features</b>
 • The Side Bar: the time, battery and your dock along the edge, folded or open
