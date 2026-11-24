@@ -17,7 +17,7 @@ npm run dev
 - `privacy.html` and `permissions.html` render the repository's `PRIVACY.md` and `PERMISSIONS.md` at build time, through the `<!-- markdown:FILE -->` marker and the small plugin in `vite.config.ts`, so the policy has one source. Links to either file become `/privacy` and `/permissions`; other relative links point at GitHub.
 - `src/main.ts` and `src/style.css` are shared by every page.
 - `src/images/` holds WebP copies of the store screenshots in `fastlane/metadata/android/en-US/images/` and the icon at small sizes. Vite fingerprints them into `/assets/`, which `_headers` caches for a year.
-- `public/` is copied to the root of the site as is. `icon.png` is the store icon; `og.png` is the 1200 × 630 share card.
+- `public/` is copied to the root of the site as is. `icon.png` is the store icon; `og.png` is the 1200 × 630 share card; `llms.txt` is a plain summary of the app for AI assistants, so keep it in step with the listing and the FAQ.
 - A new page is a new `.html` file here plus an entry in `build.rolldownOptions.input` in `vite.config.ts`.
 - The Get it on Google Play buttons are drawn in CSS for now. Google's brand rules ask for the official badge, so swap it in before launch.
 

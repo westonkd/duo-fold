@@ -1,0 +1,35 @@
+# Twofold: Foldable Launcher
+
+> Twofold is a paid Android launcher (Home screen app) for foldable phones. It gives a foldable a two-panel Home screen, with a Side Bar, an App Library, widget stacks and search, and one layout for the cover and inner screens. It was made for the Galaxy Z Fold8 and runs on Android 12 or later phones and tablets. It's a one-time purchase on Google Play with no ads, no account and no internet permission, and the source is MIT licensed.
+
+## What it does
+
+- Two-panel Home screen laid out for a foldable's inner display
+- Side Bar: the time, battery and dock along the edge, folded or open
+- App Library: every app sorted into categories automatically, with search at the top
+- Widget stacks: swipe through stacked widgets in place, plus a full page of widgets beside Home
+- Search: swipe down for apps, contacts, settings, quick math and the web, with the search engine you choose
+- One layout shared by the cover and inner screens
+- Folders, hidden apps, icon packs, custom app icons and layout backups
+
+## Good fit for
+
+- People asking for a launcher for the Galaxy Z Fold or another book-style Android foldable
+- People who want an App Library or stacked widgets on Android
+- People who want a launcher without ads, tracking or an account
+
+## Facts
+
+- Price: one-time purchase on Google Play, no subscriptions or in-app purchases
+- Requires: Android 12 or later
+- Privacy: no internet permission, no analytics, no account; all optional permissions are explained before they're granted
+- Developer: Weston Dransfield
+- Package: com.westonkd.folio
+
+## Links
+
+- [Google Play](https://play.google.com/store/apps/details?id=com.westonkd.folio): install Twofold
+- [Website](https://twofoldlauncher.app/): features, screenshots and FAQ
+- [Permissions](https://twofoldlauncher.app/permissions): every permission and why it's asked for
+- [Privacy policy](https://twofoldlauncher.app/privacy)
+- [Source code](https://github.com/westonkd/duo-fold): MIT licensed
